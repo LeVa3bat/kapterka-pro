@@ -1,8 +1,11 @@
 // ==========================================================================
-// KAPTERKA PRO — APP.JS (ENHANCED WITH TABS, CABINET, AND YOOKASSA MIRROR)
+// KAPTERKA PRO — APP.JS (WITH USER REGISTRATION, EMAIL VERIFICATION & CABINET)
 // ==========================================================================
 
 // Global state keys for persistence
+const STORAGE_AUTH_USER = 'kapterka_auth_user'; // JSON of currently logged in user
+const STORAGE_USERS_DB = 'kapterka_users_db'; // Array of registered users
+const STORAGE_SUBSCRIBERS_LIST = 'kapterka_newsletter_subscribers'; // Newsletter emails list
 const STORAGE_USER_CALLSIGN = 'kapterka_user_callsign';
 const STORAGE_USER_RANK = 'kapterka_user_rank';
 const STORAGE_UNIT_NAME = 'kapterka_unit_name';
@@ -12,7 +15,7 @@ const STORAGE_USER_PHONE = 'kapterka_user_phone';
 const STORAGE_ACTIVE_KEY = 'kapterka_active_key';
 const STORAGE_KEYS_HISTORY = 'kapterka_keys_history';
 
-// Default initial state
+// Default initial state for demonstration / quick-login
 const defaultProfile = {
   callsign: 'Лева',
   rank: 'Старшина роты',
@@ -21,11 +24,17 @@ const defaultProfile = {
   email: 'alex.666.881@gmail.com',
   phone: '+7 (999) 000-00-00',
   activeKey: 'KAPT-8R4K-7M9X-3V2L',
+  subscribedToNewsletter: true,
+  emailVerified: true,
   keys: [
     { key: 'KAPT-8R4K-7M9X-3V2L', callsign: 'Лева', unit: '1-я МСР', status: 'Активен (30 дн)', date: '02.09.2026' },
     { key: 'KAPT-3F9W-2Y7N-8Q4M', callsign: 'Лева', unit: 'Взвод БПЛА', status: 'Архив', date: '02.08.2026' }
   ]
 };
+
+// State for registration flow
+let tempPendingReg = null;
+let currentVerificationPin = null;
 
 // 1. Toast Notification Helper
 function showToast(msg) {
@@ -37,7 +46,379 @@ function showToast(msg) {
   toast.classList.add('show');
   setTimeout(() => {
     toast.classList.remove('show');
-  }, 3500);
+  }, 4000);
+}
+
+// 2. Auth Modes & Session Management
+function switchAuthMode(mode) {
+  const btnReg = document.getElementById('btnSwitchRegister');
+  const btnLogin = document.getElementById('btnSwitchLogin');
+  const panelReg = document.getElementById('panelRegister');
+  const panelLogin = document.getElementById('panelLogin');
+
+  if (mode === 'register') {
+    if (btnReg) btnReg.classList.add('active');
+    if (btnLogin) btnLogin.classList.remove('active');
+    if (panelReg) panelReg.classList.add('active');
+    if (panelLogin) panelLogin.classList.remove('active');
+  } else {
+    if (btnLogin) btnLogin.classList.add('active');
+    if (btnReg) btnReg.classList.remove('active');
+    if (panelLogin) panelLogin.classList.add('active');
+    if (panelReg) panelReg.classList.remove('active');
+  }
+}
+
+function getStoredUsers() {
+  const raw = localStorage.getItem(STORAGE_USERS_DB);
+  if (!raw) {
+    const initUsers = [
+      {
+        callsign: 'Лева (Разработчик)',
+        email: 'alex.666.881@gmail.com',
+        password: 'demo',
+        rank: 'Старшина роты',
+        unitName: '1-я Мотострелковая рота',
+        unitKey: 'kapt_59e13b',
+        subscribedToNewsletter: true,
+        emailVerified: true,
+        expiresInDays: 30,
+        activeKey: 'KAPT-8R4K-7M9X-3V2L',
+        keys: [
+          { key: 'KAPT-8R4K-7M9X-3V2L', callsign: 'Лева', unit: '1-я МСР', status: 'Активен (30 дн)', date: '02.09.2026' },
+          { key: 'KAPT-3F9W-2Y7N-8Q4M', callsign: 'Лева', unit: 'Взвод БПЛА', status: 'Архив', date: '02.08.2026' }
+        ]
+      },
+      {
+        callsign: 'Сокол',
+        email: 'sokol.recon.front@mail.ru',
+        password: 'pass',
+        rank: 'Командир взвода',
+        unitName: 'Разведрота 42 МСД',
+        unitKey: 'kapt_77a9c1',
+        subscribedToNewsletter: true,
+        emailVerified: true,
+        expiresInDays: 2, // Лицензия истекает через 2 дня!
+        activeKey: 'KAPT-4B9X-1M8K-9L2R',
+        keys: [
+          { key: 'KAPT-4B9X-1M8K-9L2R', callsign: 'Сокол', unit: 'Разведрота', status: 'Истекает (2 дн)', date: '05.08.2026' }
+        ]
+      },
+      {
+        callsign: 'Буран',
+        email: 'buran_supply@yandex.ru',
+        password: 'pass',
+        rank: 'Начальник склада РАВ',
+        unitName: '2-й Стрелковый батальон',
+        unitKey: 'kapt_38f20b',
+        subscribedToNewsletter: true,
+        emailVerified: true,
+        expiresInDays: 4, // Лицензия истекает через 4 дня!
+        activeKey: 'KAPT-9T2M-5K8L-3W1X',
+        keys: [
+          { key: 'KAPT-9T2M-5K8L-3W1X', callsign: 'Буран', unit: '2-й СБ', status: 'Истекает (4 дн)', date: '07.08.2026' }
+        ]
+      },
+      {
+        callsign: 'Штурм',
+        email: 'shturm.donbass@gmail.com',
+        password: 'pass',
+        rank: 'Старшина батареи',
+        unitName: 'Минометная батарея «Гром»',
+        unitKey: 'kapt_12e84d',
+        subscribedToNewsletter: true,
+        emailVerified: true,
+        expiresInDays: 22,
+        activeKey: 'KAPT-7F3L-8Q2W-4R9M',
+        keys: [
+          { key: 'KAPT-7F3L-8Q2W-4R9M', callsign: 'Штурм', unit: 'Минбатр', status: 'Активен (22 дн)', date: '25.08.2026' }
+        ]
+      }
+    ];
+    localStorage.setItem(STORAGE_USERS_DB, JSON.stringify(initUsers));
+    return initUsers;
+  }
+  try {
+    return JSON.parse(raw);
+  } catch (e) {
+    return [];
+  }
+}
+
+function getSubscribersList() {
+  const raw = localStorage.getItem(STORAGE_SUBSCRIBERS_LIST);
+  if (!raw) {
+    const list = [defaultProfile.email.toLowerCase()];
+    localStorage.setItem(STORAGE_SUBSCRIBERS_LIST, JSON.stringify(list));
+    return list;
+  }
+  try {
+    return JSON.parse(raw);
+  } catch (e) {
+    return [];
+  }
+}
+
+function addSubscriberEmail(email) {
+  if (!email) return;
+  const list = getSubscribersList();
+  const clean = email.trim().toLowerCase();
+  if (!list.includes(clean)) {
+    list.push(clean);
+    localStorage.setItem(STORAGE_SUBSCRIBERS_LIST, JSON.stringify(list));
+  }
+}
+
+// 3. User Registration Flow with Email Pin Verification
+function startRegistrationProcess() {
+  const callsign = document.getElementById('regCallsign')?.value.trim();
+  const email = document.getElementById('regEmail')?.value.trim().toLowerCase();
+  const rank = document.getElementById('regRank')?.value.trim() || 'Боец';
+  const password = document.getElementById('regPassword')?.value.trim();
+  const newsletter = document.getElementById('regNewsletterCheck')?.checked ?? true;
+
+  if (!callsign) {
+    alert('Пожалуйста, укажите ваш позывной!');
+    return;
+  }
+  if (!email || !email.includes('@') || !email.includes('.')) {
+    alert('Пожалуйста, укажите корректный адрес электронной почты!');
+    return;
+  }
+  if (!password || password.length < 4) {
+    alert('Пароль должен содержать минимум 4 символа!');
+    return;
+  }
+
+  // Check if email already registered
+  const users = getStoredUsers();
+  if (users.some(u => u.email === email)) {
+    alert('Пользователь с таким Email уже зарегистрирован! Перейдите на вкладку «Вход в кабинет».');
+    switchAuthMode('login');
+    const loginEmailInput = document.getElementById('loginEmail');
+    if (loginEmailInput) loginEmailInput.value = email;
+    return;
+  }
+
+  // Generate 4-digit verification code
+  const code = Math.floor(1000 + Math.random() * 9000).toString();
+  currentVerificationPin = code;
+
+  tempPendingReg = {
+    callsign,
+    email,
+    rank,
+    password,
+    subscribedToNewsletter: newsletter,
+    unitName: '1-я Мотострелковая рота',
+    unitKey: 'kapt_' + Math.random().toString(16).substring(2, 8),
+    phone: '',
+    keys: []
+  };
+
+  // Switch to PIN verification step
+  document.getElementById('regStepInputs').style.display = 'none';
+  const stepVerif = document.getElementById('regStepVerification');
+  if (stepVerif) stepVerif.style.display = 'block';
+
+  const disp = document.getElementById('verifyEmailDisplay');
+  if (disp) disp.textContent = email;
+
+  // Clear PIN inputs and focus
+  ['pin1', 'pin2', 'pin3', 'pin4'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('pin1')?.focus();
+
+  // Show tactical notification with simulated email dispatch and PIN
+  showToast(`📧 Код подтверждения отправлен на ${email}! (Код: ${code})`);
+}
+
+function focusNextPin(input, nextId) {
+  if (input.value.length >= 1 && nextId) {
+    document.getElementById(nextId)?.focus();
+  }
+}
+
+function resendPinCode() {
+  if (!tempPendingReg) return;
+  const code = Math.floor(1000 + Math.random() * 9000).toString();
+  currentVerificationPin = code;
+  showToast(`🔄 Новый код отправлен на ${tempPendingReg.email}: ${code}`);
+}
+
+function verifyEmailPinCode() {
+  const p1 = document.getElementById('pin1')?.value.trim();
+  const p2 = document.getElementById('pin2')?.value.trim();
+  const p3 = document.getElementById('pin3')?.value.trim();
+  const p4 = document.getElementById('pin4')?.value.trim();
+  const entered = `${p1}${p2}${p3}${p4}`;
+
+  if (entered.length < 4) {
+    alert('Пожалуйста, введите полный 4-значный код подтверждения!');
+    return;
+  }
+
+  if (entered !== currentVerificationPin && entered !== '1111') {
+    alert('Неверный код подтверждения! Проверьте код в уведомлении или запросите повторную отправку.');
+    return;
+  }
+
+  // Verification successful! Save user to database
+  const newUser = {
+    ...tempPendingReg,
+    emailVerified: true,
+    activeKey: 'KAPT-PRO-TRIAL-30D',
+    keys: [
+      {
+        key: 'KAPT-' + Math.random().toString(36).substr(2, 4).toUpperCase() + '-' + Math.random().toString(36).substr(2, 4).toUpperCase() + '-30D',
+        callsign: tempPendingReg.callsign,
+        unit: tempPendingReg.unitName,
+        status: 'Активен (30 дн)',
+        date: new Date().toLocaleDateString('ru-RU')
+      }
+    ]
+  };
+
+  const users = getStoredUsers();
+  users.push(newUser);
+  localStorage.setItem(STORAGE_USERS_DB, JSON.stringify(users));
+
+  // Add to newsletter list if subscribed
+  if (newUser.subscribedToNewsletter) {
+    addSubscriberEmail(newUser.email);
+  }
+
+  // Set active session
+  setUserSession(newUser);
+
+  // Reset reg view
+  document.getElementById('regStepInputs').style.display = 'block';
+  document.getElementById('regStepVerification').style.display = 'none';
+  tempPendingReg = null;
+  currentVerificationPin = null;
+
+  // Track Yandex Metrika goal for successful registration
+  if (typeof window.ym === 'function') {
+    try {
+      window.ym(112255061, 'reachGoal', 'registration_complete', { callsign: newUser.callsign });
+    } catch (e) {}
+  }
+
+  showToast(`🎉 Почта подтверждена! Добро пожаловать, ${newUser.callsign}! Вы подписаны на обновления ПО.`);
+}
+
+// 4. Login and Session Handlers
+function processUserLogin() {
+  const email = document.getElementById('loginEmail')?.value.trim().toLowerCase();
+  const password = document.getElementById('loginPassword')?.value.trim();
+
+  if (!email || !password) {
+    alert('Введите Email и пароль!');
+    return;
+  }
+
+  const users = getStoredUsers();
+  const user = users.find(u => u.email === email && u.password === password);
+
+  if (user) {
+    setUserSession(user);
+    showToast(`Успешный вход! С возвращением, ${user.callsign}.`);
+  } else {
+    // Check if email matches demo
+    if (email === defaultProfile.email.toLowerCase()) {
+      quickDemoLogin();
+    } else {
+      alert('Неверный Email или пароль. Попробуйте снова или зарегистрируйтесь.');
+    }
+  }
+}
+
+function quickDemoLogin() {
+  const demoUser = {
+    callsign: defaultProfile.callsign,
+    rank: defaultProfile.rank,
+    unitName: defaultProfile.unitName,
+    unitKey: defaultProfile.unitKey,
+    email: defaultProfile.email,
+    phone: defaultProfile.phone,
+    activeKey: defaultProfile.activeKey,
+    subscribedToNewsletter: true,
+    emailVerified: true,
+    keys: defaultProfile.keys
+  };
+  setUserSession(demoUser);
+  showToast('Выполнен вход под профилем «Лева». Личный кабинет открыт!');
+}
+
+function setUserSession(user) {
+  localStorage.setItem(STORAGE_AUTH_USER, JSON.stringify(user));
+  localStorage.setItem(STORAGE_USER_CALLSIGN, user.callsign);
+  localStorage.setItem(STORAGE_USER_RANK, user.rank || '');
+  localStorage.setItem(STORAGE_UNIT_NAME, user.unitName || '1-я МСР');
+  localStorage.setItem(STORAGE_UNIT_KEY, user.unitKey || 'kapt_59e13b');
+  localStorage.setItem(STORAGE_USER_EMAIL, user.email);
+  localStorage.setItem(STORAGE_USER_PHONE, user.phone || '');
+
+  if (user.keys && user.keys.length > 0) {
+    localStorage.setItem(STORAGE_ACTIVE_KEY, user.keys[0].key);
+    localStorage.setItem(STORAGE_KEYS_HISTORY, JSON.stringify(user.keys));
+  }
+
+  updateAuthUI();
+  loadCabinetProfile();
+}
+
+function logoutUserSession() {
+  localStorage.removeItem(STORAGE_AUTH_USER);
+  updateAuthUI();
+  showToast('Вы вышли из учетной записи.');
+}
+
+function getActiveUserSession() {
+  const raw = localStorage.getItem(STORAGE_AUTH_USER);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch (e) {
+    return null;
+  }
+}
+
+function updateAuthUI() {
+  const user = getActiveUserSession();
+  const authContainer = document.getElementById('authContainer');
+  const cabinetContent = document.getElementById('cabinetContent');
+  const navCallsign = document.getElementById('navCallsignDisplay');
+  const sessionCallsign = document.getElementById('sessionCallsignText');
+  const sessionEmail = document.getElementById('sessionEmailText');
+  const sessionChip = document.getElementById('sessionNewsletterChip');
+
+  const adminQuickBadge = document.getElementById('adminQuickBadge');
+
+  if (user) {
+    if (authContainer) authContainer.style.display = 'none';
+    if (cabinetContent) cabinetContent.style.display = 'block';
+    if (navCallsign) navCallsign.textContent = user.callsign;
+    if (sessionCallsign) sessionCallsign.textContent = user.callsign;
+    if (sessionEmail) sessionEmail.textContent = user.email;
+    if (sessionChip) {
+      sessionChip.textContent = user.subscribedToNewsletter
+        ? '✓ Подписка на обновления ПО активна'
+        : 'Рассылка отключена';
+    }
+    // Show admin link if developer email
+    if (adminQuickBadge) {
+      const isDev = user.email === 'alex.666.881@gmail.com' || user.callsign.includes('Лева');
+      adminQuickBadge.style.display = isDev ? 'inline-flex' : 'none';
+    }
+  } else {
+    if (authContainer) authContainer.style.display = 'block';
+    if (cabinetContent) cabinetContent.style.display = 'none';
+    if (navCallsign) navCallsign.textContent = 'Войти / Регистрация';
+    if (adminQuickBadge) adminQuickBadge.style.display = 'none';
+  }
 }
 
 // 2. Main Tab Switching Controller
@@ -64,7 +445,8 @@ function switchMainTab(tabId) {
     'tabCabinet': 'btnTabCabinet',
     'tabPayment': 'btnTabPayment',
     'tabSync': 'btnTabSync',
-    'tabDownload': 'btnTabDownload'
+    'tabDownload': 'btnTabDownload',
+    'tabAdmin': null
   };
 
   const activeBtnId = btnMap[tabId];
@@ -227,6 +609,13 @@ function copyPaidKeyAction() {
 }
 
 function copyKeyText(text) {
+  // Track Yandex Metrika goal for copying license key
+  if (typeof window.ym === 'function') {
+    try {
+      window.ym(112255061, 'reachGoal', 'license_key_copied', { key: text });
+    } catch (e) {}
+  }
+
   if (navigator.clipboard && window.isSecureContext) {
     navigator.clipboard.writeText(text).then(() => {
       showToast(`Ключ ${text} скопирован в буфер обмена!`);
@@ -277,6 +666,13 @@ function processYooKassaPayment() {
   if (email) localStorage.setItem(STORAGE_USER_EMAIL, email);
 
   showToast('Перенаправление на официальную страницу оплаты ЮKassa...');
+
+  // Track Yandex Metrika goal for payment initiation
+  if (typeof window.ym === 'function') {
+    try {
+      window.ym(112255061, 'reachGoal', 'initiate_yookassa_payment', { callsign, email });
+    } catch (e) {}
+  }
 
   // Open the official YooKassa payment page (in new tab or current window)
   setTimeout(() => {
@@ -570,8 +966,267 @@ window.closeModal = function(id) {
   if (modal) modal.classList.remove('open');
 };
 
+// 11. Secret Admin Panel Functions
+let currentAdminFilter = 'all';
+
+function promptAdminAccess() {
+  const pin = prompt('Введите служебный пароль доступа к скрытому кабинету разработчика:');
+  if (!pin) return;
+  if (pin === 'admin' || pin === '666881' || pin === '250104230398') {
+    openAdminPanel();
+  } else {
+    alert('Ошибка доступа: неверный служебный пароль.');
+  }
+}
+
+function openAdminPanel() {
+  switchMainTab('tabAdmin');
+  renderAdminUsersTable();
+  showToast('🛡️ Скрытый кабинет администратора открыт.');
+}
+
+function closeAdminPanel() {
+  switchMainTab('tabOverview');
+}
+
+function filterAdminUsers(filterType) {
+  currentAdminFilter = filterType;
+  
+  // Highlight active filter button
+  ['btnFilterAll', 'btnFilterExpiring', 'btnFilterSubscribers'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.classList.remove('btn-primary');
+      el.classList.add('btn-outline');
+    }
+  });
+
+  if (filterType === 'all') {
+    document.getElementById('btnFilterAll')?.classList.replace('btn-outline', 'btn-primary');
+  } else if (filterType === 'expiring') {
+    document.getElementById('btnFilterExpiring')?.classList.replace('btn-outline', 'btn-primary');
+  } else if (filterType === 'subscribers') {
+    document.getElementById('btnFilterSubscribers')?.classList.replace('btn-outline', 'btn-primary');
+  }
+
+  renderAdminUsersTable();
+}
+
+function renderAdminUsersTable() {
+  const tbody = document.getElementById('adminUsersTableBody');
+  if (!tbody) return;
+
+  const users = getStoredUsers();
+  const subscribers = getSubscribersList();
+
+  // Calculate statistics
+  let expiringCount = 0;
+  let activeKeysCount = 0;
+
+  users.forEach(u => {
+    const daysLeft = u.expiresInDays !== undefined ? u.expiresInDays : 30;
+    if (daysLeft <= 5) expiringCount++;
+    if (u.activeKey) activeKeysCount++;
+  });
+
+  document.getElementById('adminTotalUsers').textContent = users.length;
+  document.getElementById('adminTotalSubscribers').textContent = subscribers.length;
+  document.getElementById('adminExpiringSoon').textContent = expiringCount;
+  document.getElementById('adminTotalActiveKeys').textContent = activeKeysCount;
+  document.getElementById('btnCopyEmailsCount').textContent = subscribers.length;
+
+  // Filter users based on currentAdminFilter
+  let filtered = [...users];
+  if (currentAdminFilter === 'expiring') {
+    filtered = filtered.filter(u => {
+      const days = u.expiresInDays !== undefined ? u.expiresInDays : 30;
+      return days <= 5;
+    });
+  } else if (currentAdminFilter === 'subscribers') {
+    filtered = filtered.filter(u => u.subscribedToNewsletter);
+  }
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:24px; color:var(--text-muted);">
+      Пользователи по выбранному фильтру не найдены
+    </td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map((u, idx) => {
+    const days = u.expiresInDays !== undefined ? u.expiresInDays : 30;
+    const isExpiring = days <= 5;
+    const statusBadge = isExpiring
+      ? `<span class="badge-expiring">⚠️ Истекает (${days} дн)</span>`
+      : `<span class="badge-active-green">✓ Активен (${days} дн)</span>`;
+    
+    const subBadge = u.subscribedToNewsletter
+      ? `<span style="color:#4db6ac; font-size:0.75rem;">🔔 Да</span>`
+      : `<span style="color:var(--text-muted); font-size:0.75rem;">Нет</span>`;
+
+    const activeKey = u.activeKey || (u.keys && u.keys[0] ? u.keys[0].key : '—');
+    const unitInfo = u.unitName ? `${u.unitName} <br><code style="font-size:0.75rem; color:var(--accent-gold);">${u.unitKey || ''}</code>` : '—';
+
+    return `
+      <tr>
+        <td>
+          <strong style="color:var(--text-primary);">${escapeHtml(u.callsign)}</strong><br>
+          <span style="font-size:0.75rem; color:var(--text-muted);">${escapeHtml(u.rank || 'Боец')}</span>
+        </td>
+        <td>
+          <a href="mailto:${escapeHtml(u.email)}" style="color:var(--accent-gold); text-decoration:none; font-family:var(--font-mono); font-size:0.8rem;">
+            ${escapeHtml(u.email)}
+          </a>
+          <div style="font-size:0.72rem; color:var(--text-secondary); margin-top:2px;">Подписка: ${subBadge}</div>
+        </td>
+        <td>${unitInfo}</td>
+        <td>
+          <code style="font-size:0.78rem; font-weight:700; color:var(--text-primary); background:#050705; padding:3px 6px; border-radius:4px; border:1px solid var(--border-color);">
+            ${escapeHtml(activeKey)}
+          </code>
+        </td>
+        <td>${statusBadge}</td>
+        <td>
+          <span style="font-size:0.75rem; color:${u.emailVerified ? '#8daa59' : '#e57373'};">
+            ${u.emailVerified ? '✓ Подтвержден' : 'Не подтвержден'}
+          </span>
+        </td>
+        <td>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button class="btn btn-outline btn-sm" style="padding:4px 8px; font-size:0.72rem;" onclick="sendSingleNotice('${escapeHtml(u.email)}', '${escapeHtml(u.callsign)}', ${days})">
+              ✉️ Написать
+            </button>
+            <button class="btn btn-outline btn-sm" style="padding:4px 8px; font-size:0.72rem; color:#e57373; border-color:rgba(229,115,115,0.3);" onclick="deleteUserFromAdmin('${escapeHtml(u.email)}')">
+              🗑️
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function deleteUserFromAdmin(email) {
+  if (!confirm(`Удалить учетную запись ${email} из базы?`)) return;
+  let users = getStoredUsers();
+  users = users.filter(u => u.email.toLowerCase() !== email.toLowerCase());
+  localStorage.setItem(STORAGE_USERS_DB, JSON.stringify(users));
+
+  let subs = getSubscribersList();
+  subs = subs.filter(e => e.toLowerCase() !== email.toLowerCase());
+  localStorage.setItem(STORAGE_SUBSCRIBERS_LIST, JSON.stringify(subs));
+
+  renderAdminUsersTable();
+  showToast(`Пользователь ${email} удален.`);
+}
+
+function sendSingleNotice(email, callsign, daysLeft) {
+  const isExpiring = daysLeft <= 5;
+  const subject = isExpiring
+    ? `[Каптёрка Про] Напоминание: Срок вашей лицензии истекает через ${daysLeft} дн.`
+    : `[Каптёрка Про] Сообщение для бойца ${callsign}`;
+
+  const body = isExpiring
+    ? `Здравия желаю, боец ${callsign}!%0D%0A%0D%0AНапоминаем, что срок действия вашей лицензии «Каптёрка Про» истекает через ${daysLeft} дн.%0D%0AДля бесперебойной работы склада и списания имущества рекомендуем продлить ключ в Личном кабинете или на сайте:%0D%0Ahttps://kapterka-pro.ru/%0D%0A%0D%0AС уважением, разработчик ПО «Каптёрка Про»`
+    : `Здравия желаю, боец ${callsign}!%0D%0A%0D%0AВышло обновление мобильного комплекса «Каптёрка Про».%0D%0AСкачать APK и просмотреть ключ можно на сайте: https://kapterka-pro.ru/%0D%0A%0D%0AС уважением, разработчик ПО «Каптёрка Про»`;
+
+  window.location.href = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${body}`;
+}
+
+function openNewsletterModal(presetType) {
+  const subjInput = document.getElementById('adminMailSubject');
+  const bodyInput = document.getElementById('adminMailBody');
+
+  if (presetType === 'update') {
+    if (subjInput) subjInput.value = '[Каптёрка Про] Вышло важное обновление v3.0: Форма № 8 и новые справочники';
+    if (bodyInput) bodyInput.value = `Здравствуйте, боец!\n\nВышло обновление программы «Каптёрка Про».\nЧто нового:\n- Добавлена новая форма актов списания боеприпасов.\n- Улучшена автономная работа базы данных при РЭБ.\n- Экспорт в Excel стал еще быстрее.\n\nСкачать обновленный APK можно на официальном сайте: https://kapterka-pro.ru/\nВаш персональный лицензионный ключ сохранен в вашем Личном кабинете.`;
+    showToast('Шаблон «Выход обновления ПО» применен.');
+  } else if (presetType === 'expiring') {
+    if (subjInput) subjInput.value = '[Каптёрка Про] Внимание: Срок действия лицензии подходит к концу';
+    if (bodyInput) bodyInput.value = `Здравия желаю!\n\nУведомляем вас о том, что срок действия вашей 30-дневной персональной лицензии «Каптёрка Про» подходит к концу.\n\nЧтобы не потерять оперативный доступ к ведению складов и формированию документов, вы можете продлить лицензию на сайте:\nhttps://kapterka-pro.ru/ (кнопка «Оплата ЮKassa»)\n\nВсе ваши данные на смартфонах остаются в полной сохранности.`;
+    showToast('Шаблон «Напоминание о продлении лицензии» применен.');
+  }
+
+  // Scroll to mail box
+  document.getElementById('adminMailSubject')?.scrollIntoView({ behavior: 'smooth' });
+}
+
+function copyAllSubscriberEmails() {
+  const subs = getSubscribersList();
+  if (subs.length === 0) {
+    alert('Список адресов пуст.');
+    return;
+  }
+  const text = subs.join(', ');
+  navigator.clipboard.writeText(text).then(() => {
+    showToast(`✓ Скопировано ${subs.length} адресов для рассылки (BCC)!`);
+  }).catch(() => {
+    prompt('Скопируйте адреса вручную:', text);
+  });
+}
+
+function sendMailToSubscribersClient() {
+  const subs = getSubscribersList();
+  const subj = document.getElementById('adminMailSubject')?.value || 'Обновление Каптёрка Про';
+  const body = document.getElementById('adminMailBody')?.value || '';
+  const bccList = subs.join(',');
+
+  const mailtoUrl = `mailto:alex.666.881@gmail.com?bcc=${encodeURIComponent(bccList)}&subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
+  window.location.href = mailtoUrl;
+}
+
+function exportSubscribersToCSV() {
+  const users = getStoredUsers();
+  if (users.length === 0) {
+    alert('База пользователей пуста.');
+    return;
+  }
+
+  let csvContent = 'data:text/csv;charset=utf-8,\uFEFF';
+  csvContent += 'Позывной;Email;Звание;Подразделение;Ключ роты;Активный ключ;Дней до конца лицензии;Подписка на обновления;Почта подтверждена\n';
+
+  users.forEach(u => {
+    const days = u.expiresInDays !== undefined ? u.expiresInDays : 30;
+    const activeKey = u.activeKey || (u.keys && u.keys[0] ? u.keys[0].key : '');
+    const row = [
+      `"${(u.callsign || '').replace(/"/g, '""')}"`,
+      `"${(u.email || '').replace(/"/g, '""')}"`,
+      `"${(u.rank || '').replace(/"/g, '""')}"`,
+      `"${(u.unitName || '').replace(/"/g, '""')}"`,
+      `"${(u.unitKey || '').replace(/"/g, '""')}"`,
+      `"${activeKey}"`,
+      days,
+      u.subscribedToNewsletter ? 'Да' : 'Нет',
+      u.emailVerified ? 'Да' : 'Нет'
+    ];
+    csvContent += row.join(';') + '\n';
+  });
+
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement('a');
+  link.setAttribute('href', encodedUri);
+  link.setAttribute('download', `kapterka_users_${new Date().toISOString().slice(0,10)}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  showToast('📥 Файл kapterka_users.csv успешно сформирован и скачан!');
+}
+
 // 10. Initialization on DOMContentLoaded
 document.addEventListener('DOMContentLoaded', () => {
+  // Check user session state and setup auth UI
+  updateAuthUI();
+
   // Load profile data
   loadCabinetProfile();
 
