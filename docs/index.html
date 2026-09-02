@@ -112,7 +112,10 @@
               Специализированный тактический комплекс для командиров, старшин и начскладов. Ведение Базового склада, ВОП, СП, автоматическое оформление <strong>Формы № 8 (Акт расхода)</strong>, <strong>Формы № 18 (Книга учета)</strong> и экспорт в Excel.
             </p>
 
-            <div class="hero-actions">
+            <div class="hero-actions" style="display:flex; gap:12px; flex-wrap:wrap;">
+              <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('hero')" class="btn btn-primary btn-lg" style="box-shadow:0 0 16px rgba(141,170,89,0.3);">
+                📥 Скачать APK (v3.0)
+              </a>
               <button class="btn btn-gold btn-lg" onclick="switchMainTab('tabPayment')">Оформить лицензию 490 ₽ ➔</button>
               <button class="btn btn-outline btn-lg" onclick="switchMainTab('tabCabinet')">Личный кабинет</button>
             </div>
@@ -283,7 +286,12 @@
               <li><span class="check">✓</span> <span>Быстрый поиск по номенклатуре, калибрам и категориям</span></li>
               <li><span class="check">✓</span> <span>Автоматический подсчет общего баланса и остатка на каждой позиции</span></li>
             </ul>
-            <button class="btn btn-primary" onclick="switchMainTab('tabDownload')">Скачать приложение APK ➔</button>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+              <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('showcase')" class="btn btn-primary">
+                📥 Скачать приложение APK
+              </a>
+              <button class="btn btn-outline" onclick="switchMainTab('tabDownload')">Инструкция по установке</button>
+            </div>
           </div>
 
           <div class="screen-preview-container" id="showcaseScreen">
@@ -480,7 +488,12 @@
           </div>
 
           <div class="vault-instruction-box">
-            <strong>Как активировать ключ в мобильном приложении «Каптёрка»:</strong><br>
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
+              <strong>Как активировать ключ в мобильном приложении «Каптёрка»:</strong>
+              <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('cabinet')" class="btn btn-primary btn-sm">
+                📥 Скачать APK v3.0 (27 МБ)
+              </a>
+            </div>
             1. Нажмите кнопку <strong>«Скопировать ключ»</strong> выше.<br>
             2. Откройте приложение на телефоне ➔ нажмите на верхний золотой баннер лицензии.<br>
             3. Перейдите во вкладку <strong>«Оплата и СБП»</strong> ➔ вставьте скопированный ключ в поле <em>KAPT-XXXX-XXXX-XXXX</em>.<br>
@@ -725,23 +738,28 @@
           <h2>Скачать мобильный комплекс «Каптёрка Про»</h2>
           <p>Установите официальный APK-файл на смартфон или защищенный полевой планшет (Android 8.0+). Работает без Google Play и сервисов.</p>
           
-          <div class="download-actions">
-            <a href="#" onclick="alert('Скачивание актуального APK-файла Каптёрка Про v2.9.4 началось.'); return false;" class="btn btn-primary btn-lg">
-              📥 Скачать APK (Прямая ссылка)
-            </a>
-            <button class="btn btn-outline btn-lg" onclick="openModal('modalContact')">
-              💬 Вопросы по установке
+          <div class="download-actions" style="display:flex; flex-direction:column; align-items:center; gap:12px;">
+            <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center; width:100%;">
+              <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('direct')" class="btn btn-primary btn-lg" style="font-size:1.1rem; padding:16px 28px; box-shadow:0 0 20px rgba(141,170,89,0.4);">
+                📥 Скачать APK (Прямая ссылка, 27 МБ)
+              </a>
+              <a href="https://t.me/kapterka_dev" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-lg" style="font-size:1rem; border-color:var(--accent-gold); color:var(--accent-gold);">
+                ✈️ Скачать в Telegram-канале
+              </a>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="openModal('modalContact')" style="color:var(--text-secondary); border-color:rgba(255,255,255,0.15);">
+              💬 Нужна помощь с установкой на планшет/телефон?
             </button>
           </div>
 
-          <div class="download-meta">
-            <span>Версия: 2.9.4 PRO</span>
+          <div class="download-meta" style="margin-top:20px;">
+            <span>Версия: 3.0.0 PRO</span>
             <span>•</span>
-            <span>Размер: ~18 МБ</span>
+            <span>Размер: ~27 МБ</span>
             <span>•</span>
             <span>Android 8.0 - 15.0</span>
             <span>•</span>
-            <span>100% Offline</span>
+            <span>100% Offline (РЭБ-защита)</span>
           </div>
         </div>
       </div>
