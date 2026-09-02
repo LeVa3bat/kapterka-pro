@@ -2,6 +2,7 @@ package com.example.ui.components
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -25,6 +26,7 @@ import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Payment
@@ -105,6 +107,7 @@ fun PersonalLicenseDialog(
     var enteredKey by remember { mutableStateOf("") }
     var copiedNotice by remember { mutableStateOf(false) }
     var secretShieldTaps by remember { mutableIntStateOf(0) }
+    var showLostKeyHelp by remember { mutableStateOf(false) }
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -483,6 +486,23 @@ fun PersonalLicenseDialog(
                         Spacer(modifier = Modifier.width(6.dp))
                         Text("Восстановить лицензию из вечного сейфа устройства", fontSize = 11.sp)
                     }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Text(
+                        text = "Потеряли ключ? Все ваши лицензии также хранятся в Личном кабинете на сайте https://kapterka-pro.ru/",
+                        color = TacticalTextMuted,
+                        fontSize = 10.sp,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                try {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://kapterka-pro.ru/#cabinet"))
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {}
+                            }
+                    )
                 }
 
                 // ВКЛАДКА 1: ОПЛАТА И СБП
@@ -652,6 +672,94 @@ fun PersonalLicenseDialog(
                             )
                         ) {
                             Text("Ввести", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // БЛОК: ПОТЕРЯЛИ КЛЮЧ ЛИЦЕНЗИИ?
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF131E18)),
+                        border = BorderStroke(1.dp, if (showLostKeyHelp) TacticalGold else SageGreenPrimary.copy(alpha = 0.4f)),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { showLostKeyHelp = !showLostKeyHelp },
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.HelpOutline,
+                                        contentDescription = null,
+                                        tint = TacticalGold,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "ПОТЕРЯЛИ КЛЮЧ ЛИЦЕНЗИИ?",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = TacticalGoldText,
+                                        fontFamily = FontFamily.Monospace
+                                    )
+                                }
+                                Text(
+                                    text = if (showLostKeyHelp) "▲ Скрыть" else "▼ Как восстановить",
+                                    fontSize = 10.sp,
+                                    color = TacticalTextSecondary
+                                )
+                            }
+
+                            if (showLostKeyHelp) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "1. Если вы уже активировали ключ на этом телефоне ранее, нажмите кнопку «Восстановить из сейфа» ниже.\n\n" +
+                                           "2. Все оплаченные лицензии сохраняются в вашем Личном кабинете на сайте https://kapterka-pro.ru/ под вашим email.\n\n" +
+                                           "3. Если ключ утерян — напишите разработчику в Telegram @kapterka_dev или alex.666.881@gmail.com с указанием позывного или времени оплаты.",
+                                    fontSize = 10.sp,
+                                    color = TacticalTextPrimary,
+                                    lineHeight = 14.sp
+                                )
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    OutlinedButton(
+                                        onClick = {
+                                            onRestoreSavedLicense()
+                                            selectedTab = 0
+                                        },
+                                        modifier = Modifier.weight(1f).height(38.dp),
+                                        shape = RoundedCornerShape(6.dp),
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = SageGreenBright),
+                                        border = BorderStroke(1.dp, SageGreenPrimary)
+                                    ) {
+                                        Icon(imageVector = Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(14.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Из сейфа", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                    }
+
+                                    Button(
+                                        onClick = {
+                                            try {
+                                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://kapterka-pro.ru/#cabinet"))
+                                                context.startActivity(intent)
+                                            } catch (e: Exception) {
+                                                Toast.makeText(context, "Сайт: https://kapterka-pro.ru/", Toast.LENGTH_LONG).show()
+                                            }
+                                        },
+                                        modifier = Modifier.weight(1.2f).height(38.dp),
+                                        shape = RoundedCornerShape(6.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = TacticalGoldDark, contentColor = TacticalGoldText),
+                                        border = BorderStroke(1.dp, TacticalGold.copy(alpha = 0.5f))
+                                    ) {
+                                        Text("Кабинет сайта ➔", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
                         }
                     }
                 }
