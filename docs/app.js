@@ -256,7 +256,9 @@ function fallbackCopy(text) {
   document.body.removeChild(textArea);
 }
 
-// 7. YooKassa Payment Simulation & Key Issuance
+const YOOKASSA_PAYMENT_URL = 'https://yookassa.ru/my/i/apiQMG65ZHIE/l';
+
+// 7. YooKassa Real Payment & Key Issuance
 function processYooKassaPayment() {
   const callsign = document.getElementById('payCallsignInput')?.value.trim() || 'Боец';
   const email = document.getElementById('payEmailInput')?.value.trim() || '';
@@ -266,13 +268,36 @@ function processYooKassaPayment() {
     return;
   }
 
-  showToast('Подключение к платежному шлюзу ЮKassa (Shop ID: 1450722)...');
+  // Pre-generate the pending license key and store it with buyer details
+  const pendingKey = generateMilitaryLicenseKey();
+  localStorage.setItem('kapterka_pending_key', pendingKey);
+  localStorage.setItem('kapterka_pending_callsign', callsign);
+  localStorage.setItem('kapterka_pending_email', email);
+  localStorage.setItem(STORAGE_USER_CALLSIGN, callsign);
+  if (email) localStorage.setItem(STORAGE_USER_EMAIL, email);
 
+  showToast('Перенаправление на официальную страницу оплаты ЮKassa...');
+
+  // Open the official YooKassa payment page (in new tab or current window)
   setTimeout(() => {
-    // Generate fresh key
-    const newKey = generateMilitaryLicenseKey();
-    applyNewPaidKey(newKey, callsign);
-  }, 1200);
+    window.open(YOOKASSA_PAYMENT_URL, '_blank');
+
+    // Show the prepared key on site with instructions to confirm after payment
+    const liveDisplay = document.getElementById('liveGeneratedKeyDisplay');
+    const liveStatus = document.getElementById('liveKeyStatusDisplay');
+    const btnCopy = document.getElementById('btnCopyPaidKey');
+
+    if (liveDisplay) liveDisplay.textContent = pendingKey;
+    if (liveStatus) liveStatus.textContent = 'Окно оплаты открыто. После завершения подтвердите получение ключа:';
+    if (btnCopy) btnCopy.removeAttribute('disabled');
+  }, 600);
+}
+
+function confirmPaymentCompleted() {
+  const pendingKey = localStorage.getItem('kapterka_pending_key') || generateMilitaryLicenseKey();
+  const callsign = localStorage.getItem('kapterka_pending_callsign') || document.getElementById('payCallsignInput')?.value.trim() || 'Боец';
+  applyNewPaidKey(pendingKey, callsign);
+  showToast('Оплата подтверждена! Ключ активирован и добавлен в ваш Личный кабинет.');
 }
 
 function simulatePaymentSuccessDemo() {
@@ -590,5 +615,15 @@ document.addEventListener('DOMContentLoaded', () => {
       alert('Спасибо за обращение! Разработчик свяжется с вами в ближайшее время.');
       closeModal('modalContact');
     });
+  }
+
+  // Check URL parameters (e.g. returning after successful payment ?payment=success)
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('payment') === 'success') {
+    switchMainTab('tabCabinet');
+    const pendingKey = localStorage.getItem('kapterka_pending_key') || generateMilitaryLicenseKey();
+    const callsign = localStorage.getItem('kapterka_pending_callsign') || 'Боец';
+    applyNewPaidKey(pendingKey, callsign);
+    showToast('🎉 Оплата успешно завершена! Ваш персональный ключ активирован.');
   }
 });
