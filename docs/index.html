@@ -933,14 +933,21 @@
       </div>
       
       <!-- Видимый официальный информер Яндекс.Метрики -->
-      <div style="margin-top:16px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.06); display:flex; align-items:center; justify-content:center; gap:12px; flex-wrap:wrap;">
-        <a href="https://metrika.yandex.ru/stat/?id=112255061&amp;from=informer" target="_blank" rel="nofollow">
+      <div style="margin-top:16px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.06); display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap;">
+        <a href="https://metrika.yandex.ru/stat/?id=112255061&amp;from=informer" target="_blank" rel="nofollow" style="text-decoration:none; display:inline-flex; align-items:center;">
           <img src="https://informer.yandex.ru/informer/112255061/3_1_212822FF_010802FF_1_pageviews"
-            style="width:88px; height:31px; border:0; border-radius:4px; box-shadow:0 2px 8px rgba(0,0,0,0.5);" alt="Яндекс.Метрика" title="Яндекс.Метрика: данные за сегодня (просмотры, визиты и уникальные посетители)" class="ym-advanced-informer" data-cid="112255061" data-lang="ru" />
+            onerror="this.onerror=null; this.style.display='none'; document.getElementById('informerFallbackBadge').style.display='inline-flex';"
+            style="width:88px; height:31px; border:0; border-radius:4px; box-shadow:0 2px 8px rgba(0,0,0,0.5);" alt="Яндекс.Метрика" title="Яндекс.Метрика: данные за сегодня" class="ym-advanced-informer" data-cid="112255061" data-lang="ru" />
+          <div id="informerFallbackBadge" style="display:inline-flex; align-items:center; background:#111913; border:1px solid var(--accent-gold); border-radius:6px; padding:4px 10px; gap:6px; box-shadow:0 2px 8px rgba(0,0,0,0.5);">
+            <span style="font-size:0.9rem;">📊</span>
+            <div style="font-size:0.75rem; font-family:var(--font-mono); color:var(--accent-gold); font-weight:700; line-height:1.2;">
+              Яндекс.Метрика<br><span style="color:#00e676; font-size:0.68rem;">● Online #112255061</span>
+            </div>
+          </div>
         </a>
-        <div style="font-size:0.75rem; color:var(--text-secondary); text-align:left;">
+        <div style="font-size:0.78rem; color:var(--text-secondary); text-align:left;">
           <span style="color:#00e676; font-weight:bold;">● Онлайн:</span> Мониторинг посетителей сайта активен<br>
-          <a href="https://metrika.yandex.ru/dashboard?id=112255061" target="_blank" style="color:var(--accent-gold); font-size:0.72rem; text-decoration:none; font-weight:600;">
+          <a href="https://metrika.yandex.ru/dashboard?id=112255061" target="_blank" style="color:var(--accent-gold); font-size:0.74rem; text-decoration:none; font-weight:600;">
             Открыть сводку в реальном времени ➔
           </a>
         </div>
