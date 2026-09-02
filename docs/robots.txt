@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /?tab=tabAdmin
+
+User-agent: Yandex
+Allow: /
+Clean-param: ref /
+Host: https://kapterka-pro.ru
+
+Sitemap: https://kapterka-pro.ru/sitemap.xml
