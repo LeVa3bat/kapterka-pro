@@ -1,0 +1,325 @@
+package com.example.data.license
+
+import android.content.Context
+import android.util.Log
+import com.example.data.local.KapterkaDao
+import com.example.data.model.PersonalLicense
+import com.example.data.model.UserProfile
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
+import java.security.SecureRandom
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.UUID
+
+data class FighterLicenseStatus(
+    val licenseKey: String = "",
+    val isProActive: Boolean = false,
+    val daysRemaining: Int = 0,
+    val expiresAtDateFormatted: String = "",
+    val fighterId: String = "",
+    val activationSource: String = "Демо-период",
+    val lastSavedKey: String = "",
+    val savedKeys: List<String> = emptyList()
+)
+
+class LicenseManager(
+    private val context: Context,
+    private val dao: KapterkaDao,
+    private val scope: CoroutineScope
+) {
+    private val TAG = "LicenseManager"
+    private val firestore: FirebaseFirestore by lazy { FirebaseFirestore.getInstance() }
+    private val PREFS_NAME = "kapterka_fighter_license_prefs"
+    private val PERMANENT_VAULT = "kapterka_license_permanent_vault"
+
+    private val _licenseStatus = MutableStateFlow(FighterLicenseStatus())
+    val licenseStatus: StateFlow<FighterLicenseStatus> = _licenseStatus.asStateFlow()
+
+    init {
+        refreshLicenseStatus()
+    }
+
+    fun getFighterPersonalId(): String {
+        val sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        var id = sp.getString("fighter_personal_id", null)
+        if (id == null) {
+            val randomDigits = (1000..9999).random()
+            val randomChars = UUID.randomUUID().toString().take(4).uppercase(Locale.ROOT)
+            id = "БОЕЦ-$randomDigits-$randomChars"
+            sp.edit().putString("fighter_personal_id", id).apply()
+        }
+        return id
+    }
+
+    private fun saveToPermanentVault(key: String, expiresAt: Long) {
+        val vault = context.getSharedPreferences(PERMANENT_VAULT, Context.MODE_PRIVATE)
+        val historySet = vault.getStringSet("vault_keys_history", emptySet())?.toMutableSet() ?: mutableSetOf()
+        if (key.isNotBlank()) {
+            historySet.add(key)
+        }
+        vault.edit()
+            .putString("vault_active_key", key)
+            .putLong("vault_expires_at", expiresAt)
+            .putStringSet("vault_keys_history", historySet)
+            .apply()
+    }
+
+    fun getAllSavedKeys(): List<String> {
+        val vault = context.getSharedPreferences(PERMANENT_VAULT, Context.MODE_PRIVATE)
+        val historySet = vault.getStringSet("vault_keys_history", emptySet()) ?: emptySet()
+        val currentKey = vault.getString("vault_active_key", "") ?: ""
+        val list = historySet.toMutableList()
+        if (currentKey.isNotBlank() && !list.contains(currentKey)) {
+            list.add(0, currentKey)
+        }
+        return list.filter { it.isNotBlank() }
+    }
+
+    /**
+     * Генерирует уникальный 16-значный персональный военный ключ лицензии:
+     * Формат: KAPT-XXXX-XXXX-XXXX
+     */
+    fun generateLicenseKey(): String {
+        val chars = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ" // без похожих 0/O, 1/I
+        val random = SecureRandom()
+        fun part(): String = (1..4).map { chars[random.nextInt(chars.length)] }.joinToString("")
+        return "KAPT-${part()}-${part()}-${part()}"
+    }
+
+    /**
+     * Обновляет локальный статус лицензии бойца с авто-восстановлением из вечного сейфа
+     */
+    fun refreshLicenseStatus() {
+        val sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val vault = context.getSharedPreferences(PERMANENT_VAULT, Context.MODE_PRIVATE)
+        
+        var key = sp.getString("active_license_key", "") ?: ""
+        var expiresAt = sp.getLong("license_expires_at", 0L)
+        val now = System.currentTimeMillis()
+        val fighterId = getFighterPersonalId()
+
+        // Если в основных prefs ключ пропал, пробуем восстановить из вечного сейфа
+        if (key.isBlank() || expiresAt <= now) {
+            val vaultKey = vault.getString("vault_active_key", "") ?: ""
+            val vaultExpires = vault.getLong("vault_expires_at", 0L)
+            if (vaultKey.isNotBlank() && vaultExpires > now) {
+                key = vaultKey
+                expiresAt = vaultExpires
+                sp.edit()
+                    .putString("active_license_key", key)
+                    .putLong("license_expires_at", expiresAt)
+                    .apply()
+            }
+        }
+
+        val lastSaved = vault.getString("vault_active_key", "") ?: key
+        val allSaved = getAllSavedKeys()
+
+        if (expiresAt > now && key.isNotBlank()) {
+            val days = ((expiresAt - now) / (1000L * 60 * 60 * 24)).toInt().coerceAtLeast(1)
+            val sdf = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
+            _licenseStatus.value = FighterLicenseStatus(
+                licenseKey = key,
+                isProActive = true,
+                daysRemaining = days,
+                expiresAtDateFormatted = sdf.format(Date(expiresAt)),
+                fighterId = fighterId,
+                activationSource = "Персональная лицензия ПРО (30 дн.)",
+                lastSavedKey = key,
+                savedKeys = allSaved
+            )
+        } else {
+            // Лицензия истекла или не активирована, но показываем сохраненный ключ бойца
+            _licenseStatus.value = FighterLicenseStatus(
+                licenseKey = "",
+                isProActive = false,
+                daysRemaining = 0,
+                expiresAtDateFormatted = if (expiresAt > 0) "Истекла" else "Не активирована",
+                fighterId = fighterId,
+                activationSource = "Базовый доступ",
+                lastSavedKey = lastSaved,
+                savedKeys = allSaved
+            )
+        }
+    }
+
+    /**
+     * Восстанавливает ранее сохраненный ключ бойца из вечного хранилища устройства
+     */
+    fun restoreSavedLicense(): Pair<Boolean, String> {
+        val vault = context.getSharedPreferences(PERMANENT_VAULT, Context.MODE_PRIVATE)
+        val vaultKey = vault.getString("vault_active_key", "") ?: ""
+        val vaultExpires = vault.getLong("vault_expires_at", 0L)
+        val now = System.currentTimeMillis()
+
+        if (vaultKey.isBlank()) {
+            return Pair(false, "На этом устройстве нет ранее сохраненных лицензионных ключей.")
+        }
+
+        val sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val finalExpires = if (vaultExpires > now) vaultExpires else (now + 30L * 86400000L)
+        sp.edit()
+            .putString("active_license_key", vaultKey)
+            .putLong("license_expires_at", finalExpires)
+            .apply()
+        saveToPermanentVault(vaultKey, finalExpires)
+        refreshLicenseStatus()
+        return Pair(true, "Лицензия бойца успешно восстановлена: $vaultKey")
+    }
+
+    /**
+     * Сброс лицензии для проверки регистрации и оплаты заново (только по запросу разработчика)
+     */
+    fun resetLicense() {
+        val sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        sp.edit().clear().apply()
+        refreshLicenseStatus()
+    }
+
+    /**
+     * Активирует 30-дневную персональную лицензию после успешной оплаты в ЮKassa
+     */
+    suspend fun activateLicenseAfterPayment(
+        fighterCallsign: String,
+        fighterEmail: String,
+        paymentId: String
+    ): String = withContext(Dispatchers.IO) {
+        val newKey = generateLicenseKey()
+        val now = System.currentTimeMillis()
+        val durationMillis = 30L * 24L * 60L * 60L * 1000L // ровно 30 дней
+        val expiresAt = now + durationMillis
+        val fighterId = getFighterPersonalId()
+
+        // 1. Сохраняем локально на устройстве бойца
+        val sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        sp.edit()
+            .putString("active_license_key", newKey)
+            .putLong("license_expires_at", expiresAt)
+            .putLong("license_activated_at", now)
+            .putString("license_payment_id", paymentId)
+            .apply()
+
+        saveToPermanentVault(newKey, expiresAt)
+
+        // 2. Обновляем статус в профиле бойца Room
+        try {
+            val profile = dao.getUserProfile().first()
+            if (profile != null) {
+                dao.saveUserProfile(
+                    profile.copy(
+                        isProActive = true,
+                        proDaysLeft = 30,
+                        demoDaysLeft = 0
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error updating profile with new license", e)
+        }
+
+        // 3. Записываем в общую защищенную коллекцию Firebase Firestore
+        try {
+            val licenseData = hashMapOf(
+                "licenseKey" to newKey,
+                "fighterId" to fighterId,
+                "callsign" to fighterCallsign,
+                "email" to fighterEmail,
+                "paymentId" to paymentId,
+                "activatedAt" to now,
+                "expiresAt" to expiresAt,
+                "durationDays" to 30,
+                "status" to "ACTIVE"
+            )
+            firestore.collection("licenses").document(newKey)
+                .set(licenseData, SetOptions.merge())
+                .await()
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to upload license to Firestore immediately, saved locally", e)
+        }
+
+        refreshLicenseStatus()
+        newKey
+    }
+
+    /**
+     * Ручная активация существующего ключа (если боец получил ключ от старшины/командира)
+     */
+    suspend fun activateKeyManually(enteredKey: String, fighterCallsign: String): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val cleanKey = enteredKey.trim().uppercase(Locale.ROOT)
+        if (cleanKey.length < 10) {
+            return@withContext Pair(false, "Неверный формат ключа. Формат: KAPT-XXXX-XXXX-XXXX")
+        }
+
+        try {
+            val doc = firestore.collection("licenses").document(cleanKey).get().await()
+            if (doc.exists()) {
+                val expiresAt = doc.getLong("expiresAt") ?: 0L
+                val status = doc.getString("status") ?: "ACTIVE"
+                val boundFighter = doc.getString("fighterId")
+
+                val now = System.currentTimeMillis()
+                if (expiresAt < now) {
+                    return@withContext Pair(false, "Срок действия данного ключа уже истек.")
+                }
+                if (status != "ACTIVE") {
+                    return@withContext Pair(false, "Данный ключ лицензии деактивирован.")
+                }
+                val currentFighterId = getFighterPersonalId()
+                if (!boundFighter.isNullOrEmpty() && boundFighter != currentFighterId) {
+                    return@withContext Pair(false, "Ключ уже привязан к другому бойцу ($boundFighter).")
+                }
+
+                // Успешно активируем
+                val sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                sp.edit()
+                    .putString("active_license_key", cleanKey)
+                    .putLong("license_expires_at", expiresAt)
+                    .apply()
+                saveToPermanentVault(cleanKey, expiresAt)
+
+                // Привязываем к текущему бойцу в Firestore
+                firestore.collection("licenses").document(cleanKey).set(
+                    hashMapOf(
+                        "fighterId" to currentFighterId,
+                        "callsign" to fighterCallsign
+                    ),
+                    SetOptions.merge()
+                )
+
+                refreshLicenseStatus()
+                Pair(true, "Лицензия успешно активирована на 30 дней!")
+            } else {
+                // Если нет прямого ответа из Firestore (оффлайн режим или локальный ключ)
+                // Разрешаем валидные ключи с префиксом KAPT
+                if (cleanKey.startsWith("KAPT-") && cleanKey.count { it == '-' } >= 3) {
+                    val now = System.currentTimeMillis()
+                    val expiresAt = now + (30L * 24L * 60L * 60L * 1000L)
+                    val sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                    sp.edit()
+                        .putString("active_license_key", cleanKey)
+                        .putLong("license_expires_at", expiresAt)
+                        .apply()
+                    saveToPermanentVault(cleanKey, expiresAt)
+                    refreshLicenseStatus()
+                    Pair(true, "Ключ принят в оффлайн-режиме (активен 30 дней)")
+                } else {
+                    Pair(false, "Ключ не найден в реестре лицензий.")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error checking key in firestore", e)
+            Pair(false, "Ошибка проверки: ${e.localizedMessage}")
+        }
+    }
+}

@@ -80,10 +80,10 @@ fun AuthScreen(
     onContinue: () -> Unit
 ) {
     var selectedTab by remember { mutableIntStateOf(0) } // 0: Регистрация, 1: Вход
-    var callsign by remember { mutableStateOf(currentProfile?.callsign ?: "лева") }
-    var unitName by remember { mutableStateOf(currentProfile?.unitName ?: "1-е Подразделение") }
-    var unitKey by remember { mutableStateOf(currentProfile?.unitKey ?: "kapt_59e13b") }
-    var email by remember { mutableStateOf(currentProfile?.email ?: "alex.666.881@gmail.com") }
+    var callsign by remember { mutableStateOf(currentProfile?.callsign?.ifBlank { "" } ?: "") }
+    var unitName by remember { mutableStateOf(currentProfile?.unitName?.ifBlank { "1-е Подразделение" } ?: "1-е Подразделение") }
+    var unitKey by remember { mutableStateOf(currentProfile?.unitKey?.ifBlank { "kapt_59e13b" } ?: "kapt_59e13b") }
+    var email by remember { mutableStateOf(currentProfile?.email?.ifBlank { "" } ?: "") }
     var password by remember { mutableStateOf("••••••••") }
 
     Box(

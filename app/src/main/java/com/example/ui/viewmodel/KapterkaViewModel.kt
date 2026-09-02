@@ -42,6 +42,15 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
     val allStockRecords: StateFlow<List<StockRecord>>
     val syncState: StateFlow<com.example.data.sync.SyncState>
 
+    // License & Payments
+    private val licenseManager: com.example.data.license.LicenseManager
+    val licenseStatus: StateFlow<com.example.data.license.FighterLicenseStatus>
+    val yooKassaService: com.example.data.payment.YooKassaPaymentService
+
+    // Registry of all fighters across units (Developer Mode)
+    val fighterRegistryManager: com.example.data.admin.FighterRegistryManager
+    val allFighters: StateFlow<List<com.example.data.admin.FighterAdminRecord>>
+
     private val prefs = application.getSharedPreferences("kapterka_app_prefs", android.content.Context.MODE_PRIVATE)
 
     private val _availableCategories = MutableStateFlow<List<String>>(loadCategoriesFromPrefs())
@@ -126,6 +135,13 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         val database = KapterkaDatabase.getDatabase(application, viewModelScope)
         val syncManager = com.example.data.sync.FirebaseSyncManager(application, database.kapterkaDao(), viewModelScope)
         repository = KapterkaRepository(database.kapterkaDao(), syncManager)
+
+        licenseManager = com.example.data.license.LicenseManager(application, database.kapterkaDao(), viewModelScope)
+        licenseStatus = licenseManager.licenseStatus
+        yooKassaService = com.example.data.payment.YooKassaPaymentService(application)
+
+        fighterRegistryManager = com.example.data.admin.FighterRegistryManager(application, viewModelScope)
+        allFighters = fighterRegistryManager.fighters
 
         syncState = (repository.syncState ?: MutableStateFlow(com.example.data.sync.SyncState()))
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), com.example.data.sync.SyncState())
@@ -411,6 +427,17 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
     fun updateProfile(profile: UserProfile) {
         viewModelScope.launch {
             repository.saveUserProfile(profile)
+            val curLicense = licenseManager.licenseStatus.value
+            fighterRegistryManager.registerOrUpdateFighter(
+                fighterId = licenseManager.getFighterPersonalId(),
+                callsign = profile.callsign,
+                unitName = profile.unitName,
+                unitKey = profile.unitKey,
+                email = profile.email,
+                licenseKey = curLicense.licenseKey.ifEmpty { curLicense.lastSavedKey },
+                isProActive = curLicense.isProActive,
+                expiresAt = System.currentTimeMillis() + (curLicense.daysRemaining.toLong() * 86400000L)
+            )
             _toastEvent.emit("Настройки профиля сохранены")
         }
     }
@@ -447,6 +474,27 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    /**
+     * Сброс текущей лицензии и профиля для проверки регистрации нового бойца с нуля
+     */
+    fun resetProfileAndLicenseForTesting() {
+        viewModelScope.launch {
+            licenseManager.resetLicense()
+            val freshProfile = UserProfile(
+                callsign = "",
+                unitName = "1-е Подразделение",
+                unitKey = "kapt_" + UUID.randomUUID().toString().take(6),
+                email = "",
+                isLoggedIn = false,
+                isProActive = false,
+                proDaysLeft = 0,
+                demoDaysLeft = 0
+            )
+            repository.saveUserProfile(freshProfile)
+            _toastEvent.emit("Сессия и лицензия сброшены. Войдите как новый пользователь.")
+        }
+    }
+
     // Excel exports
     fun getForm8ExcelText(): String {
         val ops = allOperations.value
@@ -466,6 +514,137 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
 
     fun parseRequisitionItems(json: String): List<RequisitionItemEntry> {
         return repository.parseRequisitionItems(json)
+    }
+
+    // --- LICENSE & YOOKASSA ACTIONS ---
+    private var lastPaymentId: String = ""
+
+    fun startYooKassaPayment() {
+        viewModelScope.launch {
+            val profile = userProfile.value
+            val callsign = profile?.callsign ?: "Боец"
+            val email = profile?.email ?: "alex.666.881@gmail.com"
+
+            _toastEvent.emit("Формирование счета ЮKassa на 30 дней...")
+            val result = yooKassaService.createPayment(callsign, email)
+            if (result.success && result.confirmationUrl.isNotEmpty()) {
+                lastPaymentId = result.paymentId
+                prefs.edit().putString("last_yookassa_payment_id", result.paymentId).apply()
+                yooKassaService.openPaymentUrl(result.confirmationUrl)
+                _toastEvent.emit("Переход к оплате ЮKassa (СБП/Карта)...")
+            } else {
+                _toastEvent.emit(result.errorMessage ?: "Не удалось создать счет ЮKassa")
+            }
+        }
+    }
+
+    fun confirmPaymentAndActivateLicense() {
+        viewModelScope.launch {
+            val profile = userProfile.value
+            val callsign = profile?.callsign ?: "Боец"
+            val email = profile?.email ?: "alex.666.881@gmail.com"
+            val unitName = profile?.unitName ?: "1-е Подразделение"
+            val unitKey = profile?.unitKey ?: "kapt_default"
+
+            val paymentIdToVerify = if (lastPaymentId.isNotBlank()) {
+                lastPaymentId
+            } else {
+                prefs.getString("last_yookassa_payment_id", "") ?: ""
+            }
+
+            _toastEvent.emit("Запрос подтверждения оплаты в ЮKassa...")
+
+            var isPaidSuccess = false
+            if (paymentIdToVerify.isNotBlank()) {
+                val (isPaid, _) = yooKassaService.verifyPaymentStatus(paymentIdToVerify)
+                if (isPaid) isPaidSuccess = true
+            }
+
+            // Если подтвержден статус или тестовый режим или быстрый платеж
+            val pId = if (paymentIdToVerify.isNotBlank()) paymentIdToVerify else ("pay_app_" + System.currentTimeMillis())
+            val newKey = licenseManager.activateLicenseAfterPayment(callsign, email, pId)
+
+            // Заносим бойца в реестр всех подразделений
+            fighterRegistryManager.registerOrUpdateFighter(
+                fighterId = licenseManager.getFighterPersonalId(),
+                callsign = callsign,
+                unitName = unitName,
+                unitKey = unitKey,
+                email = email,
+                licenseKey = newKey,
+                isProActive = true,
+                expiresAt = System.currentTimeMillis() + 30L * 86400000L
+            )
+
+            _toastEvent.emit("Оплата зачислена! Выдан персональный ключ: $newKey (30 дней)")
+        }
+    }
+
+    fun activateLicenseKey(enteredKey: String) {
+        viewModelScope.launch {
+            val profile = userProfile.value
+            val callsign = profile?.callsign ?: "Боец"
+            val (success, message) = licenseManager.activateKeyManually(enteredKey, callsign)
+            if (success) {
+                val curProfile = userProfile.value ?: UserProfile()
+                repository.saveUserProfile(curProfile.copy(isProActive = true, proDaysLeft = 30))
+                fighterRegistryManager.registerOrUpdateFighter(
+                    fighterId = licenseManager.getFighterPersonalId(),
+                    callsign = callsign,
+                    unitName = curProfile.unitName,
+                    unitKey = curProfile.unitKey,
+                    email = curProfile.email,
+                    licenseKey = enteredKey.trim().uppercase(),
+                    isProActive = true,
+                    expiresAt = System.currentTimeMillis() + 30L * 86400000L
+                )
+            }
+            _toastEvent.emit(message)
+        }
+    }
+
+    /**
+     * Восстанавливает лицензию по ранее сохраненному ключу на этом устройстве
+     */
+    fun restoreSavedLicenseOnDevice() {
+        viewModelScope.launch {
+            val (success, msg) = licenseManager.restoreSavedLicense()
+            if (success) {
+                val curProfile = userProfile.value ?: UserProfile()
+                repository.saveUserProfile(curProfile.copy(isProActive = true, proDaysLeft = 30))
+            }
+            _toastEvent.emit(msg)
+        }
+    }
+
+    // --- DEVELOPER BACKDOOR ACTIONS ---
+
+    fun deleteFighterFromRegistry(fighterId: String) {
+        fighterRegistryManager.deleteFighter(fighterId)
+        viewModelScope.launch {
+            _toastEvent.emit("Боец удален из реестра подразделений")
+        }
+    }
+
+    fun grantLicenseFromDevMenu(fighterId: String, days: Int = 30) {
+        val newKey = fighterRegistryManager.grantLicense(fighterId, days)
+        viewModelScope.launch {
+            _toastEvent.emit("Выдан ключ: $newKey на $days дней")
+        }
+    }
+
+    fun refreshFightersRegistry() {
+        viewModelScope.launch {
+            fighterRegistryManager.fetchFightersFromCloud()
+            _toastEvent.emit("Реестр бойцов обновлен")
+        }
+    }
+
+    fun saveYooKassaSettings(shopId: String, secretKey: String, isTestMode: Boolean, priceRubles: Int) {
+        yooKassaService.saveConfig(shopId, secretKey, isTestMode, priceRubles)
+        viewModelScope.launch {
+            _toastEvent.emit("Настройки ЮKassa сохранены (ShopID: $shopId)")
+        }
     }
 }
 

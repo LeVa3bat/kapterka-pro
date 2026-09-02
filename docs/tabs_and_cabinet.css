@@ -1,0 +1,313 @@
+/* ==========================================================================
+   KAPTERKA PRO - SITE ENHANCEMENTS & TABBED SYSTEM
+   ========================================================================== */
+
+/* Main Header Tab Navigation (Compact, High Efficiency) */
+.main-tab-nav {
+  display: flex;
+  align-items: center;
+  background: rgba(11, 15, 12, 0.95);
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  padding: 4px;
+  gap: 4px;
+}
+
+.main-tab-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.main-tab-btn:hover {
+  color: var(--text-primary);
+  background: rgba(141, 170, 89, 0.08);
+}
+
+.main-tab-btn.active {
+  background: var(--primary);
+  color: #0c0f0d;
+  font-weight: 700;
+  box-shadow: 0 2px 10px rgba(141, 170, 89, 0.35);
+}
+
+.main-tab-btn.active.gold-tab {
+  background: var(--accent-gold);
+  color: #1a1204;
+  box-shadow: 0 2px 10px rgba(255, 179, 0, 0.35);
+}
+
+/* User Account Quick Badge */
+.user-quick-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #111813;
+  border: 1px solid var(--border-color);
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.user-quick-pill:hover {
+  border-color: var(--primary);
+}
+
+.user-quick-pill .status-indicator {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 0 6px var(--primary);
+}
+
+/* App View Sections */
+.app-view-tab {
+  display: none;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.app-view-tab.active {
+  display: block;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Tactical Key Vault Box */
+.vault-key-card {
+  background: linear-gradient(135deg, #0e1510 0%, #152219 100%);
+  border: 1.5px solid var(--primary);
+  border-radius: var(--radius-xl);
+  padding: 26px 22px;
+  margin-bottom: 24px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+  position: relative;
+  overflow: hidden;
+}
+
+.vault-key-card::before {
+  content: 'ВОЕННЫЙ КЛЮЧ';
+  position: absolute;
+  top: 12px;
+  right: 18px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 1px;
+  color: rgba(141, 170, 89, 0.4);
+  font-weight: 700;
+}
+
+.vault-key-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #060907;
+  border: 1px solid rgba(141, 170, 89, 0.3);
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  margin: 14px 0;
+  gap: 12px;
+}
+
+.vault-key-text {
+  font-family: var(--font-mono);
+  font-size: 1.45rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: var(--accent-gold);
+  text-shadow: 0 0 12px rgba(255, 179, 0, 0.25);
+  word-break: break-all;
+}
+
+.vault-instruction-box {
+  background: rgba(141, 170, 89, 0.08);
+  border-left: 3px solid var(--primary);
+  padding: 12px 14px;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-size: 0.84rem;
+  color: var(--text-primary);
+  line-height: 1.5;
+  margin-top: 12px;
+}
+
+.vault-instruction-box strong {
+  color: var(--primary);
+}
+
+/* Keys History Table */
+.keys-table-container {
+  width: 100%;
+  overflow-x: auto;
+  margin-top: 14px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: #0d120f;
+}
+
+.keys-vault-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+  text-align: left;
+}
+
+.keys-vault-table th {
+  background: #131b15;
+  padding: 10px 14px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.keys-vault-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(141, 170, 89, 0.08);
+  color: var(--text-primary);
+}
+
+.keys-vault-table tr:last-child td {
+  border-bottom: none;
+}
+
+.table-key-tag {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--accent-gold);
+  background: rgba(255, 179, 0, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 179, 0, 0.25);
+}
+
+/* Payment Module (YooKassa 1-to-1 Match) */
+.yookassa-checkout-card {
+  background: var(--bg-card);
+  border: 1.5px solid var(--accent-gold);
+  border-radius: var(--radius-xl);
+  padding: 28px 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  position: relative;
+}
+
+.checkout-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 28px;
+  align-items: start;
+}
+
+.payment-method-pills {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 12px 0 18px;
+}
+
+.payment-method-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #0f1511;
+  border: 1px solid var(--border-color);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.payment-method-pill.active {
+  border-color: var(--accent-gold);
+  color: var(--accent-gold);
+  background: rgba(255, 179, 0, 0.08);
+}
+
+.live-key-generation-box {
+  background: #0a0e0b;
+  border: 1px dashed var(--primary);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  text-align: center;
+}
+
+.live-key-result {
+  font-family: var(--font-mono);
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--accent-gold);
+  letter-spacing: 1.5px;
+  margin: 8px 0;
+  word-break: break-all;
+}
+
+/* Toast Floating Notification */
+.tactical-toast {
+  position: fixed;
+  bottom: 26px;
+  right: 26px;
+  background: #172b1e;
+  border: 1.5px solid var(--primary);
+  color: var(--text-primary);
+  padding: 14px 20px;
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+  font-size: 0.88rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transform: translateY(80px);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.tactical-toast.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.tactical-toast .toast-icon {
+  color: var(--primary);
+  font-size: 1.2rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 860px) {
+  .checkout-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .main-tab-nav {
+    overflow-x: auto;
+    width: 100%;
+    padding: 4px;
+    border-radius: 12px;
+  }
+  .vault-key-display {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .vault-key-display .btn {
+    width: 100%;
+  }
+}

@@ -52,12 +52,14 @@ import androidx.compose.ui.unit.sp
 import com.example.data.model.WarehousePoint
 import com.example.ui.components.AddCustomItemDialog
 import com.example.ui.components.AddPointDialog
+import com.example.ui.components.DeveloperAccessPromptDialog
+import com.example.ui.components.DeveloperAdminDialog
 import com.example.ui.components.EditPointDialog
 import com.example.ui.components.ExcelReportPreviewDialog
 import com.example.ui.components.ExpenditureOperationDialog
 import com.example.ui.components.IncomeOperationDialog
 import com.example.ui.components.IssueOperationDialog
-import com.example.ui.components.PaymentProDialog
+import com.example.ui.components.PersonalLicenseDialog
 import com.example.ui.components.TransferOperationDialog
 import com.example.ui.components.UnitKeySyncDialog
 import com.example.ui.components.UserManualDialog
@@ -150,6 +152,8 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel) {
     val catalogItems by viewModel.allCatalogItems.collectAsState()
     val availableCategories by viewModel.availableCategories.collectAsState()
     val syncState by viewModel.syncState.collectAsState()
+    val licenseStatus by viewModel.licenseStatus.collectAsState()
+    val allFighters by viewModel.allFighters.collectAsState()
 
     // Dialog Control States
     var showIncomeDialog by remember { mutableStateOf(false) }
@@ -161,6 +165,8 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel) {
     var showAddCustomItemDialog by remember { mutableStateOf(false) }
     var showUnitKeySyncDialog by remember { mutableStateOf(false) }
     var showPaymentProDialog by remember { mutableStateOf(false) }
+    var showDevAuthPrompt by remember { mutableStateOf(false) }
+    var showDevAdminDialog by remember { mutableStateOf(false) }
     var excelReportInitialTab by remember { mutableIntStateOf(0) }
     var showExcelReportDialog by remember { mutableStateOf(false) }
     var showUserManualDialog by remember { mutableStateOf(false) }
@@ -319,8 +325,12 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel) {
                                 val current = profile ?: com.example.data.model.UserProfile()
                                 viewModel.updateProfile(current.copy(isLoggedIn = false))
                             },
+                            onResetProfileAndLicense = {
+                                viewModel.resetProfileAndLicenseForTesting()
+                            },
                             onResetDataClick = { viewModel.clearAllData() },
-                            onOpenManualClick = { showUserManualDialog = true }
+                            onOpenManualClick = { showUserManualDialog = true },
+                            onOpenDeveloperBackdoor = { showDevAuthPrompt = true }
                         )
                     }
                 }
@@ -424,10 +434,42 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel) {
     }
 
     if (showPaymentProDialog) {
-        PaymentProDialog(
+        PersonalLicenseDialog(
             profile = profile,
-            onActivatePro = { viewModel.activateProSubscription() },
+            licenseStatus = licenseStatus,
+            yooKassaConfig = viewModel.yooKassaService.getConfig(),
+            onPayYooKassaClick = { viewModel.startYooKassaPayment() },
+            onActivateLicenseKey = { key -> viewModel.activateLicenseKey(key) },
+            onTestPaymentConfirm = { viewModel.confirmPaymentAndActivateLicense() },
+            onRestoreSavedLicense = { viewModel.restoreSavedLicenseOnDevice() },
+            onOpenDeveloperBackdoor = {
+                showPaymentProDialog = false
+                showDevAdminDialog = true
+            },
+            onSaveYooKassaSettings = { shopId, secretKey, isTest, price ->
+                viewModel.saveYooKassaSettings(shopId, secretKey, isTest, price)
+            },
             onDismiss = { showPaymentProDialog = false }
+        )
+    }
+
+    if (showDevAuthPrompt) {
+        DeveloperAccessPromptDialog(
+            onSuccessAuth = {
+                showDevAuthPrompt = false
+                showDevAdminDialog = true
+            },
+            onDismiss = { showDevAuthPrompt = false }
+        )
+    }
+
+    if (showDevAdminDialog) {
+        DeveloperAdminDialog(
+            fightersList = allFighters,
+            onDeleteFighter = { viewModel.deleteFighterFromRegistry(it) },
+            onGrantLicense = { id, days -> viewModel.grantLicenseFromDevMenu(id, days) },
+            onRefreshList = { viewModel.refreshFightersRegistry() },
+            onDismiss = { showDevAdminDialog = false }
         )
     }
 

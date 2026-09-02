@@ -112,11 +112,14 @@ fun MoreSettingsScreen(
     onExportForm8Click: () -> Unit,
     onExportForm18Click: () -> Unit,
     onLogoutClick: () -> Unit,
+    onResetProfileAndLicense: () -> Unit = {},
     onResetDataClick: () -> Unit,
-    onOpenManualClick: () -> Unit = {}
+    onOpenManualClick: () -> Unit = {},
+    onOpenDeveloperBackdoor: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val unitKey = profile?.unitKey ?: "kapt_59e13b"
+    var devVersionTaps by remember { androidx.compose.runtime.mutableIntStateOf(0) }
 
     // Accordions state: all collapsed by default to save space as requested
     var expandedProfile by remember { mutableStateOf(false) }
@@ -536,11 +539,11 @@ fun MoreSettingsScreen(
             Spacer(modifier = Modifier.height(8.dp))
         }
 
-        // 3. COLLAPSIBLE ACCORDION: ПОДПИСКА И ТАРИФ PRO
+        // 3. COLLAPSIBLE ACCORDION: ПЕРСОНАЛЬНАЯ ЛИЦЕНЗИЯ БОЙЦА (30 ДНЕЙ)
         item {
             CollapsibleCard(
-                title = "Тариф «Каптёрка PRO»",
-                subtitle = if (profile?.isProActive == true) "Активен (Осталось ${profile.proDaysLeft} дн.)" else "Демо-доступ (3 дня)",
+                title = "Лицензия бойца (ЮKassa / 30 дней)",
+                subtitle = if (profile?.isProActive == true) "Активна (Осталось ${profile.proDaysLeft} дн.) • Персональный ключ" else "Требуется продление (30 дней / 490 ₽)",
                 icon = Icons.Default.Star,
                 iconColor = TacticalGoldText,
                 isExpanded = expandedProPlan,
@@ -548,7 +551,7 @@ fun MoreSettingsScreen(
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
                     Text(
-                        text = "Включает полную синхронизацию между всеми бойцами роты, экспорт отчетов Формы 8 и 18 в Excel, а также офлайн-режим.",
+                        text = "Персональная лицензия закрепляется строго за вашим личным аккаунтом бойца. Срок действия выдается строго на 30 дней с момента оплаты через ЮKassa (СБП, карты МИР).",
                         color = TacticalTextSecondary,
                         fontSize = 11.sp,
                         lineHeight = 15.sp
@@ -558,7 +561,7 @@ fun MoreSettingsScreen(
                         onClick = onOpenPaymentPro,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(38.dp)
+                            .height(40.dp)
                             .testTag("subscribe_pro_button"),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = TacticalGold,
@@ -566,8 +569,10 @@ fun MoreSettingsScreen(
                         ),
                         shape = RoundedCornerShape(6.dp)
                     ) {
+                        Icon(imageVector = Icons.Default.Star, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = if (profile?.isProActive == true) "Управление подпиской PRO" else "Купить PRO / Активировать (500 ₽/мес)",
+                            text = if (profile?.isProActive == true) "Моя лицензия / Продлить (ЮKassa)" else "Оплатить лицензию на 30 дн. (ЮKassa)",
                             fontWeight = FontWeight.Bold,
                             fontSize = 12.sp
                         )
@@ -819,20 +824,40 @@ fun MoreSettingsScreen(
 
         // LOGOUT / SWITCH CALLSIGN BUTTON
         item {
-            Button(
-                onClick = onLogoutClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(40.dp)
-                    .testTag("logout_button"),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = TacticalSurfaceLight,
-                    contentColor = TacticalTextMuted
-                ),
-                shape = RoundedCornerShape(8.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorder)
-            ) {
-                Text("Сменить позывной / Выйти из подразделения", fontSize = 12.sp)
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    onClick = onLogoutClick,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(40.dp)
+                        .testTag("logout_button"),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = TacticalSurfaceLight,
+                        contentColor = TacticalTextMuted
+                    ),
+                    shape = RoundedCornerShape(8.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorder)
+                ) {
+                    Text("Сменить позывной / Выйти из подразделения", fontSize = 12.sp)
+                }
+
+                Button(
+                    onClick = onResetProfileAndLicense,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(40.dp)
+                        .testTag("reset_profile_test_button"),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = TacticalSurface,
+                        contentColor = SageGreenBright
+                    ),
+                    shape = RoundedCornerShape(8.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, SageGreenPrimary.copy(alpha = 0.5f))
+                ) {
+                    Icon(imageVector = Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Выйти и сбросить лицензию (для проверки новым бойцом)", fontSize = 11.sp)
+                }
             }
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -843,6 +868,13 @@ fun MoreSettingsScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .clickable {
+                        devVersionTaps++
+                        if (devVersionTaps >= 5) {
+                            devVersionTaps = 0
+                            onOpenDeveloperBackdoor()
+                        }
+                    }
                     .padding(vertical = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
