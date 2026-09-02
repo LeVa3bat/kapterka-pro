@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Каптёрка Про — Армейский учет имущества и боеприпасов в полевых условиях</title>
+  <meta name="description" content="Автономное мобильное приложение для учета материальных средств, боеприпасов, формы № 8 (Акт расхода) и формы № 18 (Книга учета) на позициях и складах.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="container">
+      <a href="#" class="logo-brand">
+        <div class="logo-icon">📦</div>
+        <div>КАПТЁРКА<span class="logo-pro">PRO</span></div>
+      </a>
+
+      <ul class="nav-links" id="navLinks">
+        <li><a href="#about">О программе</a></li>
+        <li><a href="#features">Возможности</a></li>
+        <li><a href="#screens">Скриншоты</a></li>
+        <li><a href="#pricing">Тарифы</a></li>
+        <li><a href="#cabinet">Личный кабинет</a></li>
+        <li><a href="#download">Скачать APK</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <button class="btn btn-outline" onclick="openModal('modalAuth')">Вход / Регистрация</button>
+        <a href="#download" class="btn btn-primary">Скачать</a>
+      </div>
+
+      <button class="mobile-toggle" id="mobileToggle" aria-label="Меню">☰</button>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <header class="hero" id="home">
+    <div class="container">
+      <div class="hero-grid">
+        
+        <div class="hero-content">
+          <div class="badge">
+            <span class="badge-dot"></span>
+            Полевой учет 2.0 • 100% Оффлайн
+          </div>
+          <h1>
+            Учет имущества и боеприпасов <span>без интернета</span> на передовой
+          </h1>
+          <p class="hero-subtitle">
+            Специализированный тактический мобильный комплекс для командиров, старшин и начскладов. Ведение Базового склада, ВОП, СП, автоматическое оформление <strong>Формы № 8 (Акт расхода)</strong>, <strong>Формы № 18 (Книга учета)</strong> и мгновенный экспорт в Excel.
+          </p>
+
+          <div class="hero-actions">
+            <a href="#pricing" class="btn btn-gold btn-lg">3 дня бесплатно ➔</a>
+            <a href="#download" class="btn btn-outline btn-lg">Скачать APK (v2.4)</a>
+          </div>
+
+          <div class="hero-features-chips">
+            <div class="chip">
+              <span class="chip-icon">⚡</span>
+              <span>Работает без связи</span>
+            </div>
+            <div class="chip">
+              <span class="chip-icon">🛡️</span>
+              <span>1 ключ = 1 устройство</span>
+            </div>
+            <div class="chip">
+              <span class="chip-icon">📊</span>
+              <span>Готовые таблицы для штаба</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Smartphone Frame Mockup -->
+        <div class="mockup-container">
+          <div class="phone-frame">
+            <div class="phone-notch"></div>
+            <div class="phone-screen">
+              <div class="screen-header">
+                <div class="screen-title">🛡️ КАПТЁРКА PRO • БАЗА</div>
+                <span class="screen-badge" style="background:#8daa59; color:#0c0f0d;">ОНЛАЙН</span>
+              </div>
+              <div class="screen-body">
+                <div class="screen-card" style="background:#19241d; border-color:#8daa59;">
+                  <div class="screen-card-row">
+                    <span style="color:#8daa59; font-weight:700;">СТАТУС ПОДРАЗДЕЛЕНИЯ</span>
+                    <span class="screen-badge">1 мсб</span>
+                  </div>
+                  <div style="font-size:0.75rem; color:#f0f4f1; margin-top:2px;">Позиций на учете: 4 (База, ВОП, СП)</div>
+                </div>
+
+                <div class="screen-card">
+                  <div class="screen-card-row">
+                    <strong style="color:#f0f4f1;">120-мм ОФ-843А</strong>
+                    <span class="screen-badge">104 шт</span>
+                  </div>
+                  <div style="color:#9aa89f; font-size:0.7rem;">Базовый склад (56) • ВОП «Север» (48)</div>
+                </div>
+
+                <div class="screen-card">
+                  <div class="screen-card-row">
+                    <strong style="color:#f0f4f1;">82-мм Д-832ДУ (Дым)</strong>
+                    <span class="screen-badge">40 шт</span>
+                  </div>
+                  <div style="color:#9aa89f; font-size:0.7rem;">Служба РАВ • В наличии</div>
+                </div>
+
+                <div class="screen-card">
+                  <div class="screen-card-row">
+                    <strong style="color:#f0f4f1;">Порох НБЛ-35</strong>
+                    <span class="screen-badge-gold screen-badge">34 уп.</span>
+                  </div>
+                  <div style="color:#9aa89f; font-size:0.7rem;">Метательные заряды минометов</div>
+                </div>
+
+                <div class="screen-card" style="border-left:3px solid #e57373;">
+                  <div class="screen-card-row">
+                    <span style="color:#e57373; font-weight:700;">АКТ РАСХОДА № 04/26</span>
+                    <span class="screen-badge-red screen-badge">Списано</span>
+                  </div>
+                  <div style="font-size:0.7rem; color:#9aa89f;">16 мин 120-мм • ВОП «Север»</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="floating-stats">
+            <div>
+              <div class="stat-val">100%</div>
+              <div class="stat-label">Автономность</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- About Section -->
+  <section class="section" id="about">
+    <div class="container">
+      <div class="section-header">
+        <div class="badge">О программе</div>
+        <h2>Зачем нужна «Каптёрка Про»?</h2>
+        <p>
+          В реальных боевых условиях бумажные журналы промокают и теряются, а громоздкие таблицы Excel невозможно вести под обстрелом на смартфоне без интернета. «Каптёрка Про» создана военными для военных.
+        </p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon-box">📴</div>
+          <h3>Полная автономность</h3>
+          <p>Приложение не требует интернета, сотовой связи или регистрации для ведения склада. Все данные хранятся в зашифрованной локальной базе телефона.</p>
+          <span class="feature-tag">100% Offline-First</span>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-box">📜</div>
+          <h3>Воинские формы отчетности</h3>
+          <p>Встроенная поддержка официальной армейской документации: <strong>Форма № 8</strong> (Акт списания/расхода) и <strong>Форма № 18</strong> (Книга учета движения мат. средств).</p>
+          <span class="feature-tag">Уставные стандарты</span>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-box">🎯</div>
+          <h3>Учет по точкам и ВОПам</h3>
+          <p>Мгновенное перемещение со склада на ВОП «Север», СП «Высота» или расчеты. Вы всегда точно знаете, сколько БК на руках у бойцов и сколько в резерве.</p>
+          <span class="feature-tag">Контроль позиций</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Detailed -->
+  <section class="section" id="features" style="background:#0f1411; border-top:1px solid var(--border-color); border-bottom:1px solid var(--border-color);">
+    <div class="container">
+      <div class="section-header">
+        <div class="badge">Функционал</div>
+        <h2>Что умеет «Каптёрка Про»</h2>
+        <p>Комплекс закрывает все задачи ротного и батальонного звена снабжения</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon-box">💣</div>
+          <h3>База РАВ и БК</h3>
+          <p>Предустановленная база номенклатуры: 120-мм и 82-мм мины (ОФ, дымовые, осветительные), пороха НБЛ-35, дальнобойные заряды, стрелковое оружие, БПЛА и оптика.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-box">🚚</div>
+          <h3>Журнал операций и перемещений</h3>
+          <p>Фиксация 4 типов движений: Приход от службы, Перемещение между позициями, Выдача (Поднятие) и Расход по боевой задаче.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-box">📊</div>
+          <h3>Экспорт ведомостей в Excel (CSV)</h3>
+          <p>Генерация файлов отчетов с разделителем «;», которые сразу открываются в Excel на ПК штаба без форматирования и разбивки.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-box">📋</div>
+          <h3>Реестр заявок и снабжение</h3>
+          <p>Формирование заявок от передовых расчетов, статусы («В ожидании», «Собрана», «Выдана») и всплывающие оповещения начскладу.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-box">🔔</div>
+          <h3>Тактические уведомления</h3>
+          <p>Информативные Push-оповещения при сборке заявки, выдаче имущества и перемещении с детализацией остатков на базовом складе.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-box">🔒</div>
+          <h3>Привязка лицензии к телефону</h3>
+          <p>Надежная защита и привязка по аппаратному ключу (Device ID). Никаких утечек списков личного состава и позиций в облако.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interactive Screens Carousel Showcase -->
+  <section class="section carousel-section" id="screens">
+    <div class="container">
+      <div class="section-header">
+        <div class="badge">Интерфейс</div>
+        <h2>Интерактивный обзор экранов</h2>
+        <p>Нажмите на вкладку ниже, чтобы изучить реальный вид приложения</p>
+      </div>
+
+      <!-- Tab Buttons -->
+      <div class="carousel-tabs">
+        <button class="tab-btn active" data-target="warehouse">📦 Склад и Точки</button>
+        <button class="tab-btn" data-target="forma8">💥 Форма № 8 (Акт расхода)</button>
+        <button class="tab-btn" data-target="forma18">📖 Форма № 18 (Книга учета)</button>
+        <button class="tab-btn" data-target="requests">📋 Заявки с фронта</button>
+        <button class="tab-btn" data-target="excel">📊 Экспорт Excel</button>
+      </div>
+
+      <!-- Showcase Display -->
+      <div class="carousel-display">
+        <div class="showcase-info">
+          <h3 id="showcaseTitle">Базовый склад и Точки (ВОП / СП)</h3>
+          <p id="showcaseDesc">Наглядный контроль остатков имущества в реальном времени. Разделение по взводам, позициям расчетов и опорным пунктам с контролем критического остатка.</p>
+          <ul class="showcase-features-list" id="showcaseFeatures">
+            <li><span class="check">✓</span> <span>Разделение по точкам: Базовый склад, ВОП «Север», СП «Высота», ВОП «Гранит»</span></li>
+            <li><span class="check">✓</span> <span>Быстрый поиск по номенклатуре, калибрам и категориям</span></li>
+            <li><span class="check">✓</span> <span>Автоматический подсчет общего баланса и остатка на каждой позиции</span></li>
+          </ul>
+          <a href="#download" class="btn btn-primary">Попробовать в действии ➔</a>
+        </div>
+
+        <div class="screen-preview-container" id="showcaseScreen">
+          <!-- Dynamically loaded by app.js -->
+          <div class="screen-header">
+            <div class="screen-title">📦 СКЛАД: ВОП «СЕВЕР»</div>
+            <span class="screen-badge">12 поз.</span>
+          </div>
+          <div class="screen-body">
+            <div class="screen-card">
+              <div class="screen-card-row">
+                <strong style="color:#f0f4f1;">120-мм мина ОФ-843А</strong>
+                <span class="screen-badge">48 шт</span>
+              </div>
+              <div style="color:#9aa89f; font-size:0.7rem;">Служба РАВ • Кат. 1 • Осколочно-фугасная</div>
+            </div>
+            <div class="screen-card">
+              <div class="screen-card-row">
+                <strong style="color:#f0f4f1;">82-мм мина Д-832ДУ (Дым)</strong>
+                <span class="screen-badge">24 шт</span>
+              </div>
+              <div style="color:#9aa89f; font-size:0.7rem;">Служба РАВ • Кат. 1 • Дымовая</div>
+            </div>
+            <div class="screen-card">
+              <div class="screen-card-row">
+                <strong style="color:#f0f4f1;">Порох НБЛ-35</strong>
+                <span class="screen-badge-gold screen-badge">12 уп.</span>
+              </div>
+              <div style="color:#9aa89f; font-size:0.7rem;">Метательные заряды • Служба РАВ</div>
+            </div>
+            <div class="screen-card">
+              <div class="screen-card-row">
+                <strong style="color:#f0f4f1;">Радиостанция цифровая шифр.</strong>
+                <span class="screen-badge">6 компл.</span>
+              </div>
+              <div style="color:#9aa89f; font-size:0.7rem;">Служба Связи • Кат. 1</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing Section -->
+  <section class="section" id="pricing">
+    <div class="container">
+      <div class="section-header">
+        <div class="badge badge-gold">Прозрачные тарифы</div>
+        <h2>Стоимость лицензии «Каптёрка Про»</h2>
+        <p>Каждый новый пользователь получает 3 дня полного бесплатного доступа для проверки программы на боевых задачах</p>
+      </div>
+
+      <div class="pricing-grid">
+        <!-- Trial Card -->
+        <div class="pricing-card">
+          <div class="pricing-title">Пробный период</div>
+          <div class="pricing-desc">Для тестирования и проверки удобства работы на позициях</div>
+          <div class="pricing-price">0 ₽ <span>/ 3 дня</span></div>
+          <ul class="pricing-features">
+            <li class="active"><span class="icon-ok">✓</span> Все функции без ограничений</li>
+            <li class="active"><span class="icon-ok">✓</span> Форма 8 и Форма 18</li>
+            <li class="active"><span class="icon-ok">✓</span> Экспорт в Excel и CSV</li>
+            <li class="active"><span class="icon-ok">✓</span> 100% оффлайн режим</li>
+            <li><span class="icon-no">—</span> Автоматически отключается через 3 дня</li>
+          </ul>
+          <a href="#download" class="btn btn-outline">Скачать и начать</a>
+        </div>
+
+        <!-- PRO Card -->
+        <div class="pricing-card featured">
+          <div class="pricing-ribbon">Популярный выбор</div>
+          <div class="pricing-title">PRO Лицензия</div>
+          <div class="pricing-desc">Полный боевой доступ на 30 дней с привязкой к 1 телефону</div>
+          <div class="pricing-price">500 ₽ <span>/ 30 дней</span></div>
+          <ul class="pricing-features">
+            <li class="active"><span class="icon-ok">✓</span> Полный доступ на 30 суток</li>
+            <li class="active"><span class="icon-ok">✓</span> Привязка 1 уникального ключа (Device ID)</li>
+            <li class="active"><span class="icon-ok">✓</span> Неограниченное число точек (ВОП/СП)</li>
+            <li class="active"><span class="icon-ok">✓</span> Генерация неограниченного числа Актов ф.8</li>
+            <li class="active"><span class="icon-ok">✓</span> Прямая техподдержка от разработчика</li>
+          </ul>
+          <button class="btn btn-gold" onclick="openModal('modalAuth')">Оформить подписку</button>
+        </div>
+
+        <!-- Squad Card -->
+        <div class="pricing-card">
+          <div class="pricing-title">Для подразделения</div>
+          <div class="pricing-desc">Пакетная активация для роты, батальона или дивизиона</div>
+          <div class="pricing-price">От 5 шт <span>/ спеццена</span></div>
+          <ul class="pricing-features">
+            <li class="active"><span class="icon-ok">✓</span> Активация от 5 устройств со скидкой</li>
+            <li class="active"><span class="icon-ok">✓</span> Помощь в адаптации номенклатуры</li>
+            <li class="active"><span class="icon-ok">✓</span> Приоритетная разработка доп. модулей</li>
+            <li class="active"><span class="icon-ok">✓</span> Оплата по безналу или переводом</li>
+          </ul>
+          <button class="btn btn-outline" onclick="openModal('modalContact')">Связаться с автором</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Personal Cabinet & Device ID Check -->
+  <section class="section cabinet-section" id="cabinet">
+    <div class="container">
+      <div class="section-header">
+        <div class="badge">Управление доступом</div>
+        <h2>Личный кабинет и проверка лицензии</h2>
+        <p>Проверьте статус вашей подписки по Device ID или активируйте продление</p>
+      </div>
+
+      <div class="cabinet-card">
+        <div class="cabinet-tabs">
+          <button class="cabinet-tab active" data-tab="check">🔍 Проверка Device ID</button>
+          <button class="cabinet-tab" data-tab="auth">👤 Авторизация пользователя</button>
+        </div>
+
+        <!-- Check Tab -->
+        <div id="tabContentCheck">
+          <div class="form-group">
+            <label class="form-label" for="inputDeviceId">Ключ вашего телефона (Device ID):</label>
+            <input type="text" id="inputDeviceId" class="form-input mono" placeholder="Например: KAPT-9821-4FBC-A039">
+            <div class="form-helper">Ключ можно посмотреть внутри приложения: <em>Боковое меню ➔ «О программе и лицензия»</em></div>
+          </div>
+          <button class="btn btn-primary" id="btnCheckDevice" style="width:100%;">Проверить статус лицензии</button>
+
+          <!-- Status Box -->
+          <div class="status-box" id="statusBox">
+            <div class="status-row">
+              <span style="color:#9aa89f;">Идентификатор:</span>
+              <strong id="statusDevIdDisp" class="mono" style="color:#8daa59;">—</strong>
+            </div>
+            <div class="status-row">
+              <span style="color:#9aa89f;">Статус:</span>
+              <span id="statusResultText">—</span>
+            </div>
+            <div class="status-row">
+              <span style="color:#9aa89f;">Срок действия:</span>
+              <strong id="statusDaysLeft" style="color:#f0f4f1;">—</strong>
+            </div>
+            <div style="margin-top:16px; display:flex; gap:10px;">
+              <button class="btn btn-gold" style="flex:1;" onclick="openModal('modalAuth')">Продлить на 30 дней (500 ₽)</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Auth Tab -->
+        <div id="tabContentAuth" style="display:none;">
+          <form id="cabinetLoginForm" onsubmit="event.preventDefault(); alert('Вход выполнен! Вы можете привязать ваши ключи устройств.');">
+            <div class="form-group">
+              <label class="form-label">Email или Позывной:</label>
+              <input type="text" class="form-input" placeholder="alex@example.com / Позывной" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Пароль:</label>
+              <input type="password" class="form-input" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%; margin-bottom:12px;">Войти в кабинет</button>
+            <div style="text-align:center;">
+              <a href="javascript:void(0)" onclick="openModal('modalAuth')" style="font-size:0.85rem;">Нет аккаунта? Зарегистрироваться</a>
+            </div>
+          </form>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Download Section -->
+  <section class="section" id="download">
+    <div class="container">
+      <div class="download-box">
+        <div class="badge" style="margin-bottom:16px;">Установка на телефон</div>
+        <h2>Скачать «Каптёрка Про» для Android</h2>
+        <p>Установите APK-файл на любой Android смартфон (версия 8.0 и выше). Полная работоспособность без Google Play и сервисов.</p>
+        
+        <div style="display:flex; justify-content:center; gap:16px; flex-wrap:wrap;">
+          <a href="#" onclick="alert('Скачивание актуального APK-файла Каптёрка Про v2.4 началось.'); return false;" class="btn btn-primary btn-lg">
+            📥 Скачать APK (Прямая ссылка)
+          </a>
+          <button class="btn btn-outline btn-lg" onclick="openModal('modalContact')">
+            💬 Помощь по установке
+          </button>
+        </div>
+
+        <div class="download-meta">
+          <span>Версия: 2.4.0</span>
+          <span>•</span>
+          <span>Размер: ~18 МБ</span>
+          <span>•</span>
+          <span>Android 8.0+</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        
+        <div class="footer-col">
+          <div class="logo-brand" style="margin-bottom:14px;">
+            <div class="logo-icon">📦</div>
+            <div>КАПТЁРКА<span class="logo-pro">PRO</span></div>
+          </div>
+          <p style="color:var(--text-secondary); line-height:1.6; font-size:0.85rem;">
+            Автономный тактический программный комплекс учета материально-технических средств и боеприпасов для ВС РФ и добровольческих формирований.
+          </p>
+          <div class="footer-legal-badge">
+            <div><strong>Разработчик:</strong> Самозанятый / ИП</div>
+            <div><strong>ИНН:</strong> 250104230398</div>
+          </div>
+        </div>
+
+        <div class="footer-col">
+          <h4>Навигация</h4>
+          <ul class="footer-links">
+            <li><a href="#about">О программе</a></li>
+            <li><a href="#features">Возможности</a></li>
+            <li><a href="#screens">Скриншоты и формы</a></li>
+            <li><a href="#pricing">Тарифы (500 ₽)</a></li>
+            <li><a href="#download">Скачать APK</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Документы</h4>
+          <ul class="footer-links">
+            <li><a href="javascript:void(0)" onclick="openModal('modalOffer')">📄 Публичная оферта</a></li>
+            <li><a href="javascript:void(0)" onclick="openModal('modalPrivacy')">🛡️ Политика конфиденциальности</a></li>
+            <li><a href="javascript:void(0)" onclick="openModal('modalAuth')">👤 Личный кабинет</a></li>
+            <li><a href="javascript:void(0)" onclick="openModal('modalContact')">❓ Помощь и вопросы</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Связь с разработчиком</h4>
+          <ul class="footer-links">
+            <li><strong style="color:var(--text-primary);">Email:</strong> <a href="mailto:alex.666.881@gmail.com">alex.666.881@gmail.com</a></li>
+            <li><strong style="color:var(--text-primary);">Telegram:</strong> <a href="https://t.me/kapterka_dev" target="_blank">@kapterka_dev</a></li>
+            <li><strong style="color:var(--text-primary);">Режим работы:</strong> Ежедневно (24/7)</li>
+          </ul>
+          <div style="margin-top:14px;">
+            <button class="btn btn-outline" style="width:100%; padding:8px 14px; font-size:0.85rem;" onclick="openModal('modalContact')">
+              ✉️ Написать разработчику
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="footer-bottom">
+        <div>© 2026 «Каптёрка Про» (kapterka-pro.ru). Все права защищены. ИНН 250104230398.</div>
+        <div>Сделано для передовой. 100% автономность.</div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Modal: Public Offer (Публичная оферта) -->
+  <div class="modal-overlay" id="modalOffer">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Публичная оферта (Договор лицензии)</h3>
+        <button class="modal-close" onclick="closeModal('modalOffer')">×</button>
+      </div>
+      <div class="modal-body">
+        <h4>1. Общие положения</h4>
+        <p>Настоящий документ является официальным предложением (публичной офертой) Исполнителя (ИНН 250104230398) о предоставлении неисключительной простой лицензии на использование программного обеспечения «Каптёрка Про» (далее — ПО) на условиях, изложенных ниже.</p>
+        
+        <h4>2. Предмет договора</h4>
+        <p>2.1. Исполнитель предоставляет Пользователю право использования ПО «Каптёрка Про» для одного мобильного устройства (привязка по аппаратному ключу Device ID) на срок 30 календарных дней после оплаты лицензионного вознаграждения.</p>
+        <p>2.2. Стоимость неисключительной лицензии на 30 дней составляет 500 (пятьсот) рублей за 1 устройство. Первые 3 (три) дня после первичной установки ПО предоставляются на бесплатной основе в рамках ознакомительного периода.</p>
+
+        <h4>3. Порядок оплаты и выдачи лицензии</h4>
+        <p>3.1. Оплата производится безналичным расчетом через платежные системы (включая сервис ЮKassa) или банковской картой.</p>
+        <p>3.2. После подтверждения оплаты активация лицензии для указанного пользователем Device ID происходит автоматически либо путем отправки ключа активации.</p>
+
+        <h4>4. Конфиденциальность и безопасность</h4>
+        <p>4.1. ПО «Каптёрка Про» функционирует в автономном режиме без передачи данных о складе, номерах воинских частей, позициях (ВОП/СП) и наименовании боеприпасов на сторонние сервера.</p>
+
+        <h4>5. Реквизиты Исполнителя</h4>
+        <p>Самозанятый гражданин РФ / ИП<br>ИНН: 250104230398<br>Электронная почта для обращений: alex.666.881@gmail.com</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="closeModal('modalOffer')">Понятно и согласен</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Privacy Policy (Политика конфиденциальности) -->
+  <div class="modal-overlay" id="modalPrivacy">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Политика конфиденциальности</h3>
+        <button class="modal-close" onclick="closeModal('modalPrivacy')">×</button>
+      </div>
+      <div class="modal-body">
+        <h4>1. Сбор и использование данных</h4>
+        <p>Приложение «Каптёрка Про» уважает конфиденциальность пользователей и строго ориентировано на защиту служебной информации в полевых условиях.</p>
+        
+        <h4>2. Локальное хранение</h4>
+        <p>Все номенклатурные списки, количества боеприпасов, акты списания (Форма № 8) и книги учета (Форма № 18) хранятся исключительно в зашифрованной локальной памяти вашего мобильного устройства. Сервер не имеет доступа к вашим складским книгам.</p>
+
+        <h4>3. Идентификация устройства</h4>
+        <p>Для активации PRO-версии используется только обезличенный цифровой идентификатор устройства (Device ID) для проверки срока действия оплаченного периода.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="closeModal('modalPrivacy')">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Registration & Login -->
+  <div class="modal-overlay" id="modalAuth">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Регистрация / Вход в Личный кабинет</h3>
+        <button class="modal-close" onclick="closeModal('modalAuth')">×</button>
+      </div>
+      <div class="modal-body">
+        <form id="regForm">
+          <div class="form-group">
+            <label class="form-label">Ваш Email или Позывной:</label>
+            <input type="text" class="form-input" placeholder="alex@example.com / Позывной" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ключ устройства (Device ID) из приложения:</label>
+            <input type="text" class="form-input mono" placeholder="KAPT-XXXX-XXXX-XXXX" required>
+            <div class="form-helper">Указан в приложении: Меню ➔ «О программе и лицензия»</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Придумайте пароль:</label>
+            <input type="password" class="form-input" placeholder="Минимум 6 символов" required>
+          </div>
+          <button type="submit" class="btn btn-gold" style="width:100%; margin-top:10px;">
+            Зарегистрироваться и перейти к оплате 500 ₽
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Contact Developer -->
+  <div class="modal-overlay" id="modalContact">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Связаться с разработчиком</h3>
+        <button class="modal-close" onclick="closeModal('modalContact')">×</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin-bottom:16px;">По вопросам приобретения лицензий для подразделений, индивидуальных доработок номенклатуры или техподдержки:</p>
+        
+        <div style="background:#0c0f0d; padding:14px; border-radius:10px; border:1px solid var(--border-color); margin-bottom:20px;">
+          <div>✉️ <strong>Email:</strong> alex.666.881@gmail.com</div>
+          <div style="margin-top:6px;">💬 <strong>Telegram:</strong> @kapterka_dev</div>
+          <div style="margin-top:6px;">🛡️ <strong>ИНН:</strong> 250104230398</div>
+        </div>
+
+        <form id="contactForm">
+          <div class="form-group">
+            <label class="form-label">Ваше имя / Позывной:</label>
+            <input type="text" class="form-input" placeholder="Например: Старшина 2 роты" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Контакт для связи (Телефон / Telegram / Email):</label>
+            <input type="text" class="form-input" placeholder="@telegram_username или +7..." required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Сообщение / Вопрос:</label>
+            <textarea class="form-input" rows="3" placeholder="Опишите ваш вопрос..." required style="resize:vertical;"></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%;">Отправить сообщение</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Outer Tactical Radar Ring -->
+    <path
+        android:pathData="M54,22 A32,32 0 1,0 54,86 A32,32 0 1,0 54,22"
+        android:strokeWidth="1.5"
+        android:strokeColor="#2F5C40"
+        android:fillColor="#00000000" />
+
+    <path
+        android:pathData="M54,28 A26,26 0 1,0 54,80 A26,26 0 1,0 54,28"
+        android:strokeWidth="0.8"
+        android:strokeColor="#3D7553"
+        android:fillColor="#00000000" />
+
+    <!-- Reticle Crosshair Ticks -->
+    <path
+        android:pathData="M54,18 L54,25 M54,83 L54,90 M18,54 L25,54 M83,54 L90,54"
+        android:strokeWidth="2"
+        android:strokeColor="#8EBF9F" />
+
+    <!-- Military Supply Depot Outer Shield -->
+    <path
+        android:pathData="M54,27 L76,36 L76,57 C76,71 54,83 54,83 C54,83 32,71 32,57 L32,36 Z"
+        android:strokeWidth="2.5"
+        android:strokeColor="#8EBF9F">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="54"
+                android:startY="27"
+                android:endX="54"
+                android:endY="83"
+                android:type="linear">
+                <item android:color="#1A3324" android:offset="0.0" />
+                <item android:color="#0F1E15" android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Tactical Crate / Container Core -->
+    <path
+        android:pathData="M39,47 L54,39 L69,47 L69,67 L54,75 L39,67 Z"
+        android:fillColor="#244733"
+        android:strokeWidth="1.5"
+        android:strokeColor="#A2CEB5" />
+
+    <path
+        android:pathData="M39,47 L54,55 L69,47 M54,55 L54,75"
+        android:strokeWidth="1.5"
+        android:strokeColor="#8EBF9F" />
+
+    <!-- Tactical Military Chevrons (Rank / Supply Unit) -->
+    <path
+        android:pathData="M46,45 L54,41 L62,45"
+        android:strokeWidth="2.5"
+        android:strokeColor="#E5C468"
+        android:fillColor="#00000000" />
+
+    <path
+        android:pathData="M47,50 L54,46 L61,50"
+        android:strokeWidth="2"
+        android:strokeColor="#E5C468"
+        android:fillColor="#00000000" />
+
+    <!-- Gold Tactical Star / Center Reticle -->
+    <path
+        android:pathData="M54,57 L55.8,61.8 L61,61.8 L56.8,64.8 L58.4,69.5 L54,66.5 L49.6,69.5 L51.2,64.8 L47,61.8 L52.2,61.8 Z"
+        android:fillColor="#E5C468" />
+
+</vector>
