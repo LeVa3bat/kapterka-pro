@@ -13,6 +13,7 @@ import com.example.data.model.RequestStatus
 import com.example.data.model.StockRecord
 import com.example.data.model.UserProfile
 import com.example.data.model.WarehousePoint
+import com.example.data.sync.FirebaseSyncManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
@@ -23,7 +24,10 @@ import java.util.Date
 import java.util.Locale
 import java.util.UUID
 
-class KapterkaRepository(private val dao: KapterkaDao) {
+class KapterkaRepository(
+    private val dao: KapterkaDao,
+    private val syncManager: FirebaseSyncManager? = null
+) {
 
     val userProfile: Flow<UserProfile?> = dao.getUserProfile()
     val allPoints: Flow<List<WarehousePoint>> = dao.getAllPoints()
@@ -31,6 +35,10 @@ class KapterkaRepository(private val dao: KapterkaDao) {
     val allOperations: Flow<List<OperationRecord>> = dao.getAllOperations()
     val allRequisitions: Flow<List<RequisitionRequest>> = dao.getAllRequisitions()
     val allStockRecords: Flow<List<StockRecord>> = dao.getAllStockRecords()
+
+    private suspend fun getCurrentUnitKey(): String {
+        return dao.getUserProfile().first()?.unitKey ?: "kapt_59e13b"
+    }
 
     fun getStockForPoint(pointId: String): Flow<List<StockRecord>> = dao.getStockForPoint(pointId)
 
@@ -51,23 +59,29 @@ class KapterkaRepository(private val dao: KapterkaDao) {
 
     suspend fun ensureInitialized() {
         val currentProfile = dao.getUserProfile().first()
-        if (currentProfile == null) {
-            dao.saveUserProfile(
-                UserProfile(
-                    id = 1,
-                    callsign = "лева",
-                    unitName = "1-е Подразделение",
-                    unitKey = "kapt_59e13b",
-                    email = "alex.666.881@gmail.com",
-                    isLoggedIn = true,
-                    isProActive = false,
-                    demoDaysLeft = 2,
-                    proDaysLeft = 29,
-                    isOnline = true,
-                    onlineCount = 1
-                )
+        val activeProfile = if (currentProfile == null) {
+            val defaultProfile = UserProfile(
+                id = 1,
+                callsign = "лева",
+                unitName = "1-е Подразделение",
+                unitKey = "kapt_59e13b",
+                email = "alex.666.881@gmail.com",
+                isLoggedIn = true,
+                isProActive = false,
+                demoDaysLeft = 2,
+                proDaysLeft = 29,
+                isOnline = true,
+                onlineCount = 1
             )
+            dao.saveUserProfile(defaultProfile)
+            defaultProfile
+        } else {
+            currentProfile
         }
+
+        // Launch online synchronization for this unit
+        syncManager?.startSyncForUnit(activeProfile.unitKey, activeProfile.callsign, activeProfile.unitName)
+
         val currentPoints = dao.getAllPoints().first()
         if (currentPoints.isEmpty()) {
             dao.insertPoints(InitialData.defaultPoints)
@@ -88,6 +102,7 @@ class KapterkaRepository(private val dao: KapterkaDao) {
 
     suspend fun saveUserProfile(profile: UserProfile) {
         dao.saveUserProfile(profile)
+        syncManager?.startSyncForUnit(profile.unitKey, profile.callsign, profile.unitName)
     }
 
     suspend fun addWarehousePoint(name: String, description: String = "") {
@@ -100,14 +115,17 @@ class KapterkaRepository(private val dao: KapterkaDao) {
             orderIndex = 10
         )
         dao.insertPoint(point)
+        syncManager?.pushWarehousePointAsync(getCurrentUnitKey(), point)
     }
 
     suspend fun deleteWarehousePoint(pointId: String) {
         dao.deletePoint(pointId)
+        syncManager?.deleteWarehousePointAsync(getCurrentUnitKey(), pointId)
     }
 
     suspend fun updateWarehousePoint(point: WarehousePoint) {
         dao.updatePoint(point)
+        syncManager?.pushWarehousePointAsync(getCurrentUnitKey(), point)
     }
 
     suspend fun addCustomInventoryItem(
@@ -129,32 +147,48 @@ class KapterkaRepository(private val dao: KapterkaDao) {
             isCustom = true
         )
         dao.insertItem(item)
+        syncManager?.pushInventoryItemAsync(getCurrentUnitKey(), item)
     }
 
     suspend fun updateInventoryItem(item: InventoryItem) {
         dao.insertItem(item)
+        syncManager?.pushInventoryItemAsync(getCurrentUnitKey(), item)
     }
 
     suspend fun deleteInventoryItem(itemId: String) {
         dao.deleteItem(itemId)
+        syncManager?.deleteInventoryItemAsync(getCurrentUnitKey(), itemId)
     }
 
     suspend fun adjustStockQuantity(pointId: String, itemId: String, newQuantity: Int) {
         val existing = dao.getStockItem(pointId, itemId)
-        if (existing != null) {
-            dao.insertOrUpdateStock(existing.copy(quantity = newQuantity, lastUpdated = System.currentTimeMillis()))
+        val recordToSave = if (existing != null) {
+            existing.copy(quantity = newQuantity, lastUpdated = System.currentTimeMillis())
         } else {
-            dao.insertOrUpdateStock(
-                StockRecord(
-                    pointId = pointId,
-                    itemId = itemId,
-                    quantity = newQuantity,
-                    incomeTotal = newQuantity,
-                    expenseTotal = 0,
-                    lastUpdated = System.currentTimeMillis()
-                )
+            StockRecord(
+                pointId = pointId,
+                itemId = itemId,
+                quantity = newQuantity,
+                incomeTotal = newQuantity,
+                expenseTotal = 0,
+                lastUpdated = System.currentTimeMillis()
             )
         }
+        dao.insertOrUpdateStock(recordToSave)
+        // Push stock adjust to cloud
+        val op = OperationRecord(
+            id = "adj_" + UUID.randomUUID().toString().take(10),
+            type = OperationType.INCOME,
+            fromPointName = "Корректировка остатка",
+            toPointName = pointId,
+            docNumber = "КОР-${System.currentTimeMillis().toString().takeLast(4)}",
+            responsiblePerson = "Инвентаризация",
+            comment = "Ручная корректировка: $newQuantity",
+            timestamp = System.currentTimeMillis(),
+            itemsSummary = "Остаток установлен: $newQuantity",
+            itemsJson = ""
+        )
+        syncManager?.pushOperationAsync(getCurrentUnitKey(), op, listOf(recordToSave))
     }
 
     // OPERATIONS: «Привезли» (Income)
@@ -183,20 +217,23 @@ class KapterkaRepository(private val dao: KapterkaDao) {
         dao.insertOperation(op)
 
         // Update stocks
+        val updatedStocks = mutableListOf<StockRecord>()
         for (item in items) {
             val current = dao.getStockItem(toPointId, item.itemId)
             val currentQty = current?.quantity ?: 0
             val currentIncome = current?.incomeTotal ?: 0
-            dao.insertOrUpdateStock(
-                StockRecord(
-                    pointId = toPointId,
-                    itemId = item.itemId,
-                    quantity = currentQty + item.quantity,
-                    incomeTotal = currentIncome + item.quantity,
-                    expenseTotal = current?.expenseTotal ?: 0
-                )
+            val s = StockRecord(
+                pointId = toPointId,
+                itemId = item.itemId,
+                quantity = currentQty + item.quantity,
+                incomeTotal = currentIncome + item.quantity,
+                expenseTotal = current?.expenseTotal ?: 0,
+                lastUpdated = System.currentTimeMillis()
             )
+            dao.insertOrUpdateStock(s)
+            updatedStocks.add(s)
         }
+        syncManager?.pushOperationAsync(getCurrentUnitKey(), op, updatedStocks)
     }
 
     // OPERATIONS: «Перемещение» (Transfer)
@@ -226,31 +263,35 @@ class KapterkaRepository(private val dao: KapterkaDao) {
         dao.insertOperation(op)
 
         // Decrease from source, increase to destination
+        val updatedStocks = mutableListOf<StockRecord>()
         for (item in items) {
             val fromStock = dao.getStockItem(fromPointId, item.itemId)
             val fromQty = (fromStock?.quantity ?: 0) - item.quantity
-            dao.insertOrUpdateStock(
-                StockRecord(
-                    pointId = fromPointId,
-                    itemId = item.itemId,
-                    quantity = if (fromQty < 0) 0 else fromQty,
-                    incomeTotal = fromStock?.incomeTotal ?: 0,
-                    expenseTotal = (fromStock?.expenseTotal ?: 0) + item.quantity
-                )
+            val sFrom = StockRecord(
+                pointId = fromPointId,
+                itemId = item.itemId,
+                quantity = if (fromQty < 0) 0 else fromQty,
+                incomeTotal = fromStock?.incomeTotal ?: 0,
+                expenseTotal = (fromStock?.expenseTotal ?: 0) + item.quantity,
+                lastUpdated = System.currentTimeMillis()
             )
+            dao.insertOrUpdateStock(sFrom)
+            updatedStocks.add(sFrom)
 
             val toStock = dao.getStockItem(toPointId, item.itemId)
             val toQty = (toStock?.quantity ?: 0) + item.quantity
-            dao.insertOrUpdateStock(
-                StockRecord(
-                    pointId = toPointId,
-                    itemId = item.itemId,
-                    quantity = toQty,
-                    incomeTotal = (toStock?.incomeTotal ?: 0) + item.quantity,
-                    expenseTotal = toStock?.expenseTotal ?: 0
-                )
+            val sTo = StockRecord(
+                pointId = toPointId,
+                itemId = item.itemId,
+                quantity = toQty,
+                incomeTotal = (toStock?.incomeTotal ?: 0) + item.quantity,
+                expenseTotal = toStock?.expenseTotal ?: 0,
+                lastUpdated = System.currentTimeMillis()
             )
+            dao.insertOrUpdateStock(sTo)
+            updatedStocks.add(sTo)
         }
+        syncManager?.pushOperationAsync(getCurrentUnitKey(), op, updatedStocks)
     }
 
     // OPERATIONS: «Подняли» (Issue)
@@ -279,34 +320,38 @@ class KapterkaRepository(private val dao: KapterkaDao) {
         )
         dao.insertOperation(op)
 
+        val updatedStocks = mutableListOf<StockRecord>()
         for (item in items) {
             val fromStock = dao.getStockItem(fromPointId, item.itemId)
             val fromQty = (fromStock?.quantity ?: 0) - item.quantity
-            dao.insertOrUpdateStock(
-                StockRecord(
-                    pointId = fromPointId,
-                    itemId = item.itemId,
-                    quantity = if (fromQty < 0) 0 else fromQty,
-                    incomeTotal = fromStock?.incomeTotal ?: 0,
-                    expenseTotal = (fromStock?.expenseTotal ?: 0) + item.quantity
-                )
+            val sFrom = StockRecord(
+                pointId = fromPointId,
+                itemId = item.itemId,
+                quantity = if (fromQty < 0) 0 else fromQty,
+                incomeTotal = fromStock?.incomeTotal ?: 0,
+                expenseTotal = (fromStock?.expenseTotal ?: 0) + item.quantity,
+                lastUpdated = System.currentTimeMillis()
             )
+            dao.insertOrUpdateStock(sFrom)
+            updatedStocks.add(sFrom)
 
             // Increase to destination if it's a valid point (not empty)
             if (toPointId.isNotEmpty()) {
                 val toStock = dao.getStockItem(toPointId, item.itemId)
                 val toQty = (toStock?.quantity ?: 0) + item.quantity
-                dao.insertOrUpdateStock(
-                    StockRecord(
-                        pointId = toPointId,
-                        itemId = item.itemId,
-                        quantity = toQty,
-                        incomeTotal = (toStock?.incomeTotal ?: 0) + item.quantity,
-                        expenseTotal = toStock?.expenseTotal ?: 0
-                    )
+                val sTo = StockRecord(
+                    pointId = toPointId,
+                    itemId = item.itemId,
+                    quantity = toQty,
+                    incomeTotal = (toStock?.incomeTotal ?: 0) + item.quantity,
+                    expenseTotal = toStock?.expenseTotal ?: 0,
+                    lastUpdated = System.currentTimeMillis()
                 )
+                dao.insertOrUpdateStock(sTo)
+                updatedStocks.add(sTo)
             }
         }
+        syncManager?.pushOperationAsync(getCurrentUnitKey(), op, updatedStocks)
     }
 
     // OPERATIONS: «Отстрел» (Expenditure Form 8)
@@ -334,19 +379,22 @@ class KapterkaRepository(private val dao: KapterkaDao) {
         )
         dao.insertOperation(op)
 
+        val updatedStocks = mutableListOf<StockRecord>()
         for (item in items) {
             val fromStock = dao.getStockItem(fromPointId, item.itemId)
             val fromQty = (fromStock?.quantity ?: 0) - item.quantity
-            dao.insertOrUpdateStock(
-                StockRecord(
-                    pointId = fromPointId,
-                    itemId = item.itemId,
-                    quantity = if (fromQty < 0) 0 else fromQty,
-                    incomeTotal = fromStock?.incomeTotal ?: 0,
-                    expenseTotal = (fromStock?.expenseTotal ?: 0) + item.quantity
-                )
+            val s = StockRecord(
+                pointId = fromPointId,
+                itemId = item.itemId,
+                quantity = if (fromQty < 0) 0 else fromQty,
+                incomeTotal = fromStock?.incomeTotal ?: 0,
+                expenseTotal = (fromStock?.expenseTotal ?: 0) + item.quantity,
+                lastUpdated = System.currentTimeMillis()
             )
+            dao.insertOrUpdateStock(s)
+            updatedStocks.add(s)
         }
+        syncManager?.pushOperationAsync(getCurrentUnitKey(), op, updatedStocks)
     }
 
     // REQUISITIONS
@@ -369,10 +417,13 @@ class KapterkaRepository(private val dao: KapterkaDao) {
             itemsJson = json
         )
         dao.insertRequisition(req)
+        syncManager?.pushRequisitionAsync(getCurrentUnitKey(), req)
     }
 
     suspend fun updateRequisitionStatus(requisition: RequisitionRequest, newStatus: RequestStatus) {
-        dao.updateRequisition(requisition.copy(status = newStatus))
+        val updated = requisition.copy(status = newStatus)
+        dao.updateRequisition(updated)
+        syncManager?.pushRequisitionAsync(getCurrentUnitKey(), updated)
     }
 
     suspend fun deleteRequisition(requisitionId: String) {
@@ -527,5 +578,16 @@ class KapterkaRepository(private val dao: KapterkaDao) {
         dao.clearAllOperations()
         dao.clearAllRequisitions()
         dao.clearAllStockRecords()
+    }
+
+    val syncState = syncManager?.syncState
+
+    suspend fun triggerCloudSync() {
+        val key = getCurrentUnitKey()
+        val profile = dao.getUserProfile().first()
+        if (profile != null) {
+            syncManager?.startSyncForUnit(profile.unitKey, profile.callsign, profile.unitName)
+        }
+        syncManager?.pushAllLocalData(key)
     }
 }

@@ -9,6 +9,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -30,6 +31,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
@@ -53,6 +55,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -97,6 +100,7 @@ import com.example.ui.theme.TacticalTextSecondary
 fun MoreSettingsScreen(
     profile: UserProfile?,
     availableCategories: List<String>,
+    syncState: com.example.data.sync.SyncState = com.example.data.sync.SyncState(),
     onDeleteCategory: (String) -> Unit,
     onAddCategory: (String) -> Unit,
     onResetCategories: () -> Unit,
@@ -298,9 +302,9 @@ fun MoreSettingsScreen(
         // 1. COLLAPSIBLE ACCORDION: ПРОФИЛЬ ПОДРАЗДЕЛЕНИЯ
         item {
             CollapsibleCard(
-                title = "Профиль подразделения и статус",
-                subtitle = "${profile?.unitName ?: "1-е Подразделение"} • ${profile?.callsign ?: "Старшина"}",
-                icon = Icons.Default.MilitaryTech,
+                title = "Облачная база Google Firebase",
+                subtitle = "Канал: ${profile?.unitKey ?: "kapt_59e13b"} • Онлайн синхронизация",
+                icon = Icons.Default.Cloud,
                 iconColor = SageGreenBright,
                 isExpanded = expandedProfile,
                 onToggle = { expandedProfile = !expandedProfile }
@@ -328,15 +332,100 @@ fun MoreSettingsScreen(
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(4.dp))
-                                .background(SageGreenDark)
+                                .background(if (syncState.isSyncing) TacticalGold.copy(alpha = 0.2f) else SageGreenDark)
                                 .padding(horizontal = 8.dp, vertical = 4.dp)
                         ) {
                             Text(
-                                text = "В СЕТИ",
-                                color = SageGreenBright,
+                                text = if (syncState.isSyncing) "СИНХРОНИЗАЦИЯ..." else "ОНЛАЙН СИНХР.",
+                                color = if (syncState.isSyncing) TacticalGold else SageGreenBright,
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold
                             )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Cloud info box
+                    Surface(
+                        color = Color(0xFF131C16),
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(1.dp, TacticalBorderSubtle),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "База Firestore:",
+                                    fontSize = 11.sp,
+                                    color = TacticalTextMuted
+                                )
+                                Text(
+                                    text = "kapterka-pro",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TacticalTextPrimary
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Ключ синхронизации:",
+                                    fontSize = 11.sp,
+                                    color = TacticalTextMuted
+                                )
+                                Text(
+                                    text = unitKey,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TacticalGold
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Статус подключения:",
+                                    fontSize = 11.sp,
+                                    color = TacticalTextMuted
+                                )
+                                Text(
+                                    text = syncState.syncMessage,
+                                    fontSize = 11.sp,
+                                    color = SageGreenBright
+                                )
+                            }
+                            if (syncState.connectedDevicesCount > 1) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "Устройств в сети подразделения:",
+                                        fontSize = 11.sp,
+                                        color = TacticalTextMuted
+                                    )
+                                    Text(
+                                        text = "${syncState.connectedDevicesCount} устройства",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = SageGreenBright
+                                    )
+                                }
+                            }
                         }
                     }
 
@@ -359,7 +448,7 @@ fun MoreSettingsScreen(
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Синхронизировать базу данных", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Text("Синхронизировать сейчас", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }

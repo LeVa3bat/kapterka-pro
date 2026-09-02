@@ -149,6 +149,7 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel) {
     val requisitions by viewModel.allRequisitions.collectAsState()
     val catalogItems by viewModel.allCatalogItems.collectAsState()
     val availableCategories by viewModel.availableCategories.collectAsState()
+    val syncState by viewModel.syncState.collectAsState()
 
     // Dialog Control States
     var showIncomeDialog by remember { mutableStateOf(false) }
@@ -291,6 +292,7 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel) {
                         MoreSettingsScreen(
                             profile = profile,
                             availableCategories = availableCategories,
+                            syncState = syncState,
                             onDeleteCategory = { viewModel.deleteCategory(it) },
                             onAddCategory = { viewModel.addCategory(it) },
                             onResetCategories = { viewModel.resetCategoriesToDefault() },

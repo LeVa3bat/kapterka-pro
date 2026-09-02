@@ -40,6 +40,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
     val allRequisitions: StateFlow<List<RequisitionRequest>>
     val allCatalogItems: StateFlow<List<InventoryItem>>
     val allStockRecords: StateFlow<List<StockRecord>>
+    val syncState: StateFlow<com.example.data.sync.SyncState>
 
     private val prefs = application.getSharedPreferences("kapterka_app_prefs", android.content.Context.MODE_PRIVATE)
 
@@ -123,7 +124,11 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
 
     init {
         val database = KapterkaDatabase.getDatabase(application, viewModelScope)
-        repository = KapterkaRepository(database.kapterkaDao())
+        val syncManager = com.example.data.sync.FirebaseSyncManager(application, database.kapterkaDao(), viewModelScope)
+        repository = KapterkaRepository(database.kapterkaDao(), syncManager)
+
+        syncState = (repository.syncState ?: MutableStateFlow(com.example.data.sync.SyncState()))
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), com.example.data.sync.SyncState())
 
         userProfile = repository.userProfile
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
@@ -429,7 +434,9 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
 
     fun simulateCloudSync() {
         viewModelScope.launch {
-            _toastEvent.emit("Синхронизация с сервером подразделения завершена (100%)")
+            _toastEvent.emit("Запуск онлайн-синхронизации базы...")
+            repository.triggerCloudSync()
+            _toastEvent.emit("База подразделения успешно синхронизирована!")
         }
     }
 
