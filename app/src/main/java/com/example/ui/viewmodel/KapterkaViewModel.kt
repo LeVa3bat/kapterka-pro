@@ -424,6 +424,34 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
     }
 
     // User Profile / Settings / Auth
+    fun registerOrLoginProfile(profile: UserProfile) {
+        viewModelScope.launch {
+            repository.saveUserProfile(profile)
+            val curLicense = licenseManager.licenseStatus.value
+            fighterRegistryManager.registerOrUpdateFighter(
+                fighterId = licenseManager.getFighterPersonalId(),
+                callsign = profile.callsign,
+                unitName = profile.unitName,
+                unitKey = profile.unitKey,
+                email = profile.email,
+                licenseKey = curLicense.licenseKey.ifEmpty { curLicense.lastSavedKey },
+                isProActive = curLicense.isProActive,
+                expiresAt = System.currentTimeMillis() + (curLicense.daysRemaining.toLong() * 86400000L)
+            )
+            // Пытаемся автоматически подтянуть ранее оплаченную лицензию из облака
+            val (restored, restoreMsg) = licenseManager.restoreLicenseFromCloud(
+                email = profile.email,
+                callsign = profile.callsign,
+                unitKey = profile.unitKey
+            )
+            if (restored) {
+                _toastEvent.emit("Вход выполнен! $restoreMsg")
+            } else {
+                _toastEvent.emit("Добро пожаловать, ${profile.callsign}!")
+            }
+        }
+    }
+
     fun updateProfile(profile: UserProfile) {
         viewModelScope.launch {
             repository.saveUserProfile(profile)
@@ -439,6 +467,23 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                 expiresAt = System.currentTimeMillis() + (curLicense.daysRemaining.toLong() * 86400000L)
             )
             _toastEvent.emit("Настройки профиля сохранены")
+        }
+    }
+
+    fun restoreLicenseFromCloud(customEmail: String? = null, customCallsign: String? = null) {
+        viewModelScope.launch {
+            val prof = userProfile.value
+            val emailToUse = customEmail?.ifBlank { prof?.email.orEmpty() } ?: prof?.email.orEmpty()
+            val callsignToUse = customCallsign?.ifBlank { prof?.callsign.orEmpty() } ?: prof?.callsign.orEmpty()
+            val unitKeyToUse = prof?.unitKey.orEmpty()
+
+            _toastEvent.emit("Поиск оплаченной лицензии в облачной базе...")
+            val (success, msg) = licenseManager.restoreLicenseFromCloud(emailToUse, callsignToUse, unitKeyToUse)
+            if (success) {
+                val curProfile = userProfile.value ?: UserProfile()
+                repository.saveUserProfile(curProfile.copy(isProActive = true, proDaysLeft = 30, demoDaysLeft = 0))
+            }
+            _toastEvent.emit(msg)
         }
     }
 

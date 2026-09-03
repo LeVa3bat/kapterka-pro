@@ -25,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Info
@@ -101,6 +102,7 @@ fun PersonalLicenseDialog(
     onActivateLicenseKey: (String) -> Unit,
     onTestPaymentConfirm: () -> Unit,
     onRestoreSavedLicense: () -> Unit = {},
+    onRestoreFromCloud: (email: String, callsign: String) -> Unit = { _, _ -> },
     onOpenDeveloperBackdoor: () -> Unit = {},
     onSaveYooKassaSettings: (shopId: String, secretKey: String, isTestMode: Boolean, priceRubles: Int) -> Unit,
     onDismiss: () -> Unit
@@ -481,17 +483,36 @@ fun PersonalLicenseDialog(
 
                     Spacer(modifier = Modifier.height(10.dp))
 
+                    // Кнопка восстановления из облачной базы
+                    Button(
+                        onClick = {
+                            onRestoreFromCloud(profile?.email.orEmpty(), profile?.callsign.orEmpty())
+                        },
+                        modifier = Modifier.fillMaxWidth().height(42.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = SageGreenPrimary,
+                            contentColor = Color(0xFF0F1B14)
+                        )
+                    ) {
+                        Icon(imageVector = Icons.Default.CloudDownload, contentDescription = null, modifier = Modifier.size(17.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("☁️ Восстановить оплаченную лицензию из базы", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
                     // Кнопка восстановления из сейфа устройства
                     OutlinedButton(
                         onClick = onRestoreSavedLicense,
-                        modifier = Modifier.fillMaxWidth().height(38.dp),
+                        modifier = Modifier.fillMaxWidth().height(36.dp),
                         shape = RoundedCornerShape(6.dp),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = SageGreenBright),
                         border = BorderStroke(1.dp, SageGreenPrimary.copy(alpha = 0.5f))
                     ) {
                         Icon(imageVector = Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(15.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Восстановить лицензию из вечного сейфа устройства", fontSize = 11.sp)
+                        Text("Восстановить из сейфа устройства", fontSize = 11.sp)
                     }
 
                     Spacer(modifier = Modifier.height(6.dp))
@@ -809,6 +830,23 @@ fun PersonalLicenseDialog(
                                     lineHeight = 14.sp
                                 )
                                 Spacer(modifier = Modifier.height(10.dp))
+                                Button(
+                                    onClick = {
+                                        onRestoreFromCloud(profile?.email.orEmpty(), profile?.callsign.orEmpty())
+                                        selectedTab = 0
+                                    },
+                                    modifier = Modifier.fillMaxWidth().height(38.dp),
+                                    shape = RoundedCornerShape(6.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = SageGreenDark, contentColor = SageGreenBright),
+                                    border = BorderStroke(1.dp, SageGreenPrimary)
+                                ) {
+                                    Icon(imageVector = Icons.Default.CloudDownload, contentDescription = null, modifier = Modifier.size(14.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("☁️ Восстановить из базы (по Email)", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+
+                                Spacer(modifier = Modifier.height(6.dp))
+
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     OutlinedButton(
                                         onClick = {

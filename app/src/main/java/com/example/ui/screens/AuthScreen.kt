@@ -76,15 +76,19 @@ import java.util.UUID
 @Composable
 fun AuthScreen(
     currentProfile: UserProfile?,
-    onSaveProfile: (UserProfile) -> Unit,
-    onContinue: () -> Unit
+    onCompleteAuth: (UserProfile) -> Unit
 ) {
     var selectedTab by remember { mutableIntStateOf(0) } // 0: Регистрация, 1: Вход
     var callsign by remember { mutableStateOf(currentProfile?.callsign?.ifBlank { "" } ?: "") }
     var unitName by remember { mutableStateOf(currentProfile?.unitName?.ifBlank { "" } ?: "") }
-    var unitKey by remember { mutableStateOf(currentProfile?.unitKey?.ifBlank { "" } ?: "") }
+    var unitKey by remember {
+        mutableStateOf(
+            if (!currentProfile?.unitKey.isNullOrBlank()) currentProfile?.unitKey!!
+            else "kapt_" + UUID.randomUUID().toString().take(6)
+        )
+    }
     var email by remember { mutableStateOf(currentProfile?.email?.ifBlank { "" } ?: "") }
-    var password by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     Box(
         modifier = Modifier
@@ -153,15 +157,17 @@ fun AuthScreen(
                     // Quick Google Account Sign-In Button
                     Button(
                         onClick = {
+                            val finalCallsign = callsign.trim().ifEmpty { "Командир" }
+                            val finalUnit = unitName.trim().ifEmpty { "1-е Подразделение" }
+                            val finalKey = unitKey.trim().ifEmpty { "kapt_" + UUID.randomUUID().toString().take(6) }
                             val prof = (currentProfile ?: UserProfile()).copy(
-                                callsign = callsign.ifEmpty { "Боец" },
-                                unitName = unitName.ifEmpty { "1-е Подразделение" },
-                                unitKey = unitKey.ifEmpty { "kapt_59e13b" },
-                                email = email.ifEmpty { "" },
+                                callsign = finalCallsign,
+                                unitName = finalUnit,
+                                unitKey = finalKey,
+                                email = email.trim(),
                                 isLoggedIn = true
                             )
-                            onSaveProfile(prof)
-                            onContinue()
+                            onCompleteAuth(prof)
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -359,21 +365,41 @@ fun AuthScreen(
                         )
                     )
 
+                    if (errorMessage != null) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Text(
+                            text = errorMessage!!,
+                            color = Color(0xFFEF5350),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // Primary Submit Button
                     Button(
                         onClick = {
-                            val generatedKey = if (unitKey.isBlank()) "kapt_" + UUID.randomUUID().toString().take(6) else unitKey
+                            val cleanCallsign = callsign.trim()
+                            if (cleanCallsign.isBlank()) {
+                                errorMessage = "Пожалуйста, введите ваш позывной или имя!"
+                                return@Button
+                            }
+                            errorMessage = null
+                            val cleanUnitName = unitName.trim().ifEmpty { "1-е Подразделение" }
+                            val cleanKey = unitKey.trim().ifEmpty { "kapt_" + UUID.randomUUID().toString().take(6) }
+                            val cleanEmail = email.trim()
+
                             val prof = (currentProfile ?: UserProfile()).copy(
-                                callsign = callsign.ifEmpty { "Боец" },
-                                unitName = unitName.ifEmpty { "1-е Подразделение" },
-                                unitKey = generatedKey,
-                                email = email,
+                                callsign = cleanCallsign,
+                                unitName = cleanUnitName,
+                                unitKey = cleanKey,
+                                email = cleanEmail,
                                 isLoggedIn = true
                             )
-                            onSaveProfile(prof)
-                            onContinue()
+                            onCompleteAuth(prof)
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -397,13 +423,19 @@ fun AuthScreen(
                     // Offline Mode Entry Button
                     Button(
                         onClick = {
+                            val cleanCallsign = callsign.trim().ifEmpty { "Пользователь" }
+                            val cleanUnitName = unitName.trim().ifEmpty { "1-е Подразделение" }
+                            val cleanKey = unitKey.trim().ifEmpty { "kapt_" + UUID.randomUUID().toString().take(6) }
+                            val cleanEmail = email.trim()
+
                             val prof = (currentProfile ?: UserProfile()).copy(
-                                callsign = callsign.ifEmpty { "пользователь" },
-                                unitName = unitName.ifEmpty { "1-е Подразделение" },
+                                callsign = cleanCallsign,
+                                unitName = cleanUnitName,
+                                unitKey = cleanKey,
+                                email = cleanEmail,
                                 isLoggedIn = true
                             )
-                            onSaveProfile(prof)
-                            onContinue()
+                            onCompleteAuth(prof)
                         },
                         modifier = Modifier
                             .fillMaxWidth()

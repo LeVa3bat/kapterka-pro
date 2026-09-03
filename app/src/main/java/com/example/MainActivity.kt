@@ -190,10 +190,8 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel) {
     if (profile?.isLoggedIn != true) {
         AuthScreen(
             currentProfile = profile,
-            onSaveProfile = { newProfile -> viewModel.updateProfile(newProfile) },
-            onContinue = {
-                val p = profile ?: com.example.data.model.UserProfile(isLoggedIn = true)
-                viewModel.updateProfile(p.copy(isLoggedIn = true))
+            onCompleteAuth = { newProfile ->
+                viewModel.registerOrLoginProfile(newProfile)
             }
         )
         return
@@ -325,6 +323,12 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel) {
                                 val current = profile ?: com.example.data.model.UserProfile()
                                 viewModel.updateProfile(current.copy(isLoggedIn = false))
                             },
+                            onUpdateProfile = { updated ->
+                                viewModel.updateProfile(updated)
+                            },
+                            onRestoreLicenseFromCloud = {
+                                viewModel.restoreLicenseFromCloud()
+                            },
                             onResetProfileAndLicense = {
                                 viewModel.resetProfileAndLicenseForTesting()
                             },
@@ -442,6 +446,7 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel) {
             onActivateLicenseKey = { key -> viewModel.activateLicenseKey(key) },
             onTestPaymentConfirm = { viewModel.confirmPaymentAndActivateLicense() },
             onRestoreSavedLicense = { viewModel.restoreSavedLicenseOnDevice() },
+            onRestoreFromCloud = { email, callsign -> viewModel.restoreLicenseFromCloud(email, callsign) },
             onOpenDeveloperBackdoor = {
                 showPaymentProDialog = false
                 showDevAdminDialog = true

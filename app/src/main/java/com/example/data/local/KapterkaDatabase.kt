@@ -65,14 +65,14 @@ abstract class KapterkaDatabase : RoomDatabase() {
                 dao.saveUserProfile(
                     UserProfile(
                         id = 1,
-                        callsign = "Боец",
-                        unitName = "1-е Подразделение",
-                        unitKey = "kapt_59e13b",
+                        callsign = "",
+                        unitName = "",
+                        unitKey = "kapt_" + java.util.UUID.randomUUID().toString().take(6),
                         email = "",
-                        isLoggedIn = true,
+                        isLoggedIn = false,
                         isProActive = false,
-                        demoDaysLeft = 2,
-                        proDaysLeft = 29,
+                        demoDaysLeft = 3,
+                        proDaysLeft = 30,
                         isOnline = true,
                         onlineCount = 1
                     )

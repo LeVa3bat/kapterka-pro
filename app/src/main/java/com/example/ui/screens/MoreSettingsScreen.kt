@@ -53,6 +53,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
@@ -112,6 +113,8 @@ fun MoreSettingsScreen(
     onExportForm8Click: () -> Unit,
     onExportForm18Click: () -> Unit,
     onLogoutClick: () -> Unit,
+    onUpdateProfile: (UserProfile) -> Unit = {},
+    onRestoreLicenseFromCloud: () -> Unit = {},
     onResetProfileAndLicense: () -> Unit = {},
     onResetDataClick: () -> Unit,
     onOpenManualClick: () -> Unit = {},
@@ -134,7 +137,117 @@ fun MoreSettingsScreen(
     var categoryToDelete by remember { mutableStateOf<String?>(null) }
     var showAddCategoryDialog by remember { mutableStateOf(false) }
     var showResetDataConfirmDialog by remember { mutableStateOf(false) }
+    var showEditProfileDialog by remember { mutableStateOf(false) }
+    var editCallsign by remember(profile) { mutableStateOf(profile?.callsign ?: "") }
+    var editUnitName by remember(profile) { mutableStateOf(profile?.unitName ?: "") }
+    var editEmail by remember(profile) { mutableStateOf(profile?.email ?: "") }
     var newCategoryName by remember { mutableStateOf("") }
+
+    if (showEditProfileDialog) {
+        AlertDialog(
+            onDismissRequest = { showEditProfileDialog = false },
+            containerColor = TacticalSurface,
+            title = {
+                Text(
+                    text = "Редактировать профиль бойца",
+                    color = SageGreenBright,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        text = "Позывной:",
+                        color = TacticalTextSecondary,
+                        fontSize = 12.sp
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    OutlinedTextField(
+                        value = editCallsign,
+                        onValueChange = { editCallsign = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("Ваш позывной", color = TacticalTextMuted) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = SageGreenPrimary,
+                            unfocusedBorderColor = TacticalBorder,
+                            focusedTextColor = TacticalTextPrimary,
+                            unfocusedTextColor = TacticalTextPrimary,
+                            cursorColor = SageGreenBright
+                        ),
+                        singleLine = true
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = "Подразделение:",
+                        color = TacticalTextSecondary,
+                        fontSize = 12.sp
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    OutlinedTextField(
+                        value = editUnitName,
+                        onValueChange = { editUnitName = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("Название подразделения", color = TacticalTextMuted) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = SageGreenPrimary,
+                            unfocusedBorderColor = TacticalBorder,
+                            focusedTextColor = TacticalTextPrimary,
+                            unfocusedTextColor = TacticalTextPrimary,
+                            cursorColor = SageGreenBright
+                        ),
+                        singleLine = true
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = "Email (для восстановления лицензий):",
+                        color = TacticalTextSecondary,
+                        fontSize = 12.sp
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    OutlinedTextField(
+                        value = editEmail,
+                        onValueChange = { editEmail = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("example@mail.ru", color = TacticalTextMuted) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = SageGreenPrimary,
+                            unfocusedBorderColor = TacticalBorder,
+                            focusedTextColor = TacticalTextPrimary,
+                            unfocusedTextColor = TacticalTextPrimary,
+                            cursorColor = SageGreenBright
+                        ),
+                        singleLine = true
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val updated = (profile ?: UserProfile()).copy(
+                            callsign = editCallsign.trim().ifEmpty { profile?.callsign ?: "Боец" },
+                            unitName = editUnitName.trim().ifEmpty { profile?.unitName ?: "1-е Подразделение" },
+                            email = editEmail.trim(),
+                            isLoggedIn = true
+                        )
+                        onUpdateProfile(updated)
+                        showEditProfileDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = SageGreenPrimary,
+                        contentColor = Color(0xFF0F1B14)
+                    )
+                ) {
+                    Text("Сохранить", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditProfileDialog = false }) {
+                    Text("Отмена", color = TacticalTextMuted)
+                }
+            }
+        )
+    }
 
     if (showResetDataConfirmDialog) {
         AlertDialog(
@@ -434,24 +547,55 @@ fun MoreSettingsScreen(
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    Button(
-                        onClick = onSyncClick,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(38.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = SageGreenPrimary,
-                            contentColor = Color(0xFF0F1B14)
-                        ),
-                        shape = RoundedCornerShape(6.dp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Sync,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Синхронизировать сейчас", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        OutlinedButton(
+                            onClick = {
+                                editCallsign = profile?.callsign.orEmpty()
+                                editUnitName = profile?.unitName.orEmpty()
+                                editEmail = profile?.email.orEmpty()
+                                showEditProfileDialog = true
+                            },
+                            modifier = Modifier.weight(1f).height(38.dp),
+                            shape = RoundedCornerShape(6.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = SageGreenBright),
+                            border = BorderStroke(1.dp, SageGreenPrimary.copy(alpha = 0.6f))
+                        ) {
+                            Text("Изменить данные", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+
+                        Button(
+                            onClick = onSyncClick,
+                            modifier = Modifier.weight(1f).height(38.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = SageGreenPrimary,
+                                contentColor = Color(0xFF0F1B14)
+                            ),
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Sync,
+                                contentDescription = null,
+                                modifier = Modifier.size(15.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Синхронизация", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Прямая кнопка восстановления оплаченной лицензии
+                    OutlinedButton(
+                        onClick = onRestoreLicenseFromCloud,
+                        modifier = Modifier.fillMaxWidth().height(38.dp),
+                        shape = RoundedCornerShape(6.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TacticalGoldText),
+                        border = BorderStroke(1.dp, TacticalGold.copy(alpha = 0.6f))
+                    ) {
+                        Text("☁️ Восстановить оплаченную лицензию из базы", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }

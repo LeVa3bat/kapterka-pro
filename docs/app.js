@@ -1382,4 +1382,95 @@ document.addEventListener('DOMContentLoaded', () => {
     applyNewPaidKey(pendingKey, callsign);
     showToast('🎉 Оплата успешно завершена! Ваш персональный ключ активирован.');
   }
+
+  // Tactical Screenshots Carousel Controller
+  initScreenshotsCarousel();
 });
+
+// =========================================================================
+// SCREENSHOT CAROUSEL & LIGHTBOX CONTROLLER
+// =========================================================================
+let currentCarouselIndex = 0;
+const totalCarouselSlides = 7;
+
+function initScreenshotsCarousel() {
+  const track = document.getElementById('carouselTrack');
+  const btnPrev = document.getElementById('carouselPrev');
+  const btnNext = document.getElementById('carouselNext');
+  const dots = document.querySelectorAll('.carousel-dot');
+
+  if (!track || !btnPrev || !btnNext) return;
+
+  function updateCarousel() {
+    const slide = track.children[0];
+    if (!slide) return;
+    const slideWidth = slide.offsetWidth + 20; // 20px gap
+    track.style.transform = `translateX(-${currentCarouselIndex * slideWidth}px)`;
+
+    dots.forEach((dot, idx) => {
+      dot.classList.toggle('active', idx === currentCarouselIndex);
+    });
+  }
+
+  btnPrev.addEventListener('click', () => {
+    currentCarouselIndex = (currentCarouselIndex - 1 + totalCarouselSlides) % totalCarouselSlides;
+    updateCarousel();
+  });
+
+  btnNext.addEventListener('click', () => {
+    currentCarouselIndex = (currentCarouselIndex + 1) % totalCarouselSlides;
+    updateCarousel();
+  });
+
+  dots.forEach((dot) => {
+    dot.addEventListener('click', () => {
+      const idx = parseInt(dot.getAttribute('data-index'), 10);
+      if (!isNaN(idx)) {
+        currentCarouselIndex = idx;
+        updateCarousel();
+      }
+    });
+  });
+
+  // Touch / Swipe support
+  let touchStartX = 0;
+  let touchEndX = 0;
+  track.addEventListener('touchstart', (e) => {
+    touchStartX = e.changedTouches[0].screenX;
+  }, { passive: true });
+
+  track.addEventListener('touchend', (e) => {
+    touchEndX = e.changedTouches[0].screenX;
+    if (touchStartX - touchEndX > 50) {
+      // Swipe left -> next
+      currentCarouselIndex = (currentCarouselIndex + 1) % totalCarouselSlides;
+      updateCarousel();
+    } else if (touchEndX - touchStartX > 50) {
+      // Swipe right -> prev
+      currentCarouselIndex = (currentCarouselIndex - 1 + totalCarouselSlides) % totalCarouselSlides;
+      updateCarousel();
+    }
+  }, { passive: true });
+
+  // Handle window resize
+  window.addEventListener('resize', updateCarousel);
+}
+
+// Lightbox modal opener
+function openLightbox(imgSrc, title) {
+  const modal = document.getElementById('modalScreenshot');
+  const img = document.getElementById('modalScreenshotImg');
+  const titleEl = document.getElementById('modalScreenshotTitle');
+  const dl = document.getElementById('modalScreenshotDownload');
+
+  if (!modal || !img) return;
+
+  img.src = imgSrc;
+  if (titleEl) titleEl.textContent = title || 'Скриншот приложения';
+  if (dl) {
+    dl.href = imgSrc;
+    dl.setAttribute('download', imgSrc);
+  }
+  openModal('modalScreenshot');
+}
+

@@ -6,14 +6,14 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "user_profile")
 data class UserProfile(
     @PrimaryKey val id: Int = 1,
-    val callsign: String = "Боец",
-    val unitName: String = "1-е Подразделение",
-    val unitKey: String = "kapt_59e13b",
+    val callsign: String = "",
+    val unitName: String = "",
+    val unitKey: String = "",
     val email: String = "",
-    val isLoggedIn: Boolean = true,
+    val isLoggedIn: Boolean = false,
     val isProActive: Boolean = false,
-    val demoDaysLeft: Int = 2,
-    val proDaysLeft: Int = 29,
+    val demoDaysLeft: Int = 3,
+    val proDaysLeft: Int = 30,
     val isOnline: Boolean = true,
     val onlineCount: Int = 1
 )

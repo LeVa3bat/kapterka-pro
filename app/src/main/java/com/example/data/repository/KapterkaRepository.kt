@@ -62,14 +62,14 @@ class KapterkaRepository(
         val activeProfile = if (currentProfile == null) {
             val defaultProfile = UserProfile(
                 id = 1,
-                callsign = "Боец",
-                unitName = "1-е Подразделение",
-                unitKey = "kapt_59e13b",
+                callsign = "",
+                unitName = "",
+                unitKey = "kapt_" + java.util.UUID.randomUUID().toString().take(6),
                 email = "",
-                isLoggedIn = true,
+                isLoggedIn = false,
                 isProActive = false,
-                demoDaysLeft = 2,
-                proDaysLeft = 29,
+                demoDaysLeft = 3,
+                proDaysLeft = 30,
                 isOnline = true,
                 onlineCount = 1
             )
@@ -79,8 +79,10 @@ class KapterkaRepository(
             currentProfile
         }
 
-        // Launch online synchronization for this unit
-        syncManager?.startSyncForUnit(activeProfile.unitKey, activeProfile.callsign, activeProfile.unitName)
+        // Launch online synchronization for this unit only if user is logged in
+        if (activeProfile.isLoggedIn && activeProfile.unitKey.isNotBlank()) {
+            syncManager?.startSyncForUnit(activeProfile.unitKey, activeProfile.callsign, activeProfile.unitName)
+        }
 
         val currentPoints = dao.getAllPoints().first()
         if (currentPoints.isEmpty()) {

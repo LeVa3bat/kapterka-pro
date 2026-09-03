@@ -288,7 +288,7 @@
             </ul>
             <div style="display:flex; gap:10px; flex-wrap:wrap;">
               <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('showcase')" class="btn btn-primary">
-                📥 Скачать приложение APK
+                📥 Скачать приложение APK (26 МБ)
               </a>
               <button class="btn btn-outline" onclick="switchMainTab('tabDownload')">Инструкция по установке</button>
             </div>
@@ -296,6 +296,119 @@
 
           <div class="screen-preview-container" id="showcaseScreen">
             <!-- Dynamically populated by app.js -->
+          </div>
+        </div>
+
+        <!-- RuStore & Mobile Screenshots Gallery (Interactive Tactical Carousel) -->
+        <div style="margin-top: 45px;">
+          <div style="text-align: center; margin-bottom: 22px;">
+            <span class="badge badge-gold" style="font-size: 0.85rem;">📸 Официальные скриншоты приложения</span>
+            <h3 style="font-size: 1.4rem; color: var(--text-primary); margin: 8px 0 4px;">Карусель реальных экранов смартфона</h3>
+            <p style="color: var(--text-secondary); font-size: 0.88rem;">Полный цикл учета и армейского снабжения в версии 3.0.0 PRO (7 экранов)</p>
+          </div>
+
+          <div class="carousel-wrapper" id="screenshotsCarousel">
+            <button class="carousel-btn prev" id="carouselPrev" aria-label="Предыдущий скриншот">‹</button>
+            <button class="carousel-btn next" id="carouselNext" aria-label="Следующий скриншот">›</button>
+
+            <div class="carousel-viewport">
+              <div class="carousel-track" id="carouselTrack">
+                <!-- Slide 1 -->
+                <div class="carousel-slide" onclick="openLightbox('real_screen_1.jpg', 'Экран 1: Тактический запуск и AES-256')">
+                  <div class="carousel-img-frame">
+                    <span class="carousel-badge-corner">1 / 7</span>
+                    <img src="real_screen_1.jpg" alt="1. Тактический запуск и защита Room DB" loading="lazy">
+                  </div>
+                  <div class="carousel-meta">
+                    <div class="carousel-meta-title">🛡️ 1. Тактический старт</div>
+                    <div class="carousel-meta-desc">Анимация радарного сканера, верификация ключа AES-256 и быстрая загрузка базы данных Room.</div>
+                  </div>
+                </div>
+
+                <!-- Slide 2 -->
+                <div class="carousel-slide" onclick="openLightbox('real_screen_2.jpg', 'Экран 2: Главный командный экран склада')">
+                  <div class="carousel-img-frame">
+                    <span class="carousel-badge-corner">2 / 7</span>
+                    <img src="real_screen_2.jpg" alt="2. Главный экран: точки и остатки" loading="lazy">
+                  </div>
+                  <div class="carousel-meta">
+                    <div class="carousel-meta-title">🏠 2. Командный экран</div>
+                    <div class="carousel-meta-desc">Кнопки «Приход», «Перенос», «Выдача», «Расход ф.8», точки учета: Базовый склад, ОП «Скала», ОП «Заря».</div>
+                  </div>
+                </div>
+
+                <!-- Slide 3 -->
+                <div class="carousel-slide" onclick="openLightbox('real_screen_3.jpg', 'Экран 3: Журнал операций и движений ТМЦ')">
+                  <div class="carousel-img-frame">
+                    <span class="carousel-badge-corner">3 / 7</span>
+                    <img src="real_screen_3.jpg" alt="3. Журнал операций" loading="lazy">
+                  </div>
+                  <div class="carousel-meta">
+                    <div class="carousel-meta-title">⏱️ 3. Журнал операций</div>
+                    <div class="carousel-meta-desc">Полная история движений ТМЦ с фильтрацией по расходу (ф.8), приходам и внутренним перемещениям.</div>
+                  </div>
+                </div>
+
+                <!-- Slide 4 -->
+                <div class="carousel-slide" onclick="openLightbox('real_screen_4.jpg', 'Экран 4: Формирование заявок на снабжение')">
+                  <div class="carousel-img-frame">
+                    <span class="carousel-badge-corner">4 / 7</span>
+                    <img src="real_screen_4.jpg" alt="4. Заявки на снабжение" loading="lazy">
+                  </div>
+                  <div class="carousel-meta">
+                    <div class="carousel-meta-title">📋 4. Заявки снабжения</div>
+                    <div class="carousel-meta-desc">Выбор точки назначения с онлайн-остатками склада, позывной заявителя, позиции, статус «Собрана» и «Выдана».</div>
+                  </div>
+                </div>
+
+                <!-- Slide 5 -->
+                <div class="carousel-slide" onclick="openLightbox('real_screen_5.jpg', 'Экран 5: Воинская номенклатура по службам')">
+                  <div class="carousel-img-frame">
+                    <span class="carousel-badge-corner">5 / 7</span>
+                    <img src="real_screen_5.jpg" alt="5. Справочник номенклатуры" loading="lazy">
+                  </div>
+                  <div class="carousel-meta">
+                    <div class="carousel-meta-title">📦 5. Номенклатура</div>
+                    <div class="carousel-meta-desc">75 позиций по службам: РАВ, БПЛА, Вещевая (СИБЗ), ГСМ, Медицинская, Инженерная, Связь и РЭБ.</div>
+                  </div>
+                </div>
+
+                <!-- Slide 6 -->
+                <div class="carousel-slide" onclick="openLightbox('real_screen_6.jpg', 'Экран 6: Генератор ведомостей Excel')">
+                  <div class="carousel-img-frame">
+                    <span class="carousel-badge-corner">6 / 7</span>
+                    <img src="real_screen_6.jpg" alt="6. Печатные формы Excel и бланки" loading="lazy">
+                  </div>
+                  <div class="carousel-meta">
+                    <div class="carousel-meta-title">📊 6. Отчеты в Excel</div>
+                    <div class="carousel-meta-desc">Строгий белый бланк, экспорт таблиц в один клик без интернета, выгрузка и пересылка в мессенджеры.</div>
+                  </div>
+                </div>
+
+                <!-- Slide 7 -->
+                <div class="carousel-slide" onclick="openLightbox('real_screen_7.jpg', 'Экран 7: Настройки, лицензирование и Firebase')">
+                  <div class="carousel-img-frame">
+                    <span class="carousel-badge-corner">7 / 7</span>
+                    <img src="real_screen_7.jpg" alt="7. Настройки и синхронизация" loading="lazy">
+                  </div>
+                  <div class="carousel-meta">
+                    <div class="carousel-meta-title">⚙️ 7. Настройки и PRO</div>
+                    <div class="carousel-meta-desc">Облачная база Firebase, код синхронизации роты, персональная лицензия ЮKassa и армейские ведомости.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Carousel Pagination Dots -->
+            <div class="carousel-dots" id="carouselDots">
+              <span class="carousel-dot active" data-index="0"></span>
+              <span class="carousel-dot" data-index="1"></span>
+              <span class="carousel-dot" data-index="2"></span>
+              <span class="carousel-dot" data-index="3"></span>
+              <span class="carousel-dot" data-index="4"></span>
+              <span class="carousel-dot" data-index="5"></span>
+              <span class="carousel-dot" data-index="6"></span>
+            </div>
           </div>
         </div>
       </div>
@@ -783,7 +896,7 @@
           <div class="download-actions" style="display:flex; flex-direction:column; align-items:center; gap:12px;">
             <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center; width:100%;">
               <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('direct')" class="btn btn-primary btn-lg" style="font-size:1.1rem; padding:16px 28px; box-shadow:0 0 20px rgba(141,170,89,0.4);">
-                📥 Скачать APK (Прямая ссылка, 18 МБ)
+                📥 Скачать APK (Прямая ссылка, 26 МБ)
               </a>
               <a href="https://t.me/Levaminbat" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-lg" style="font-size:1rem; border-color:var(--accent-gold); color:var(--accent-gold);">
                 ✈️ Написать в Telegram (@Levaminbat)
@@ -797,7 +910,7 @@
           <div class="download-meta" style="margin-top:20px;">
             <span>Версия: 3.0.0 PRO</span>
             <span>•</span>
-            <span>Размер: ~18 МБ</span>
+            <span>Размер: ~26 МБ</span>
             <span>•</span>
             <span>Android 8.0 - 15.0</span>
             <span>•</span>
@@ -1123,6 +1236,27 @@
   <div class="tactical-toast" id="tacticalToast">
     <span class="toast-icon">✓</span>
     <span id="toastMessage">Ключ скопирован в буфер обмена!</span>
+  </div>
+
+  <!-- Modal: Screenshot Lightbox Full Screen -->
+  <div class="modal-overlay" id="modalScreenshot" onclick="if(event.target===this) closeModal('modalScreenshot')">
+    <div class="modal-content" style="max-width: 520px; padding: 16px; text-align: center; background: #131915; border: 1px solid var(--primary);">
+      <div class="modal-header" style="padding-bottom: 10px; margin-bottom: 12px;">
+        <h3 id="modalScreenshotTitle" style="font-size: 1.1rem; color: var(--text-primary);">Просмотр экрана</h3>
+        <button class="modal-close" onclick="closeModal('modalScreenshot')">×</button>
+      </div>
+      <div style="width: 100%; max-height: 75vh; overflow-y: auto; border-radius: 12px; background: #000; border: 1px solid rgba(141,170,89,0.3);">
+        <img id="modalScreenshotImg" src="" alt="Скриншот приложения" style="width: 100%; height: auto; display: block; border-radius: 12px;">
+      </div>
+      <div style="margin-top: 14px; display: flex; justify-content: space-between; align-items: center;">
+        <a id="modalScreenshotDownload" href="" download class="btn btn-secondary btn-sm" style="font-size: 0.8rem;">
+          📥 Скачать скриншот (JPG)
+        </a>
+        <button class="btn btn-primary btn-sm" onclick="closeModal('modalScreenshot')" style="font-size: 0.8rem;">
+          Закрыть
+        </button>
+      </div>
+    </div>
   </div>
 
   <script src="app.js"></script>
