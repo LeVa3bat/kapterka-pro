@@ -19,7 +19,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Lock
@@ -31,7 +30,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -42,11 +40,11 @@ import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,64 +58,37 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.UserProfile
-import com.example.ui.theme.*
+import com.example.ui.theme.SageGreenBright
+import com.example.ui.theme.SageGreenContainer
+import com.example.ui.theme.SageGreenDark
+import com.example.ui.theme.SageGreenPrimary
+import com.example.ui.theme.TacticalBg
+import com.example.ui.theme.TacticalBorder
+import com.example.ui.theme.TacticalBorderSubtle
+import com.example.ui.theme.TacticalSurface
+import com.example.ui.theme.TacticalSurfaceLight
+import com.example.ui.theme.TacticalTextDim
+import com.example.ui.theme.TacticalTextMuted
+import com.example.ui.theme.TacticalTextPrimary
+import com.example.ui.theme.TacticalTextSecondary
 import java.util.UUID
 
 @Composable
 fun AuthScreen(
     currentProfile: UserProfile?,
-    onLookupCallsign: (suspend (String) -> com.example.data.license.CloudFighterLookupResult)? = null,
-    onCompleteAuth: (UserProfile, Boolean) -> Unit
+    onCompleteAuth: (UserProfile) -> Unit
 ) {
-    // 0: Регистрация, 1: Вход в подразделение
-    var selectedTab by remember { mutableIntStateOf(if (currentProfile != null && currentProfile.callsign.isNotBlank()) 1 else 0) }
+    var selectedTab by remember { mutableIntStateOf(0) } // 0: Регистрация, 1: Вход
     var callsign by remember { mutableStateOf(currentProfile?.callsign?.ifBlank { "" } ?: "") }
     var unitName by remember { mutableStateOf(currentProfile?.unitName?.ifBlank { "" } ?: "") }
-    var unitKey by remember { mutableStateOf(currentProfile?.unitKey?.ifBlank { "" } ?: "") }
+    var unitKey by remember {
+        mutableStateOf(
+            if (!currentProfile?.unitKey.isNullOrBlank()) currentProfile?.unitKey!!
+            else "kapt_" + UUID.randomUUID().toString().take(6)
+        )
+    }
     var email by remember { mutableStateOf(currentProfile?.email?.ifBlank { "" } ?: "") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-
-    var foundLookupResult by remember { mutableStateOf<com.example.data.license.CloudFighterLookupResult?>(null) }
-    var isSearchingCloud by remember { mutableStateOf(false) }
-
-    // Автоматический поиск бойца в облаке при вводе позывного в режиме Входа
-    LaunchedEffect(callsign, selectedTab) {
-        val clean = callsign.trim()
-        if (selectedTab == 1 && clean.length >= 2 && onLookupCallsign != null) {
-            isSearchingCloud = true
-            try {
-                val res = onLookupCallsign(clean)
-                if (res.found) {
-                    foundLookupResult = res
-                    if (res.unitKey.isNotBlank() && (unitKey.isBlank() || unitKey.startsWith("kapt_"))) {
-                        unitKey = res.unitKey
-                    }
-                    if (res.unitName.isNotBlank() && unitName.isBlank()) {
-                        unitName = res.unitName
-                    }
-                    if (res.email.isNotBlank() && email.isBlank()) {
-                        email = res.email
-                    }
-                } else {
-                    foundLookupResult = null
-                }
-            } catch (e: Exception) {
-                foundLookupResult = null
-            } finally {
-                isSearchingCloud = false
-            }
-        } else {
-            foundLookupResult = null
-            isSearchingCloud = false
-        }
-    }
-
-    // Если переключились на регистрацию, и ключ пуст - генерируем
-    LaunchedEffect(selectedTab) {
-        if (selectedTab == 0 && unitKey.isBlank()) {
-            unitKey = "kapt_" + UUID.randomUUID().toString().take(6)
-        }
-    }
 
     Box(
         modifier = Modifier
@@ -196,7 +167,7 @@ fun AuthScreen(
                                 email = email.trim(),
                                 isLoggedIn = true
                             )
-                            onCompleteAuth(prof, selectedTab == 0)
+                            onCompleteAuth(prof)
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -297,78 +268,6 @@ fun AuthScreen(
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    // Found fighter badge in cloud
-                    if (selectedTab == 1) {
-                        if (isSearchingCloud) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(14.dp),
-                                    strokeWidth = 2.dp,
-                                    color = SageGreenBright
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = "Поиск бойца в облачной базе роты...",
-                                    color = TacticalTextMuted,
-                                    fontSize = 11.sp
-                                )
-                            }
-                        } else if (foundLookupResult != null) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(Color(0xFF14241B))
-                                    .border(1.dp, SageGreenPrimary, RoundedCornerShape(8.dp))
-                                    .padding(10.dp)
-                            ) {
-                                Column {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(
-                                            imageVector = Icons.Default.CheckCircle,
-                                            contentDescription = null,
-                                            tint = SageGreenBright,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text(
-                                            text = "Боец «${foundLookupResult?.callsign}» найден в базе",
-                                            color = SageGreenBright,
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.height(3.dp))
-                                    Text(
-                                        text = "Подразделение: ${foundLookupResult?.unitName}",
-                                        color = TacticalTextPrimary,
-                                        fontSize = 11.sp
-                                    )
-                                    Text(
-                                        text = "Ключ подразделения: ${foundLookupResult?.unitKey} (сохранен)",
-                                        color = TacticalGold,
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    if (foundLookupResult?.isProActive == true) {
-                                        Text(
-                                            text = "Лицензия: ПРО АКТИВНА (${foundLookupResult?.daysRemaining} дн.)",
-                                            color = SageGreenBright,
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(10.dp))
-                        }
-                    }
-
                     OutlinedTextField(
                         value = unitName,
                         onValueChange = { unitName = it },
@@ -394,13 +293,7 @@ fun AuthScreen(
                         value = unitKey,
                         onValueChange = { unitKey = it },
                         label = { Text("Ключ подразделения", color = TacticalTextSecondary, fontSize = 12.sp) },
-                        placeholder = { 
-                            Text(
-                                if (selectedTab == 1) "Определяется автоматически по позывному" else "Введите общий ключ или нажмите 🔄", 
-                                color = TacticalTextDim, 
-                                fontSize = 12.sp
-                            ) 
-                        },
+                        placeholder = { Text("Введите общий ключ или нажмите 🔄", color = TacticalTextDim, fontSize = 12.sp) },
                         singleLine = true,
                         trailingIcon = {
                             if (selectedTab == 0) {
@@ -445,7 +338,7 @@ fun AuthScreen(
                             text = if (selectedTab == 0)
                                 "Ключ связывает все телефоны роты. Введите одинаковый ключ на всех устройствах."
                             else
-                                "Ключ подтянется из базы автоматически, либо введите общий ключ роты.",
+                                "Введите ключ, выданный старшиной или командиром роты.",
                             color = TacticalTextMuted,
                             fontSize = 11.sp,
                             lineHeight = 14.sp
@@ -495,17 +388,9 @@ fun AuthScreen(
                                 return@Button
                             }
                             errorMessage = null
-                            val cleanUnitName = unitName.trim().ifEmpty { foundLookupResult?.unitName.orEmpty().ifEmpty { "1-е Подразделение" } }
-                            val cleanKey = if (unitKey.isNotBlank()) {
-                                unitKey.trim()
-                            } else if (foundLookupResult != null && foundLookupResult!!.unitKey.isNotBlank()) {
-                                foundLookupResult!!.unitKey
-                            } else if (selectedTab == 0) {
-                                "kapt_" + UUID.randomUUID().toString().take(6)
-                            } else {
-                                ""
-                            }
-                            val cleanEmail = email.trim().ifEmpty { foundLookupResult?.email.orEmpty() }
+                            val cleanUnitName = unitName.trim().ifEmpty { "1-е Подразделение" }
+                            val cleanKey = unitKey.trim().ifEmpty { "kapt_" + UUID.randomUUID().toString().take(6) }
+                            val cleanEmail = email.trim()
 
                             val prof = (currentProfile ?: UserProfile()).copy(
                                 callsign = cleanCallsign,
@@ -514,7 +399,7 @@ fun AuthScreen(
                                 email = cleanEmail,
                                 isLoggedIn = true
                             )
-                            onCompleteAuth(prof, selectedTab == 0)
+                            onCompleteAuth(prof)
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -540,7 +425,7 @@ fun AuthScreen(
                         onClick = {
                             val cleanCallsign = callsign.trim().ifEmpty { "Пользователь" }
                             val cleanUnitName = unitName.trim().ifEmpty { "1-е Подразделение" }
-                            val cleanKey = unitKey.trim().ifEmpty { "kapt_default" }
+                            val cleanKey = unitKey.trim().ifEmpty { "kapt_" + UUID.randomUUID().toString().take(6) }
                             val cleanEmail = email.trim()
 
                             val prof = (currentProfile ?: UserProfile()).copy(
@@ -550,7 +435,7 @@ fun AuthScreen(
                                 email = cleanEmail,
                                 isLoggedIn = true
                             )
-                            onCompleteAuth(prof, false)
+                            onCompleteAuth(prof)
                         },
                         modifier = Modifier
                             .fillMaxWidth()

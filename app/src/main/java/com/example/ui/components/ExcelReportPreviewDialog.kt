@@ -26,7 +26,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -441,7 +440,7 @@ private fun MilitaryTableView(table: MilitaryReportBlock.Table) {
     val totalTableWidth = table.columnWidths.fold(0.dp) { acc, w -> acc + w }
     val hScroll = rememberScrollState()
 
-    // Scrollable container with fixed column widths for perfectly aligned military grid
+    // Scrollable container with fixed column widths for perfectly aligned grid
     Box(
         modifier = Modifier
             .fillMaxWidth()

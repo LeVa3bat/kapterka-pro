@@ -354,4 +354,50 @@ class FighterRegistryManager(
         }
         return newKey
     }
+
+    suspend fun lookupFighter(query: String): FighterAdminRecord? {
+        val q = query.trim().lowercase(Locale.ROOT)
+        if (q.isBlank()) return null
+
+        // 1. Поиск в локальном кэше
+        val localMatch = _fighters.value.find {
+            it.callsign.lowercase(Locale.ROOT) == q ||
+            (it.email.isNotBlank() && it.email.lowercase(Locale.ROOT) == q) ||
+            (it.unitKey.isNotBlank() && it.unitKey.lowercase(Locale.ROOT) == q)
+        }
+        if (localMatch != null) return localMatch
+
+        // 2. Поиск в облаке Firestore
+        return withContext(Dispatchers.IO) {
+            try {
+                val snap = firestore.collection("fighters").get().await()
+                for (doc in snap.documents) {
+                    val cs = doc.getString("callsign")?.lowercase(Locale.ROOT) ?: ""
+                    val em = doc.getString("email")?.lowercase(Locale.ROOT) ?: ""
+                    val uk = doc.getString("unitKey")?.lowercase(Locale.ROOT) ?: ""
+                    if (cs == q || (em.isNotBlank() && em == q) || (uk.isNotBlank() && uk == q)) {
+                        val exp = doc.getLong("expiresAt") ?: 0L
+                        val daysLeft = if (exp > System.currentTimeMillis()) {
+                            ((exp - System.currentTimeMillis()) / 86400000L).toInt()
+                        } else 0
+                        return@withContext FighterAdminRecord(
+                            id = doc.getString("fighterId") ?: doc.id,
+                            callsign = doc.getString("callsign") ?: "",
+                            unitName = doc.getString("unitName") ?: "",
+                            unitKey = doc.getString("unitKey") ?: "",
+                            email = doc.getString("email") ?: "",
+                            licenseKey = doc.getString("licenseKey") ?: "",
+                            isProActive = doc.getBoolean("isProActive") ?: false,
+                            licenseDaysLeft = daysLeft,
+                            role = doc.getString("role") ?: "Старшина подразделения"
+                        )
+                    }
+                }
+                null
+            } catch (e: Exception) {
+                Log.w(TAG, "Error looking up fighter in cloud", e)
+                null
+            }
+        }
+    }
 }

@@ -190,11 +190,8 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel) {
     if (profile?.isLoggedIn != true) {
         AuthScreen(
             currentProfile = profile,
-            onLookupCallsign = { callsign ->
-                viewModel.lookupFighterByCallsignOrEmail(callsign)
-            },
-            onCompleteAuth = { newProfile, isNewUnit ->
-                viewModel.registerOrLoginProfile(newProfile, isNewUnit)
+            onCompleteAuth = { newProfile ->
+                viewModel.registerOrLoginProfile(newProfile)
             }
         )
         return

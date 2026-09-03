@@ -13,19 +13,19 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.nio.charset.StandardCharsets
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
+/**
+ * Структура данных для экспорта в официальный Excel (.xlsx)
+ */
 data class ExcelReportData(
     val sheetName: String,
     val title: String,
     val subtitle: String = "",
     val details: List<Pair<String, String>> = emptyList(),
     val headers: List<String>,
-    val colWidthsChars: List<Double>,
+    val colWidthsChars: List<Double> = emptyList(),
     val rows: List<List<String>>,
     val totalRow: List<String>? = null,
     val signers: List<Triple<String, String, String>> = emptyList()
@@ -34,127 +34,47 @@ data class ExcelReportData(
 object ExcelExportHelper {
 
     /**
-     * Создает полноценный бинарный .xlsx файл (OpenXML Spreadsheet)
-     * со стилями, границами ячеек, авто-переносом текста, жирными заголовками и уставным оформлением.
+     * Создает стандартный файл OpenXML Spreadsheet (.xlsx) без сторонних тяжелых библиотек.
+     * Открывается во всех версиях Microsoft Excel, LibreOffice, WPS Office, МойОфис и Таблицах Google.
      */
     fun generateXlsxBytes(data: ExcelReportData): ByteArray {
         val bos = ByteArrayOutputStream()
         ZipOutputStream(bos).use { zip ->
             // 1. [Content_Types].xml
             zip.putNextEntry(ZipEntry("[Content_Types].xml"))
-            zip.write(getContentTypesXml().toByteArray(StandardCharsets.UTF_8))
+            zip.write(contentTypesXml.toByteArray(StandardCharsets.UTF_8))
             zip.closeEntry()
 
             // 2. _rels/.rels
             zip.putNextEntry(ZipEntry("_rels/.rels"))
-            zip.write(getRootRelsXml().toByteArray(StandardCharsets.UTF_8))
+            zip.write(rootRelsXml.toByteArray(StandardCharsets.UTF_8))
             zip.closeEntry()
 
-            // 3. xl/_rels/workbook.xml.rels
-            zip.putNextEntry(ZipEntry("xl/_rels/workbook.xml.rels"))
-            zip.write(getWorkbookRelsXml().toByteArray(StandardCharsets.UTF_8))
-            zip.closeEntry()
-
-            // 4. xl/workbook.xml
+            // 3. xl/workbook.xml
             zip.putNextEntry(ZipEntry("xl/workbook.xml"))
-            zip.write(getWorkbookXml(data.sheetName).toByteArray(StandardCharsets.UTF_8))
+            zip.write(workbookXml(data.sheetName).toByteArray(StandardCharsets.UTF_8))
+            zip.closeEntry()
+
+            // 4. xl/_rels/workbook.xml.rels
+            zip.putNextEntry(ZipEntry("xl/_rels/workbook.xml.rels"))
+            zip.write(workbookRelsXml.toByteArray(StandardCharsets.UTF_8))
             zip.closeEntry()
 
             // 5. xl/styles.xml
             zip.putNextEntry(ZipEntry("xl/styles.xml"))
-            zip.write(getStylesXml().toByteArray(StandardCharsets.UTF_8))
+            zip.write(stylesXml.toByteArray(StandardCharsets.UTF_8))
             zip.closeEntry()
 
             // 6. xl/worksheets/sheet1.xml
             zip.putNextEntry(ZipEntry("xl/worksheets/sheet1.xml"))
-            zip.write(getSheetXml(data).toByteArray(StandardCharsets.UTF_8))
+            zip.write(sheetXml(data).toByteArray(StandardCharsets.UTF_8))
             zip.closeEntry()
         }
         return bos.toByteArray()
     }
 
-    /**
-     * Сохраняет .xlsx файл в системную папку Загрузки (Downloads) устройства
-     * и возвращает локальный File для просмотра / отправки.
-     */
-    fun saveXlsxToDownloads(context: Context, fileName: String, bytes: ByteArray): File {
-        val safeName = if (fileName.endsWith(".xlsx", ignoreCase = true)) fileName else "$fileName.xlsx"
-        
-        // 1. Сохраняем в кэш приложения для мгновенного шаринга через FileProvider
-        val cacheFile = File(context.cacheDir, safeName)
-        try {
-            FileOutputStream(cacheFile).use { it.write(bytes) }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-
-        // 2. Экспортируем в публичную системную папку «Загрузки» (Downloads)
-        var savedPublic = false
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                val values = ContentValues().apply {
-                    put(MediaStore.MediaColumns.DISPLAY_NAME, safeName)
-                    put(MediaStore.MediaColumns.MIME_TYPE, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
-                }
-                val uri = context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
-                if (uri != null) {
-                    context.contentResolver.openOutputStream(uri)?.use { os ->
-                        os.write(bytes)
-                        savedPublic = true
-                    }
-                }
-            } else {
-                val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-                if (downloadsDir.exists() || downloadsDir.mkdirs()) {
-                    val publicFile = File(downloadsDir, safeName)
-                    FileOutputStream(publicFile).use { it.write(bytes) }
-                    savedPublic = true
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-
-        val message = if (savedPublic) {
-            "Таблица сохранена в «Загрузки»:\n$safeName"
-        } else {
-            "Файл Excel сформирован:\n$safeName"
-        }
-        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-
-        return cacheFile
-    }
-
-    /**
-     * Запускает системный диалог выбора приложения (Microsoft Excel, МойОфис, Таблицы, Telegram, WhatsApp).
-     */
-    fun shareOrOpenExcel(context: Context, file: File, title: String) {
-        try {
-            val uri: Uri = FileProvider.getUriForFile(
-                context,
-                "${context.packageName}.fileprovider",
-                file
-            )
-
-            val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                putExtra(Intent.EXTRA_STREAM, uri)
-                putExtra(Intent.EXTRA_TITLE, title)
-                putExtra(Intent.EXTRA_SUBJECT, title)
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
-
-            val chooser = Intent.createChooser(shareIntent, "Открыть отчет Excel / Отправить")
-            chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(chooser)
-        } catch (e: Exception) {
-            Toast.makeText(context, "Не удалось открыть Excel: ${e.message}", Toast.LENGTH_LONG).show()
-        }
-    }
-
-    private fun escapeXml(str: String): String {
-        return str.replace("&", "&amp;")
+    private fun escapeXml(s: String): String {
+        return s.replace("&", "&amp;")
             .replace("<", "&lt;")
             .replace(">", "&gt;")
             .replace("\"", "&quot;")
@@ -162,236 +82,326 @@ object ExcelExportHelper {
     }
 
     private fun colLetter(colIdx: Int): String {
-        var n = colIdx
-        val result = StringBuilder()
-        while (n >= 0) {
-            result.insert(0, ('A'.code + (n % 26)).toChar())
-            n = (n / 26) - 1
+        var col = colIdx
+        val sb = StringBuilder()
+        while (col >= 0) {
+            sb.insert(0, ('A'.code + (col % 26)).toChar())
+            col = (col / 26) - 1
         }
-        return result.toString()
+        return sb.toString()
     }
 
-    private fun getContentTypesXml(): String = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    private val contentTypesXml = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
   <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
   <Default Extension="xml" ContentType="application/xml"/>
   <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
   <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
   <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
-</Types>"""
+</Types>""".trimIndent()
 
-    private fun getRootRelsXml(): String = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    private val rootRelsXml = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
-</Relationships>"""
+</Relationships>""".trimIndent()
 
-    private fun getWorkbookRelsXml(): String = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
-  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
-</Relationships>"""
-
-    private fun getWorkbookXml(sheetName: String): String {
-        val safeSheetName = escapeXml(sheetName.take(31).ifEmpty { "Ведомость" })
+    private fun workbookXml(sheetName: String): String {
+        val safeName = escapeXml(sheetName.take(31))
         return """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <sheets>
-    <sheet name="$safeSheetName" sheetId="1" r:id="rId1"/>
+    <sheet name="$safeName" sheetId="1" r:id="rId1"/>
   </sheets>
-</workbook>"""
+</workbook>""".trimIndent()
     }
 
-    private fun getStylesXml(): String = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    private val workbookRelsXml = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>""".trimIndent()
+
+    /**
+     * Styles:
+     * 0: Normal
+     * 1: Title (Bold 14pt, Centered)
+     * 2: Subtitle (Bold 10pt, Centered)
+     * 3: Header cell (Bold 9pt, Centered, Gray fill #E2E6E2, thin border)
+     * 4: Subheader / Col Numbers (8pt, Centered, #F2F2F2 fill, thin border)
+     * 5: Data Text Left (9pt, Left align, thin border)
+     * 6: Data Text Center (9pt, Center align, thin border)
+     * 7: Data Text Right (9pt, Right align, thin border)
+     * 8: Total Row Left (Bold 9pt, Left, #EDEDED fill, thin border)
+     * 9: Total Row Right (Bold 9pt, Right, #EDEDED fill, thin border)
+     * 10: Details label (Bold 9pt, Left)
+     * 11: Details value (9pt, Left)
+     * 12: Signature label (Bold 9pt, Left)
+     * 13: Signature underline (9pt, Center, bottom border)
+     */
+    private val stylesXml = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-  <fonts count="5">
-    <!-- 0: Regular body 10pt -->
-    <font><sz val="10"/><name val="Calibri"/><family val="2"/></font>
-    <!-- 1: Bold header 10pt -->
-    <font><b/><sz val="10"/><name val="Calibri"/><family val="2"/></font>
-    <!-- 2: Title bold 12pt -->
-    <font><b/><sz val="12"/><name val="Calibri"/><family val="2"/></font>
-    <!-- 3: Small 9pt -->
-    <font><sz val="9"/><name val="Calibri"/><family val="2"/></font>
-    <!-- 4: Small bold 9pt -->
-    <font><b/><sz val="9"/><name val="Calibri"/><family val="2"/></font>
+  <fonts count="4">
+    <font><sz val="9"/><name val="Calibri"/></font>
+    <font><b/><sz val="14"/><name val="Calibri"/></font>
+    <font><b/><sz val="10"/><name val="Calibri"/></font>
+    <font><b/><sz val="9"/><name val="Calibri"/></font>
   </fonts>
-  <fills count="4">
-    <!-- 0: none -->
+  <fills count="5">
     <fill><patternFill patternType="none"/></fill>
-    <!-- 1: gray125 -->
     <fill><patternFill patternType="gray125"/></fill>
-    <!-- 2: Tactical Military Sage #D9E1D2 -->
-    <fill><patternFill patternType="solid"><fgColor rgb="FFD9E1D2"/></patternFill></fill>
-    <!-- 3: Light gray for numbering #EFEFEF -->
-    <fill><patternFill patternType="solid"><fgColor rgb="FFEFEFEF"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFE2E6E2"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFF2F2F2"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFEDEDED"/></patternFill></fill>
   </fills>
   <borders count="3">
-    <!-- 0: none -->
-    <border><left/><right/><top/><bottom/><diagonal/></border>
-    <!-- 1: Thin black all around -->
+    <border><left/><right/><top/><bottom/></border>
     <border>
       <left style="thin"><color rgb="FF000000"/></left>
       <right style="thin"><color rgb="FF000000"/></right>
       <top style="thin"><color rgb="FF000000"/></top>
       <bottom style="thin"><color rgb="FF000000"/></bottom>
-      <diagonal/>
     </border>
-    <!-- 2: Total row (top thin, bottom double) -->
     <border>
-      <left style="thin"><color rgb="FF000000"/></left>
-      <right style="thin"><color rgb="FF000000"/></right>
-      <top style="thin"><color rgb="FF000000"/></top>
-      <bottom style="double"><color rgb="FF000000"/></bottom>
-      <diagonal/>
+      <left/><right/><top/>
+      <bottom style="thin"><color rgb="FF000000"/></bottom>
     </border>
   </borders>
   <cellStyleXfs count="1">
     <xf numFmtId="0" fontId="0" fillId="0" borderId="0"/>
   </cellStyleXfs>
-  <cellXfs count="9">
-    <!-- 0: default -->
+  <cellXfs count="14">
     <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
-    <!-- 1: Title (bold 12pt) -->
-    <xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"><alignment vertical="center"/></xf>
-    <!-- 2: Subtitle/Meta (small 9pt) -->
-    <xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1"><alignment vertical="center"/></xf>
-    <!-- 3: Table Header (bold, centered, wrapText, sage fill, border) -->
-    <xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1">
-      <alignment horizontal="center" vertical="center" wrapText="1"/>
-    </xf>
-    <!-- 4: Table Column Numbers (small bold, centered, light gray fill, border) -->
-    <xf numFmtId="0" fontId="4" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1">
-      <alignment horizontal="center" vertical="center"/>
-    </xf>
-    <!-- 5: Cell text left (wrapText, border) -->
-    <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1">
-      <alignment horizontal="left" vertical="center" wrapText="1"/>
-    </xf>
-    <!-- 6: Cell text center (wrapText, border) -->
-    <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1">
-      <alignment horizontal="center" vertical="center" wrapText="1"/>
-    </xf>
-    <!-- 7: Cell numeric/right (wrapText, border) -->
-    <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1">
-      <alignment horizontal="right" vertical="center" wrapText="1"/>
-    </xf>
-    <!-- 8: Total row (bold, border2) -->
-    <xf numFmtId="0" fontId="1" fillId="0" borderId="2" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1">
-      <alignment horizontal="right" vertical="center" wrapText="1"/>
-    </xf>
+    <xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0"><alignment horizontal="center" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0"><alignment horizontal="center" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="3" fillId="2" borderId="1" xfId="0"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+    <xf numFmtId="0" fontId="0" fillId="3" borderId="1" xfId="0"><alignment horizontal="center" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0"><alignment horizontal="center" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0"><alignment horizontal="right" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="3" fillId="4" borderId="1" xfId="0"><alignment horizontal="left" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="3" fillId="4" borderId="1" xfId="0"><alignment horizontal="right" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0"><alignment horizontal="left" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"><alignment horizontal="left" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0"><alignment horizontal="left" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="2" xfId="0"><alignment horizontal="center" vertical="center"/></xf>
   </cellXfs>
-</styleSheet>"""
+</styleSheet>""".trimIndent()
 
-    private fun getSheetXml(data: ExcelReportData): String {
+    private fun sheetXml(data: ExcelReportData): String {
         val sb = StringBuilder()
         sb.append("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>""")
         sb.append("""<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">""")
 
-        // Custom column widths
+        val colCount = maxOf(data.headers.size, 1)
+
+        // Column widths
         sb.append("<cols>")
-        data.colWidthsChars.forEachIndexed { idx, width ->
-            val colNum = idx + 1
-            sb.append("""<col min="$colNum" max="$colNum" width="$width" customWidth="1"/>""")
+        for (i in 0 until colCount) {
+            val width = if (i < data.colWidthsChars.size) data.colWidthsChars[i] else 16.0
+            val clampedWidth = width.coerceIn(8.0, 50.0)
+            sb.append("""<col min="${i + 1}" max="${i + 1}" width="$clampedWidth" customWidth="1"/>""")
         }
         sb.append("</cols>")
 
         sb.append("<sheetData>")
         var rowNum = 1
 
-        // Row 1: Title
-        sb.append("""<row r="$rowNum">""")
+        // 1. Title Row
+        sb.append("""<row r="$rowNum" ht="26" customHeight="1">""")
         sb.append("""<c r="A$rowNum" s="1" t="inlineStr"><is><t>${escapeXml(data.title)}</t></is></c>""")
         sb.append("</row>")
         rowNum++
 
-        // Row 2: Subtitle
+        // 2. Subtitle Row
         if (data.subtitle.isNotBlank()) {
-            sb.append("""<row r="$rowNum">""")
+            sb.append("""<row r="$rowNum" ht="18" customHeight="1">""")
             sb.append("""<c r="A$rowNum" s="2" t="inlineStr"><is><t>${escapeXml(data.subtitle)}</t></is></c>""")
             sb.append("</row>")
             rowNum++
         }
 
-        // Details (Основание, Подразделение и т.д.)
-        for ((k, v) in data.details) {
-            sb.append("""<row r="$rowNum">""")
-            sb.append("""<c r="A$rowNum" s="2" t="inlineStr"><is><t>${escapeXml(k)}</t></is></c>""")
-            sb.append("""<c r="B$rowNum" s="2" t="inlineStr"><is><t>${escapeXml(v)}</t></is></c>""")
-            sb.append("</row>")
-            rowNum++
+        // 3. Details (Основание, Комиссия, Период)
+        if (data.details.isNotEmpty()) {
+            rowNum++ // Blank line
+            for (d in data.details) {
+                sb.append("""<row r="$rowNum">""")
+                sb.append("""<c r="A$rowNum" s="10" t="inlineStr"><is><t>${escapeXml(d.first)}</t></is></c>""")
+                sb.append("""<c r="B$rowNum" s="11" t="inlineStr"><is><t>${escapeXml(d.second)}</t></is></c>""")
+                sb.append("</row>")
+                rowNum++
+            }
         }
 
-        // Пустая строка перед таблицей
+        // Empty space before table
         rowNum++
 
-        // Таблица: Строка заголовков (стиль 3)
+        // 4. Headers
         sb.append("""<row r="$rowNum" ht="28" customHeight="1">""")
-        data.headers.forEachIndexed { colIdx, header ->
-            val cellRef = "${colLetter(colIdx)}$rowNum"
-            val cleanHeader = header.replace("\n", " ")
-            sb.append("""<c r="$cellRef" s="3" t="inlineStr"><is><t>${escapeXml(cleanHeader)}</t></is></c>""")
+        for ((cIdx, h) in data.headers.withIndex()) {
+            val ref = "${colLetter(cIdx)}$rowNum"
+            sb.append("""<c r="$ref" s="3" t="inlineStr"><is><t>${escapeXml(h)}</t></is></c>""")
         }
         sb.append("</row>")
         rowNum++
 
-        // Таблица: Нумерация граф (Графа 1, 2, 3...) (стиль 4)
-        sb.append("""<row r="$rowNum" ht="18" customHeight="1">""")
-        data.headers.forEachIndexed { colIdx, _ ->
-            val cellRef = "${colLetter(colIdx)}$rowNum"
-            sb.append("""<c r="$cellRef" s="4"><v>${colIdx + 1}</v></c>""")
+        // 5. Header column numbers (1, 2, 3...)
+        sb.append("""<row r="$rowNum" ht="16" customHeight="1">""")
+        for (cIdx in data.headers.indices) {
+            val ref = "${colLetter(cIdx)}$rowNum"
+            sb.append("""<c r="$ref" s="4" t="inlineStr"><is><t>${cIdx + 1}</t></is></c>""")
         }
         sb.append("</row>")
         rowNum++
 
-        // Таблица: Строки данных (стили 5 - текст лево, 6 - центр, 7 - число право)
-        data.rows.forEach { rowCells ->
-            sb.append("""<row r="$rowNum">""")
-            rowCells.forEachIndexed { colIdx, value ->
-                val cellRef = "${colLetter(colIdx)}$rowNum"
-                // Проверяем, является ли значение числом
-                val num = value.toDoubleOrNull()
-                if (num != null && !value.startsWith("+") && !value.contains("-") && colIdx > 1) {
-                    sb.append("""<c r="$cellRef" s="7"><v>$value</v></c>""")
+        // 6. Data rows
+        for (r in data.rows) {
+            sb.append("""<row r="$rowNum" ht="20" customHeight="1">""")
+            for (cIdx in 0 until colCount) {
+                val cellVal = if (cIdx < r.size) r[cIdx] else ""
+                val ref = "${colLetter(cIdx)}$rowNum"
+
+                // Alignment: numbers on right, units/num on center, names on left
+                val styleId = when {
+                    cIdx == 0 -> 6 // №
+                    cIdx == 1 -> 5 // Наименование
+                    cIdx == 2 -> 6 // Ед. изм / Категория
+                    cellVal.toDoubleOrNull() != null -> 7 // Number
+                    cellVal == "-" -> 6
+                    else -> 5
+                }
+
+                // If numeric, write as number
+                val numVal = cellVal.replace(" ", "").replace(",", ".").toDoubleOrNull()
+                if (numVal != null && cIdx > 1) {
+                    sb.append("""<c r="$ref" s="$styleId"><v>$numVal</v></c>""")
                 } else {
-                    val style = if (colIdx == 0 || colIdx == 2 || colIdx == 3) 6 else 5
-                    sb.append("""<c r="$cellRef" s="$style" t="inlineStr"><is><t>${escapeXml(value)}</t></is></c>""")
+                    sb.append("""<c r="$ref" s="$styleId" t="inlineStr"><is><t>${escapeXml(cellVal)}</t></is></c>""")
                 }
             }
             sb.append("</row>")
             rowNum++
         }
 
-        // Строка ИТОГО (если есть)
-        data.totalRow?.let { totalCells ->
+        // 7. Total row
+        if (data.totalRow != null) {
             sb.append("""<row r="$rowNum" ht="22" customHeight="1">""")
-            totalCells.forEachIndexed { colIdx, value ->
-                val cellRef = "${colLetter(colIdx)}$rowNum"
-                sb.append("""<c r="$cellRef" s="8" t="inlineStr"><is><t>${escapeXml(value)}</t></is></c>""")
+            for (cIdx in 0 until colCount) {
+                val cellVal = if (cIdx < data.totalRow.size) data.totalRow[cIdx] else ""
+                val ref = "${colLetter(cIdx)}$rowNum"
+                val styleId = if (cIdx <= 1) 8 else 9
+
+                val numVal = cellVal.replace(" ", "").replace(",", ".").toDoubleOrNull()
+                if (numVal != null && cIdx > 1) {
+                    sb.append("""<c r="$ref" s="$styleId"><v>$numVal</v></c>""")
+                } else {
+                    sb.append("""<c r="$ref" s="$styleId" t="inlineStr"><is><t>${escapeXml(cellVal)}</t></is></c>""")
+                }
             }
             sb.append("</row>")
             rowNum++
         }
 
-        // Подписи ответственных лиц
+        // 8. Signatures
         if (data.signers.isNotEmpty()) {
-            rowNum++ // пустая строка
+            rowNum++ // Blank line
             sb.append("""<row r="$rowNum">""")
-            sb.append("""<c r="A$rowNum" s="1" t="inlineStr"><is><t>Подписи должностных лиц:</t></is></c>""")
+            sb.append("""<c r="A$rowNum" s="12" t="inlineStr"><is><t>Подписи должностных лиц:</t></is></c>""")
             sb.append("</row>")
             rowNum++
 
-            data.signers.forEach { (role, line, name) ->
+            for (s in data.signers) {
                 sb.append("""<row r="$rowNum" ht="20" customHeight="1">""")
-                sb.append("""<c r="A$rowNum" s="2" t="inlineStr"><is><t>${escapeXml(role)}</t></is></c>""")
-                sb.append("""<c r="B$rowNum" s="2" t="inlineStr"><is><t>${escapeXml(line)}</t></is></c>""")
-                sb.append("""<c r="C$rowNum" s="2" t="inlineStr"><is><t>${escapeXml(name)}</t></is></c>""")
+                sb.append("""<c r="A$rowNum" s="10" t="inlineStr"><is><t>${escapeXml(s.first)}</t></is></c>""")
+                sb.append("""<c r="B$rowNum" s="13" t="inlineStr"><is><t>${escapeXml(s.second.ifBlank { "________" })}</t></is></c>""")
+                val thirdCol = if (colCount >= 3) colLetter(2) else "C"
+                sb.append("""<c r="$thirdCol$rowNum" s="11" t="inlineStr"><is><t>${escapeXml(s.third)}</t></is></c>""")
                 sb.append("</row>")
                 rowNum++
             }
         }
 
         sb.append("</sheetData>")
+
+        // Merges for titles
+        val lastColLetter = colLetter(maxOf(colCount - 1, 1))
+        sb.append("<mergeCells count=\"2\">")
+        sb.append("""<mergeCell ref="A1:${lastColLetter}1"/>""")
+        if (data.subtitle.isNotBlank()) {
+            sb.append("""<mergeCell ref="A2:${lastColLetter}2"/>""")
+        }
+        sb.append("</mergeCells>")
+
         sb.append("</worksheet>")
         return sb.toString()
+    }
+
+    /**
+     * Сохраняет файл в папку «Загрузки» устройства (Downloads) и возвращает File.
+     */
+    fun saveXlsxToDownloads(context: Context, fileName: String, bytes: ByteArray): File? {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val values = ContentValues().apply {
+                    put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                    put(MediaStore.MediaColumns.MIME_TYPE, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/Каптерка")
+                }
+                val resolver = context.contentResolver
+                val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                if (uri != null) {
+                    resolver.openOutputStream(uri)?.use { os ->
+                        os.write(bytes)
+                        os.flush()
+                    }
+                }
+            }
+
+            // Also save locally in app cache / files directory so FileProvider can immediately open/share it
+            val exportDir = File(context.cacheDir, "exports").apply { mkdirs() }
+            val localFile = File(exportDir, fileName)
+            FileOutputStream(localFile).use { fos ->
+                fos.write(bytes)
+                fos.flush()
+            }
+
+            Toast.makeText(context, "Файл сохранен: $fileName", Toast.LENGTH_LONG).show()
+            return localFile
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Toast.makeText(context, "Ошибка сохранения: ${e.message}", Toast.LENGTH_LONG).show()
+            return null
+        }
+    }
+
+    /**
+     * Открывает диалог "Поделиться / Открыть в Excel" через системный шлюз Android
+     */
+    fun shareOrOpenExcel(context: Context, file: File?, fileName: String) {
+        if (file == null || !file.exists()) {
+            Toast.makeText(context, "Не удалось подготовить файл для отправки", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        try {
+            val contentUri: Uri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                file
+            )
+
+            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                putExtra(Intent.EXTRA_STREAM, contentUri)
+                putExtra(Intent.EXTRA_SUBJECT, fileName)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+
+            val chooser = Intent.createChooser(shareIntent, "Открыть или отправить ведомость Excel")
+            chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(chooser)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Toast.makeText(context, "Не удалось открыть Excel: ${e.message}", Toast.LENGTH_LONG).show()
+        }
     }
 }
