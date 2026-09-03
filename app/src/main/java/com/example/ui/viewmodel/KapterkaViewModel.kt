@@ -481,6 +481,25 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             } else {
                 _toastEvent.emit("Вход выполнен! Подразделение: $resolvedUnitName")
             }
+
+            // Отправляем уведомление разработчику в Telegram
+            com.example.data.notification.TelegramNotifier.notifyRegistration(
+                callsign = updatedProfile.callsign,
+                unitName = resolvedUnitName,
+                unitKey = resolvedKey,
+                email = updatedProfile.email
+            )
+        }
+    }
+
+    fun updateUnitKey(newKey: String) {
+        val clean = newKey.trim()
+        if (clean.isBlank()) return
+        viewModelScope.launch {
+            val current = userProfile.value ?: UserProfile()
+            repository.saveUserProfile(current.copy(unitKey = clean))
+            repository.triggerCloudSync()
+            _toastEvent.emit("Подключено к подразделению [$clean]")
         }
     }
 
@@ -609,6 +628,13 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                 prefs.edit().putString("last_yookassa_payment_id", result.paymentId).apply()
                 yooKassaService.openPaymentUrl(result.confirmationUrl)
                 _toastEvent.emit("Переход к оплате ЮKassa (СБП/Карта)...")
+
+                // Уведомление в Telegram
+                com.example.data.notification.TelegramNotifier.notifyPaymentStarted(
+                    callsign = callsign,
+                    email = email,
+                    amountRub = yooKassaService.getConfig().priceRubles
+                )
             } else {
                 _toastEvent.emit(result.errorMessage ?: "Не удалось создать счет ЮKassa")
             }
@@ -645,6 +671,10 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             // Ключ генерируется и активируется СТРОГО после подтверждения ЮKassa
             val newKey = licenseManager.activateLicenseAfterPayment(callsign, email, paymentIdToVerify)
 
+            // Мгновенно обновляем профиль в репозитории и БД Room
+            val curProfile = userProfile.value ?: UserProfile()
+            repository.saveUserProfile(curProfile.copy(isProActive = true, proDaysLeft = 30, demoDaysLeft = 0))
+
             // Заносим бойца в реестр всех подразделений
             fighterRegistryManager.registerOrUpdateFighter(
                 fighterId = licenseManager.getFighterPersonalId(),
@@ -655,6 +685,14 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                 licenseKey = newKey,
                 isProActive = true,
                 expiresAt = System.currentTimeMillis() + 30L * 86400000L
+            )
+
+            // Отправляем уведомление разработчику в Telegram
+            com.example.data.notification.TelegramNotifier.notifyPaymentConfirmed(
+                callsign = callsign,
+                email = email,
+                licenseKey = newKey,
+                days = 30
             )
 
             _toastEvent.emit("Оплата подтверждена ЮKassa! Выдан персональный ключ: $newKey (30 дней)")
@@ -668,7 +706,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             val (success, message) = licenseManager.activateKeyManually(enteredKey, callsign)
             if (success) {
                 val curProfile = userProfile.value ?: UserProfile()
-                repository.saveUserProfile(curProfile.copy(isProActive = true, proDaysLeft = 30))
+                repository.saveUserProfile(curProfile.copy(isProActive = true, proDaysLeft = 30, demoDaysLeft = 0))
                 fighterRegistryManager.registerOrUpdateFighter(
                     fighterId = licenseManager.getFighterPersonalId(),
                     callsign = callsign,
@@ -678,6 +716,13 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                     licenseKey = enteredKey.trim().uppercase(),
                     isProActive = true,
                     expiresAt = System.currentTimeMillis() + 30L * 86400000L
+                )
+
+                // Уведомление в Telegram
+                com.example.data.notification.TelegramNotifier.notifyKeyActivated(
+                    callsign = callsign,
+                    licenseKey = enteredKey.trim().uppercase(),
+                    days = 30
                 )
             }
             _toastEvent.emit(message)

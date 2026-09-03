@@ -432,6 +432,7 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel) {
         UnitKeySyncDialog(
             profile = profile,
             onRegenerateKey = { viewModel.regenerateUnitKey() },
+            onUpdateUnitKey = { newKey -> viewModel.updateUnitKey(newKey) },
             onForceSync = { viewModel.simulateCloudSync() },
             onDismiss = { showUnitKeySyncDialog = false }
         )

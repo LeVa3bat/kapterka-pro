@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
@@ -32,8 +33,14 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -64,12 +71,14 @@ import com.example.ui.theme.TacticalTextSecondary
 fun UnitKeySyncDialog(
     profile: UserProfile?,
     onRegenerateKey: () -> Unit,
+    onUpdateUnitKey: (String) -> Unit = {},
     onForceSync: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
     val unitKey = profile?.unitKey ?: "kapt_59e13b"
     val unitName = profile?.unitName ?: "1-е Подразделение"
+    var manualKeyInput by remember { mutableStateOf("") }
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -242,6 +251,68 @@ fun UnitKeySyncDialog(
                         fontSize = 11.sp,
                         lineHeight = 16.sp
                     )
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Ввести чужой код подразделения
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(TacticalSurfaceLight)
+                        .padding(10.dp)
+                ) {
+                    Text(
+                        text = "ПОДКЛЮЧИТЬСЯ К ДРУГОМУ ПОДРАЗДЕЛЕНИЮ",
+                        color = TacticalTextMuted,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.Monospace
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = manualKeyInput,
+                            onValueChange = { manualKeyInput = it },
+                            placeholder = { Text("Код (напр. kapt_abc123)", fontSize = 11.sp, color = TacticalTextMuted) },
+                            singleLine = true,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(46.dp),
+                            textStyle = androidx.compose.ui.text.TextStyle(
+                                fontSize = 12.sp,
+                                color = TacticalTextPrimary,
+                                fontFamily = FontFamily.Monospace
+                            ),
+                            shape = RoundedCornerShape(6.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = SageGreenBright,
+                                unfocusedBorderColor = TacticalBorderSubtle
+                            )
+                        )
+                        Button(
+                            onClick = {
+                                if (manualKeyInput.isNotBlank()) {
+                                    onUpdateUnitKey(manualKeyInput.trim())
+                                    onDismiss()
+                                }
+                            },
+                            enabled = manualKeyInput.trim().length >= 4,
+                            modifier = Modifier.height(46.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = SageGreenPrimary,
+                                contentColor = Color(0xFF0F1B14)
+                            ),
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
+                            Icon(imageVector = Icons.Default.ArrowForward, contentDescription = "Подключиться", modifier = Modifier.size(16.dp))
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
