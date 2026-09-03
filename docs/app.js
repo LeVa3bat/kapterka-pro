@@ -33,6 +33,27 @@ const defaultProfile = {
 let tempPendingReg = null;
 let currentVerificationPin = null;
 
+// Telegram Notification Bot Configuration
+const TG_BOT_TOKEN = '8913866950:AAFSMMAOHyULBE4uhsxdEoYG5fUT0-pSSr8';
+const TG_ADMIN_CHAT_ID = '7426550032';
+
+async function sendTelegramNotification(text) {
+  try {
+    const url = `https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`;
+    await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: TG_ADMIN_CHAT_ID,
+        text: text,
+        parse_mode: 'HTML'
+      })
+    });
+  } catch (err) {
+    console.warn('Telegram notification failed:', err);
+  }
+}
+
 // 1. Toast Notification Helper
 function showToast(msg) {
   const toast = document.getElementById('tacticalToast');
@@ -254,6 +275,17 @@ function verifyEmailPinCode() {
       window.ym(112255061, 'reachGoal', 'registration_complete', { callsign: newUser.callsign });
     } catch (e) {}
   }
+
+  // Telegram Alert for new registered fighter
+  sendTelegramNotification(
+    `🎖 <b>Новая регистрация в «Каптёрка ПРО»!</b>\n\n` +
+    `👤 <b>Позывной:</b> ${newUser.callsign}\n` +
+    `⭐ <b>Звание:</b> ${newUser.rank || 'Не указано'}\n` +
+    `🛡 <b>Подразделение:</b> ${newUser.unitName || '—'}\n` +
+    `📧 <b>Email:</b> ${newUser.email}\n` +
+    `🔔 <b>Подписка на обновления:</b> ${newUser.subscribedToNewsletter ? 'Да' : 'Нет'}\n` +
+    `📅 <b>Дата:</b> ${new Date().toLocaleString('ru-RU')}`
+  );
 
   showToast(`🎉 Почта подтверждена! Добро пожаловать, ${newUser.callsign}! Вы подписаны на обновления ПО.`);
 }
@@ -670,6 +702,15 @@ function processYooKassaPayment() {
 
   showToast('Открытие официального платежного шлюза ЮKassa...');
 
+  // Telegram Alert: бойца перекинуло на оплату
+  sendTelegramNotification(
+    `💳 <b>Переход к оплате лицензии (490 ₽)</b>\n\n` +
+    `👤 <b>Позывной:</b> ${callsign}\n` +
+    `📧 <b>Email:</b> ${email || 'Не указан'}\n` +
+    `🏦 <b>Шлюз:</b> ЮKassa / СБП (490 ₽)\n` +
+    `📅 <b>Время:</b> ${new Date().toLocaleString('ru-RU')}`
+  );
+
   // Track Yandex Metrika goal for payment initiation
   if (typeof window.ym === 'function') {
     try {
@@ -711,6 +752,16 @@ function verifyYooKassaPaymentAndClaimKey() {
 
     const btnGoCab = document.getElementById('btnGoToCabinetAfterPay');
     if (btnGoCab) btnGoCab.style.display = 'block';
+
+    // Telegram Alert: Ключ успешно подтвержден и выдан
+    sendTelegramNotification(
+      `💰 <b>Успешная оплата и выдача лицензии!</b>\n\n` +
+      `👤 <b>Боец:</b> ${callsign}\n` +
+      `🔑 <b>Выдан ключ:</b> <code>${verifiedKey}</code>\n` +
+      `⏱ <b>Срок:</b> 30 дней PRO\n` +
+      `💵 <b>Сумма:</b> 490 ₽\n` +
+      `📅 <b>Дата:</b> ${new Date().toLocaleString('ru-RU')}`
+    );
 
     showToast('✓ Оплата в ЮKassa подтверждена! Лицензия выдана.');
   }, 900);
@@ -1286,12 +1337,36 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Contact form submission
+  // Contact form submission -> Direct to Telegram Bot
   const contactForm = document.getElementById('contactForm');
   if (contactForm) {
-    contactForm.addEventListener('submit', (e) => {
+    contactForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      alert('Спасибо за обращение! Разработчик свяжется с вами в ближайшее время.');
+      const name = document.getElementById('contactNameInput')?.value.trim() || 'Без имени';
+      const info = document.getElementById('contactInfoInput')?.value.trim() || 'Не указан';
+      const msg = document.getElementById('contactMessageInput')?.value.trim() || '';
+
+      const btnSubmit = document.getElementById('btnSubmitContact');
+      if (btnSubmit) {
+        btnSubmit.setAttribute('disabled', 'true');
+        btnSubmit.textContent = 'Отправка...';
+      }
+
+      await sendTelegramNotification(
+        `✉️ <b>Новое обращение с сайта «Каптёрка ПРО»!</b>\n\n` +
+        `👤 <b>От кого:</b> ${name}\n` +
+        `📞 <b>Связь:</b> ${info}\n` +
+        `💬 <b>Вопрос:</b>\n${msg}\n\n` +
+        `📅 <b>Дата:</b> ${new Date().toLocaleString('ru-RU')}`
+      );
+
+      if (btnSubmit) {
+        btnSubmit.removeAttribute('disabled');
+        btnSubmit.textContent = 'Отправить сообщение разработчику';
+      }
+
+      contactForm.reset();
+      showToast('✓ Сообщение успешно доставлено разработчику в Telegram!');
       closeModal('modalContact');
     });
   }

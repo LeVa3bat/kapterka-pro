@@ -785,8 +785,8 @@
               <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('direct')" class="btn btn-primary btn-lg" style="font-size:1.1rem; padding:16px 28px; box-shadow:0 0 20px rgba(141,170,89,0.4);">
                 📥 Скачать APK (Прямая ссылка, 27 МБ)
               </a>
-              <a href="https://t.me/kapterka_dev" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-lg" style="font-size:1rem; border-color:var(--accent-gold); color:var(--accent-gold);">
-                ✈️ Скачать в Telegram-канале
+              <a href="https://t.me/Levaminbat" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-lg" style="font-size:1rem; border-color:var(--accent-gold); color:var(--accent-gold);">
+                ✈️ Написать в Telegram (@Levaminbat)
               </a>
             </div>
             <button class="btn btn-outline btn-sm" onclick="openModal('modalContact')" style="color:var(--text-secondary); border-color:rgba(255,255,255,0.15);">
@@ -991,7 +991,7 @@
           <h4>Связь с разработчиком</h4>
           <ul class="footer-links">
             <li><strong style="color:var(--text-primary);">Email:</strong> <a href="mailto:support@kapterka-pro.ru">support@kapterka-pro.ru</a></li>
-            <li><strong style="color:var(--text-primary);">Telegram:</strong> <a href="https://t.me/kapterka_dev" target="_blank">@kapterka_dev</a></li>
+            <li><strong style="color:var(--text-primary);">Telegram:</strong> <a href="https://t.me/Levaminbat" target="_blank">@Levaminbat</a></li>
             <li><strong style="color:var(--text-primary);">Поддержка:</strong> 24/7</li>
           </ul>
           <div style="margin-top:14px;">
@@ -1056,7 +1056,7 @@
         <p>4.1. ПО функционирует полностью автономно на смартфонах без передачи складских баз, наименований боеприпасов и позиций подразделений на сторонние сервера.</p>
 
         <h4>5. Реквизиты Исполнителя</h4>
-        <p>Самозанятый гражданин РФ / ИП<br>ИНН: 250104230398<br>Telegram: @kapterka_dev<br>Email: support@kapterka-pro.ru</p>
+        <p>Самозанятый гражданин РФ / ИП<br>ИНН: 250104230398<br>Telegram: @Levaminbat<br>Email: support@kapterka-pro.ru</p>
       </div>
       <div class="modal-footer">
         <button class="btn btn-primary" onclick="closeModal('modalOffer')">Понятно и согласен</button>
@@ -1096,24 +1096,24 @@
         
         <div style="background:#0c0f0d; padding:14px; border-radius:10px; border:1px solid var(--border-color); margin-bottom:20px;">
           <div>✉️ <strong>Email:</strong> support@kapterka-pro.ru</div>
-          <div style="margin-top:6px;">💬 <strong>Telegram:</strong> @kapterka_dev</div>
+          <div style="margin-top:6px;">💬 <strong>Telegram:</strong> <a href="https://t.me/Levaminbat" target="_blank" style="color:var(--accent-gold); font-weight:bold;">@Levaminbat</a></div>
           <div style="margin-top:6px;">🛡️ <strong>ИНН:</strong> 250104230398</div>
         </div>
 
         <form id="contactForm">
           <div class="form-group">
             <label class="form-label">Ваше имя / Позывной:</label>
-            <input type="text" class="form-input" placeholder="Например: Старшина 2 роты" required>
+            <input type="text" id="contactNameInput" class="form-input" placeholder="Например: Старшина 2 роты" required>
           </div>
           <div class="form-group">
             <label class="form-label">Контакт для связи (Телефон / Telegram / Email):</label>
-            <input type="text" class="form-input" placeholder="@telegram_username или +7..." required>
+            <input type="text" id="contactInfoInput" class="form-input" placeholder="@ваш_телеграм или +7..." required>
           </div>
           <div class="form-group">
             <label class="form-label">Сообщение / Вопрос:</label>
-            <textarea class="form-input" rows="3" placeholder="Опишите ваш вопрос..." required style="resize:vertical;"></textarea>
+            <textarea id="contactMessageInput" class="form-input" rows="3" placeholder="Опишите ваш вопрос..." required style="resize:vertical;"></textarea>
           </div>
-          <button type="submit" class="btn btn-primary" style="width:100%;">Отправить сообщение</button>
+          <button type="submit" id="btnSubmitContact" class="btn btn-primary" style="width:100%;">Отправить сообщение разработчику</button>
         </form>
       </div>
     </div>
