@@ -33,6 +33,19 @@ data class FighterLicenseStatus(
     val savedKeys: List<String> = emptyList()
 )
 
+data class CloudFighterLookupResult(
+    val found: Boolean = false,
+    val fighterId: String = "",
+    val callsign: String = "",
+    val unitKey: String = "",
+    val unitName: String = "",
+    val email: String = "",
+    val licenseKey: String = "",
+    val isProActive: Boolean = false,
+    val expiresAt: Long = 0L,
+    val daysRemaining: Int = 0
+)
+
 class LicenseManager(
     private val context: Context,
     private val dao: KapterkaDao,
@@ -48,6 +61,128 @@ class LicenseManager(
 
     init {
         refreshLicenseStatus()
+    }
+
+    /**
+     * Выполняет поиск бойца в облачной базе (Firestore 'fighters', 'licenses', 'fighters_registry')
+     * по позывному или email.
+     * Позволяет мгновенно подтянуть ключ подразделения, название роты и оплаченную лицензию,
+     * исключая смену ключа подразделения при повторном входе!
+     */
+    suspend fun lookupFighterByCallsignOrEmail(
+        callsign: String,
+        email: String = ""
+    ): CloudFighterLookupResult = withContext(Dispatchers.IO) {
+        val cleanCallsign = callsign.trim()
+        val cleanEmail = email.trim().lowercase(Locale.ROOT)
+        val now = System.currentTimeMillis()
+
+        if (cleanCallsign.isBlank() && cleanEmail.isBlank()) {
+            return@withContext CloudFighterLookupResult(found = false)
+        }
+
+        val callsignVariants = if (cleanCallsign.isNotBlank()) listOf(
+            cleanCallsign,
+            cleanCallsign.lowercase(Locale.ROOT),
+            cleanCallsign.replaceFirstChar { it.uppercase(Locale.ROOT) },
+            cleanCallsign.uppercase(Locale.ROOT)
+        ).distinct() else emptyList()
+
+        // 1. Проверяем коллекцию 'fighters'
+        for (v in callsignVariants) {
+            try {
+                val snap = firestore.collection("fighters")
+                    .whereEqualTo("callsign", v)
+                    .get()
+                    .await()
+                for (doc in snap.documents) {
+                    val key = doc.getString("licenseKey") ?: ""
+                    val exp = doc.getLong("expiresAt") ?: 0L
+                    val uKey = doc.getString("unitKey") ?: ""
+                    val uName = doc.getString("unitName") ?: ""
+                    val em = doc.getString("email") ?: ""
+                    val isPro = exp > now || doc.getBoolean("isProActive") == true || key.isNotBlank()
+                    val days = if (exp > now) ((exp - now) / 86400000L).toInt().coerceAtLeast(1) else (if (isPro) 30 else 0)
+                    return@withContext CloudFighterLookupResult(
+                        found = true,
+                        fighterId = doc.id,
+                        callsign = doc.getString("callsign") ?: cleanCallsign,
+                        unitKey = uKey,
+                        unitName = uName,
+                        email = em,
+                        licenseKey = key,
+                        isProActive = isPro,
+                        expiresAt = exp,
+                        daysRemaining = days
+                    )
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "lookupFighterByCallsignOrEmail: fighters query failed", e)
+            }
+        }
+
+        // 2. Если по позывному не нашли, ищем по email в 'fighters'
+        if (cleanEmail.isNotBlank()) {
+            try {
+                val snap = firestore.collection("fighters")
+                    .whereEqualTo("email", cleanEmail)
+                    .get()
+                    .await()
+                for (doc in snap.documents) {
+                    val key = doc.getString("licenseKey") ?: ""
+                    val exp = doc.getLong("expiresAt") ?: 0L
+                    val uKey = doc.getString("unitKey") ?: ""
+                    val uName = doc.getString("unitName") ?: ""
+                    val isPro = exp > now || doc.getBoolean("isProActive") == true || key.isNotBlank()
+                    val days = if (exp > now) ((exp - now) / 86400000L).toInt().coerceAtLeast(1) else (if (isPro) 30 else 0)
+                    return@withContext CloudFighterLookupResult(
+                        found = true,
+                        fighterId = doc.id,
+                        callsign = doc.getString("callsign") ?: cleanCallsign,
+                        unitKey = uKey,
+                        unitName = uName,
+                        email = cleanEmail,
+                        licenseKey = key,
+                        isProActive = isPro,
+                        expiresAt = exp,
+                        daysRemaining = days
+                    )
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "lookupFighterByCallsignOrEmail: fighters by email failed", e)
+            }
+        }
+
+        // 3. Проверяем коллекцию 'licenses' по позывному
+        for (v in callsignVariants) {
+            try {
+                val snap = firestore.collection("licenses")
+                    .whereEqualTo("callsign", v)
+                    .get()
+                    .await()
+                for (doc in snap.documents) {
+                    val key = doc.getString("licenseKey") ?: doc.id
+                    val exp = doc.getLong("expiresAt") ?: (now + 30L * 86400000L)
+                    val status = doc.getString("status") ?: "ACTIVE"
+                    if (key.isNotBlank() && status == "ACTIVE") {
+                        val days = if (exp > now) ((exp - now) / 86400000L).toInt().coerceAtLeast(1) else 30
+                        return@withContext CloudFighterLookupResult(
+                            found = true,
+                            callsign = doc.getString("callsign") ?: cleanCallsign,
+                            email = doc.getString("email") ?: "",
+                            licenseKey = key,
+                            isProActive = true,
+                            expiresAt = exp,
+                            daysRemaining = days
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "lookupFighterByCallsignOrEmail: licenses query failed", e)
+            }
+        }
+
+        CloudFighterLookupResult(found = false)
     }
 
     fun getFighterPersonalId(): String {
@@ -239,29 +374,71 @@ class LicenseManager(
             }
         }
 
-        // 3. Поиск по позывному
+        // 3. Поиск по позывному во всех вариантах регистра в 'licenses'
         if (foundKey.isBlank() && cleanCallsign.isNotBlank()) {
-            try {
-                val byCallsign = firestore.collection("licenses")
-                    .whereEqualTo("callsign", cleanCallsign)
-                    .get()
-                    .await()
-                for (doc in byCallsign.documents) {
-                    val key = doc.getString("licenseKey") ?: doc.id
-                    val exp = doc.getLong("expiresAt") ?: 0L
-                    val status = doc.getString("status") ?: "ACTIVE"
-                    if (key.isNotBlank() && status == "ACTIVE") {
-                        foundKey = key
-                        foundExpiresAt = exp
-                        break
+            val callsignVariants = listOf(
+                cleanCallsign,
+                cleanCallsign.lowercase(Locale.ROOT),
+                cleanCallsign.replaceFirstChar { it.uppercase(Locale.ROOT) },
+                cleanCallsign.uppercase(Locale.ROOT)
+            ).distinct()
+
+            for (v in callsignVariants) {
+                try {
+                    val byCallsign = firestore.collection("licenses")
+                        .whereEqualTo("callsign", v)
+                        .get()
+                        .await()
+                    for (doc in byCallsign.documents) {
+                        val key = doc.getString("licenseKey") ?: doc.id
+                        val exp = doc.getLong("expiresAt") ?: 0L
+                        val status = doc.getString("status") ?: "ACTIVE"
+                        if (key.isNotBlank() && status == "ACTIVE") {
+                            foundKey = key
+                            foundExpiresAt = exp
+                            break
+                        }
                     }
+                    if (foundKey.isNotBlank()) break
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed searching licenses by callsign variant $v", e)
                 }
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed searching licenses by callsign", e)
             }
         }
 
-        // 4. Поиск в общем реестре бойцов 'fighters_registry'
+        // 4. Поиск в реестре бойцов 'fighters' (по всем вариантам позывного и email)
+        if (foundKey.isBlank() && cleanCallsign.isNotBlank()) {
+            val callsignVariants = listOf(
+                cleanCallsign,
+                cleanCallsign.lowercase(Locale.ROOT),
+                cleanCallsign.replaceFirstChar { it.uppercase(Locale.ROOT) },
+                cleanCallsign.uppercase(Locale.ROOT)
+            ).distinct()
+
+            for (v in callsignVariants) {
+                try {
+                    val fightersSnap = firestore.collection("fighters")
+                        .whereEqualTo("callsign", v)
+                        .get()
+                        .await()
+                    for (doc in fightersSnap.documents) {
+                        val key = doc.getString("licenseKey") ?: ""
+                        val exp = doc.getLong("expiresAt") ?: 0L
+                        val isPro = exp > now || (doc.getBoolean("isProActive") == true) || key.isNotBlank()
+                        if (isPro) {
+                            foundKey = key.ifBlank { generateLicenseKey() }
+                            foundExpiresAt = if (exp > now) exp else (now + 30L * 86400000L)
+                            break
+                        }
+                    }
+                    if (foundKey.isNotBlank()) break
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed searching fighters by callsign $v", e)
+                }
+            }
+        }
+
+        // 5. Поиск в общем реестре бойцов 'fighters_registry'
         if (foundKey.isBlank() && cleanEmail.isNotBlank()) {
             try {
                 val regDoc = firestore.collection("fighters_registry")

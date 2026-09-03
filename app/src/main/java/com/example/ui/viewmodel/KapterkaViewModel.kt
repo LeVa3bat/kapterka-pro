@@ -424,30 +424,77 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
     }
 
     // User Profile / Settings / Auth
-    fun registerOrLoginProfile(profile: UserProfile) {
+    suspend fun lookupFighterByCallsignOrEmail(callsign: String, email: String = ""): com.example.data.license.CloudFighterLookupResult {
+        return licenseManager.lookupFighterByCallsignOrEmail(callsign, email)
+    }
+
+    fun registerOrLoginProfile(profile: UserProfile, isNewUnitRegistration: Boolean = false) {
         viewModelScope.launch {
-            repository.saveUserProfile(profile)
-            val curLicense = licenseManager.licenseStatus.value
-            fighterRegistryManager.registerOrUpdateFighter(
-                fighterId = licenseManager.getFighterPersonalId(),
-                callsign = profile.callsign,
-                unitName = profile.unitName,
-                unitKey = profile.unitKey,
-                email = profile.email,
-                licenseKey = curLicense.licenseKey.ifEmpty { curLicense.lastSavedKey },
-                isProActive = curLicense.isProActive,
-                expiresAt = System.currentTimeMillis() + (curLicense.daysRemaining.toLong() * 86400000L)
-            )
-            // Пытаемся автоматически подтянуть ранее оплаченную лицензию из облака
+            var resolvedKey = profile.unitKey.trim()
+            var resolvedUnitName = profile.unitName.trim()
+
+            // 1. Проверяем облачный реестр бойцов по позывному / email
+            val cloudRecord = licenseManager.lookupFighterByCallsignOrEmail(profile.callsign, profile.email)
+
+            if (cloudRecord.found) {
+                // Если мы выполняем вход (или ключ не был явно введен заново) — сохраняем существующий ключ подразделения!
+                if (!isNewUnitRegistration && cloudRecord.unitKey.isNotBlank()) {
+                    resolvedKey = cloudRecord.unitKey
+                }
+                if (resolvedUnitName.isBlank() && cloudRecord.unitName.isNotBlank()) {
+                    resolvedUnitName = cloudRecord.unitName
+                }
+            }
+
+            // Если ключ всё еще пустой, генерируем только для регистрации нового подразделения
+            if (resolvedKey.isBlank()) {
+                resolvedKey = "kapt_" + UUID.randomUUID().toString().take(6)
+            }
+
+            // 2. СНАЧАЛА восстанавливаем лицензию из облака (по email, позывному, ключу подразделения)
             val (restored, restoreMsg) = licenseManager.restoreLicenseFromCloud(
                 email = profile.email,
                 callsign = profile.callsign,
-                unitKey = profile.unitKey
+                unitKey = resolvedKey
             )
+
+            // 3. Получаем актуальный статус лицензии ПОСЛЕ восстановления из базы
+            val curLicense = licenseManager.licenseStatus.value
+            val isPro = curLicense.isProActive || cloudRecord.isProActive
+            val activeKey = curLicense.licenseKey.ifEmpty { curLicense.lastSavedKey }.ifEmpty { cloudRecord.licenseKey }
+            val daysRemaining = if (curLicense.daysRemaining > 0) curLicense.daysRemaining else (if (cloudRecord.daysRemaining > 0) cloudRecord.daysRemaining else 30)
+            val expiresAt = if (isPro) (System.currentTimeMillis() + daysRemaining.toLong() * 86400000L) else 0L
+
+            val finalProfile = profile.copy(
+                unitKey = resolvedKey,
+                unitName = resolvedUnitName.ifBlank { "1-е Подразделение" },
+                isProActive = isPro,
+                proDaysLeft = if (isPro) daysRemaining else 0,
+                isLoggedIn = true
+            )
+
+            // 4. Сохраняем итоговый профиль в Room
+            repository.saveUserProfile(finalProfile)
+
+            // 5. Регистрируем / обновляем данные бойца в Firestore БЕЗ стирания лицензии и БЕЗ смены ключа подразделения
+            fighterRegistryManager.registerOrUpdateFighter(
+                fighterId = licenseManager.getFighterPersonalId(),
+                callsign = finalProfile.callsign,
+                unitName = finalProfile.unitName,
+                unitKey = finalProfile.unitKey,
+                email = finalProfile.email,
+                licenseKey = activeKey,
+                isProActive = isPro,
+                expiresAt = expiresAt,
+                role = "Старшина подразделения"
+            )
+
             if (restored) {
-                _toastEvent.emit("Вход выполнен! $restoreMsg")
+                _toastEvent.emit("Вход выполнен! $restoreMsg • Ключ роты: $resolvedKey")
+            } else if (isPro) {
+                _toastEvent.emit("Добро пожаловать, ${finalProfile.callsign}! Подразделение: ${finalProfile.unitName} (ПРО активна)")
             } else {
-                _toastEvent.emit("Добро пожаловать, ${profile.callsign}!")
+                _toastEvent.emit("Добро пожаловать, ${finalProfile.callsign}! Подразделение: ${finalProfile.unitName}")
             }
         }
     }

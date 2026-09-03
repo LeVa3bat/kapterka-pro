@@ -13,6 +13,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.FileDownload
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
@@ -24,6 +26,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -31,6 +34,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.data.model.*
 import com.example.ui.theme.*
+import com.example.util.ExcelExportHelper
+import com.example.util.ExcelReportData
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -225,35 +230,79 @@ fun ExcelReportPreviewDialog(
                 }
 
                 // Export Actions
-                Box(
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 14.dp, vertical = 10.dp)
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
+                    val baseFileName = when {
+                        selectedTab == 0 -> "Сводная_ведомость_${unitName.replace(" ", "_")}"
+                        selectedTab in 1..points.size -> "Ведомость_точки_${points[selectedTab - 1].name.replace(" ", "_")}"
+                        selectedTab == points.size + 1 -> "Форма_8_Акт_списания_${unitName.replace(" ", "_")}"
+                        selectedTab == points.size + 2 -> "Форма_18_Книга_учета_${unitName.replace(" ", "_")}"
+                        else -> "Реестр_заявок_${unitName.replace(" ", "_")}"
+                    }
+                    val sheetName = when {
+                        selectedTab == 0 -> "Сводная МТО"
+                        selectedTab in 1..points.size -> points[selectedTab - 1].name.take(28)
+                        selectedTab == points.size + 1 -> "Форма 8 (Акт)"
+                        selectedTab == points.size + 2 -> "Форма 18 (Книга)"
+                        else -> "Заявки"
+                    }
+
+                    // 1. Главная кнопка: Реальный файл Excel (.xlsx)
                     Button(
                         onClick = {
-                            val fileName = when {
-                                selectedTab == 0 -> "Сводная_ведомость_${unitName.replace(" ", "_")}.csv"
-                                selectedTab in 1..points.size -> "Ведомость_точки_${points[selectedTab - 1].name.replace(" ", "_")}.csv"
-                                selectedTab == points.size + 1 -> "Форма_8_Акт_списания_${unitName.replace(" ", "_")}.csv"
-                                selectedTab == points.size + 2 -> "Форма_18_Книга_учета_${unitName.replace(" ", "_")}.csv"
-                                else -> "Реестр_заявок_${unitName.replace(" ", "_")}.csv"
-                            }
-                            shareReport(context, exportCsv, fileName)
+                            val excelData = extractExcelReportData(sheetName, blocks)
+                            val bytes = ExcelExportHelper.generateXlsxBytes(excelData)
+                            val file = ExcelExportHelper.saveXlsxToDownloads(context, "$baseFileName.xlsx", bytes)
+                            ExcelExportHelper.shareOrOpenExcel(context, file, "$baseFileName.xlsx")
                         },
                         modifier = Modifier
-                            .fillMaxWidth()
+                            .weight(1f)
                             .height(46.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF107C41),
+                            containerColor = Color(0xFF107C41), // Microsoft Excel Brand Green
                             contentColor = Color.White
                         ),
                         shape = RoundedCornerShape(8.dp)
                     ) {
+                        Icon(
+                            imageVector = Icons.Default.FileDownload,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "📥 СКАЧАТЬ / ЭКСПОРТ EXCEL (CSV/TSV)",
+                            text = "СКАЧАТЬ EXCEL (.XLSX)",
                             fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp
+                            fontSize = 12.sp
+                        )
+                    }
+
+                    // 2. Вторая кнопка: Текст / CSV для быстрой вставки
+                    OutlinedButton(
+                        onClick = {
+                            shareReport(context, exportCsv, "$baseFileName.csv")
+                        },
+                        modifier = Modifier.height(46.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = SageGreenBright
+                        ),
+                        border = BorderStroke(1.dp, SageGreenPrimary.copy(alpha = 0.8f)),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Share,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Текст/CSV",
+                            fontSize = 11.sp
                         )
                     }
                 }
@@ -392,7 +441,7 @@ private fun MilitaryTableView(table: MilitaryReportBlock.Table) {
     val totalTableWidth = table.columnWidths.fold(0.dp) { acc, w -> acc + w }
     val hScroll = rememberScrollState()
 
-    // Scrollable container with fixed column widths for perfectly aligned grid
+    // Scrollable container with fixed column widths for perfectly aligned military grid
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -400,10 +449,11 @@ private fun MilitaryTableView(table: MilitaryReportBlock.Table) {
             .border(1.dp, Color.Black)
     ) {
         Column(modifier = Modifier.width(totalTableWidth)) {
-            // Header Row 1: Titles
+            // Header Row 1: Titles (All cells match the tallest cell height)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .height(IntrinsicSize.Min)
                     .background(Color(0xFFE2E6E2)) // Official subtle government document tint
                     .border(BorderStroke(1.dp, Color.Black))
             ) {
@@ -412,6 +462,7 @@ private fun MilitaryTableView(table: MilitaryReportBlock.Table) {
                     Box(
                         modifier = Modifier
                             .width(w)
+                            .fillMaxHeight()
                             .border(BorderStroke(0.5.dp, Color.Black))
                             .padding(horizontal = 4.dp, vertical = 6.dp),
                         contentAlignment = Alignment.Center
@@ -422,7 +473,8 @@ private fun MilitaryTableView(table: MilitaryReportBlock.Table) {
                             fontWeight = FontWeight.Bold,
                             color = Color.Black,
                             textAlign = TextAlign.Center,
-                            lineHeight = 11.sp
+                            lineHeight = 11.sp,
+                            softWrap = true
                         )
                     }
                 }
@@ -432,6 +484,7 @@ private fun MilitaryTableView(table: MilitaryReportBlock.Table) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .height(IntrinsicSize.Min)
                     .background(Color(0xFFF2F2F2))
                     .border(BorderStroke(1.dp, Color.Black))
             ) {
@@ -440,6 +493,7 @@ private fun MilitaryTableView(table: MilitaryReportBlock.Table) {
                     Box(
                         modifier = Modifier
                             .width(w)
+                            .fillMaxHeight()
                             .border(BorderStroke(0.5.dp, Color.Black))
                             .padding(vertical = 2.dp),
                         contentAlignment = Alignment.Center
@@ -455,12 +509,13 @@ private fun MilitaryTableView(table: MilitaryReportBlock.Table) {
                 }
             }
 
-            // Table Rows
+            // Table Rows (Even, uniform cell heights across each row with crisp borders)
             table.rows.forEachIndexed { rowIdx, rowCells ->
-                val rowBg = if (rowIdx % 2 == 1) Color(0xFFFAFAFA) else Color.White
+                val rowBg = if (rowIdx % 2 == 1) Color(0xFFFBFBFB) else Color.White
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .height(IntrinsicSize.Min)
                         .background(rowBg)
                 ) {
                     rowCells.forEachIndexed { colIdx, cellValue ->
@@ -471,7 +526,8 @@ private fun MilitaryTableView(table: MilitaryReportBlock.Table) {
                         Box(
                             modifier = Modifier
                                 .width(w)
-                                .border(BorderStroke(0.5.dp, Color(0xFF888888)))
+                                .fillMaxHeight()
+                                .border(BorderStroke(0.5.dp, Color.Black))
                                 .padding(horizontal = 4.dp, vertical = 5.dp),
                             contentAlignment = when (align) {
                                 TextAlign.End -> Alignment.CenterEnd
@@ -486,7 +542,8 @@ private fun MilitaryTableView(table: MilitaryReportBlock.Table) {
                                 fontWeight = if (isNumCol && cellValue != "-" && cellValue != "0") FontWeight.Bold else FontWeight.Normal,
                                 color = Color.Black,
                                 textAlign = align,
-                                lineHeight = 11.sp
+                                lineHeight = 11.5.sp,
+                                softWrap = true
                             )
                         }
                     }
@@ -498,7 +555,8 @@ private fun MilitaryTableView(table: MilitaryReportBlock.Table) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color(0xFFEDEDED))
+                        .height(IntrinsicSize.Min)
+                        .background(Color(0xFFEAEAEA))
                         .border(BorderStroke(1.dp, Color.Black))
                 ) {
                     totalCells.forEachIndexed { colIdx, cellValue ->
@@ -508,6 +566,7 @@ private fun MilitaryTableView(table: MilitaryReportBlock.Table) {
                         Box(
                             modifier = Modifier
                                 .width(w)
+                                .fillMaxHeight()
                                 .border(BorderStroke(0.5.dp, Color.Black))
                                 .padding(horizontal = 4.dp, vertical = 6.dp),
                             contentAlignment = when (align) {
@@ -521,7 +580,9 @@ private fun MilitaryTableView(table: MilitaryReportBlock.Table) {
                                 fontSize = 8.5.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.Black,
-                                textAlign = align
+                                textAlign = align,
+                                lineHeight = 11.sp,
+                                softWrap = true
                             )
                         }
                     }
@@ -1292,3 +1353,56 @@ private fun shareReport(context: Context, content: String, title: String) {
     val shareIntent = Intent.createChooser(sendIntent, "Отправить ведомость Excel / Штаб")
     context.startActivity(shareIntent)
 }
+
+/**
+ * Преобразует уставные военные блоки отчета в структуру реального Excel документа (.xlsx)
+ */
+fun extractExcelReportData(sheetName: String, blocks: List<MilitaryReportBlock>): ExcelReportData {
+    var title = "ВОИНСКАЯ ВЕДОМОСТЬ"
+    var subtitle = ""
+    var details = emptyList<Pair<String, String>>()
+    var headers = emptyList<String>()
+    var colWidths = emptyList<Double>()
+    var rows = emptyList<List<String>>()
+    var totalRow: List<String>? = null
+    var signers = emptyList<Triple<String, String, String>>()
+
+    for (b in blocks) {
+        when (b) {
+            is MilitaryReportBlock.Header -> {
+                title = b.docMainTitle
+                subtitle = "${b.docFormTitle} • ${b.subTitle}".trim().trim('•').trim()
+                details = b.details
+            }
+            is MilitaryReportBlock.Table -> {
+                headers = b.headers.map { it.replace("\n", " ") }
+                colWidths = b.columnWidths.map { (it.value / 5.2).coerceIn(8.0, 48.0) }
+                rows = b.rows.map { row -> row.map { cell -> cell.replace("\n", " ") } }
+                totalRow = b.totalRow?.map { it.replace("\n", " ") }
+            }
+            is MilitaryReportBlock.Signatures -> {
+                signers = b.signers
+            }
+            is MilitaryReportBlock.SimpleText -> {}
+        }
+    }
+
+    val cleanSheetName = sheetName
+        .replace("[/\\\\?*\\]\\[]".toRegex(), " ")
+        .take(31)
+        .trim()
+        .ifBlank { "Ведомость" }
+
+    return ExcelReportData(
+        sheetName = cleanSheetName,
+        title = title,
+        subtitle = subtitle,
+        details = details,
+        headers = headers,
+        colWidthsChars = colWidths,
+        rows = rows,
+        totalRow = totalRow,
+        signers = signers
+    )
+}
+
