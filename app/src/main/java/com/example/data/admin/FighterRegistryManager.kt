@@ -22,7 +22,7 @@ import java.util.Locale
 
 data class FighterAdminRecord(
     val id: String, // Уникальный идентификатор бойца
-    val callsign: String, // Позывной (например "лева", "сокол")
+    val callsign: String, // Позывной (например "сокол", "буран")
     val role: String = "Старшина / Боец", // Должность
     val unitName: String = "1-е Подразделение", // Название подразделения
     val unitKey: String = "kapt_59e13b", // Секретный ключ подразделения

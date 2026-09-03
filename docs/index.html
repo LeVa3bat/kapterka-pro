@@ -335,7 +335,7 @@
               <div id="regStepInputs">
                 <div class="form-group">
                   <label class="form-label">Ваш позывной *</label>
-                  <input type="text" id="regCallsign" class="form-input" placeholder="Например: Лева, Сокол, Буран">
+                  <input type="text" id="regCallsign" class="form-input" placeholder="Например: Сокол, Буран, Ворон">
                 </div>
 
                 <div class="form-group">
@@ -412,7 +412,7 @@
 
               <div class="form-group">
                 <label class="form-label">Email адрес</label>
-                <input type="email" id="loginEmail" class="form-input" placeholder="alex.666.881@gmail.com">
+                <input type="email" id="loginEmail" class="form-input" placeholder="name@domain.ru">
               </div>
 
               <div class="form-group">
@@ -426,7 +426,7 @@
 
               <div style="text-align:center; margin-top:16px;">
                 <a href="javascript:void(0)" onclick="quickDemoLogin()" style="font-size:0.82rem; color:var(--accent-gold);">
-                  ⚡ Быстрый вход под позывным «Лева» (Демо)
+                  ⚡ Быстрый гостевой вход (Демо)
                 </a>
               </div>
             </div>
@@ -442,8 +442,8 @@
             <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
               <span style="font-size:1.2rem;">👤</span>
               <div>
-                <strong style="color:var(--text-primary);" id="sessionCallsignText">Лева</strong>
-                <span style="font-size:0.8rem; color:var(--text-muted); margin-left:8px;" id="sessionEmailText">alex.666.881@gmail.com</span>
+                <strong style="color:var(--text-primary);" id="sessionCallsignText">Пользователь</strong>
+                <span style="font-size:0.8rem; color:var(--text-muted); margin-left:8px;" id="sessionEmailText">user@domain.ru</span>
               </div>
               <span class="subscriber-badge-chip" id="sessionNewsletterChip">
                 ✓ Подписка на обновления активна
@@ -511,12 +511,12 @@
           <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:18px;">
             <div class="form-group">
               <label class="form-label">Позывной бойца:</label>
-              <input type="text" id="cabCallsignInput" class="form-input" value="Лева" placeholder="Например: Лева, Сокол">
+              <input type="text" id="cabCallsignInput" class="form-input" value="" placeholder="Например: Сокол, Буран">
             </div>
 
             <div class="form-group">
               <label class="form-label">Воинское звание / Должность:</label>
-              <input type="text" id="cabRankInput" class="form-input" value="Старшина роты" placeholder="Старшина, Командир взвода">
+              <input type="text" id="cabRankInput" class="form-input" value="" placeholder="Старшина, Командир взвода">
             </div>
 
             <div class="form-group">
@@ -534,12 +534,12 @@
 
             <div class="form-group">
               <label class="form-label">Email для получения чеков (54-ФЗ):</label>
-              <input type="email" id="cabEmailInput" class="form-input" value="alex.666.881@gmail.com">
+              <input type="email" id="cabEmailInput" class="form-input" value="" placeholder="name@domain.ru">
             </div>
 
             <div class="form-group">
               <label class="form-label">Телефон / Telegram для связи:</label>
-              <input type="text" id="cabPhoneInput" class="form-input" value="+7 (999) 000-00-00">
+              <input type="text" id="cabPhoneInput" class="form-input" value="" placeholder="+7 (999) 000-00-00">
             </div>
           </div>
 
@@ -613,12 +613,12 @@
 
               <div class="form-group">
                 <label class="form-label">Позывной бойца (для регистрации лицензии):</label>
-                <input type="text" id="payCallsignInput" class="form-input" value="Лева">
+                <input type="text" id="payCallsignInput" class="form-input" placeholder="Например: Сокол, Буран">
               </div>
 
               <div class="form-group">
                 <label class="form-label">Email (для автоматической отправки чека):</label>
-                <input type="email" id="payEmailInput" class="form-input" value="alex.666.881@gmail.com">
+                <input type="email" id="payEmailInput" class="form-input" placeholder="name@domain.ru">
                 <div class="form-helper">Официальный кассовый чек по 54-ФЗ поступит сразу после подтверждения транзакции.</div>
               </div>
 
@@ -632,42 +632,48 @@
               </div>
             </div>
 
-            <!-- Правая колонка: Моментальная выдача и копирование ключа -->
+            <!-- Правая колонка: Проверка оплаты и выдача ключа -->
             <div style="background:#0a0e0b; border:1px solid var(--border-color); border-radius:var(--radius-lg); padding:22px;">
               <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
-                <span style="color:var(--primary); font-size:1.2rem;">✓</span>
-                <h4 style="color:var(--text-primary); font-size:0.95rem;">АВТОМАТИЧЕСКАЯ ВЫДАЧА КЛЮЧА</h4>
+                <span style="color:var(--primary); font-size:1.2rem;">🛡️</span>
+                <h4 style="color:var(--text-primary); font-size:0.95rem;">ПРОВЕРКА ОПЛАТЫ И ВЫДАЧА КЛЮЧА</h4>
               </div>
               <p style="font-size:0.82rem; color:var(--text-secondary); line-height:1.5; margin-bottom:14px;">
-                После оплаты сервер мгновенно генерирует персональный ключ, привязывает его к вашему позывному и отображает в поле ниже:
+                Военный ключ генерируется <strong>строго после проверки и подтверждения оплаты</strong> через шлюз ЮKassa.
               </p>
+
+              <div class="form-group" style="margin-bottom:10px;">
+                <label class="form-label" style="font-size:0.75rem;">Номер чека или ID операции ЮKassa:</label>
+                <input type="text" id="verifyPaymentInput" class="form-input" placeholder="Например: 2e8b... или номер из чека">
+                <div class="form-helper" style="font-size:0.72rem;">Указан в кассовом чеке или смс-уведомлении банка.</div>
+              </div>
 
               <div class="live-key-generation-box">
                 <div style="font-size:0.72rem; color:var(--text-muted); font-family:var(--font-mono); text-transform:uppercase;">
-                  СВЕЖЕВЫДАННЫЙ ВОЕННЫЙ КЛЮЧ:
+                  СТАТУС ЛИЦЕНЗИОННОГО КЛЮЧА:
                 </div>
-                <div class="live-key-result" id="liveGeneratedKeyDisplay">
-                  Ожидание подтверждения...
+                <div class="live-key-result" id="liveGeneratedKeyDisplay" style="font-size:0.95rem; word-break:break-all;">
+                  Ожидание подтверждения оплаты...
                 </div>
-                <div style="font-size:0.75rem; color:var(--primary); font-family:var(--font-mono);" id="liveKeyStatusDisplay">
-                  30 суток доступа
+                <div style="font-size:0.75rem; color:var(--text-muted); font-family:var(--font-mono);" id="liveKeyStatusDisplay">
+                  Ключ без проверки оплаты не выдается
                 </div>
               </div>
 
               <div style="margin-top:14px; display:flex; flex-direction:column; gap:8px;">
-                <button class="btn btn-primary btn-lg" id="btnCopyPaidKey" onclick="copyPaidKeyAction()" disabled>
-                  📋 Скопировать ключ для приложения
+                <button class="btn btn-gold btn-sm" onclick="verifyYooKassaPaymentAndClaimKey()">
+                  🔍 Проверить оплату в ЮKassa и получить ключ
                 </button>
-                <button class="btn btn-gold btn-sm" onclick="confirmPaymentCompleted()">
-                  ✓ Я оплатил в ЮKassa — Активировать ключ
+                <button class="btn btn-primary btn-lg" id="btnCopyPaidKey" onclick="copyPaidKeyAction()" disabled>
+                  📋 Скопировать полученный ключ
                 </button>
                 <a href="https://yookassa.ru/my/i/apiQMG65ZHIE/l" target="_blank" class="btn btn-outline btn-sm" style="text-align:center;">
-                  🔗 Открыть ЮKassa напрямую в новой вкладке
+                  🔗 Открыть страницу оплаты ЮKassa
                 </a>
               </div>
 
               <div style="font-size:0.75rem; color:var(--text-muted); margin-top:12px; line-height:1.4;">
-                💡 <em>Скопированный ключ можно сразу вставить в телефоне: Меню ➔ Лицензия ➔ «Оплата и СБП». Ключ также сохранится в Личном кабинете.</em>
+                💡 <em>В мобильном приложении «Каптёрка» проверка статуса и активация происходят автоматически по кнопке «Проверить поступление в ЮKassa».</em>
               </div>
             </div>
 
@@ -948,7 +954,7 @@
         <div class="footer-col">
           <h4>Связь с разработчиком</h4>
           <ul class="footer-links">
-            <li><strong style="color:var(--text-primary);">Email:</strong> <a href="mailto:alex.666.881@gmail.com">alex.666.881@gmail.com</a></li>
+            <li><strong style="color:var(--text-primary);">Email:</strong> <a href="mailto:support@kapterka-pro.ru">support@kapterka-pro.ru</a></li>
             <li><strong style="color:var(--text-primary);">Telegram:</strong> <a href="https://t.me/kapterka_dev" target="_blank">@kapterka_dev</a></li>
             <li><strong style="color:var(--text-primary);">Поддержка:</strong> 24/7</li>
           </ul>
@@ -1014,7 +1020,7 @@
         <p>4.1. ПО функционирует полностью автономно на смартфонах без передачи складских баз, наименований боеприпасов и позиций подразделений на сторонние сервера.</p>
 
         <h4>5. Реквизиты Исполнителя</h4>
-        <p>Самозанятый гражданин РФ / ИП<br>ИНН: 250104230398<br>Email: alex.666.881@gmail.com</p>
+        <p>Самозанятый гражданин РФ / ИП<br>ИНН: 250104230398<br>Telegram: @kapterka_dev<br>Email: support@kapterka-pro.ru</p>
       </div>
       <div class="modal-footer">
         <button class="btn btn-primary" onclick="closeModal('modalOffer')">Понятно и согласен</button>
@@ -1053,7 +1059,7 @@
         <p style="margin-bottom:16px;">По вопросам приобретения партий ключей для подразделений, индивидуальных доработок или техподдержки:</p>
         
         <div style="background:#0c0f0d; padding:14px; border-radius:10px; border:1px solid var(--border-color); margin-bottom:20px;">
-          <div>✉️ <strong>Email:</strong> alex.666.881@gmail.com</div>
+          <div>✉️ <strong>Email:</strong> support@kapterka-pro.ru</div>
           <div style="margin-top:6px;">💬 <strong>Telegram:</strong> @kapterka_dev</div>
           <div style="margin-top:6px;">🛡️ <strong>ИНН:</strong> 250104230398</div>
         </div>

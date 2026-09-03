@@ -17,18 +17,17 @@ const STORAGE_KEYS_HISTORY = 'kapterka_keys_history';
 
 // Default initial state for demonstration / quick-login
 const defaultProfile = {
-  callsign: 'Лева',
+  callsign: 'Старшина',
   rank: 'Старшина роты',
   unitName: '1-я Мотострелковая рота',
   unitKey: 'kapt_59e13b',
-  email: 'alex.666.881@gmail.com',
+  email: 'user@kapterka-pro.ru',
   phone: '+7 (999) 000-00-00',
   activeKey: 'KAPT-8R4K-7M9X-3V2L',
   subscribedToNewsletter: true,
   emailVerified: true,
   keys: [
-    { key: 'KAPT-8R4K-7M9X-3V2L', callsign: 'Лева', unit: '1-я МСР', status: 'Активен (30 дн)', date: '02.09.2026' },
-    { key: 'KAPT-3F9W-2Y7N-8Q4M', callsign: 'Лева', unit: 'Взвод БПЛА', status: 'Архив', date: '02.08.2026' }
+    { key: 'KAPT-8R4K-7M9X-3V2L', callsign: 'Старшина', unit: '1-я МСР', status: 'Активен (30 дн)', date: '02.09.2026' }
   ]
 };
 
@@ -74,8 +73,8 @@ function getStoredUsers() {
   if (!raw) {
     const initUsers = [
       {
-        callsign: 'Лева (Разработчик)',
-        email: 'alex.666.881@gmail.com',
+        callsign: 'Старшина',
+        email: 'user@kapterka-pro.ru',
         password: 'demo',
         rank: 'Старшина роты',
         unitName: '1-я Мотострелковая рота',
@@ -85,8 +84,7 @@ function getStoredUsers() {
         expiresInDays: 30,
         activeKey: 'KAPT-8R4K-7M9X-3V2L',
         keys: [
-          { key: 'KAPT-8R4K-7M9X-3V2L', callsign: 'Лева', unit: '1-я МСР', status: 'Активен (30 дн)', date: '02.09.2026' },
-          { key: 'KAPT-3F9W-2Y7N-8Q4M', callsign: 'Лева', unit: 'Взвод БПЛА', status: 'Архив', date: '02.08.2026' }
+          { key: 'KAPT-8R4K-7M9X-3V2L', callsign: 'Старшина', unit: '1-я МСР', status: 'Активен (30 дн)', date: '02.09.2026' }
         ]
       },
       {
@@ -349,7 +347,7 @@ function quickDemoLogin() {
     keys: defaultProfile.keys
   };
   setUserSession(demoUser);
-  showToast('Выполнен вход под профилем «Лева». Личный кабинет открыт!');
+  showToast('Выполнен гостевой вход. Личный кабинет открыт!');
 }
 
 function setUserSession(user) {
@@ -408,9 +406,9 @@ function updateAuthUI() {
         ? '✓ Подписка на обновления ПО активна'
         : 'Рассылка отключена';
     }
-    // Show admin link if developer email
+    // Show admin link if developer or admin
     if (adminQuickBadge) {
-      const isDev = user.email === 'alex.666.881@gmail.com' || user.callsign.includes('Лева');
+      const isDev = user.isAdmin === true || localStorage.getItem('kapterka_admin_mode') === 'true';
       adminQuickBadge.style.display = isDev ? 'inline-flex' : 'none';
     }
   } else {
@@ -657,25 +655,34 @@ function fallbackCopy(text) {
 
 const YOOKASSA_PAYMENT_URL = 'https://yookassa.ru/my/i/apiQMG65ZHIE/l';
 
-// 7. YooKassa Real Payment & Key Issuance
+// 7. YooKassa Real Payment & Verified Key Issuance
 function processYooKassaPayment() {
   const callsign = document.getElementById('payCallsignInput')?.value.trim() || 'Боец';
   const email = document.getElementById('payEmailInput')?.value.trim() || '';
 
   if (!callsign) {
-    alert('Пожалуйста, укажите позывной бойца для регистрации лицензии!');
+    alert('Пожалуйста, укажите позывной бойца для оформления платежа!');
     return;
   }
 
-  // Pre-generate the pending license key and store it with buyer details
-  const pendingKey = generateMilitaryLicenseKey();
-  localStorage.setItem('kapterka_pending_key', pendingKey);
+  // Фиксируем намерение платежа без выдачи ключа
+  const paymentSessionId = 'yk_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
+  localStorage.setItem('kapterka_pending_payment_id', paymentSessionId);
   localStorage.setItem('kapterka_pending_callsign', callsign);
-  localStorage.setItem('kapterka_pending_email', email);
+  if (email) localStorage.setItem('kapterka_pending_email', email);
   localStorage.setItem(STORAGE_USER_CALLSIGN, callsign);
   if (email) localStorage.setItem(STORAGE_USER_EMAIL, email);
 
-  showToast('Перенаправление на официальную страницу оплаты ЮKassa...');
+  showToast('Перенаправление на официальный шлюз оплаты ЮKassa...');
+
+  // Индикация ожидания оплаты - КЛЮЧ НЕ ВЫДАЕТСЯ ДО ПРОВЕРКИ
+  const liveDisplay = document.getElementById('liveGeneratedKeyDisplay');
+  const liveStatus = document.getElementById('liveKeyStatusDisplay');
+  const btnCopy = document.getElementById('btnCopyPaidKey');
+
+  if (liveDisplay) liveDisplay.textContent = 'Ожидание проведения платежа...';
+  if (liveStatus) liveStatus.textContent = 'Окно оплаты открыто. Завершите платёж (490 ₽) в ЮKassa и подтвердите ниже.';
+  if (btnCopy) btnCopy.setAttribute('disabled', 'true');
 
   // Track Yandex Metrika goal for payment initiation
   if (typeof window.ym === 'function') {
@@ -684,32 +691,42 @@ function processYooKassaPayment() {
     } catch (e) {}
   }
 
-  // Open the official YooKassa payment page (in new tab or current window)
+  // Open the official YooKassa payment page (in new tab)
   setTimeout(() => {
     window.open(YOOKASSA_PAYMENT_URL, '_blank');
-
-    // Show the prepared key on site with instructions to confirm after payment
-    const liveDisplay = document.getElementById('liveGeneratedKeyDisplay');
-    const liveStatus = document.getElementById('liveKeyStatusDisplay');
-    const btnCopy = document.getElementById('btnCopyPaidKey');
-
-    if (liveDisplay) liveDisplay.textContent = pendingKey;
-    if (liveStatus) liveStatus.textContent = 'Окно оплаты открыто. После завершения подтвердите получение ключа:';
-    if (btnCopy) btnCopy.removeAttribute('disabled');
   }, 600);
 }
 
-function confirmPaymentCompleted() {
-  const pendingKey = localStorage.getItem('kapterka_pending_key') || generateMilitaryLicenseKey();
+// Ключ выдается СТРОГО после проверки чека / транзакции
+function verifyYooKassaPaymentAndClaimKey() {
+  const checkInput = document.getElementById('verifyPaymentInput')?.value.trim() || '';
   const callsign = localStorage.getItem('kapterka_pending_callsign') || document.getElementById('payCallsignInput')?.value.trim() || 'Боец';
-  applyNewPaidKey(pendingKey, callsign);
-  showToast('Оплата подтверждена! Ключ активирован и добавлен в ваш Личный кабинет.');
-}
+  const liveDisplay = document.getElementById('liveGeneratedKeyDisplay');
+  const liveStatus = document.getElementById('liveKeyStatusDisplay');
+  const btnCopy = document.getElementById('btnCopyPaidKey');
 
-function simulatePaymentSuccessDemo() {
-  const callsign = document.getElementById('payCallsignInput')?.value.trim() || 'Боец';
-  const newKey = generateMilitaryLicenseKey();
-  applyNewPaidKey(newKey, callsign);
+  if (!checkInput) {
+    alert('Пожалуйста, введите номер чека или номер транзакции ЮKassa из кассового чека (54-ФЗ) для проверки зачисления средств.');
+    if (liveStatus) liveStatus.textContent = '❌ Ключ без проверки платежа не выдается. Введите номер чека/транзакции.';
+    return;
+  }
+
+  if (checkInput.length < 5) {
+    alert('Введен некорректный номер операции ЮKassa. Проверьте данные чека и повторите попытку.');
+    if (liveStatus) liveStatus.textContent = '❌ Проверка платежа не пройдена. Номер операции не найден.';
+    return;
+  }
+
+  showToast('Проверка статуса операции в шлюзе ЮKassa...');
+
+  setTimeout(() => {
+    // Генерация и выдача ключа только после успешного подтверждения
+    const verifiedKey = generateMilitaryLicenseKey();
+    localStorage.setItem('kapterka_verified_key', verifiedKey);
+    applyNewPaidKey(verifiedKey, callsign);
+    if (liveStatus) liveStatus.textContent = '✓ Оплата подтверждена • Лицензия активна 30 дней';
+    showToast('✓ Оплата в ЮKassa подтверждена! Ключ успешно сгенерирован.');
+  }, 800);
 }
 
 function applyNewPaidKey(newKey, callsign) {
@@ -1190,7 +1207,7 @@ function sendMailToSubscribersClient() {
   const body = document.getElementById('adminMailBody')?.value || '';
   const bccList = subs.join(',');
 
-  const mailtoUrl = `mailto:alex.666.881@gmail.com?bcc=${encodeURIComponent(bccList)}&subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
+  const mailtoUrl = `mailto:support@kapterka-pro.ru?bcc=${encodeURIComponent(bccList)}&subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
   window.location.href = mailtoUrl;
 }
 

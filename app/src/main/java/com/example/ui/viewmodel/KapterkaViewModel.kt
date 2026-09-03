@@ -522,8 +522,8 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
     fun startYooKassaPayment() {
         viewModelScope.launch {
             val profile = userProfile.value
-            val callsign = profile?.callsign ?: "Боец"
-            val email = profile?.email ?: "alex.666.881@gmail.com"
+            val callsign = profile?.callsign?.ifBlank { "Боец" } ?: "Боец"
+            val email = profile?.email?.trim().orEmpty()
 
             _toastEvent.emit("Формирование счета ЮKassa на 30 дней...")
             val result = yooKassaService.createPayment(callsign, email)
@@ -541,8 +541,8 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
     fun confirmPaymentAndActivateLicense() {
         viewModelScope.launch {
             val profile = userProfile.value
-            val callsign = profile?.callsign ?: "Боец"
-            val email = profile?.email ?: "alex.666.881@gmail.com"
+            val callsign = profile?.callsign?.ifBlank { "Боец" } ?: "Боец"
+            val email = profile?.email?.trim().orEmpty()
             val unitName = profile?.unitName ?: "1-е Подразделение"
             val unitKey = profile?.unitKey ?: "kapt_default"
 
@@ -552,17 +552,21 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                 prefs.getString("last_yookassa_payment_id", "") ?: ""
             }
 
-            _toastEvent.emit("Запрос подтверждения оплаты в ЮKassa...")
-
-            var isPaidSuccess = false
-            if (paymentIdToVerify.isNotBlank()) {
-                val (isPaid, _) = yooKassaService.verifyPaymentStatus(paymentIdToVerify)
-                if (isPaid) isPaidSuccess = true
+            if (paymentIdToVerify.isBlank()) {
+                _toastEvent.emit("Счет на оплату еще не был сформирован. Сначала нажмите «Оплатить через ЮKassa / СБП». Ключ выдается только после подтверждения.")
+                return@launch
             }
 
-            // Если подтвержден статус или тестовый режим или быстрый платеж
-            val pId = if (paymentIdToVerify.isNotBlank()) paymentIdToVerify else ("pay_app_" + System.currentTimeMillis())
-            val newKey = licenseManager.activateLicenseAfterPayment(callsign, email, pId)
+            _toastEvent.emit("Проверка статуса оплаты в ЮKassa (ID: $paymentIdToVerify)...")
+
+            val (isPaid, statusMsg) = yooKassaService.verifyPaymentStatus(paymentIdToVerify)
+            if (!isPaid) {
+                _toastEvent.emit("Платеж не подтвержден: $statusMsg. Ключ не может быть выдан без подтверждения оплаты.")
+                return@launch
+            }
+
+            // Ключ генерируется и активируется СТРОГО после подтверждения ЮKassa
+            val newKey = licenseManager.activateLicenseAfterPayment(callsign, email, paymentIdToVerify)
 
             // Заносим бойца в реестр всех подразделений
             fighterRegistryManager.registerOrUpdateFighter(
@@ -576,7 +580,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                 expiresAt = System.currentTimeMillis() + 30L * 86400000L
             )
 
-            _toastEvent.emit("Оплата зачислена! Выдан персональный ключ: $newKey (30 дней)")
+            _toastEvent.emit("Оплата подтверждена ЮKassa! Выдан персональный ключ: $newKey (30 дней)")
         }
     }
 

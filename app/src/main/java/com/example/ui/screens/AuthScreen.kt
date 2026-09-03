@@ -154,10 +154,10 @@ fun AuthScreen(
                     Button(
                         onClick = {
                             val prof = (currentProfile ?: UserProfile()).copy(
-                                callsign = callsign.ifEmpty { "лева" },
+                                callsign = callsign.ifEmpty { "Боец" },
                                 unitName = unitName.ifEmpty { "1-е Подразделение" },
                                 unitKey = unitKey.ifEmpty { "kapt_59e13b" },
-                                email = "alex.666.881@gmail.com",
+                                email = email.ifEmpty { "" },
                                 isLoggedIn = true
                             )
                             onSaveProfile(prof)
@@ -246,7 +246,7 @@ fun AuthScreen(
                         value = callsign,
                         onValueChange = { callsign = it },
                         label = { Text("Позывной / Имя", color = TacticalTextSecondary, fontSize = 12.sp) },
-                        placeholder = { Text("например: Лева / Ворон", color = TacticalTextDim, fontSize = 12.sp) },
+                        placeholder = { Text("например: Сокол / Ворон", color = TacticalTextDim, fontSize = 12.sp) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(8.dp),

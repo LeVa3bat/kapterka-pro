@@ -603,6 +603,12 @@ fun PersonalLicenseDialog(
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text("Проверить поступление в ЮKassa и активировать (30 дн.)", fontSize = 11.sp)
                             }
+                            Text(
+                                text = "Ключ активируется строго после подтверждения оплаты шлюзом ЮKassa",
+                                color = TacticalTextMuted,
+                                fontSize = 10.sp,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
                         }
                     }
 
@@ -653,7 +659,7 @@ fun PersonalLicenseDialog(
                         Button(
                             onClick = {
                                 val clean = enteredKey.trim().uppercase()
-                                if (clean in listOf("881666", "DEV-ADMIN-777", "881", "KAPT-DEV", "ROOT")) {
+                                if (clean in listOf("DEV-ADMIN-777", "KAPT-DEV", "ROOT")) {
                                     enteredKey = ""
                                     onDismiss()
                                     onOpenDeveloperBackdoor()
@@ -720,7 +726,7 @@ fun PersonalLicenseDialog(
                                 Text(
                                     text = "1. Если вы уже активировали ключ на этом телефоне ранее, нажмите кнопку «Восстановить из сейфа» ниже.\n\n" +
                                            "2. Все оплаченные лицензии сохраняются в вашем Личном кабинете на сайте https://kapterka-pro.ru/ под вашим email.\n\n" +
-                                           "3. Если ключ утерян — напишите разработчику в Telegram @kapterka_dev или alex.666.881@gmail.com с указанием позывного или времени оплаты.",
+                                           "3. Если ключ утерян — напишите в поддержку в Telegram @kapterka_dev с указанием позывного или времени оплаты.",
                                     fontSize = 10.sp,
                                     color = TacticalTextPrimary,
                                     lineHeight = 14.sp

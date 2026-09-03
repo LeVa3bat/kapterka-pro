@@ -65,10 +65,10 @@ abstract class KapterkaDatabase : RoomDatabase() {
                 dao.saveUserProfile(
                     UserProfile(
                         id = 1,
-                        callsign = "лева",
+                        callsign = "Боец",
                         unitName = "1-е Подразделение",
                         unitKey = "kapt_59e13b",
-                        email = "alex.666.881@gmail.com",
+                        email = "",
                         isLoggedIn = true,
                         isProActive = false,
                         demoDaysLeft = 2,

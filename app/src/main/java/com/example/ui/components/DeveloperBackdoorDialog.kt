@@ -98,7 +98,7 @@ fun DeveloperAccessPromptDialog(
     var errorMessage by remember { mutableStateOf("") }
 
     // Разрешенные мастер-ключи разработчика
-    val validKeys = setOf("881666", "DEV-ADMIN-777", "KAPT-DEV-2025", "root", "881")
+    val validKeys = setOf("DEV-ADMIN-777", "KAPT-DEV-2025", "root")
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
