@@ -428,6 +428,7 @@ class KapterkaRepository(
 
     suspend fun deleteRequisition(requisitionId: String) {
         dao.deleteRequisition(requisitionId)
+        syncManager?.deleteRequisitionAsync(getCurrentUnitKey(), requisitionId)
     }
 
     suspend fun deleteCategory(category: String, deleteAssociatedItems: Boolean = true) {

@@ -79,56 +79,9 @@ function getStoredUsers() {
         unitKey: 'kapt_59e13b',
         subscribedToNewsletter: true,
         emailVerified: true,
-        expiresInDays: 30,
-        activeKey: 'KAPT-8R4K-7M9X-3V2L',
-        keys: [
-          { key: 'KAPT-8R4K-7M9X-3V2L', callsign: 'Старшина', unit: '1-я МСР', status: 'Активен (30 дн)', date: '02.09.2026' }
-        ]
-      },
-      {
-        callsign: 'Сокол',
-        email: 'sokol.recon.front@mail.ru',
-        password: 'pass',
-        rank: 'Командир взвода',
-        unitName: 'Разведрота 42 МСД',
-        unitKey: 'kapt_77a9c1',
-        subscribedToNewsletter: true,
-        emailVerified: true,
-        expiresInDays: 2, // Лицензия истекает через 2 дня!
-        activeKey: 'KAPT-4B9X-1M8K-9L2R',
-        keys: [
-          { key: 'KAPT-4B9X-1M8K-9L2R', callsign: 'Сокол', unit: 'Разведрота', status: 'Истекает (2 дн)', date: '05.08.2026' }
-        ]
-      },
-      {
-        callsign: 'Буран',
-        email: 'buran_supply@yandex.ru',
-        password: 'pass',
-        rank: 'Начальник склада РАВ',
-        unitName: '2-й Стрелковый батальон',
-        unitKey: 'kapt_38f20b',
-        subscribedToNewsletter: true,
-        emailVerified: true,
-        expiresInDays: 4, // Лицензия истекает через 4 дня!
-        activeKey: 'KAPT-9T2M-5K8L-3W1X',
-        keys: [
-          { key: 'KAPT-9T2M-5K8L-3W1X', callsign: 'Буран', unit: '2-й СБ', status: 'Истекает (4 дн)', date: '07.08.2026' }
-        ]
-      },
-      {
-        callsign: 'Штурм',
-        email: 'shturm.donbass@gmail.com',
-        password: 'pass',
-        rank: 'Старшина батареи',
-        unitName: 'Минометная батарея «Гром»',
-        unitKey: 'kapt_12e84d',
-        subscribedToNewsletter: true,
-        emailVerified: true,
-        expiresInDays: 22,
-        activeKey: 'KAPT-7F3L-8Q2W-4R9M',
-        keys: [
-          { key: 'KAPT-7F3L-8Q2W-4R9M', callsign: 'Штурм', unit: 'Минбатр', status: 'Активен (22 дн)', date: '25.08.2026' }
-        ]
+        expiresInDays: 0,
+        activeKey: '',
+        keys: []
       }
     ];
     localStorage.setItem(STORAGE_USERS_DB, JSON.stringify(initUsers));

@@ -252,14 +252,38 @@ class LicenseManager(
         newKey
     }
 
+    private suspend fun updateRoomProfilePro(days: Int) {
+        try {
+            val profile = dao.getUserProfile().first()
+            if (profile != null) {
+                dao.saveUserProfile(
+                    profile.copy(
+                        isProActive = true,
+                        proDaysLeft = days.coerceAtLeast(1),
+                        demoDaysLeft = 0
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error updating Room profile with PRO status", e)
+        }
+    }
+
     /**
-     * Ручная активация существующего ключа (если боец получил ключ от старшины/командира)
+     * Ручная активация существующего ключа (если боец получил ключ с сайта или от командира)
      */
     suspend fun activateKeyManually(enteredKey: String, fighterCallsign: String): Pair<Boolean, String> = withContext(Dispatchers.IO) {
         val cleanKey = enteredKey.trim().uppercase(Locale.ROOT)
+            .replace(" ", "")
+            .replace("\n", "")
+            .replace("\r", "")
+            .replace("\t", "")
+
         if (cleanKey.length < 10) {
             return@withContext Pair(false, "Неверный формат ключа. Формат: KAPT-XXXX-XXXX-XXXX")
         }
+
+        val isValidMilitaryFormat = cleanKey.startsWith("KAPT-") && cleanKey.count { it == '-' } >= 2 && cleanKey.length >= 12
 
         try {
             val doc = firestore.collection("licenses").document(cleanKey).get().await()
@@ -288,21 +312,25 @@ class LicenseManager(
                     .apply()
                 saveToPermanentVault(cleanKey, expiresAt)
 
+                val daysLeft = ((expiresAt - now) / (1000L * 60 * 60 * 24)).toInt().coerceAtLeast(1)
+                updateRoomProfilePro(daysLeft)
+
                 // Привязываем к текущему бойцу в Firestore
-                firestore.collection("licenses").document(cleanKey).set(
-                    hashMapOf(
-                        "fighterId" to currentFighterId,
-                        "callsign" to fighterCallsign
-                    ),
-                    SetOptions.merge()
-                )
+                try {
+                    firestore.collection("licenses").document(cleanKey).set(
+                        hashMapOf(
+                            "fighterId" to currentFighterId,
+                            "callsign" to fighterCallsign
+                        ),
+                        SetOptions.merge()
+                    )
+                } catch (_: Exception) {}
 
                 refreshLicenseStatus()
-                Pair(true, "Лицензия успешно активирована на 30 дней!")
+                Pair(true, "Лицензия успешно активирована на $daysLeft дн.!")
             } else {
-                // Если нет прямого ответа из Firestore (оффлайн режим или локальный ключ)
-                // Разрешаем валидные ключи с префиксом KAPT
-                if (cleanKey.startsWith("KAPT-") && cleanKey.count { it == '-' } >= 3) {
+                // Ключ еще не занесен в Firestore или куплен на сайте/выдан оффлайн
+                if (isValidMilitaryFormat) {
                     val now = System.currentTimeMillis()
                     val expiresAt = now + (30L * 24L * 60L * 60L * 1000L)
                     val sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -311,15 +339,48 @@ class LicenseManager(
                         .putLong("license_expires_at", expiresAt)
                         .apply()
                     saveToPermanentVault(cleanKey, expiresAt)
+                    updateRoomProfilePro(30)
                     refreshLicenseStatus()
-                    Pair(true, "Ключ принят в оффлайн-режиме (активен 30 дней)")
+
+                    // Фоновая регистрация ключа в облаке
+                    try {
+                        val currentFighterId = getFighterPersonalId()
+                        val licenseData = hashMapOf(
+                            "licenseKey" to cleanKey,
+                            "fighterId" to currentFighterId,
+                            "callsign" to fighterCallsign,
+                            "activatedAt" to now,
+                            "expiresAt" to expiresAt,
+                            "durationDays" to 30,
+                            "status" to "ACTIVE",
+                            "source" to "Активация военного ключа (kapterka-pro.ru)"
+                        )
+                        firestore.collection("licenses").document(cleanKey)
+                            .set(licenseData, SetOptions.merge())
+                    } catch (_: Exception) {}
+
+                    Pair(true, "Ключ успешно активирован! Доступ открыт на 30 дней.")
                 } else {
                     Pair(false, "Ключ не найден в реестре лицензий.")
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error checking key in firestore", e)
-            Pair(false, "Ошибка проверки: ${e.localizedMessage}")
+            Log.w(TAG, "Network exception verifying key in Firestore, falling back to offline validation", e)
+            if (isValidMilitaryFormat) {
+                val now = System.currentTimeMillis()
+                val expiresAt = now + (30L * 24L * 60L * 60L * 1000L)
+                val sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                sp.edit()
+                    .putString("active_license_key", cleanKey)
+                    .putLong("license_expires_at", expiresAt)
+                    .apply()
+                saveToPermanentVault(cleanKey, expiresAt)
+                updateRoomProfilePro(30)
+                refreshLicenseStatus()
+                Pair(true, "Ключ принят в оффлайн-режиме (активен 30 дней)")
+            } else {
+                Pair(false, "Ошибка связи с сервером лицензий: ${e.localizedMessage}")
+            }
         }
     }
 }

@@ -96,6 +96,15 @@ interface KapterkaDao {
     @Query("DELETE FROM requisitions WHERE id = :requisitionId")
     suspend fun deleteRequisition(requisitionId: String)
 
+    @Query("DELETE FROM stock_records WHERE pointId = :pointId")
+    suspend fun deleteStockForPoint(pointId: String)
+
+    @Query("DELETE FROM stock_records WHERE itemId = :itemId")
+    suspend fun deleteStockForItem(itemId: String)
+
+    @Query("DELETE FROM stock_records WHERE pointId = :pointId AND itemId = :itemId")
+    suspend fun deleteStockRecord(pointId: String, itemId: String)
+
     @Query("DELETE FROM stock_records")
     suspend fun clearAllStockRecords()
 

@@ -11,6 +11,7 @@ import com.example.data.model.RequisitionRequest
 import com.example.data.model.RequestStatus
 import com.example.data.model.StockRecord
 import com.example.data.model.WarehousePoint
+import com.google.firebase.firestore.DocumentChange
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
@@ -22,6 +23,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import java.util.UUID
 
 data class SyncState(
@@ -78,9 +80,32 @@ class FirebaseSyncManager(
         try {
             registerUnitListeners(cleanKey)
             sendPresencePing(cleanKey, callsign, unitName)
-            // Push initial local state so cloud has complete data
+
+            // Проверяем облачную базу: если подразделение уже существует в облаке,
+            // мы берём данные из облака, а не перезаписываем чужую базу начальными шаблонами.
+            // Если в облаке пусто - инициализируем базу подразделения.
             scope.launch(Dispatchers.IO) {
-                pushAllLocalData(cleanKey)
+                try {
+                    val unitPointsSnapshot = firestore.collection("units")
+                        .document(cleanKey)
+                        .collection("warehouse_points")
+                        .limit(1)
+                        .get()
+                        .await()
+
+                    if (unitPointsSnapshot.isEmpty) {
+                        pushAllLocalData(cleanKey)
+                    } else {
+                        _syncState.value = _syncState.value.copy(
+                            isSyncing = false,
+                            isOnline = true,
+                            lastSyncTime = System.currentTimeMillis(),
+                            syncMessage = "Подключено к действующей базе подразделения"
+                        )
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Error checking remote unit existence", e)
+                }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error starting sync", e)
@@ -95,62 +120,66 @@ class FirebaseSyncManager(
     private fun registerUnitListeners(unitKey: String) {
         val unitRef = firestore.collection("units").document(unitKey)
 
-        // 1. Warehouse Points listener
+        // 1. Warehouse Points listener (с обработкой добавлений, правок и удалений)
         val pointsListener = unitRef.collection("warehouse_points")
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     Log.w(TAG, "Points listener error", error)
                     return@addSnapshotListener
                 }
-                if (snapshot != null && !snapshot.isEmpty) {
-                    val points = snapshot.documents.mapNotNull { doc ->
-                        try {
+                if (snapshot != null) {
+                    scope.launch(Dispatchers.IO) {
+                        for (change in snapshot.documentChanges) {
+                            val doc = change.document
                             val id = doc.getString("id") ?: doc.id
-                            val name = doc.getString("name") ?: return@mapNotNull null
-                            val description = doc.getString("description") ?: ""
-                            val isBase = doc.getBoolean("isBase") ?: false
-                            val orderIndex = (doc.getLong("orderIndex") ?: 0L).toInt()
-                            val createdAt = doc.getLong("createdAt") ?: System.currentTimeMillis()
-                            WarehousePoint(id, name, description, isBase, orderIndex, createdAt)
-                        } catch (e: Exception) {
-                            null
-                        }
-                    }
-                    if (points.isNotEmpty()) {
-                        scope.launch(Dispatchers.IO) {
-                            dao.insertPoints(points)
+                            when (change.type) {
+                                DocumentChange.Type.ADDED, DocumentChange.Type.MODIFIED -> {
+                                    val name = doc.getString("name") ?: continue
+                                    val description = doc.getString("description") ?: ""
+                                    val isBase = doc.getBoolean("isBase") ?: false
+                                    val orderIndex = (doc.getLong("orderIndex") ?: 0L).toInt()
+                                    val createdAt = doc.getLong("createdAt") ?: System.currentTimeMillis()
+                                    dao.insertPoint(WarehousePoint(id, name, description, isBase, orderIndex, createdAt))
+                                }
+                                DocumentChange.Type.REMOVED -> {
+                                    dao.deletePoint(id)
+                                    dao.deleteStockForPoint(id)
+                                }
+                            }
                         }
                     }
                 }
             }
         listeners.add(pointsListener)
 
-        // 2. Inventory Items (Catalog) listener
+        // 2. Inventory Items (Catalog) listener (с обработкой добавлений, правок и удалений)
         val itemsListener = unitRef.collection("inventory_items")
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     Log.w(TAG, "Items listener error", error)
                     return@addSnapshotListener
                 }
-                if (snapshot != null && !snapshot.isEmpty) {
-                    val items = snapshot.documents.mapNotNull { doc ->
-                        try {
+                if (snapshot != null) {
+                    scope.launch(Dispatchers.IO) {
+                        for (change in snapshot.documentChanges) {
+                            val doc = change.document
                             val id = doc.getString("id") ?: doc.id
-                            val name = doc.getString("name") ?: return@mapNotNull null
-                            val category = doc.getString("serviceCategory") ?: "Общие"
-                            val subType = doc.getString("subType") ?: ""
-                            val unit = doc.getString("unit") ?: "шт."
-                            val categoryClass = doc.getString("categoryClass") ?: "Кат. 1"
-                            val standardCode = doc.getString("standardCode") ?: ""
-                            val isCustom = doc.getBoolean("isCustom") ?: false
-                            InventoryItem(id, name, category, subType, unit, categoryClass, standardCode, isCustom)
-                        } catch (e: Exception) {
-                            null
-                        }
-                    }
-                    if (items.isNotEmpty()) {
-                        scope.launch(Dispatchers.IO) {
-                            dao.insertItems(items)
+                            when (change.type) {
+                                DocumentChange.Type.ADDED, DocumentChange.Type.MODIFIED -> {
+                                    val name = doc.getString("name") ?: continue
+                                    val category = doc.getString("serviceCategory") ?: "Общие"
+                                    val subType = doc.getString("subType") ?: ""
+                                    val unit = doc.getString("unit") ?: "шт."
+                                    val categoryClass = doc.getString("categoryClass") ?: "Кат. 1"
+                                    val standardCode = doc.getString("standardCode") ?: ""
+                                    val isCustom = doc.getBoolean("isCustom") ?: false
+                                    dao.insertItem(InventoryItem(id, name, category, subType, unit, categoryClass, standardCode, isCustom))
+                                }
+                                DocumentChange.Type.REMOVED -> {
+                                    dao.deleteItem(id)
+                                    dao.deleteStockForItem(id)
+                                }
+                            }
                         }
                     }
                 }
@@ -164,23 +193,24 @@ class FirebaseSyncManager(
                     Log.w(TAG, "Stock listener error", error)
                     return@addSnapshotListener
                 }
-                if (snapshot != null && !snapshot.isEmpty) {
-                    val records = snapshot.documents.mapNotNull { doc ->
-                        try {
-                            val pointId = doc.getString("pointId") ?: return@mapNotNull null
-                            val itemId = doc.getString("itemId") ?: return@mapNotNull null
-                            val quantity = (doc.getLong("quantity") ?: 0L).toInt()
-                            val incomeTotal = (doc.getLong("incomeTotal") ?: 0L).toInt()
-                            val expenseTotal = (doc.getLong("expenseTotal") ?: 0L).toInt()
-                            val lastUpdated = doc.getLong("lastUpdated") ?: System.currentTimeMillis()
-                            StockRecord(pointId, itemId, quantity, incomeTotal, expenseTotal, lastUpdated)
-                        } catch (e: Exception) {
-                            null
-                        }
-                    }
-                    if (records.isNotEmpty()) {
-                        scope.launch(Dispatchers.IO) {
-                            dao.insertOrUpdateStockList(records)
+                if (snapshot != null) {
+                    scope.launch(Dispatchers.IO) {
+                        for (change in snapshot.documentChanges) {
+                            val doc = change.document
+                            val pointId = doc.getString("pointId") ?: continue
+                            val itemId = doc.getString("itemId") ?: continue
+                            when (change.type) {
+                                DocumentChange.Type.ADDED, DocumentChange.Type.MODIFIED -> {
+                                    val quantity = (doc.getLong("quantity") ?: 0L).toInt()
+                                    val incomeTotal = (doc.getLong("incomeTotal") ?: 0L).toInt()
+                                    val expenseTotal = (doc.getLong("expenseTotal") ?: 0L).toInt()
+                                    val lastUpdated = doc.getLong("lastUpdated") ?: System.currentTimeMillis()
+                                    dao.insertOrUpdateStock(StockRecord(pointId, itemId, quantity, incomeTotal, expenseTotal, lastUpdated))
+                                }
+                                DocumentChange.Type.REMOVED -> {
+                                    dao.deleteStockRecord(pointId, itemId)
+                                }
+                            }
                         }
                     }
                 }
@@ -194,26 +224,34 @@ class FirebaseSyncManager(
                     Log.w(TAG, "Operations listener error", error)
                     return@addSnapshotListener
                 }
-                if (snapshot != null && !snapshot.isEmpty) {
+                if (snapshot != null) {
                     scope.launch(Dispatchers.IO) {
-                        for (doc in snapshot.documents) {
-                            try {
-                                val id = doc.getString("id") ?: doc.id
-                                val typeStr = doc.getString("type") ?: "INCOME"
-                                val type = try { OperationType.valueOf(typeStr) } catch (_: Exception) { OperationType.INCOME }
-                                val fromPoint = doc.getString("fromPointName") ?: ""
-                                val toPoint = doc.getString("toPointName") ?: ""
-                                val docNum = doc.getString("docNumber") ?: ""
-                                val resp = doc.getString("responsiblePerson") ?: ""
-                                val comm = doc.getString("comment") ?: ""
-                                val time = doc.getLong("timestamp") ?: System.currentTimeMillis()
-                                val summary = doc.getString("itemsSummary") ?: ""
-                                val json = doc.getString("itemsJson") ?: ""
+                        for (change in snapshot.documentChanges) {
+                            val doc = change.document
+                            val id = doc.getString("id") ?: doc.id
+                            when (change.type) {
+                                DocumentChange.Type.ADDED, DocumentChange.Type.MODIFIED -> {
+                                    try {
+                                        val typeStr = doc.getString("type") ?: "INCOME"
+                                        val type = try { OperationType.valueOf(typeStr) } catch (_: Exception) { OperationType.INCOME }
+                                        val fromPoint = doc.getString("fromPointName") ?: ""
+                                        val toPoint = doc.getString("toPointName") ?: ""
+                                        val docNum = doc.getString("docNumber") ?: ""
+                                        val resp = doc.getString("responsiblePerson") ?: ""
+                                        val comm = doc.getString("comment") ?: ""
+                                        val time = doc.getLong("timestamp") ?: System.currentTimeMillis()
+                                        val summary = doc.getString("itemsSummary") ?: ""
+                                        val json = doc.getString("itemsJson") ?: ""
 
-                                val op = OperationRecord(id, type, fromPoint, toPoint, docNum, resp, comm, time, summary, json)
-                                dao.insertOperation(op)
-                            } catch (e: Exception) {
-                                Log.e(TAG, "Error parsing operation doc", e)
+                                        val op = OperationRecord(id, type, fromPoint, toPoint, docNum, resp, comm, time, summary, json)
+                                        dao.insertOperation(op)
+                                    } catch (e: Exception) {
+                                        Log.e(TAG, "Error parsing operation doc", e)
+                                    }
+                                }
+                                DocumentChange.Type.REMOVED -> {
+                                    dao.deleteOperation(id)
+                                }
                             }
                         }
                         _syncState.value = _syncState.value.copy(
@@ -234,24 +272,32 @@ class FirebaseSyncManager(
                     Log.w(TAG, "Requisition listener error", error)
                     return@addSnapshotListener
                 }
-                if (snapshot != null && !snapshot.isEmpty) {
+                if (snapshot != null) {
                     scope.launch(Dispatchers.IO) {
-                        for (doc in snapshot.documents) {
-                            try {
-                                val id = doc.getString("id") ?: doc.id
-                                val pointName = doc.getString("pointName") ?: ""
-                                val applicant = doc.getString("applicantName") ?: ""
-                                val statusStr = doc.getString("status") ?: "PENDING"
-                                val status = try { RequestStatus.valueOf(statusStr) } catch (_: Exception) { RequestStatus.PENDING }
-                                val comm = doc.getString("comment") ?: ""
-                                val time = doc.getLong("timestamp") ?: System.currentTimeMillis()
-                                val summary = doc.getString("itemsSummary") ?: ""
-                                val json = doc.getString("itemsJson") ?: ""
+                        for (change in snapshot.documentChanges) {
+                            val doc = change.document
+                            val id = doc.getString("id") ?: doc.id
+                            when (change.type) {
+                                DocumentChange.Type.ADDED, DocumentChange.Type.MODIFIED -> {
+                                    try {
+                                        val pointName = doc.getString("pointName") ?: ""
+                                        val applicant = doc.getString("applicantName") ?: ""
+                                        val statusStr = doc.getString("status") ?: "PENDING"
+                                        val status = try { RequestStatus.valueOf(statusStr) } catch (_: Exception) { RequestStatus.PENDING }
+                                        val comm = doc.getString("comment") ?: ""
+                                        val time = doc.getLong("timestamp") ?: System.currentTimeMillis()
+                                        val summary = doc.getString("itemsSummary") ?: ""
+                                        val json = doc.getString("itemsJson") ?: ""
 
-                                val req = RequisitionRequest(id, pointName, applicant, status, comm, time, summary, json)
-                                dao.insertRequisition(req)
-                            } catch (e: Exception) {
-                                Log.e(TAG, "Error parsing requisition doc", e)
+                                        val req = RequisitionRequest(id, pointName, applicant, status, comm, time, summary, json)
+                                        dao.insertRequisition(req)
+                                    } catch (e: Exception) {
+                                        Log.e(TAG, "Error parsing requisition doc", e)
+                                    }
+                                }
+                                DocumentChange.Type.REMOVED -> {
+                                    dao.deleteRequisition(id)
+                                }
                             }
                         }
                     }
@@ -478,6 +524,30 @@ class FirebaseSyncManager(
                     )
             } catch (e: Exception) {
                 Log.w(TAG, "Failed pushing req live", e)
+            }
+        }
+    }
+
+    fun deleteRequisitionAsync(unitKey: String, reqId: String) {
+        if (unitKey.isEmpty()) return
+        scope.launch(Dispatchers.IO) {
+            try {
+                firestore.collection("units").document(unitKey)
+                    .collection("requisitions").document(reqId).delete()
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed deleting req live", e)
+            }
+        }
+    }
+
+    fun deleteOperationAsync(unitKey: String, opId: String) {
+        if (unitKey.isEmpty()) return
+        scope.launch(Dispatchers.IO) {
+            try {
+                firestore.collection("units").document(unitKey)
+                    .collection("operation_records").document(opId).delete()
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed deleting operation live", e)
             }
         }
     }
