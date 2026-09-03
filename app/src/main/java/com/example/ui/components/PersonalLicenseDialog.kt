@@ -38,6 +38,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
@@ -49,12 +50,15 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -103,11 +107,14 @@ fun PersonalLicenseDialog(
 ) {
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
+    val coroutineScope = rememberCoroutineScope()
     var selectedTab by remember { mutableIntStateOf(if (licenseStatus.isProActive || licenseStatus.licenseKey.isNotEmpty() || licenseStatus.lastSavedKey.isNotEmpty()) 0 else 1) }
     var enteredKey by remember { mutableStateOf("") }
     var copiedNotice by remember { mutableStateOf(false) }
     var secretShieldTaps by remember { mutableIntStateOf(0) }
     var showLostKeyHelp by remember { mutableStateOf(false) }
+    var isPaymentStarted by remember { mutableStateOf(false) }
+    var isVerifyingPayment by remember { mutableStateOf(false) }
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -563,52 +570,122 @@ fun PersonalLicenseDialog(
 
                             Spacer(modifier = Modifier.height(12.dp))
 
-                            Button(
-                                onClick = onPayYooKassaClick,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(46.dp)
-                                    .testTag("yookassa_pay_button"),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = TacticalGold,
-                                    contentColor = Color(0xFF1E1704)
-                                ),
-                                shape = RoundedCornerShape(8.dp)
-                            ) {
-                                Icon(imageVector = Icons.Default.Payment, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(modifier = Modifier.width(8.dp))
+                            if (!isPaymentStarted) {
+                                // ШАГ 1: Единственная понятная кнопка оплаты
+                                Button(
+                                    onClick = {
+                                        isPaymentStarted = true
+                                        onPayYooKassaClick()
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(48.dp)
+                                        .testTag("yookassa_pay_button"),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = TacticalGold,
+                                        contentColor = Color(0xFF1E1704)
+                                    ),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Icon(imageVector = Icons.Default.Payment, contentDescription = null, modifier = Modifier.size(20.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "Оплатить ${yooKassaConfig.priceRubles} ₽ через ЮKassa / СБП",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp
+                                    )
+                                }
+
                                 Text(
-                                    text = "Оплатить ${yooKassaConfig.priceRubles} ₽ через ЮKassa / СБП",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 13.sp
+                                    text = "После перехода в ЮKassa откроется СБП или банковская карта. Ключ генерируется сразу после подтверждения.",
+                                    color = TacticalTextMuted,
+                                    fontSize = 10.sp,
+                                    lineHeight = 14.sp,
+                                    modifier = Modifier.padding(top = 6.dp)
                                 )
-                            }
+                            } else {
+                                // ШАГ 2: Автоматическое появление кнопки проверки и выдачи ключа
+                                Surface(
+                                    color = Color(0xFF132219),
+                                    shape = RoundedCornerShape(8.dp),
+                                    border = BorderStroke(1.dp, SageGreenPrimary.copy(alpha = 0.6f)),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Column(modifier = Modifier.padding(10.dp)) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(
+                                                imageVector = Icons.Default.Check,
+                                                contentDescription = null,
+                                                tint = SageGreenBright,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text(
+                                                text = "Окно оплаты ЮKassa открыто",
+                                                color = SageGreenBright,
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "Завершите оплату в приложении вашего банка или браузере, затем нажмите кнопку ниже:",
+                                            color = TacticalTextSecondary,
+                                            fontSize = 11.sp,
+                                            lineHeight = 14.sp
+                                        )
+                                    }
+                                }
 
-                            Spacer(modifier = Modifier.height(8.dp))
+                                Spacer(modifier = Modifier.height(10.dp))
 
-                            OutlinedButton(
-                                onClick = {
-                                    onTestPaymentConfirm()
-                                    // После проверки сразу переключаем на вкладку "Лицензия бойца"
-                                    selectedTab = 0
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(38.dp),
-                                shape = RoundedCornerShape(6.dp),
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = SageGreenBright),
-                                border = BorderStroke(1.dp, SageGreenPrimary.copy(alpha = 0.5f))
-                            ) {
-                                Icon(imageVector = Icons.Default.Check, contentDescription = null, modifier = Modifier.size(15.dp))
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Проверить поступление в ЮKassa и активировать (30 дн.)", fontSize = 11.sp)
+                                Button(
+                                    onClick = {
+                                        if (!isVerifyingPayment) {
+                                            isVerifyingPayment = true
+                                            onTestPaymentConfirm()
+                                            coroutineScope.launch {
+                                                kotlinx.coroutines.delay(1200)
+                                                isVerifyingPayment = false
+                                                selectedTab = 0 // Мгновенный переход к готовой лицензии
+                                            }
+                                        }
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(46.dp)
+                                        .testTag("verify_payment_button"),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = SageGreenPrimary,
+                                        contentColor = Color(0xFF0F1B14)
+                                    ),
+                                    shape = RoundedCornerShape(8.dp),
+                                    enabled = !isVerifyingPayment
+                                ) {
+                                    if (isVerifyingPayment) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(18.dp),
+                                            color = Color(0xFF0F1B14),
+                                            strokeWidth = 2.dp
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("Проверка платежа в ЮKassa...", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    } else {
+                                        Icon(imageVector = Icons.Default.Key, contentDescription = null, modifier = Modifier.size(18.dp))
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("⚡ Проверить платёж и выдать ключ (30 дн.)", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(6.dp))
+
+                                TextButton(
+                                    onClick = { onPayYooKassaClick() },
+                                    modifier = Modifier.fillMaxWidth().height(32.dp)
+                                ) {
+                                    Text("Окно закрылось? Открыть ЮKassa снова", color = TacticalGoldText, fontSize = 11.sp)
+                                }
                             }
-                            Text(
-                                text = "Ключ активируется строго после подтверждения оплаты шлюзом ЮKassa",
-                                color = TacticalTextMuted,
-                                fontSize = 10.sp,
-                                modifier = Modifier.padding(top = 4.dp)
-                            )
                         }
                     }
 
@@ -630,7 +707,7 @@ fun PersonalLicenseDialog(
                         OutlinedTextField(
                             value = enteredKey,
                             onValueChange = { enteredKey = it.uppercase() },
-                            placeholder = { Text("KAPT-XXXX-XXXX-XXXX", color = TacticalTextDim, fontSize = 12.sp) },
+                            placeholder = { Text("Введите готовый ключ: KAPT-XXXX-XXXX-XXXX", color = TacticalTextDim, fontSize = 12.sp) },
                             singleLine = true,
                             modifier = Modifier
                                 .weight(1f)

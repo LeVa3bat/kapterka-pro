@@ -81,10 +81,10 @@ fun AuthScreen(
 ) {
     var selectedTab by remember { mutableIntStateOf(0) } // 0: Регистрация, 1: Вход
     var callsign by remember { mutableStateOf(currentProfile?.callsign?.ifBlank { "" } ?: "") }
-    var unitName by remember { mutableStateOf(currentProfile?.unitName?.ifBlank { "1-е Подразделение" } ?: "1-е Подразделение") }
-    var unitKey by remember { mutableStateOf(currentProfile?.unitKey?.ifBlank { "kapt_59e13b" } ?: "kapt_59e13b") }
+    var unitName by remember { mutableStateOf(currentProfile?.unitName?.ifBlank { "" } ?: "") }
+    var unitKey by remember { mutableStateOf(currentProfile?.unitKey?.ifBlank { "" } ?: "") }
     var email by remember { mutableStateOf(currentProfile?.email?.ifBlank { "" } ?: "") }
-    var password by remember { mutableStateOf("••••••••") }
+    var password by remember { mutableStateOf("") }
 
     Box(
         modifier = Modifier
@@ -246,7 +246,7 @@ fun AuthScreen(
                         value = callsign,
                         onValueChange = { callsign = it },
                         label = { Text("Позывной / Имя", color = TacticalTextSecondary, fontSize = 12.sp) },
-                        placeholder = { Text("например: Сокол / Ворон", color = TacticalTextDim, fontSize = 12.sp) },
+                        placeholder = { Text("Введите свой позывной (например: Сокол, Буран)", color = TacticalTextDim, fontSize = 12.sp) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(8.dp),
@@ -266,7 +266,7 @@ fun AuthScreen(
                         value = unitName,
                         onValueChange = { unitName = it },
                         label = { Text("Подразделение / Рота", color = TacticalTextSecondary, fontSize = 12.sp) },
-                        placeholder = { Text("например: 1-е Подразделение / 3-й минбат", color = TacticalTextDim, fontSize = 12.sp) },
+                        placeholder = { Text("Введите подразделение (например: 1-я рота)", color = TacticalTextDim, fontSize = 12.sp) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(8.dp),
@@ -287,7 +287,7 @@ fun AuthScreen(
                         value = unitKey,
                         onValueChange = { unitKey = it },
                         label = { Text("Ключ подразделения", color = TacticalTextSecondary, fontSize = 12.sp) },
-                        placeholder = { Text("например: kapt_59e13b", color = TacticalTextDim, fontSize = 12.sp) },
+                        placeholder = { Text("Введите общий ключ или нажмите 🔄", color = TacticalTextDim, fontSize = 12.sp) },
                         singleLine = true,
                         trailingIcon = {
                             if (selectedTab == 0) {
@@ -345,6 +345,7 @@ fun AuthScreen(
                         value = email,
                         onValueChange = { email = it },
                         label = { Text("Электронная почта (Email)", color = TacticalTextSecondary, fontSize = 12.sp) },
+                        placeholder = { Text("Введите email для чеков (например: name@mail.ru)", color = TacticalTextDim, fontSize = 12.sp) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(8.dp),
@@ -363,10 +364,11 @@ fun AuthScreen(
                     // Primary Submit Button
                     Button(
                         onClick = {
+                            val generatedKey = if (unitKey.isBlank()) "kapt_" + UUID.randomUUID().toString().take(6) else unitKey
                             val prof = (currentProfile ?: UserProfile()).copy(
-                                callsign = callsign.ifEmpty { "пользователь" },
+                                callsign = callsign.ifEmpty { "Боец" },
                                 unitName = unitName.ifEmpty { "1-е Подразделение" },
-                                unitKey = unitKey.ifEmpty { "kapt_59e13b" },
+                                unitKey = generatedKey,
                                 email = email,
                                 isLoggedIn = true
                             )

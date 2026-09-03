@@ -521,25 +521,25 @@
 
             <div class="form-group">
               <label class="form-label">Наименование подразделения:</label>
-              <input type="text" id="cabUnitNameInput" class="form-input" value="1-я Мотострелковая рота" placeholder="1-я МСР, Взвод БПЛА">
+              <input type="text" id="cabUnitNameInput" class="form-input" value="" placeholder="Введите наименование (например: 1-я рота, Взвод БПЛА)">
             </div>
 
             <div class="form-group">
               <label class="form-label">Ключ роты для синхронизации (не привязан к лицензии):</label>
               <div style="display:flex; gap:8px;">
-                <input type="text" id="cabUnitKeyInput" class="form-input mono" value="kapt_59e13b" style="color:var(--accent-gold); font-weight:700;">
+                <input type="text" id="cabUnitKeyInput" class="form-input mono" value="" placeholder="Введите ключ или нажмите Новый" style="color:var(--accent-gold); font-weight:700;">
                 <button class="btn btn-outline btn-sm" onclick="generateNewUnitKey()" title="Сформировать новый ключ роты">🔄 Новый</button>
               </div>
             </div>
 
             <div class="form-group">
               <label class="form-label">Email для получения чеков (54-ФЗ):</label>
-              <input type="email" id="cabEmailInput" class="form-input" value="" placeholder="name@domain.ru">
+              <input type="email" id="cabEmailInput" class="form-input" value="" placeholder="Введите ваш email (например: name@domain.ru)">
             </div>
 
             <div class="form-group">
               <label class="form-label">Телефон / Telegram для связи:</label>
-              <input type="text" id="cabPhoneInput" class="form-input" value="" placeholder="+7 (999) 000-00-00">
+              <input type="text" id="cabPhoneInput" class="form-input" value="" placeholder="Введите контакт (например: +7 999 000-00-00)">
             </div>
           </div>
 
@@ -613,67 +613,79 @@
 
               <div class="form-group">
                 <label class="form-label">Позывной бойца (для регистрации лицензии):</label>
-                <input type="text" id="payCallsignInput" class="form-input" placeholder="Например: Сокол, Буран">
+                <input type="text" id="payCallsignInput" class="form-input" placeholder="Введите свой позывной (например: Сокол, Буран)">
               </div>
 
               <div class="form-group">
                 <label class="form-label">Email (для автоматической отправки чека):</label>
-                <input type="email" id="payEmailInput" class="form-input" placeholder="name@domain.ru">
+                <input type="email" id="payEmailInput" class="form-input" placeholder="Введите email для чека (например: name@mail.ru)">
                 <div class="form-helper">Официальный кассовый чек по 54-ФЗ поступит сразу после подтверждения транзакции.</div>
               </div>
 
-              <div style="margin-top:20px; display:flex; gap:12px; flex-wrap:wrap;">
-                <button class="btn btn-gold btn-lg" style="flex:1;" onclick="processYooKassaPayment()">
-                  ⚡ Оплатить 490 ₽ через ЮKassa / СБП
+              <!-- Шаг 1: Первичная кнопка оплаты -->
+              <div id="boxPaymentInitial" style="margin-top:20px;">
+                <button id="btnPayYooKassaMain" class="btn btn-gold btn-lg" style="width:100%; font-size:1.05rem;" onclick="processYooKassaPayment()">
+                  💳 Оплатить 490 ₽ через ЮKassa / СБП
                 </button>
+                <div style="font-size:0.75rem; color:var(--text-muted); margin-top:8px; text-align:center;">
+                  Безопасное SSL-соединение • Магазин ЮKassa ID: 1450722
+                </div>
               </div>
-              <div style="font-size:0.75rem; color:var(--text-muted); margin-top:8px; text-align:center;">
-                Безопасное SSL-соединение • Магазин ЮKassa ID: 1450722
+
+              <!-- Шаг 2: Блок автоматического появления после перехода в ЮKassa -->
+              <div id="boxPaymentPending" style="display:none; margin-top:16px; background:#0e1c12; border:1px solid var(--primary); border-radius:var(--radius-md); padding:16px;">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                  <span style="color:var(--primary); font-size:1.1rem;">⚡</span>
+                  <strong style="color:var(--primary); font-size:0.95rem;">Шлюз ЮKassa открыт в браузере</strong>
+                </div>
+                <p style="font-size:0.84rem; color:var(--text-secondary); line-height:1.45; margin-bottom:14px;">
+                  После завершения перевода 490 ₽ в банковском приложении (СБП) или на сайте ЮKassa нажмите кнопку ниже:
+                </p>
+                <button id="btnAutoVerifyPayment" class="btn btn-gold btn-lg" style="width:100%; font-size:1.05rem; font-weight:bold; box-shadow:0 0 16px rgba(255,179,0,0.35);" onclick="verifyYooKassaPaymentAndClaimKey()">
+                  ⚡ Проверить платёж и выдать ключ (30 дней)
+                </button>
+                <div style="margin-top:10px; text-align:center;">
+                  <a href="https://yookassa.ru/my/i/apiQMG65ZHIE/l" target="_blank" style="font-size:0.78rem; color:var(--text-muted); text-decoration:none;">
+                    Окно закрылось? Открыть ЮKassa снова ➔
+                  </a>
+                </div>
               </div>
             </div>
 
             <!-- Правая колонка: Проверка оплаты и выдача ключа -->
-            <div style="background:#0a0e0b; border:1px solid var(--border-color); border-radius:var(--radius-lg); padding:22px;">
-              <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
-                <span style="color:var(--primary); font-size:1.2rem;">🛡️</span>
-                <h4 style="color:var(--text-primary); font-size:0.95rem;">ПРОВЕРКА ОПЛАТЫ И ВЫДАЧА КЛЮЧА</h4>
-              </div>
-              <p style="font-size:0.82rem; color:var(--text-secondary); line-height:1.5; margin-bottom:14px;">
-                Военный ключ генерируется <strong>строго после проверки и подтверждения оплаты</strong> через шлюз ЮKassa.
-              </p>
-
-              <div class="form-group" style="margin-bottom:10px;">
-                <label class="form-label" style="font-size:0.75rem;">Номер чека или ID операции ЮKassa:</label>
-                <input type="text" id="verifyPaymentInput" class="form-input" placeholder="Например: 2e8b... или номер из чека">
-                <div class="form-helper" style="font-size:0.72rem;">Указан в кассовом чеке или смс-уведомлении банка.</div>
-              </div>
-
-              <div class="live-key-generation-box">
-                <div style="font-size:0.72rem; color:var(--text-muted); font-family:var(--font-mono); text-transform:uppercase;">
-                  СТАТУС ЛИЦЕНЗИОННОГО КЛЮЧА:
+            <div style="background:#0a0e0b; border:1px solid var(--border-color); border-radius:var(--radius-lg); padding:22px; display:flex; flex-direction:column; justify-content:space-between;">
+              <div>
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                  <span style="color:var(--primary); font-size:1.2rem;">🛡️</span>
+                  <h4 style="color:var(--text-primary); font-size:0.95rem;">СТАТУС И ВЫДАЧА ЛИЦЕНЗИИ</h4>
                 </div>
-                <div class="live-key-result" id="liveGeneratedKeyDisplay" style="font-size:0.95rem; word-break:break-all;">
-                  Ожидание подтверждения оплаты...
-                </div>
-                <div style="font-size:0.75rem; color:var(--text-muted); font-family:var(--font-mono);" id="liveKeyStatusDisplay">
-                  Ключ без проверки оплаты не выдается
+                <p style="font-size:0.82rem; color:var(--text-secondary); line-height:1.5; margin-bottom:14px;">
+                  Персональный ключ бойца активируется <strong>автоматически после подтверждения оплаты</strong> через систему ЮKassa.
+                </p>
+
+                <div class="live-key-generation-box">
+                  <div style="font-size:0.72rem; color:var(--text-muted); font-family:var(--font-mono); text-transform:uppercase;">
+                    СТАТУС ЛИЦЕНЗИОННОГО КЛЮЧА:
+                  </div>
+                  <div class="live-key-result" id="liveGeneratedKeyDisplay" style="font-size:1.05rem; word-break:break-all; font-weight:bold; color:var(--accent-gold);">
+                    Ожидание оплаты...
+                  </div>
+                  <div style="font-size:0.78rem; color:var(--text-muted); font-family:var(--font-mono); margin-top:4px;" id="liveKeyStatusDisplay">
+                    Нажмите «Оплатить», затем «Проверить платёж»
+                  </div>
                 </div>
               </div>
 
-              <div style="margin-top:14px; display:flex; flex-direction:column; gap:8px;">
-                <button class="btn btn-gold btn-sm" onclick="verifyYooKassaPaymentAndClaimKey()">
-                  🔍 Проверить оплату в ЮKassa и получить ключ
-                </button>
+              <div style="margin-top:16px; display:flex; flex-direction:column; gap:10px;">
                 <button class="btn btn-primary btn-lg" id="btnCopyPaidKey" onclick="copyPaidKeyAction()" disabled>
                   📋 Скопировать полученный ключ
                 </button>
-                <a href="https://yookassa.ru/my/i/apiQMG65ZHIE/l" target="_blank" class="btn btn-outline btn-sm" style="text-align:center;">
-                  🔗 Открыть страницу оплаты ЮKassa
-                </a>
-              </div>
-
-              <div style="font-size:0.75rem; color:var(--text-muted); margin-top:12px; line-height:1.4;">
-                💡 <em>В мобильном приложении «Каптёрка» проверка статуса и активация происходят автоматически по кнопке «Проверить поступление в ЮKassa».</em>
+                <button class="btn btn-outline btn-sm" id="btnGoToCabinetAfterPay" onclick="switchMainTab('tabCabinet')" style="display:none; text-align:center;">
+                  👤 Открыть в Личном кабинете
+                </button>
+                <div style="font-size:0.74rem; color:var(--text-muted); line-height:1.4;">
+                  💡 <em>Ключ сразу сохраняется в вашем профиле бойца и отображается в Личном кабинете.</em>
+                </div>
               </div>
             </div>
 
