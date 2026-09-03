@@ -368,8 +368,22 @@ function setUserSession(user) {
 
 function logoutUserSession() {
   localStorage.removeItem(STORAGE_AUTH_USER);
+  localStorage.removeItem(STORAGE_USER_CALLSIGN);
+  localStorage.removeItem(STORAGE_USER_RANK);
+  localStorage.removeItem(STORAGE_UNIT_NAME);
+  localStorage.removeItem(STORAGE_UNIT_KEY);
+  localStorage.removeItem(STORAGE_USER_EMAIL);
+  localStorage.removeItem(STORAGE_USER_PHONE);
+  localStorage.removeItem(STORAGE_ACTIVE_KEY);
+  localStorage.removeItem(STORAGE_KEYS_HISTORY);
+  localStorage.removeItem('kapterka_pending_callsign');
+  localStorage.removeItem('kapterka_pending_key');
+  localStorage.removeItem('kapterka_pending_payment_id');
+  localStorage.removeItem('kapterka_verified_key');
+  
   updateAuthUI();
-  showToast('Вы вышли из учетной записи.');
+  loadCabinetProfile();
+  showToast('Вы вышли из учетной записи. Данные сессии очищены.');
 }
 
 function getActiveUserSession() {
@@ -474,6 +488,7 @@ function loadCabinetProfile() {
   const phoneInput = document.getElementById('cabPhoneInput');
   const activeKeyDisp = document.getElementById('cabActiveKeyDisp');
   const navCallsignDisplay = document.getElementById('navCallsignDisplay');
+  const navBadgeStatus = document.getElementById('navBadgeStatus');
   const payCallsignInput = document.getElementById('payCallsignInput');
   const payEmailInput = document.getElementById('payEmailInput');
 
@@ -483,10 +498,29 @@ function loadCabinetProfile() {
   if (unitKeyInput) unitKeyInput.value = unitKey;
   if (emailInput) emailInput.value = email;
   if (phoneInput) phoneInput.value = phone;
-  if (activeKeyDisp) activeKeyDisp.textContent = activeKey;
-  if (navCallsignDisplay) navCallsignDisplay.textContent = callsign;
-  if (payCallsignInput) payCallsignInput.value = callsign;
-  if (payEmailInput) payEmailInput.value = email;
+  if (activeKeyDisp) activeKeyDisp.textContent = activeKey || '—';
+  if (navCallsignDisplay) navCallsignDisplay.textContent = callsign || 'Личный кабинет';
+  if (payCallsignInput && callsign) payCallsignInput.value = callsign;
+  if (payEmailInput && email) payEmailInput.value = email;
+
+  // Управление карточками ключа (есть активный ключ vs нет ключа)
+  const cabActiveKeyCard = document.getElementById('cabActiveKeyCard');
+  const cabNoKeyCard = document.getElementById('cabNoKeyCard');
+
+  if (activeKey && activeKey.startsWith('KAPT-')) {
+    if (cabActiveKeyCard) cabActiveKeyCard.style.display = 'block';
+    if (cabNoKeyCard) cabNoKeyCard.style.display = 'none';
+    if (navBadgeStatus) {
+      navBadgeStatus.textContent = 'ПРО';
+      navBadgeStatus.style.display = 'inline-block';
+    }
+  } else {
+    if (cabActiveKeyCard) cabActiveKeyCard.style.display = 'none';
+    if (cabNoKeyCard) cabNoKeyCard.style.display = 'block';
+    if (navBadgeStatus) {
+      navBadgeStatus.style.display = 'none';
+    }
+  }
 
   renderKeysHistory();
 }
@@ -743,6 +777,16 @@ function applyNewPaidKey(newKey, callsign) {
   localStorage.setItem(STORAGE_ACTIVE_KEY, newKey);
   const cabKeyDisp = document.getElementById('cabActiveKeyDisp');
   if (cabKeyDisp) cabKeyDisp.textContent = newKey;
+
+  const cabActiveKeyCard = document.getElementById('cabActiveKeyCard');
+  const cabNoKeyCard = document.getElementById('cabNoKeyCard');
+  const navBadgeStatus = document.getElementById('navBadgeStatus');
+  if (cabActiveKeyCard) cabActiveKeyCard.style.display = 'block';
+  if (cabNoKeyCard) cabNoKeyCard.style.display = 'none';
+  if (navBadgeStatus) {
+    navBadgeStatus.textContent = 'ПРО';
+    navBadgeStatus.style.display = 'inline-block';
+  }
 
   // Add to History
   const history = getKeysHistory();

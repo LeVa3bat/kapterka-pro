@@ -463,8 +463,8 @@
             <p>Здесь сохранены ваши персональные ключи, привязка подразделений и история оплат</p>
           </div>
 
-        <!-- Карточка активного ключа (С возможностью моментального копирования) -->
-        <div class="vault-key-card">
+        <!-- Карточка 1: Когда лицензия активна и оплачена -->
+        <div class="vault-key-card" id="cabActiveKeyCard" style="display:none;">
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
             <div>
               <span class="badge badge-gold" id="cabStatusBadge">АКТИВЕН 30 ДНЕЙ</span>
@@ -480,7 +480,7 @@
               <div style="font-size:0.75rem; color:var(--text-muted); font-family:var(--font-mono); margin-bottom:4px;">
                 ВАШ ПЕРСОНАЛЬНЫЙ ВОЕННЫЙ КЛЮЧ:
               </div>
-              <div class="vault-key-text" id="cabActiveKeyDisp">KAPT-8R4K-7M9X-3V2L</div>
+              <div class="vault-key-text" id="cabActiveKeyDisp" style="color:var(--accent-gold); font-size:1.3rem; font-weight:bold;">—</div>
             </div>
             <button class="btn btn-gold btn-lg" onclick="copyCabinetKey()">
               📋 Скопировать ключ
@@ -497,15 +497,39 @@
             1. Нажмите кнопку <strong>«Скопировать ключ»</strong> выше.<br>
             2. Откройте приложение на телефоне ➔ нажмите на верхний золотой баннер лицензии.<br>
             3. Перейдите во вкладку <strong>«Оплата и СБП»</strong> ➔ вставьте скопированный ключ в поле <em>KAPT-XXXX-XXXX-XXXX</em>.<br>
-            4. Нажмите <strong>«Ввести»</strong> — приложение активирует 30 дней ПРО-доступа!
+            4. Нажмите <strong>«Ввести»</strong> — приложение офлайн активирует 30 дней ПРО-доступа!
+          </div>
+        </div>
+
+        <!-- Карточка 2: Когда лицензия еще НЕ оплачена / не активирована -->
+        <div class="vault-key-card" id="cabNoKeyCard" style="display:block; border-color:var(--border-color); background:#0c120e;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <div>
+              <span class="badge" style="background:#222; color:#888;">БАЗОВЫЙ ДОСТУП</span>
+              <span style="font-size:0.85rem; color:var(--text-secondary); margin-left:8px;">Лицензия не активирована</span>
+            </div>
+          </div>
+
+          <div style="margin:16px 0;">
+            <p style="font-size:0.9rem; color:var(--text-secondary); margin-bottom:12px; line-height:1.45;">
+              Для разблокировки неограниченного учета имущества, складов и синхронизации без интернета оформите подписку на 30 дней.
+            </p>
+            <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+              <button class="btn btn-gold btn-lg" onclick="switchMainTab('tabPayment')">
+                💳 Приобрести ключ ПРО на 30 дней (490 ₽)
+              </button>
+            </div>
           </div>
         </div>
 
         <!-- Сетка: Профиль бойца + Ключ подразделения -->
         <div class="cabinet-card" style="max-width:100%; margin-bottom:24px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; border-bottom:1px solid var(--border-color); padding-bottom:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:18px; border-bottom:1px solid var(--border-color); padding-bottom:12px;">
             <h3 style="font-size:1.1rem; color:var(--text-primary);">Данные бойца и Подразделения</h3>
-            <button class="btn btn-primary btn-sm" onclick="saveCabinetProfile()">💾 Сохранить изменения</button>
+            <div style="display:flex; gap:8px;">
+              <button class="btn btn-outline btn-sm" onclick="logoutUserSession()" title="Выйти из учетной записи и очистить сессию браузера">🚪 Выйти</button>
+              <button class="btn btn-primary btn-sm" onclick="saveCabinetProfile()">💾 Сохранить</button>
+            </div>
           </div>
 
           <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:18px;">
