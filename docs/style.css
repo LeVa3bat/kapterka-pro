@@ -1416,4 +1416,39 @@ h1, h2, h3, h4 {
   .section-header h2 {
     font-size: 1.25rem !important;
   }
+
+  /* Checkout card & YooKassa on small mobile */
+  .yookassa-checkout-card {
+    padding: 16px 12px !important;
+    border-radius: 12px !important;
+  }
+
+  .checkout-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  .checkout-grid > div {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .payment-method-pills {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+
+  .payment-method-pill {
+    font-size: 0.72rem !important;
+    padding: 5px 9px !important;
+    white-space: normal !important;
+  }
+
+  .live-key-result {
+    font-size: 1.05rem !important;
+    letter-spacing: 0.5px !important;
+    word-break: break-all !important;
+  }
 }
