@@ -140,56 +140,12 @@
             </div>
           </div>
 
-          <!-- Smartphone Frame Mockup -->
+          <!-- Smartphone Frame with Real Screenshot -->
           <div class="mockup-container">
-            <div class="phone-frame">
+            <div class="phone-frame" style="box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 30px rgba(141,170,89,0.25);">
               <div class="phone-notch"></div>
-              <div class="phone-screen">
-                <div class="screen-header">
-                  <div class="screen-title">🛡️ КАПТЁРКА PRO • БАЗА</div>
-                  <span class="screen-badge" style="background:#8daa59; color:#0c0f0d;">ОНЛАЙН</span>
-                </div>
-                <div class="screen-body">
-                  <div class="screen-card" style="background:#19241d; border-color:#8daa59;">
-                    <div class="screen-card-row">
-                      <span style="color:#8daa59; font-weight:700;">СТАТУС СКЛАДА</span>
-                      <span class="screen-badge">1 мсб</span>
-                    </div>
-                    <div style="font-size:0.75rem; color:#f0f4f1; margin-top:2px;">Позиций на учете: 4 (База, ВОП «Север», СП)</div>
-                  </div>
-
-                  <div class="screen-card">
-                    <div class="screen-card-row">
-                      <strong style="color:#f0f4f1;">120-мм ОФ-843А</strong>
-                      <span class="screen-badge">104 шт</span>
-                    </div>
-                    <div style="color:#9aa89f; font-size:0.7rem;">Базовый склад (56) • ВОП «Север» (48)</div>
-                  </div>
-
-                  <div class="screen-card">
-                    <div class="screen-card-row">
-                      <strong style="color:#f0f4f1;">82-мм Д-832ДУ (Дым)</strong>
-                      <span class="screen-badge">40 шт</span>
-                    </div>
-                    <div style="color:#9aa89f; font-size:0.7rem;">Служба РАВ • В наличии</div>
-                  </div>
-
-                  <div class="screen-card">
-                    <div class="screen-card-row">
-                      <strong style="color:#f0f4f1;">Порох НБЛ-35</strong>
-                      <span class="screen-badge-gold screen-badge">34 уп.</span>
-                    </div>
-                    <div style="color:#9aa89f; font-size:0.7rem;">Метательные заряды минометов</div>
-                  </div>
-
-                  <div class="screen-card" style="border-left:3px solid #e57373;">
-                    <div class="screen-card-row">
-                      <span style="color:#e57373; font-weight:700;">АКТ РАСХОДА № 04/26</span>
-                      <span class="screen-badge-red screen-badge">Списано</span>
-                    </div>
-                    <div style="font-size:0.7rem; color:#9aa89f;">16 мин 120-мм • ВОП «Север»</div>
-                  </div>
-                </div>
+              <div class="phone-screen" style="padding:0; overflow:hidden; background:#000;">
+                <img src="real_screen_2.jpg" alt="Каптёрка ПРО — Реальный интерфейс" style="width:100%; height:100%; object-fit:cover; display:block;">
               </div>
             </div>
 
@@ -260,56 +216,19 @@
       </div>
     </section>
 
-    <!-- Interactive Screens Carousel Showcase -->
+    <!-- Tactical 3D Screenshots Showcase (100% Real Android Screens) -->
     <section class="section carousel-section" id="screens">
       <div class="container">
         <div class="section-header">
-          <div class="badge">Интерфейс приложения</div>
-          <h2>Интерактивный обзор экранов</h2>
-          <p>Нажмите на вкладку ниже, чтобы посмотреть работу приложения</p>
+          <div class="badge badge-gold">Реальные скриншоты v3.0.1 PRO</div>
+          <h2>Тактический интерфейс приложения</h2>
+          <p>7 ключевых экранов смартфона: от защиты Room DB и воинских точек до заявок передовой и выгрузки Excel</p>
         </div>
 
-        <div class="carousel-tabs">
-          <button class="tab-btn active" data-target="warehouse">📦 Склад и Точки</button>
-          <button class="tab-btn" data-target="forma8">💥 Форма № 8 (Акт расхода)</button>
-          <button class="tab-btn" data-target="forma18">📖 Форма № 18 (Книга учета)</button>
-          <button class="tab-btn" data-target="requests">📋 Заявки с передовой</button>
-          <button class="tab-btn" data-target="excel">📊 Экспорт Excel</button>
-        </div>
-
-        <div class="carousel-display">
-          <div class="showcase-info">
-            <h3 id="showcaseTitle">Базовый склад и Точки (ВОП / СП)</h3>
-            <p id="showcaseDesc">Наглядный контроль остатков имущества в реальном времени. Разделение по взводам, позициям расчетов и опорным пунктам с контролем критического остатка.</p>
-            <ul class="showcase-features-list" id="showcaseFeatures">
-              <li><span class="check">✓</span> <span>Разделение по точкам: Базовый склад, ВОП «Север», СП «Высота», ВОП «Гранит»</span></li>
-              <li><span class="check">✓</span> <span>Быстрый поиск по номенклатуре, калибрам и категориям</span></li>
-              <li><span class="check">✓</span> <span>Автоматический подсчет общего баланса и остатка на каждой позиции</span></li>
-            </ul>
-            <div style="display:flex; gap:10px; flex-wrap:wrap;">
-              <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('showcase')" class="btn btn-primary">
-                📥 Скачать приложение APK (26 МБ)
-              </a>
-              <button class="btn btn-outline" onclick="switchMainTab('tabDownload')">Инструкция по установке</button>
-            </div>
-          </div>
-
-          <div class="screen-preview-container" id="showcaseScreen">
-            <!-- Dynamically populated by app.js -->
-          </div>
-        </div>
-
-        <!-- RuStore & Mobile Screenshots Gallery (Interactive Tactical Carousel) -->
-        <div style="margin-top: 45px;">
-          <div style="text-align: center; margin-bottom: 22px;">
-            <span class="badge badge-gold" style="font-size: 0.85rem;">📸 Официальные скриншоты приложения</span>
-            <h3 style="font-size: 1.4rem; color: var(--text-primary); margin: 8px 0 4px;">Карусель реальных экранов смартфона</h3>
-            <p style="color: var(--text-secondary); font-size: 0.88rem;">Полный цикл учета и армейского снабжения в версии 3.0.0 PRO (7 экранов)</p>
-          </div>
-
+        <div class="carousel-3d-stage">
           <div class="carousel-wrapper" id="screenshotsCarousel">
-            <button class="carousel-btn prev" id="carouselPrev" aria-label="Предыдущий скриншот">‹</button>
-            <button class="carousel-btn next" id="carouselNext" aria-label="Следующий скриншот">›</button>
+            <button class="carousel-btn prev" id="carouselPrev" aria-label="Предыдущий экран">‹</button>
+            <button class="carousel-btn next" id="carouselNext" aria-label="Следующий экран">›</button>
 
             <div class="carousel-viewport">
               <div class="carousel-track" id="carouselTrack">
@@ -321,7 +240,7 @@
                   </div>
                   <div class="carousel-meta">
                     <div class="carousel-meta-title">🛡️ 1. Тактический старт</div>
-                    <div class="carousel-meta-desc">Анимация радарного сканера, верификация ключа AES-256 и быстрая загрузка базы данных Room.</div>
+                    <div class="carousel-meta-desc">Анимация радарного сканера, верификация ключа AES-256 и мгновенная инициализация Room DB.</div>
                   </div>
                 </div>
 
@@ -333,7 +252,7 @@
                   </div>
                   <div class="carousel-meta">
                     <div class="carousel-meta-title">🏠 2. Командный экран</div>
-                    <div class="carousel-meta-desc">Кнопки «Приход», «Перенос», «Выдача», «Расход ф.8», точки учета: Базовый склад, ОП «Скала», ОП «Заря».</div>
+                    <div class="carousel-meta-desc">Быстрые действия: «Приход», «Перенос», «Выдача», «Расход ф.8», точки учета: Базовый склад, ОП «Скала», ОП «Заря».</div>
                   </div>
                 </div>
 
@@ -345,7 +264,7 @@
                   </div>
                   <div class="carousel-meta">
                     <div class="carousel-meta-title">⏱️ 3. Журнал операций</div>
-                    <div class="carousel-meta-desc">Полная история движений ТМЦ с фильтрацией по расходу (ф.8), приходам и внутренним перемещениям.</div>
+                    <div class="carousel-meta-desc">Полная история движений ТМЦ с фильтрацией по актам Формы № 8, приходам и внутренним перемещениям.</div>
                   </div>
                 </div>
 
@@ -410,6 +329,14 @@
               <span class="carousel-dot" data-index="6"></span>
             </div>
           </div>
+        </div>
+
+        <!-- Quick actions row under carousel -->
+        <div style="display:flex; justify-content:center; gap:16px; margin-top:24px; flex-wrap:wrap;">
+          <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('showcase_real')" class="btn btn-primary btn-lg">
+            📥 Скачать приложение APK v3.0.1 (26 МБ)
+          </a>
+          <button class="btn btn-outline" onclick="switchMainTab('tabDownload')">Инструкция по установке</button>
         </div>
       </div>
     </section>

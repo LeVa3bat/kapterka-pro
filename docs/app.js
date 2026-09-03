@@ -1404,11 +1404,15 @@ function initScreenshotsCarousel() {
   function updateCarousel() {
     const slide = track.children[0];
     if (!slide) return;
-    const slideWidth = slide.offsetWidth + 20; // 20px gap
+    const slideWidth = slide.offsetWidth + 24; // 24px gap
     track.style.transform = `translateX(-${currentCarouselIndex * slideWidth}px)`;
 
     dots.forEach((dot, idx) => {
       dot.classList.toggle('active', idx === currentCarouselIndex);
+    });
+
+    Array.from(track.children).forEach((card, idx) => {
+      card.classList.toggle('active-card', idx === currentCarouselIndex);
     });
   }
 
