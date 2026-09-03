@@ -651,7 +651,7 @@ function trackApkDownload(source) {
       window.ym(112255061, 'reachGoal', 'apk_download_started', { source: source || 'direct' });
     } catch (e) {}
   }
-  showToast('📥 Скачивание APK-файла «Каптёрка Про v3.0» началось...');
+  showToast('📥 Скачивание APK-файла «Каптёрка Про v3.0.1» началось...');
 }
 
 function fallbackCopy(text) {

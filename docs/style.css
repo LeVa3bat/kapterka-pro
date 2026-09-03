@@ -1253,7 +1253,7 @@ h1, h2, h3, h4 {
 
   /* Hero Section: Fit 100% within screen */
   .hero {
-    padding: 125px 0 30px !important;
+    padding: 108px 0 16px !important;
   }
 
   .hero-content {
@@ -1262,30 +1262,33 @@ h1, h2, h3, h4 {
   }
 
   .hero-content h1 {
-    font-size: 1.55rem !important;
-    line-height: 1.25 !important;
+    font-size: 1.45rem !important;
+    line-height: 1.22 !important;
     word-break: normal !important;
     overflow-wrap: break-word !important;
+    margin-bottom: 8px !important;
   }
 
   .hero-subtitle {
-    font-size: 0.88rem !important;
-    line-height: 1.45 !important;
+    font-size: 0.84rem !important;
+    line-height: 1.4 !important;
+    margin-bottom: 14px !important;
   }
 
   .hero-actions {
     display: flex !important;
     flex-direction: column !important;
     width: 100% !important;
-    gap: 10px !important;
+    gap: 8px !important;
+    margin-bottom: 14px !important;
   }
 
   .hero-actions .btn,
   .hero-actions a.btn {
     width: 100% !important;
-    min-height: 48px !important;
-    font-size: 0.95rem !important;
-    padding: 12px 14px !important;
+    min-height: 44px !important;
+    font-size: 0.9rem !important;
+    padding: 10px 12px !important;
     text-align: center !important;
     justify-content: center !important;
     display: flex !important;
@@ -1294,13 +1297,15 @@ h1, h2, h3, h4 {
   .hero-features-chips {
     display: grid !important;
     grid-template-columns: 1fr 1fr !important;
-    gap: 8px !important;
+    gap: 6px !important;
     width: 100% !important;
+    margin-top: 4px !important;
   }
 
   .chip {
-    font-size: 0.76rem !important;
+    font-size: 0.72rem !important;
     padding: 4px 6px !important;
+    border-radius: 8px !important;
   }
 
   /* Phone Mockup */
@@ -1310,56 +1315,95 @@ h1, h2, h3, h4 {
     overflow: hidden !important;
     display: flex !important;
     justify-content: center !important;
-    margin-top: 20px !important;
+    margin-top: 14px !important;
   }
 
   .phone-frame {
-    width: 260px !important;
-    height: 490px !important;
-    border-width: 4px !important;
-    border-radius: 32px !important;
+    width: 220px !important;
+    height: 420px !important;
+    border-width: 3px !important;
+    border-radius: 28px !important;
   }
 
   .floating-stats {
     right: 4px !important;
-    bottom: -10px !important;
-    padding: 6px 10px !important;
-    font-size: 0.75rem !important;
+    bottom: -6px !important;
+    padding: 4px 8px !important;
+    font-size: 0.7rem !important;
   }
 
-  /* Sections & Cards: Avoid wide margins & stretching */
+  /* Sections & Cards: Compact, high-density mobile layout */
   .section {
-    padding: 34px 0 !important;
+    padding: 22px 0 !important;
     width: 100% !important;
   }
 
+  .section-header {
+    margin-bottom: 16px !important;
+  }
+
   .section-header h2 {
-    font-size: 1.4rem !important;
-    line-height: 1.25 !important;
+    font-size: 1.25rem !important;
+    line-height: 1.2 !important;
+    margin: 6px 0 4px !important;
   }
 
   .section-header p {
-    font-size: 0.85rem !important;
+    font-size: 0.8rem !important;
+    line-height: 1.35 !important;
   }
 
-  .feature-card,
+  .features-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+
+  .feature-card {
+    padding: 12px 10px !important;
+    border-radius: 12px !important;
+  }
+
+  .feature-icon-box {
+    width: 34px !important;
+    height: 34px !important;
+    font-size: 1.1rem !important;
+    margin-bottom: 8px !important;
+    border-radius: 8px !important;
+  }
+
+  .feature-card h3 {
+    font-size: 0.88rem !important;
+    line-height: 1.2 !important;
+    margin-bottom: 4px !important;
+  }
+
+  .feature-card p {
+    font-size: 0.74rem !important;
+    line-height: 1.35 !important;
+  }
+
+  .feature-tag {
+    font-size: 0.65rem !important;
+    margin-top: 8px !important;
+  }
+
   .cabinet-card,
   .pricing-card,
   .download-box {
     width: 100% !important;
     max-width: 100% !important;
-    padding: 16px 14px !important;
-    border-radius: 14px !important;
+    padding: 14px 12px !important;
+    border-radius: 12px !important;
     box-sizing: border-box !important;
   }
 
   .checkout-grid {
     grid-template-columns: 1fr !important;
-    gap: 16px !important;
+    gap: 14px !important;
   }
 
   .checkout-plan-card {
-    padding: 14px !important;
+    padding: 12px !important;
   }
 
   /* Tables & Lists inside Cabinet and Sync */
@@ -1373,20 +1417,20 @@ h1, h2, h3, h4 {
 
   /* Buttons Across All Screens */
   .btn {
-    min-height: 46px !important;
-    font-size: 0.9rem !important;
+    min-height: 42px !important;
+    font-size: 0.88rem !important;
     box-sizing: border-box !important;
   }
 
   .download-box h2 {
-    font-size: 1.35rem !important;
+    font-size: 1.2rem !important;
   }
 
   .download-actions {
     display: flex !important;
     flex-direction: column !important;
     width: 100% !important;
-    gap: 10px !important;
+    gap: 8px !important;
   }
 
   .download-actions .btn,
@@ -1398,23 +1442,37 @@ h1, h2, h3, h4 {
 
   .download-meta {
     flex-direction: column !important;
-    gap: 6px !important;
+    gap: 4px !important;
     text-align: center !important;
-    font-size: 0.78rem !important;
+    font-size: 0.74rem !important;
   }
 }
 
 @media (max-width: 480px) {
   .hero-features-chips {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 5px !important;
   }
 
   .hero-content h1 {
-    font-size: 1.38rem !important;
+    font-size: 1.32rem !important;
   }
 
   .section-header h2 {
-    font-size: 1.25rem !important;
+    font-size: 1.18rem !important;
+  }
+
+  .features-grid {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+
+  .feature-card {
+    padding: 10px 12px !important;
+  }
+
+  .feature-card .feature-icon-box {
+    margin-bottom: 6px !important;
   }
 
   /* Checkout card & YooKassa on small mobile */
@@ -1637,15 +1695,40 @@ h1, h2, h3, h4 {
 }
 
 @media (max-width: 600px) {
+  .carousel-wrapper {
+    padding: 10px 0 16px;
+  }
+  .carousel-viewport {
+    padding: 14px 4px;
+  }
   .carousel-slide {
-    flex: 0 0 240px;
-    max-width: 240px;
+    flex: 0 0 190px;
+    max-width: 190px;
+    padding: 10px;
+    border-radius: 12px;
+  }
+  .carousel-slide-title {
+    font-size: 0.8rem;
+    margin-top: 8px;
+  }
+  .carousel-slide-badge {
+    font-size: 0.65rem;
+    padding: 2px 6px;
+  }
+  .carousel-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 1.1rem;
   }
   .carousel-btn.prev {
-    left: 2px;
+    left: -6px;
   }
   .carousel-btn.next {
-    right: 2px;
+    right: -6px;
+  }
+  .carousel-dots {
+    margin-top: 10px;
+    gap: 6px;
   }
 }
 
