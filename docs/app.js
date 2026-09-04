@@ -275,28 +275,15 @@ function verifyEmailPinCode() {
     } catch (e) {}
   }
 
-  // Telegram Alert for new registered fighter
-  const TELEGRAM_BOT_TOKEN = "8913866950:AAGpjaRXWqd7aTly-Xbnyn3OVbVuIBYO-dU";
-  const TELEGRAM_CHAT_ID = "7426550032";
-  
-  if (TELEGRAM_BOT_TOKEN) {
-    const text = `🎖 <b>Новая регистрация в «Каптёрка ПРО»!</b>\n\n` +
-      `👤 <b>Позывной:</b> ${newUser.callsign || 'Боец'}\n` +
-      `⭐ <b>Звание:</b> ${newUser.rank || 'Не указано'}\n` +
-      `🛡 <b>Подразделение:</b> ${newUser.unitName || '—'}\n` +
-      `📧 <b>Email:</b> ${newUser.email}\n` +
-      `📅 <b>Дата:</b> ${new Date().toLocaleString('ru-RU')}`;
-      
-    fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: TELEGRAM_CHAT_ID,
-        text: text,
-        parse_mode: 'HTML'
-      })
-    }).catch(e => console.warn(e));
-  }
+  // Безопасная отправка уведомления через Google Script (без токенов в коде!)
+  try {
+    const API_URL = 'https://script.google.com/macros/s/AKfycbw6aJ02RTG99UrX-5NYn_LwM_S4M1GU-hbON4KVUZpTNcRMgiZycTfeUGYs01MhYI-GGQ/exec';
+    
+    // Используем простой GET-запрос, который 100% не блокируется CORS браузера
+    const regUrl = `${API_URL}?action=register_user&callsign=${encodeURIComponent(newUser.callsign || 'Боец')}&rank=${encodeURIComponent(newUser.rank || '-')}&unitName=${encodeURIComponent(newUser.unitName || '-')}&email=${encodeURIComponent(newUser.email || '-')}`;
+    
+    fetch(regUrl, { mode: 'no-cors' }).catch(err => console.warn(err));
+  } catch (e) { console.warn(e); }
 
   showToast(`🎉 Почта подтверждена! Добро пожаловать, ${newUser.callsign}! Вы подписаны на обновления ПО.`);
 }
