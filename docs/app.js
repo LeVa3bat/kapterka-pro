@@ -277,7 +277,7 @@ function verifyEmailPinCode() {
 
   // Telegram and Google Sheets Alert for new registered fighter
   try {
-    const API_URL = 'https://script.google.com/macros/s/AKfycbwuwY74vD9El1R6ZVvO3DDpJ7BkY-wX0ljRphWRSA-jgB33-duUAqEp0g03D_7oFzjqmA/exec';
+    const API_URL = 'https://script.google.com/macros/s/AKfycbzY2s1AkHwsnb32S-vJmFVItOpADz1MVQi0dDsMuti2pon-SAzw4ox75ZfwX559_ifEPw/exec';
     if (API_URL) {
       fetch(API_URL, {
         method: 'POST',
