@@ -765,9 +765,15 @@ async function processYooKassaPayment() {
   }
 
   // Google Apps Script используется только для уведомлений, 
-  // саму ссылку на оплату открываем статическую:
+  // саму ссылку на оплату открываем статическую.
+  // Пытаемся прокинуть email в ЮКассу через параметр URL, 
+  // чтобы она смогла вернуть его нам в вебхуке для автоматической отправки!
   setTimeout(() => {
-    window.open(YOOKASSA_PAYMENT_URL, '_blank');
+    let paymentUrl = YOOKASSA_PAYMENT_URL;
+    if (email) {
+      paymentUrl += `?email=${encodeURIComponent(email)}`;
+    }
+    window.open(paymentUrl, '_blank');
   }, 400);
 }
 
