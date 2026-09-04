@@ -277,19 +277,20 @@ function verifyEmailPinCode() {
 
   // Telegram and Google Sheets Alert for new registered fighter
   try {
-    const API_URL = window.KAPTERKA_API_URL || '';
+    const API_URL = 'https://script.google.com/macros/s/AKfycbwuwY74vD9El1R6ZVvO3DDpJ7BkY-wX0ljRphWRSA-jgB33-duUAqEp0g03D_7oFzjqmA/exec';
     if (API_URL) {
       fetch(API_URL, {
         method: 'POST',
+        mode: 'no-cors',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({
           action: 'register_user',
-          callsign: newUser.callsign,
-          rank: newUser.rank,
-          unitName: newUser.unitName,
-          email: newUser.email
+          callsign: newUser.callsign || 'Боец',
+          rank: newUser.rank || 'Не указано',
+          unitName: newUser.unitName || '-',
+          email: newUser.email || 'Не указан'
         })
-      });
+      }).catch(err => console.warn(err));
     }
   } catch (e) { console.warn(e); }
 
