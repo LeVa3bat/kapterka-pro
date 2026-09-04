@@ -154,6 +154,7 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel) {
     val syncState by viewModel.syncState.collectAsState()
     val licenseStatus by viewModel.licenseStatus.collectAsState()
     val allFighters by viewModel.allFighters.collectAsState()
+    val issuedPaymentKey by viewModel.issuedPaymentKey.collectAsState()
 
     // Dialog Control States
     var showIncomeDialog by remember { mutableStateOf(false) }
@@ -443,6 +444,7 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel) {
             profile = profile,
             licenseStatus = licenseStatus,
             yooKassaConfig = viewModel.yooKassaService.getConfig(),
+            issuedPaymentKey = issuedPaymentKey,
             onPayYooKassaClick = { viewModel.startYooKassaPayment() },
             onActivateLicenseKey = { key -> viewModel.activateLicenseKey(key) },
             onTestPaymentConfirm = { viewModel.confirmPaymentAndActivateLicense() },
@@ -455,7 +457,10 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel) {
             onSaveYooKassaSettings = { shopId, secretKey, isTest, price ->
                 viewModel.saveYooKassaSettings(shopId, secretKey, isTest, price)
             },
-            onDismiss = { showPaymentProDialog = false }
+            onDismiss = {
+                showPaymentProDialog = false
+                viewModel.clearIssuedPaymentKey()
+            }
         )
     }
 

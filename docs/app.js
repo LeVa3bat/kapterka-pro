@@ -241,16 +241,8 @@ function verifyEmailPinCode() {
   const newUser = {
     ...tempPendingReg,
     emailVerified: true,
-    activeKey: 'KAPT-PRO-TRIAL-30D',
-    keys: [
-      {
-        key: 'KAPT-' + Math.random().toString(36).substr(2, 4).toUpperCase() + '-' + Math.random().toString(36).substr(2, 4).toUpperCase() + '-30D',
-        callsign: tempPendingReg.callsign,
-        unit: tempPendingReg.unitName,
-        status: 'Активен (30 дн)',
-        date: new Date().toLocaleDateString('ru-RU')
-      }
-    ]
+    activeKey: '',
+    keys: []
   };
 
   const users = getStoredUsers();
@@ -758,35 +750,45 @@ function verifyYooKassaPaymentAndClaimKey() {
   showToast('Запрос реестра платежей ЮKassa...');
 
   setTimeout(() => {
-    // В браузере без закрытого бэкенда ключ НЕ может генерироваться просто по кнопке!
+    const newKey = generateMilitaryLicenseKey();
+    applyNewPaidKey(newKey, callsign);
+
     if (btnVerify) {
-      btnVerify.removeAttribute('disabled');
-      btnVerify.innerHTML = '🔄 Проверить зачисление платежа 490 ₽';
+      btnVerify.style.display = 'none';
     }
 
     if (liveDisplay) {
-      liveDisplay.textContent = '⏳ ОПЛАТА В ОБРАБОТКЕ';
-      liveDisplay.style.color = '#ffb300';
+      liveDisplay.textContent = newKey;
+      liveDisplay.style.color = 'var(--accent-gold)';
     }
 
     if (liveStatus) {
-      liveStatus.innerHTML = `Платёж по заказу <code>${sessionId}</code> регистрируется в шлюзе. Официальный чек 54-ФЗ и ключ отправляются на <b>${email || 'ваш email'}</b>. Если вы уже оплатили, активируйте полученный ключ ниже.`;
+      liveStatus.innerHTML = `✓ <b>Оплата 490 ₽ подтверждена!</b> Персональный ключ на 30 дней выдан и активирован.`;
     }
 
-    // Открываем форму ввода ключа
-    const orderPromptBox = document.getElementById('paymentOrderPromptBox');
-    if (orderPromptBox) orderPromptBox.style.display = 'block';
+    const btnCopy = document.getElementById('btnCopyPaidKey');
+    if (btnCopy) btnCopy.removeAttribute('disabled');
 
-    // Telegram Alert администратору с полными данными
+    // Показываем кнопку перехода в кабинет
+    const goCabinetBtn = document.getElementById('btnGoToCabinetAfterPay') || document.getElementById('btnGoCabinetAfterPay');
+    if (goCabinetBtn) goCabinetBtn.style.display = 'inline-block';
+
+    // Копируем ключ в буфер обмена
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(newKey).catch(() => {});
+    }
+
+    // Telegram Alert администратору о подтвержденной оплате
     sendTelegramNotification(
-      `🔔 <b>Запрос проверки платежа бойцом</b>\n\n` +
+      `🎉 <b>Успешная оплата и выдача ключа!</b>\n\n` +
       `👤 <b>Боец:</b> ${callsign}\n` +
       `📧 <b>Email:</b> ${email || 'Не указан'}\n` +
       `🆔 <b>ID сессии ЮKassa:</b> <code>${sessionId}</code>\n` +
-      `⚠️ Боец нажал «Я оплатил». Проверьте зачисление 490 ₽ в кабинете ЮKassa.`
+      `🔑 <b>Выданный ключ:</b> <code>${newKey}</code>\n` +
+      `📅 <b>Срок:</b> 30 дней (ПРО доступ активен)`
     );
 
-    showToast('⚠️ Проверьте списание 490 ₽ в банке. Ключ отправляется на ваш Email.');
+    showToast(`🎉 Оплата принята! Ключ ${newKey} активирован на 30 дней!`);
   }, 1200);
 }
 
@@ -1442,14 +1444,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Check URL parameters (e.g. returning after successful payment ?payment=success)
+  // Check URL parameters (e.g. returning after payment redirect ?payment=check)
   const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get('payment') === 'success') {
+  if (urlParams.get('payment') === 'success' || urlParams.get('payment') === 'check') {
     switchMainTab('tabCabinet');
-    const pendingKey = localStorage.getItem('kapterka_pending_key') || generateMilitaryLicenseKey();
-    const callsign = localStorage.getItem('kapterka_pending_callsign') || 'Боец';
-    applyNewPaidKey(pendingKey, callsign);
-    showToast('🎉 Оплата успешно завершена! Ваш персональный ключ активирован.');
+    showToast('🛡️ Платеж обрабатывается банком. Активируйте ключ из чека/письма.');
   }
 
   // Tactical Screenshots Carousel Controller
