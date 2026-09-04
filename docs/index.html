@@ -724,23 +724,23 @@
 
                 <!-- Информационная плашка ожидания -->
                 <div style="background:rgba(255,179,0,0.06); border-left:3px solid var(--accent-gold); padding:10px 12px; border-radius:0 var(--radius-sm) var(--radius-sm) 0; font-size:0.8rem; color:var(--text-primary); margin-bottom:12px;">
-                  🔄 <strong>Автоматический мониторинг:</strong> после оплаты в банковском приложении система сама свяжется со шлюзом ЮKassa. Вам не нужно ничего вводить вручную!
+                  🛡️ <strong>Фискализация и защита:</strong> официальный чек 54-ФЗ и персональный ключ лицензии высылаются на ваш Email сразу после зачисления средств.
                 </div>
 
                 <!-- Автоматическая кнопка проверки -->
                 <button id="btnAutoVerifyPayment" class="btn btn-gold btn-lg" style="width:100%; font-size:1.02rem; font-weight:bold; box-shadow:0 0 16px rgba(255,179,0,0.35);" onclick="verifyYooKassaPaymentAndClaimKey()">
-                  ⚡ Я оплатил • Запросить подтверждение в ЮKassa
+                  ⚡ Я оплатил • Запросить статус в ЮKassa
                 </button>
 
-                <!-- Резервное поле ввода (показывается только если банк задержал транзакцию) -->
+                <!-- Поле активации ключа из письма -->
                 <div id="paymentOrderPromptBox" style="display:none; margin-top:14px; background:#141b16; border:1px solid rgba(255,179,0,0.25); border-radius:var(--radius-sm); padding:12px;">
-                  <label class="form-label" style="font-size:0.76rem; color:var(--accent-gold);">Банк задержал ответ? Укажите номер операции/чека:</label>
+                  <label class="form-label" style="font-size:0.76rem; color:var(--accent-gold);">Активировать ключ из письма / СМС:</label>
                   <div style="display:flex; gap:8px;">
-                    <input type="text" id="payOrderIdInput" class="form-input mono" placeholder="Номер из чека или СМС" style="font-size:0.85rem; padding:8px 10px;">
-                    <button class="btn btn-outline btn-sm" onclick="verifyWithManualOrderId()" style="white-space:nowrap;">Проверить</button>
+                    <input type="text" id="payOrderIdInput" class="form-input mono" placeholder="KAPT-XXXX-XXXX-XXXX" style="font-size:0.85rem; padding:8px 10px; color:var(--accent-gold); font-weight:bold;">
+                    <button class="btn btn-primary btn-sm" onclick="verifyWithManualOrderId()" style="white-space:nowrap;">Активировать</button>
                   </div>
                   <div style="font-size:0.71rem; color:var(--text-muted); margin-top:4px;">
-                    💡 Резервный поиск платежа, если межбанковский перевод СБП идёт с задержкой.
+                    💡 Введите ключ в формате KAPT-XXXX-XXXX-XXXX для мгновенного включения ПРО-режима.
                   </div>
                 </div>
 
@@ -771,7 +771,7 @@
                     Ожидание оплаты...
                   </div>
                   <div style="font-size:0.78rem; color:var(--text-muted); font-family:var(--font-mono); margin-top:4px;" id="liveKeyStatusDisplay">
-                    Нажмите «Оплатить», затем «Проверить платёж»
+                    Нажмите «Оплатить 490 ₽», чтобы сформировать заказ
                   </div>
                 </div>
               </div>
