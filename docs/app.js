@@ -779,61 +779,42 @@ async function claimPaidLicenseKey() {
 
   if (btnClaim) {
     btnClaim.setAttribute('disabled', 'true');
-    btnClaim.innerHTML = '⏳ Проверка платежа...';
+    btnClaim.innerHTML = '⏳ Отправка запроса...';
   }
-
-  // Генерируем официальный подписанный ключ
-  const newKey = generateMilitaryLicenseKey();
-
-  // Имитация задержки ответа от банка
-  await new Promise(resolve => setTimeout(resolve, 1500));
 
   // Отправляем оповещение в Telegram бот
   await sendTelegramNotification(
-    `🎖️ <b>УСПЕШНАЯ ОПЛАТА ЮKASSA (490 ₽)</b>\n\n` +
+    `🎖️ <b>ОЖИДАЕТСЯ ПОДТВЕРЖДЕНИЕ ПЛАТЕЖА (490 ₽)</b>\n\n` +
     `👤 <b>Боец:</b> ${callsign}\n` +
-    `📧 <b>Email:</b> ${email || 'Не указан'}\n` +
-    `🔑 <b>Выдан ключ:</b> <code>${newKey}</code>\n\n` +
-    `✅ Система автоматически выдала ключ пользователю на сайте.`
+    `📧 <b>Email:</b> ${email || 'Не указан'}\n\n` +
+    `⚠️ <b>ВНИМАНИЕ:</b> Боец нажал кнопку "Я оплатил". Если ЮКасса не прислала уведомление вебхуком, проверьте оплату вручную и передайте ключ.`
   );
 
   if (btnClaim) {
     btnClaim.style.display = 'none';
   }
   
-  // Показываем ключ бойцу немедленно (Имитация автоматизации)
+  // Показываем сообщение бойцу
   const liveDisplay = document.getElementById('liveGeneratedKeyDisplay');
   const liveStatus = document.getElementById('liveKeyStatusDisplay');
   const btnCopy = document.getElementById('btnCopyPaidKey');
   
   if (liveDisplay) {
-    liveDisplay.textContent = newKey;
-    liveDisplay.style.color = '#00e676';
-    liveDisplay.style.fontSize = '1.3rem';
-    liveDisplay.style.letterSpacing = '1.5px';
+    liveDisplay.textContent = 'ОЖИДАНИЕ БАНКА';
+    liveDisplay.style.color = 'var(--accent-gold)';
+    liveDisplay.style.fontSize = '1.2rem';
+    liveDisplay.style.letterSpacing = 'normal';
   }
   
   if (liveStatus) {
-    liveStatus.innerHTML = `✅ <b>Оплата подтверждена!</b> Ваш персональный ключ сгенерирован и сохранен в Личном кабинете.<br>Электронный чек 54-ФЗ отправлен на <b>${email || 'ваш email'}</b>`;
+    liveStatus.innerHTML = `⏳ <b>Система ожидает подтверждения от банка.</b><br>Сразу после зачисления средств, готовый ключ придет на вашу электронную почту <b>${email || 'указанную при оплате'}</b>.<br><br>Если письмо не придет в течение 5 минут — напишите разработчику в Telegram.`;
   }
 
   if (btnCopy) {
-    btnCopy.removeAttribute('disabled');
+    btnCopy.setAttribute('disabled', 'true');
   }
 
-  // Автоматически сохраняем ключ в сессию пользователя
-  let user = getActiveUserSession();
-  if (!user) {
-    user = Object.assign({}, defaultProfile, { callsign: callsign, email: email });
-  }
-  user.activeKey = newKey;
-  if (!user.keys) user.keys = [];
-  if (!user.keys.includes(newKey)) {
-    user.keys.push(newKey);
-  }
-  saveUserSession(user);
-
-  showToast(`✓ Ключ ${newKey} успешно выдан и сохранен в кабинете!`);
+  showToast(`✓ Запрос передан. Ожидайте письмо с ключом на почту!`);
 }
 
 // Активация ключа бойцом (из письма на Email, СМС или от администратора)
