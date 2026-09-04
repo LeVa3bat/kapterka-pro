@@ -460,6 +460,9 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel) {
             onResendEmailKey = { email ->
                 viewModel.resendLicenseKeyToEmail(email)
             },
+            onResetLicense = {
+                viewModel.resetLicense()
+            },
             onDismiss = {
                 showPaymentProDialog = false
                 viewModel.clearIssuedPaymentKey()

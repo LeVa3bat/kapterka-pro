@@ -282,28 +282,7 @@ class LicenseManager(
             }
         }
 
-        // 5. Гарантированное восстановление для подтвержденного аккаунта покупателя
-        if (foundKey.isBlank() && (cleanEmail.contains("alex.666.881") || (cleanEmail.contains("alex") && cleanEmail.contains("881")))) {
-            foundKey = generateLicenseKey()
-            foundExpiresAt = now + 30L * 86400000L
-            try {
-                val licenseData = hashMapOf(
-                    "licenseKey" to foundKey,
-                    "fighterId" to currentFighterId,
-                    "callsign" to cleanCallsign.ifBlank { "Боец" },
-                    "email" to cleanEmail,
-                    "paymentId" to "PAID_RECOVERY_CONFIRMED",
-                    "activatedAt" to now,
-                    "expiresAt" to foundExpiresAt,
-                    "durationDays" to 30,
-                    "status" to "ACTIVE"
-                )
-                firestore.collection("licenses").document(foundKey)
-                    .set(licenseData, SetOptions.merge())
-            } catch (_: Exception) {}
-        }
-
-        // 6. Применение восстановленного ключа
+        // 5. Применение найденного в облаке ключа
         if (foundKey.isNotBlank()) {
             val finalExpires = if (foundExpiresAt > now) foundExpiresAt else (now + 30L * 86400000L)
             val sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -330,12 +309,30 @@ class LicenseManager(
     }
 
     /**
-     * Сброс лицензии для проверки регистрации и оплаты заново (только по запросу разработчика)
+     * Сброс / отзыв лицензии при отмене оплаты или по запросу пользователя/разработчика
      */
     fun resetLicense() {
         val sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         sp.edit().clear().apply()
-        refreshLicenseStatus()
+        val vault = context.getSharedPreferences(PERMANENT_VAULT, Context.MODE_PRIVATE)
+        vault.edit().remove("vault_active_key").remove("vault_expires_at").apply()
+        scope.launch(Dispatchers.IO) {
+            try {
+                val profile = dao.getUserProfile().first()
+                if (profile != null) {
+                    dao.saveUserProfile(
+                        profile.copy(
+                            isProActive = false,
+                            proDaysLeft = 0,
+                            demoDaysLeft = 3
+                        )
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error resetting profile", e)
+            }
+            refreshLicenseStatus()
+        }
     }
 
     /**

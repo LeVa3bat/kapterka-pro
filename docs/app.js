@@ -733,13 +733,12 @@ function processYooKassaPayment() {
   }, 400);
 }
 
-// Защищенная проверка: ИСКЛЮЧАЕТ возможность получения ключа без оплаты
+// Защищенная проверка: ИСКЛЮЧАЕТ возможность получения ключа без реальной оплаты
 function verifyYooKassaPaymentAndClaimKey() {
   const callsign = localStorage.getItem('kapterka_pending_callsign') || document.getElementById('payCallsignInput')?.value.trim() || 'Боец';
   const email = localStorage.getItem('kapterka_pending_email') || document.getElementById('payEmailInput')?.value.trim() || '';
   const sessionId = localStorage.getItem('kapterka_pending_payment_id') || 'yk_order';
   const btnVerify = document.getElementById('btnAutoVerifyPayment');
-  const liveDisplay = document.getElementById('liveGeneratedKeyDisplay');
   const liveStatus = document.getElementById('liveKeyStatusDisplay');
 
   if (btnVerify) {
@@ -747,52 +746,35 @@ function verifyYooKassaPaymentAndClaimKey() {
     btnVerify.innerHTML = '⏳ Связь с банком и шлюзом ЮKassa (ID: 1450722)...';
   }
 
-  showToast('Запрос реестра платежей ЮKassa...');
+  showToast('Проверка статуса в банке ЮKassa...');
 
   setTimeout(() => {
-    const newKey = generateMilitaryLicenseKey();
-    applyNewPaidKey(newKey, callsign);
-
     if (btnVerify) {
-      btnVerify.style.display = 'none';
-    }
-
-    if (liveDisplay) {
-      liveDisplay.textContent = newKey;
-      liveDisplay.style.color = 'var(--accent-gold)';
+      btnVerify.removeAttribute('disabled');
+      btnVerify.innerHTML = '⚡ Проверить статус зачисления (ЮKassa)';
     }
 
     if (liveStatus) {
-      liveStatus.innerHTML = `✓ <b>Оплата 490 ₽ подтверждена!</b> Персональный ключ на 30 дней выдан и активирован.<br><span style="color:var(--accent-gold); font-size:0.8rem;">✉️ Письмо с ключом и чеком 54-ФЗ направлено на <b>${email || 'ваш email'}</b></span>`;
+      liveStatus.innerHTML = `⚠️ <b>Платеж еще не подтвержден банком ЮKassa.</b><br><span style="color:var(--text-secondary); font-size:0.8rem;">Завершите оплату 490 ₽ в приложении банка (СБП/Карта). После списания средств официальный чек и лицензионный ключ направляются на <b>${email || 'ваш email'}</b>. Если вы уже получили ключ в письме, введите его ниже для мгновенной активации:</span>`;
     }
 
-    const btnCopy = document.getElementById('btnCopyPaidKey');
-    if (btnCopy) btnCopy.removeAttribute('disabled');
-
-    const btnSendMail = document.getElementById('btnSendKeyToEmail');
-    if (btnSendMail) btnSendMail.style.display = 'inline-block';
-
-    // Показываем кнопку перехода в кабинет
-    const goCabinetBtn = document.getElementById('btnGoToCabinetAfterPay') || document.getElementById('btnGoCabinetAfterPay');
-    if (goCabinetBtn) goCabinetBtn.style.display = 'inline-block';
-
-    // Копируем ключ в буфер обмена
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(newKey).catch(() => {});
+    // Фокусируем поле ввода ключа
+    const input = document.getElementById('payOrderIdInput');
+    if (input) {
+      input.scrollIntoView({ behavior: 'smooth' });
+      input.focus();
     }
 
-    // Telegram Alert администратору о подтвержденной оплате
+    // Telegram Alert администратору о запросе проверки
     sendTelegramNotification(
-      `🎉 <b>Успешная оплата и выдача ключа!</b>\n\n` +
+      `🔍 <b>Пользователь нажал «Я оплатил» (проверка статуса)</b>\n\n` +
       `👤 <b>Боец:</b> ${callsign}\n` +
       `📧 <b>Email:</b> ${email || 'Не указан'}\n` +
-      `🆔 <b>ID сессии ЮKassa:</b> <code>${sessionId}</code>\n` +
-      `🔑 <b>Выданный ключ:</b> <code>${newKey}</code>\n` +
-      `📅 <b>Срок:</b> 30 дней (ПРО доступ активен)\n` +
-      `✉️ <b>Письмо:</b> Отправлено на ${email || 'Не указан'}`
+      `🆔 <b>ID сессии:</b> <code>${sessionId}</code>\n` +
+      `⚠️ <i>Автоматическая выдача без подтверждения банка заблокирована. Ожидается зачисление 490 ₽.</i>`
     );
 
-    showToast(`🎉 Оплата принята! Ключ ${newKey} активирован на 30 дней!`);
+    showToast(`Платеж ожидает подтверждения банка ЮKassa. Введите ключ из письма.`);
   }, 1200);
 }
 

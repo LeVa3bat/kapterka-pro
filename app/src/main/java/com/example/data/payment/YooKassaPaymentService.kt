@@ -112,31 +112,11 @@ class YooKassaPaymentService(private val context: Context) {
                     put("type", "redirect")
                     put("return_url", returnUrl)
                 })
-                put("description", "Персональная лицензия Каптёрка ПРО (1 месяц) для бойца $fighterCallsign")
+                put("description", "Лицензия Каптёрка ПРО (30 дн.) боец $fighterCallsign")
                 put("metadata", JSONObject().apply {
-                    put("fighter_callsign", fighterCallsign)
-                    put("fighter_email", customerEmail)
+                    put("callsign", fighterCallsign)
+                    put("email", customerEmail)
                     put("duration_days", "30")
-                })
-                // Фискализация 54-ФЗ для чеков ЮKassa
-                put("receipt", JSONObject().apply {
-                    put("customer", JSONObject().apply {
-                        put("email", customerEmail)
-                    })
-                    val items = org.json.JSONArray().apply {
-                        put(JSONObject().apply {
-                            put("description", "Лицензия Каптёрка ПРО (30 дн.)")
-                            put("quantity", "1.00")
-                            put("amount", JSONObject().apply {
-                                put("value", "${config.priceRubles}.00")
-                                put("currency", "RUB")
-                            })
-                            put("vat_code", 1)
-                            put("payment_mode", "full_prepayment")
-                            put("payment_subject", "service")
-                        })
-                    }
-                    put("items", items)
                 })
             }
 
@@ -158,22 +138,17 @@ class YooKassaPaymentService(private val context: Context) {
             } else {
                 val errorStream = connection.errorStream
                 val errText = errorStream?.let { BufferedReader(InputStreamReader(it)).use { r -> r.readText() } } ?: "HTTP $responseCode"
-                Log.w(TAG, "YooKassa API returned $responseCode, using direct merchant gateway fallback: $errText")
-                // Надёжный переход на официальную платежную страницу ЮKassa магазина
-                val fallbackPaymentId = "yk_direct_" + UUID.randomUUID().toString().take(12)
+                Log.e(TAG, "YooKassa API returned $responseCode: $errText")
                 PaymentInitResult(
-                    success = true,
-                    paymentId = fallbackPaymentId,
-                    confirmationUrl = DIRECT_PAYMENT_URL
+                    success = false,
+                    errorMessage = "Ошибка шлюза ЮKassa ($responseCode). Проверьте настройки или интернет."
                 )
             }
         } catch (e: Exception) {
-            Log.w(TAG, "Network or SSL error calling YooKassa API, falling back to direct payment link", e)
-            val fallbackPaymentId = "yk_direct_" + UUID.randomUUID().toString().take(12)
+            Log.e(TAG, "Network or SSL error calling YooKassa API", e)
             PaymentInitResult(
-                success = true,
-                paymentId = fallbackPaymentId,
-                confirmationUrl = DIRECT_PAYMENT_URL
+                success = false,
+                errorMessage = "Не удалось связаться с сервером ЮKassa: ${e.localizedMessage}"
             )
         }
     }
@@ -194,33 +169,33 @@ class YooKassaPaymentService(private val context: Context) {
 
     /**
      * Проверяет реальный статус платежа в ЮKassa через GET /v3/payments/{payment_id}
-     * Возвращает true только если ЮKassa подтвердила статус "succeeded".
+     * СТРОГО: Возвращает true ИСКЛЮЧИТЕЛЬНО при подтверждении статуса "succeeded" и "paid" = true от API банка.
      */
     suspend fun verifyPaymentStatus(paymentId: String): Pair<Boolean, String> = withContext(Dispatchers.IO) {
         if (paymentId.isBlank()) {
-            return@withContext Pair(false, "Счет на оплату еще не был сформирован. Сначала нажмите «Оплатить через ЮKassa».")
+            return@withContext Pair(false, "Счет на оплату не найден. Сначала нажмите «Оплатить через ЮKassa».")
+        }
+
+        // КАТЕГОРИЧЕСКИ ЗАПРЕЩАЕМ подтверждение синтетических или неподтвержденных ID
+        if (paymentId.startsWith("yk_direct_") || paymentId.startsWith("yk_order_") || paymentId.startsWith("pay_test_")) {
+            return@withContext Pair(
+                false,
+                "Платеж не зарегистрирован в шлюзе ЮKassa или не был оплачен в банке. Завершите оплату 490 ₽."
+            )
         }
 
         val config = getConfig()
 
-        // Прямая платежная витрина ЮKassa (счет магазина) или экспресс-оплата
-        if (paymentId.startsWith("yk_direct_") || paymentId.startsWith("yk_order_") || paymentId.startsWith("pay_test_")) {
-            return@withContext Pair(
-                true,
-                "Оплата через официальную витрину ЮKassa подтверждена!"
-            )
-        }
-
         try {
             val url = URL("https://api.yookassa.ru/v3/payments/$paymentId")
-            val connection = url.openConnection() as HttpURLConnection
-            connection.requestMethod = "GET"
-            connection.connectTimeout = 12000
-            connection.readTimeout = 12000
-
-            val authString = "${config.shopId}:${config.secretKey}"
-            val encodedAuth = Base64.encodeToString(authString.toByteArray(), Base64.NO_WRAP)
-            connection.setRequestProperty("Authorization", "Basic $encodedAuth")
+            val connection = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = "GET"
+                connectTimeout = 12000
+                readTimeout = 12000
+                val authString = "${config.shopId}:${config.secretKey}"
+                val encodedAuth = Base64.encodeToString(authString.toByteArray(), Base64.NO_WRAP)
+                setRequestProperty("Authorization", "Basic $encodedAuth")
+            }
 
             val responseCode = connection.responseCode
             if (responseCode in 200..299) {
@@ -230,21 +205,35 @@ class YooKassaPaymentService(private val context: Context) {
                 val paid = json.optBoolean("paid", false)
 
                 when (status) {
-                    "succeeded" -> Pair(true, "Оплата подтверждена ЮKassa!")
-                    "waiting_for_capture" -> Pair(true, "Оплата авторизована!")
-                    "pending" -> Pair(false, "Платёж еще не завершен в банке. Завершите оплату и нажмите кнопку снова.")
-                    "canceled" -> Pair(false, "Платёж был отменен. Нажмите «Оплатить» заново.")
-                    else -> Pair(true, "Оплата подтверждена ЮKassa!")
+                    "succeeded" -> {
+                        if (paid) {
+                            Pair(true, "Оплата 490 ₽ подтверждена банком ЮKassa!")
+                        } else {
+                            Pair(false, "Платеж авторизован, но списание средств еще не завершено банком.")
+                        }
+                    }
+                    "waiting_for_capture" -> {
+                        Pair(true, "Оплата авторизована банком ЮKassa!")
+                    }
+                    "pending" -> {
+                        Pair(false, "Платёж не оплачен! В банке статус «ожидает оплаты». Завершите перевод 490 ₽ в СБП или приложении банка.")
+                    }
+                    "canceled" -> {
+                        Pair(false, "Платёж был закрыт или отменен в банке без списания средств.")
+                    }
+                    else -> {
+                        Pair(false, "Статус платежа: $status. Оплата не поступила.")
+                    }
                 }
             } else {
                 val errorStream = connection.errorStream
                 val errText = errorStream?.let { BufferedReader(InputStreamReader(it)).use { r -> r.readText() } } ?: "HTTP $responseCode"
-                Log.w(TAG, "YooKassa API returned $responseCode, confirming via merchant order: $errText")
-                Pair(true, "Оплата через официальную витрину ЮKassa подтверждена!")
+                Log.e(TAG, "YooKassa API returned $responseCode: $errText")
+                Pair(false, "Банк ЮKassa не нашел подтверждения платежа (код $responseCode).")
             }
         } catch (e: Exception) {
-            Log.w(TAG, "Network check fallback, confirming payment", e)
-            Pair(true, "Оплата через официальную витрину ЮKassa подтверждена!")
+            Log.e(TAG, "Network check error for YooKassa payment", e)
+            Pair(false, "Ошибка связи с банком ЮKassa. Платеж не может быть подтвержден без ответа шлюза.")
         }
     }
 }

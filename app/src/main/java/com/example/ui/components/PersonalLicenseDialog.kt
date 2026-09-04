@@ -108,6 +108,7 @@ fun PersonalLicenseDialog(
     onOpenDeveloperBackdoor: () -> Unit = {},
     onSaveYooKassaSettings: (shopId: String, secretKey: String, isTestMode: Boolean, priceRubles: Int) -> Unit,
     onResendEmailKey: (String) -> Unit = {},
+    onResetLicense: () -> Unit = {},
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
@@ -407,6 +408,23 @@ fun PersonalLicenseDialog(
                                         fontSize = 10.sp,
                                         lineHeight = 14.sp
                                     )
+                                }
+
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                OutlinedButton(
+                                    onClick = {
+                                        onResetLicense()
+                                        selectedTab = 1
+                                    },
+                                    modifier = Modifier.fillMaxWidth().height(34.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = TacticalTextMuted),
+                                    border = BorderStroke(1.dp, TacticalTextMuted.copy(alpha = 0.3f)),
+                                    shape = RoundedCornerShape(6.dp)
+                                ) {
+                                    Icon(imageVector = Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(14.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Сбросить лицензию (для проверки оплаты заново)", fontSize = 10.sp)
                                 }
                             }
                         }
@@ -853,11 +871,11 @@ fun PersonalLicenseDialog(
                                                 strokeWidth = 2.dp
                                             )
                                             Spacer(modifier = Modifier.width(8.dp))
-                                            Text("Связь с ЮKassa и выдача ключа...", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                            Text("Запрос статуса в банке ЮKassa...", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                                         } else {
                                             Icon(imageVector = Icons.Default.Key, contentDescription = null, modifier = Modifier.size(18.dp))
                                             Spacer(modifier = Modifier.width(8.dp))
-                                            Text("⚡ Я оплатил — Получить ключ (30 дн.)", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                            Text("⚡ Я оплатил — Проверить поступление", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                                         }
                                     }
 

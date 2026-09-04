@@ -688,7 +688,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
 
             val (isPaid, statusMsg) = yooKassaService.verifyPaymentStatus(paymentIdToVerify)
             if (!isPaid) {
-                _toastEvent.emit("Платеж еще не завершен: $statusMsg")
+                _toastEvent.emit("❌ ПЛАТЕЖ НЕ ОПЛАЧЕН!\n$statusMsg")
                 return@launch
             }
 
@@ -797,6 +797,22 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                 repository.saveUserProfile(curProfile.copy(isProActive = true, proDaysLeft = 30))
             }
             _toastEvent.emit(msg)
+        }
+    }
+
+    /**
+     * Сброс / отзыв лицензии (для повторного тестирования оплаты)
+     */
+    fun resetLicense() {
+        viewModelScope.launch {
+            paymentPollingJob?.cancel()
+            _issuedPaymentKey.value = null
+            lastPaymentId = ""
+            prefs.edit().remove("last_yookassa_payment_id").apply()
+            licenseManager.resetLicense()
+            val curProfile = userProfile.value ?: UserProfile()
+            repository.saveUserProfile(curProfile.copy(isProActive = false, proDaysLeft = 0, demoDaysLeft = 3))
+            _toastEvent.emit("Лицензия сброшена в исходное состояние (демо-доступ)")
         }
     }
 
