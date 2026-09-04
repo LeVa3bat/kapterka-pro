@@ -104,4 +104,18 @@ object TelegramNotifier {
         """.trimIndent()
         sendMessage(msg)
     }
+
+    suspend fun notifyLicenseEmailDispatched(callsign: String, email: String, licenseKey: String, subject: String) {
+        val dateStr = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()).format(Date())
+        val msg = """
+            ✉️ <b>Электронное письмо с ключом отправлено покупателю!</b>
+            
+            👤 <b>Боец:</b> $callsign
+            📧 <b>Email получателя:</b> <code>$email</code>
+            🔑 <b>Лицензионный ключ:</b> <code>$licenseKey</code>
+            📋 <b>Тема:</b> $subject
+            📅 <b>Время:</b> $dateStr
+        """.trimIndent()
+        sendMessage(msg)
+    }
 }

@@ -720,7 +720,39 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                 days = 30
             )
 
-            _toastEvent.emit("🎉 Оплата подтверждена! Ключ $newKey выдан и активирован на 30 дней!")
+            // Автоматически отправляем лицензионный ключ на email покупателя
+            if (email.isNotBlank()) {
+                com.example.data.notification.EmailDeliveryService.sendLicenseKeyEmail(
+                    context = getApplication(),
+                    recipientEmail = email,
+                    callsign = callsign,
+                    licenseKey = newKey,
+                    days = 30
+                )
+            }
+
+            _toastEvent.emit("🎉 Оплата подтверждена! Ключ $newKey выдан и направлен на $email!")
+        }
+    }
+
+    fun resendLicenseKeyToEmail(customEmail: String? = null) {
+        viewModelScope.launch {
+            val profile = userProfile.value
+            val email = customEmail?.ifBlank { null } ?: profile?.email ?: ""
+            val key = _issuedPaymentKey.value ?: licenseStatus.value.licenseKey.ifEmpty { licenseStatus.value.lastSavedKey }
+            val callsign = profile?.callsign ?: "Боец"
+            if (email.isNotBlank() && key.isNotBlank()) {
+                com.example.data.notification.EmailDeliveryService.sendLicenseKeyEmail(
+                    context = getApplication(),
+                    recipientEmail = email,
+                    callsign = callsign,
+                    licenseKey = key,
+                    days = 30
+                )
+                _toastEvent.emit("✉️ Лицензионный ключ отправлен на $email")
+            } else {
+                _toastEvent.emit("Укажите email для отправки ключа")
+            }
         }
     }
 

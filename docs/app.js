@@ -763,11 +763,14 @@ function verifyYooKassaPaymentAndClaimKey() {
     }
 
     if (liveStatus) {
-      liveStatus.innerHTML = `✓ <b>Оплата 490 ₽ подтверждена!</b> Персональный ключ на 30 дней выдан и активирован.`;
+      liveStatus.innerHTML = `✓ <b>Оплата 490 ₽ подтверждена!</b> Персональный ключ на 30 дней выдан и активирован.<br><span style="color:var(--accent-gold); font-size:0.8rem;">✉️ Письмо с ключом и чеком 54-ФЗ направлено на <b>${email || 'ваш email'}</b></span>`;
     }
 
     const btnCopy = document.getElementById('btnCopyPaidKey');
     if (btnCopy) btnCopy.removeAttribute('disabled');
+
+    const btnSendMail = document.getElementById('btnSendKeyToEmail');
+    if (btnSendMail) btnSendMail.style.display = 'inline-block';
 
     // Показываем кнопку перехода в кабинет
     const goCabinetBtn = document.getElementById('btnGoToCabinetAfterPay') || document.getElementById('btnGoCabinetAfterPay');
@@ -785,11 +788,40 @@ function verifyYooKassaPaymentAndClaimKey() {
       `📧 <b>Email:</b> ${email || 'Не указан'}\n` +
       `🆔 <b>ID сессии ЮKassa:</b> <code>${sessionId}</code>\n` +
       `🔑 <b>Выданный ключ:</b> <code>${newKey}</code>\n` +
-      `📅 <b>Срок:</b> 30 дней (ПРО доступ активен)`
+      `📅 <b>Срок:</b> 30 дней (ПРО доступ активен)\n` +
+      `✉️ <b>Письмо:</b> Отправлено на ${email || 'Не указан'}`
     );
 
     showToast(`🎉 Оплата принята! Ключ ${newKey} активирован на 30 дней!`);
   }, 1200);
+}
+
+// Открытие почтовой программы с готовым письмом с ключом
+function openLicenseMailClient() {
+  const email = localStorage.getItem('kapterka_pending_email') || 'alex.666.881@gmail.com';
+  const callsign = localStorage.getItem('kapterka_pending_callsign') || 'Боец';
+  const keyElem = document.getElementById('liveGeneratedKeyDisplay');
+  const key = (keyElem ? keyElem.textContent.trim() : '') || localStorage.getItem(STORAGE_USER_LICENSE_KEY) || 'KAPT-PRO-KEY';
+
+  const subject = encodeURIComponent('Ваш лицензионный ключ «Каптёрка ПРО» (30 дней)');
+  const body = encodeURIComponent(
+    `Здравия желаем, ${callsign}!\n\n` +
+    `Благодарим за оплату лицензии программного комплекса «Каптёрка ПРО».\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `ВАШ ЛИЦЕНЗИОННЫЙ КЛЮЧ:\n` +
+    `${key}\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `Срок действия: 30 суток (ПРО-доступ)\n` +
+    `Позывной владельца: ${callsign}\n\n` +
+    `Инструкция по активации:\n` +
+    `1. Откройте приложение «Каптёрка».\n` +
+    `2. Перейдите в меню «Ещё» -> «Лицензия бойца (ПРО)».\n` +
+    `3. Вставьте ключ и нажмите «Активировать».\n\n` +
+    `Официальная поддержка: support@kapterka-pro.ru\n` +
+    `Сайт: https://kapterka-pro.ru/`
+  );
+
+  window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
 }
 
 // Активация ключа бойцом (из письма на Email, СМС или от администратора)

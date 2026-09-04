@@ -457,6 +457,9 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel) {
             onSaveYooKassaSettings = { shopId, secretKey, isTest, price ->
                 viewModel.saveYooKassaSettings(shopId, secretKey, isTest, price)
             },
+            onResendEmailKey = { email ->
+                viewModel.resendLicenseKeyToEmail(email)
+            },
             onDismiss = {
                 showPaymentProDialog = false
                 viewModel.clearIssuedPaymentKey()

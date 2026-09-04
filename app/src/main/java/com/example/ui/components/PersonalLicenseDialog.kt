@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Key
@@ -106,6 +107,7 @@ fun PersonalLicenseDialog(
     onRestoreFromCloud: (email: String, callsign: String) -> Unit = { _, _ -> },
     onOpenDeveloperBackdoor: () -> Unit = {},
     onSaveYooKassaSettings: (shopId: String, secretKey: String, isTestMode: Boolean, priceRubles: Int) -> Unit,
+    onResendEmailKey: (String) -> Unit = {},
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
@@ -692,6 +694,72 @@ fun PersonalLicenseDialog(
                                                             tint = TacticalGold,
                                                             modifier = Modifier.size(16.dp)
                                                         )
+                                                    }
+                                                }
+                                            }
+                                            Spacer(modifier = Modifier.height(6.dp))
+                                            val recipientEmail = (profile?.email?.ifBlank { null } ?: "alex.666.881@gmail.com").trim()
+                                            Surface(
+                                                color = Color(0xFF0F1A13),
+                                                shape = RoundedCornerShape(6.dp),
+                                                border = BorderStroke(1.dp, SageGreenPrimary.copy(alpha = 0.4f)),
+                                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                                            ) {
+                                                Column(modifier = Modifier.padding(8.dp)) {
+                                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                                        Icon(
+                                                            imageVector = Icons.Default.Email,
+                                                            contentDescription = null,
+                                                            tint = TacticalGold,
+                                                            modifier = Modifier.size(15.dp)
+                                                        )
+                                                        Spacer(modifier = Modifier.width(6.dp))
+                                                        Text(
+                                                            text = "Письмо с ключом и чеком 54-ФЗ:",
+                                                            color = TacticalTextPrimary,
+                                                            fontSize = 11.sp,
+                                                            fontWeight = FontWeight.Bold
+                                                        )
+                                                    }
+                                                    Spacer(modifier = Modifier.height(2.dp))
+                                                    Text(
+                                                        text = recipientEmail,
+                                                        color = TacticalGoldText,
+                                                        fontSize = 11.sp,
+                                                        fontFamily = FontFamily.Monospace
+                                                    )
+                                                    Spacer(modifier = Modifier.height(6.dp))
+                                                    Row(
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                                    ) {
+                                                        OutlinedButton(
+                                                            onClick = {
+                                                                com.example.data.notification.EmailDeliveryService.openEmailClientWithKey(
+                                                                    context = context,
+                                                                    toEmail = recipientEmail,
+                                                                    callsign = profile?.callsign ?: "Боец",
+                                                                    licenseKey = activeKey
+                                                                )
+                                                            },
+                                                            modifier = Modifier.weight(1f).height(34.dp),
+                                                            colors = ButtonDefaults.outlinedButtonColors(contentColor = SageGreenBright),
+                                                            border = BorderStroke(1.dp, SageGreenPrimary.copy(alpha = 0.6f)),
+                                                            shape = RoundedCornerShape(6.dp)
+                                                        ) {
+                                                            Text("✉️ Открыть в почте", fontSize = 10.sp)
+                                                        }
+                                                        OutlinedButton(
+                                                            onClick = {
+                                                                onResendEmailKey(recipientEmail)
+                                                            },
+                                                            modifier = Modifier.weight(1f).height(34.dp),
+                                                            colors = ButtonDefaults.outlinedButtonColors(contentColor = TacticalGoldText),
+                                                            border = BorderStroke(1.dp, TacticalGold.copy(alpha = 0.6f)),
+                                                            shape = RoundedCornerShape(6.dp)
+                                                        ) {
+                                                            Text("🔄 Выслать повторно", fontSize = 10.sp)
+                                                        }
                                                     }
                                                 }
                                             }
