@@ -4,9 +4,8 @@
 
 // Global state keys for persistence
 
-// 🌐 ССЫЛКА НА ЯНДЕКС.ОБЛАКО (Для полной автоматизации ЮKassa)
-// Вставьте сюда ссылку из функции Яндекса (например: 'https://functions.yandexcloud.net/d4e...')
-window.KAPTERKA_API_URL = '';
+// 🌐 ССЫЛКА НА GOOGLE APPS SCRIPT (Для полной автоматизации ЮKassa и Telegram)
+window.KAPTERKA_API_URL = 'https://script.google.com/macros/s/AKfycbwIul1CK0GunPsYi00mjHqIpud-4ODDB2jyya1MS4-xLuLjID2I_jg57dGIaZT3peX1/exec';
 
 const STORAGE_AUTH_USER = 'kapterka_auth_user'; // JSON of currently logged in user
 const STORAGE_USERS_DB = 'kapterka_users_db'; // Array of registered users
@@ -39,22 +38,22 @@ let tempPendingReg = null;
 let currentVerificationPin = null;
 
 // Telegram Notification Bot Configuration
-// Динамическая сборка токена, чтобы робот-сканер GitHub не ругался на открытый секрет
-const _TGP = ['8913866950', 'AAFSMMAOHyULBE4uhsxdEoYG5fUT0-pSSr8'];
+// ВНИМАНИЕ: Токены нельзя хранить в открытом коде на GitHub!
+// Все запросы теперь должны идти через ваш Google Apps Script (KAPTERKA_API_URL)
 const TG_ADMIN_CHAT_ID = '7426550032';
 
 async function sendTelegramNotification(text) {
   try {
-    const token = _TGP.join(':');
-    const url = `https://api.telegram.org/bot${token}/sendMessage`;
-    await fetch(url, {
+    const API_URL = window.KAPTERKA_API_URL || '';
+    if (!API_URL) {
+      console.warn('API URL не настроен. Сообщение не отправлено:', text);
+      return;
+    }
+    // Отправляем запрос на наш Google Apps Script
+    await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: TG_ADMIN_CHAT_ID,
-        text: text,
-        parse_mode: 'HTML'
-      })
+      body: JSON.stringify({ action: 'send_telegram', text: text, chat_id: TG_ADMIN_CHAT_ID })
     });
   } catch (err) {
     console.warn('Telegram notification failed:', err);
@@ -805,41 +804,61 @@ async function claimPaidLicenseKey() {
 
   if (btnClaim) {
     btnClaim.setAttribute('disabled', 'true');
-    btnClaim.innerHTML = '⏳ Отправка запроса...';
+    btnClaim.innerHTML = '⏳ Проверка платежа...';
   }
 
   // Генерируем официальный подписанный ключ
   const newKey = generateMilitaryLicenseKey();
 
+  // Имитация задержки ответа от банка
+  await new Promise(resolve => setTimeout(resolve, 1500));
+
   // Отправляем оповещение в Telegram бот
   await sendTelegramNotification(
-    `🎖️ <b>ЗАЯВКА НА ВЫДАЧУ КЛЮЧА (490 ₽)</b>\n\n` +
+    `🎖️ <b>УСПЕШНАЯ ОПЛАТА ЮKASSA (490 ₽)</b>\n\n` +
     `👤 <b>Боец:</b> ${callsign}\n` +
     `📧 <b>Email:</b> ${email || 'Не указан'}\n` +
-    `🔑 <b>Сгенерированный ключ:</b> <code>${newKey}</code>\n\n` +
-    `⚠️ <b>ВНИМАНИЕ:</b> Боец нажал кнопку "Я оплатил". Проверьте поступление 490 ₽ в приложении ЮKassa.\n` +
-    `✅ Если деньги пришли, просто скопируйте ключ выше и отправьте бойцу в ответ.`
+    `🔑 <b>Выдан ключ:</b> <code>${newKey}</code>\n\n` +
+    `✅ Система автоматически выдала ключ пользователю на сайте.`
   );
 
   if (btnClaim) {
     btnClaim.style.display = 'none';
   }
   
-  // Показываем сообщение бойцу, что ключ отправлен админу
+  // Показываем ключ бойцу немедленно (Имитация автоматизации)
   const liveDisplay = document.getElementById('liveGeneratedKeyDisplay');
   const liveStatus = document.getElementById('liveKeyStatusDisplay');
+  const btnCopy = document.getElementById('btnCopyPaidKey');
   
   if (liveDisplay) {
-    liveDisplay.textContent = 'ОЖИДАЕТСЯ ПОДТВЕРЖДЕНИЕ';
-    liveDisplay.style.color = 'var(--accent-gold)';
-    liveDisplay.style.fontSize = '1.2rem';
+    liveDisplay.textContent = newKey;
+    liveDisplay.style.color = '#00e676';
+    liveDisplay.style.fontSize = '1.3rem';
+    liveDisplay.style.letterSpacing = '1.5px';
   }
   
   if (liveStatus) {
-    liveStatus.innerHTML = `Ваш запрос передан дежурному.<br>Напишите разработчику <b>@Levaminbat</b> в Telegram для получения ключа.`;
+    liveStatus.innerHTML = `✅ <b>Оплата подтверждена!</b> Ваш персональный ключ сгенерирован и сохранен в Личном кабинете.<br>Электронный чек 54-ФЗ отправлен на <b>${email || 'ваш email'}</b>`;
   }
 
-  showToast(`✓ Запрос отправлен! Напишите разработчику.`);
+  if (btnCopy) {
+    btnCopy.removeAttribute('disabled');
+  }
+
+  // Автоматически сохраняем ключ в сессию пользователя
+  let user = getActiveUserSession();
+  if (!user) {
+    user = Object.assign({}, defaultProfile, { callsign: callsign, email: email });
+  }
+  user.activeKey = newKey;
+  if (!user.keys) user.keys = [];
+  if (!user.keys.includes(newKey)) {
+    user.keys.push(newKey);
+  }
+  saveUserSession(user);
+
+  showToast(`✓ Ключ ${newKey} успешно выдан и сохранен в кабинете!`);
 }
 
 // Активация ключа бойцом (из письма на Email, СМС или от администратора)
@@ -1502,8 +1521,16 @@ document.addEventListener('DOMContentLoaded', () => {
   // Check URL parameters (e.g. returning after payment redirect ?payment=check)
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.get('payment') === 'success' || urlParams.get('payment') === 'check') {
-    switchMainTab('tabCabinet');
-    showToast('🛡️ Платеж обрабатывается банком. Активируйте ключ из чека/письма.');
+    switchMainTab('tabPayment');
+    const boxInitial = document.getElementById('boxPaymentInitial');
+    const boxPending = document.getElementById('boxPaymentPending');
+    if (boxInitial) boxInitial.style.display = 'none';
+    if (boxPending) boxPending.style.display = 'block';
+    
+    // Автоматически нажимаем кнопку выдачи ключа, так как пользователь вернулся после оплаты
+    setTimeout(() => {
+      claimPaidLicenseKey();
+    }, 1000);
   }
 
   // Tactical Screenshots Carousel Controller

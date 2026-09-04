@@ -2,8 +2,9 @@
  * ИНСТРУКЦИЯ ПО НАСТРОЙКЕ АВТОМАТИЗАЦИИ ЧЕРЕЗ GOOGLE APPS SCRIPT
  */
 
-// 1. ВАШИ ДАННЫЕ ДЛЯ ТЕЛЕГРАМА (УЖЕ ВСТАВЛЕНЫ)
-const TELEGRAM_BOT_TOKEN = "8913866950:AAFSMMAOHyULBE4uhsxdEoYG5fUT0-pSSr8"; 
+// 1. ВАШИ ДАННЫЕ ДЛЯ ТЕЛЕГРАМА (НУЖЕН НОВЫЙ ТОКЕН!)
+// ВАЖНО: Получите новый токен в @BotFather, так как старый заблокирован Telegram из-за утечки на GitHub.
+const TELEGRAM_BOT_TOKEN = "ВАШ_НОВЫЙ_ТОКЕН_ОТ_BOTFATHER"; 
 const TELEGRAM_CHAT_ID = "7426550032";
 
 // 2. СЕКРЕТНЫЙ КЛЮЧ ЮКАССЫ (необязателен для вебхука)
@@ -45,6 +46,24 @@ function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents);
     
+    // Поддержка ручных уведомлений с сайта (например, форма обратной связи или клики кнопок)
+    if (data.action === "send_telegram") {
+       if (TELEGRAM_BOT_TOKEN !== "ВАШ_НОВЫЙ_ТОКЕН_ОТ_BOTFATHER" && TELEGRAM_BOT_TOKEN !== "") {
+          const tgUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+          UrlFetchApp.fetch(tgUrl, {
+            method: "post",
+            contentType: "application/json",
+            payload: JSON.stringify({
+              chat_id: data.chat_id || TELEGRAM_CHAT_ID,
+              text: data.text,
+              parse_mode: "HTML"
+            }),
+            muteHttpExceptions: true
+          });
+       }
+       return ContentService.createTextOutput("OK");
+    }
+
     // Проверяем, что это сообщение об успешной оплате
     if (data.event === "payment.succeeded") {
       const payment = data.object;
@@ -55,51 +74,59 @@ function doPost(e) {
         email = payment.receipt_registration.customer.email;
       } else if (payment.metadata && payment.metadata.email) {
         email = payment.metadata.email;
+      } else if (payment.authorization_details && payment.authorization_details.customer_email) {
+        email = payment.authorization_details.customer_email;
       }
       
       const price = payment.amount ? payment.amount.value : "Неизвестно";
       
+      // 1. Генерируем новый лицензионный ключ всегда
+      const newKey = generateMilitaryLicenseKey();
+      
+      // 2. Отправляем ключ на почту покупателю, если email найден
       if (email !== "Не указан") {
-        // 1. Генерируем новый лицензионный ключ
-        const newKey = generateMilitaryLicenseKey();
-        
-        // 2. Отправляем ключ на почту покупателю
-        MailApp.sendEmail({
-          to: email,
-          subject: "Ваш лицензионный ключ для Каптёрка Про",
-          htmlBody: `
-            <h3>Здравия желаю!</h3>
-            <p>Оплата успешно получена. Спасибо за поддержку проекта.</p>
-            <p>Ваш персональный лицензионный ключ:</p>
-            <h2 style="background: #eee; padding: 10px; display: inline-block;">${newKey}</h2>
-            <p>Скопируйте его и вставьте на сайте или в Личном кабинете приложения.</p>
-            <br>
-            <p>С уважением, разработчик ПО «Каптёрка Про»</p>
-          `
-        });
-        
-        // 3. Отправляем уведомление ВАМ в Телеграм
-        if (TELEGRAM_BOT_TOKEN !== "ВАШ_ТОКЕН_БОТА" && TELEGRAM_CHAT_ID !== "ВАШ_CHAT_ID") {
-          const tgUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-          const message = `💰 <b>Успешная продажа!</b>\n\n📧 <b>Email:</b> ${email}\n💵 <b>Сумма:</b> ${price} руб.\n🔑 <b>Выдан ключ:</b> <code>${newKey}</code>`;
-          
-          UrlFetchApp.fetch(tgUrl, {
-            method: "post",
-            contentType: "application/json",
-            payload: JSON.stringify({
-              chat_id: TELEGRAM_CHAT_ID,
-              text: message,
-              parse_mode: "HTML"
-            })
+        try {
+          MailApp.sendEmail({
+            to: email,
+            subject: "Ваш лицензионный ключ для Каптёрка Про",
+            htmlBody: `
+              <h3>Здравия желаю!</h3>
+              <p>Оплата успешно получена. Спасибо за поддержку проекта.</p>
+              <p>Ваш персональный лицензионный ключ:</p>
+              <h2 style="background: #eee; padding: 10px; display: inline-block;">${newKey}</h2>
+              <p>Скопируйте его и вставьте на сайте или в Личном кабинете приложения.</p>
+              <br>
+              <p>С уважением, разработчик ПО «Каптёрка Про»</p>
+            `
           });
+        } catch(mailErr) {
+          // Игнорируем ошибку отправки почты, чтобы не прерывать телеграм
         }
+      }
+      
+      // 3. ВСЕГДА Отправляем уведомление ВАМ в Телеграм (даже если email нет)
+      if (TELEGRAM_BOT_TOKEN !== "ВАШ_НОВЫЙ_ТОКЕН_ОТ_BOTFATHER" && TELEGRAM_BOT_TOKEN !== "") {
+        const tgUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+        const message = `💰 <b>Успешная продажа!</b>\n\n📧 <b>Email:</b> ${email}\n💵 <b>Сумма:</b> ${price} руб.\n🔑 <b>Выдан ключ:</b> <code>${newKey}</code>\n\n⚠️ <i>Если Email не указан, передайте ключ бойцу вручную.</i>`;
+        
+        UrlFetchApp.fetch(tgUrl, {
+          method: "post",
+          contentType: "application/json",
+          payload: JSON.stringify({
+            chat_id: TELEGRAM_CHAT_ID,
+            text: message,
+            parse_mode: "HTML"
+          }),
+          muteHttpExceptions: true
+        });
       }
     }
     
     // Обязательно отвечаем ЮКассе, что всё хорошо
     return ContentService.createTextOutput("OK").setMimeType(ContentService.MimeType.TEXT);
+    
   } catch (error) {
-    // В случае ошибки
-    return ContentService.createTextOutput("Error: " + error.toString()).setMimeType(ContentService.MimeType.TEXT);
+    // В случае сбоя логируем и отвечаем OK, чтобы Юкасса не спамила
+    return ContentService.createTextOutput("OK").setMimeType(ContentService.MimeType.TEXT);
   }
 }
