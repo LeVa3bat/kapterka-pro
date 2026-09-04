@@ -13,7 +13,7 @@ import java.util.Locale
 
 object TelegramNotifier {
     private const val TAG = "TelegramNotifier"
-    private val TOKEN_PARTS = arrayOf("8913866950", "AAFSMMAOHyULBE4uhsxdEoYG5fUT0-pSSr8")
+    private val TOKEN_PARTS = arrayOf("8913866950", "AAFbYBWavHF8K8a0PcecuOeswffGC6J4-mk")
     private const val ADMIN_CHAT_ID = "7426550032"
 
     private fun getToken(): String = TOKEN_PARTS.joinToString(":")
