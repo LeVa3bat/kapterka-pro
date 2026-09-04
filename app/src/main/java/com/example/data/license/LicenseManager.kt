@@ -87,14 +87,53 @@ class LicenseManager(
     }
 
     /**
-     * Генерирует уникальный 16-значный персональный военный ключ лицензии:
-     * Формат: KAPT-XXXX-XXXX-XXXX
+     * Вычисляет криптографическую контрольную сумму для 4-го сегмента ключа
+     */
+    fun computeKeyChecksum(p1: String, p2: String): String {
+        val chars = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
+        val s = "KAPT-$p1-$p2-KAPT3RKA_881_MILITARY"
+        var h1 = 0x811c9dc5L
+        var h2 = 0x5a2d1e39L
+        for (ch in s) {
+            val code = ch.code.toLong()
+            h1 = ((h1 xor code) * 0x01000193L) and 0xFFFFFFFFL
+            h2 = (((h2 + code) * 31L) + 0x45L) and 0xFFFFFFFFL
+        }
+        val c0 = chars[((h1 ushr 24) and 0x1FL).toInt()]
+        val c1 = chars[((h1 ushr 16) and 0x1FL).toInt()]
+        val c2 = chars[((h2 ushr 24) and 0x1FL).toInt()]
+        val c3 = chars[((h2 ushr 16) and 0x1FL).toInt()]
+        return "$c0$c1$c2$c3"
+    }
+
+    /**
+     * Проверяет математическую и криптографическую подлинность ключа
+     */
+    fun verifyKeyChecksum(key: String): Boolean {
+        val clean = key.trim().uppercase(Locale.ROOT)
+            .replace(" ", "")
+            .replace("\n", "")
+            .replace("\r", "")
+        val parts = clean.split("-")
+        if (parts.size != 4 || parts[0] != "KAPT" || parts[1].length != 4 || parts[2].length != 4 || parts[3].length != 4) {
+            return false
+        }
+        val expected = computeKeyChecksum(parts[1], parts[2])
+        return parts[3] == expected
+    }
+
+    /**
+     * Генерирует уникальный 16-значный персональный военный ключ лицензии с криптографической подписью:
+     * Формат: KAPT-XXXX-XXXX-ZZZZ (где ZZZZ - верификационная контрольная сумма)
      */
     fun generateLicenseKey(): String {
         val chars = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ" // без похожих 0/O, 1/I
         val random = SecureRandom()
         fun part(): String = (1..4).map { chars[random.nextInt(chars.length)] }.joinToString("")
-        return "KAPT-${part()}-${part()}-${part()}"
+        val p1 = part()
+        val p2 = part()
+        val checksum = computeKeyChecksum(p1, p2)
+        return "KAPT-$p1-$p2-$checksum"
     }
 
     /**
@@ -427,11 +466,14 @@ class LicenseManager(
             .replace("\r", "")
             .replace("\t", "")
 
-        if (cleanKey.length < 10) {
-            return@withContext Pair(false, "Неверный формат ключа. Формат: KAPT-XXXX-XXXX-XXXX")
+        if (cleanKey.length < 12 || !cleanKey.startsWith("KAPT-")) {
+            return@withContext Pair(false, "Неверный формат ключа. Формат: KAPT-XXXX-XXXX-ZZZZ")
         }
 
-        val isValidMilitaryFormat = cleanKey.startsWith("KAPT-") && cleanKey.count { it == '-' } >= 2 && cleanKey.length >= 12
+        // 1. Строгая криптографическая проверка подписи ключа
+        if (!verifyKeyChecksum(cleanKey)) {
+            return@withContext Pair(false, "❌ Недействительный ключ! Ключ не прошел проверку подлинности.")
+        }
 
         try {
             val doc = firestore.collection("licenses").document(cleanKey).get().await()
@@ -477,44 +519,7 @@ class LicenseManager(
                 refreshLicenseStatus()
                 Pair(true, "Лицензия успешно активирована на $daysLeft дн.!")
             } else {
-                // Ключ еще не занесен в Firestore или куплен на сайте/выдан оффлайн
-                if (isValidMilitaryFormat) {
-                    val now = System.currentTimeMillis()
-                    val expiresAt = now + (30L * 24L * 60L * 60L * 1000L)
-                    val sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                    sp.edit()
-                        .putString("active_license_key", cleanKey)
-                        .putLong("license_expires_at", expiresAt)
-                        .apply()
-                    saveToPermanentVault(cleanKey, expiresAt)
-                    updateRoomProfilePro(30)
-                    refreshLicenseStatus()
-
-                    // Фоновая регистрация ключа в облаке
-                    try {
-                        val currentFighterId = getFighterPersonalId()
-                        val licenseData = hashMapOf(
-                            "licenseKey" to cleanKey,
-                            "fighterId" to currentFighterId,
-                            "callsign" to fighterCallsign,
-                            "activatedAt" to now,
-                            "expiresAt" to expiresAt,
-                            "durationDays" to 30,
-                            "status" to "ACTIVE",
-                            "source" to "Активация военного ключа (kapterka-pro.ru)"
-                        )
-                        firestore.collection("licenses").document(cleanKey)
-                            .set(licenseData, SetOptions.merge())
-                    } catch (_: Exception) {}
-
-                    Pair(true, "Ключ успешно активирован! Доступ открыт на 30 дней.")
-                } else {
-                    Pair(false, "Ключ не найден в реестре лицензий.")
-                }
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "Network exception verifying key in Firestore, falling back to offline validation", e)
-            if (isValidMilitaryFormat) {
+                // Ключ имеет верную подпись, но еще не зарегистрирован в облаке (выдан оффлайн)
                 val now = System.currentTimeMillis()
                 val expiresAt = now + (30L * 24L * 60L * 60L * 1000L)
                 val sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -525,10 +530,39 @@ class LicenseManager(
                 saveToPermanentVault(cleanKey, expiresAt)
                 updateRoomProfilePro(30)
                 refreshLicenseStatus()
-                Pair(true, "Ключ принят в оффлайн-режиме (активен 30 дней)")
-            } else {
-                Pair(false, "Ошибка связи с сервером лицензий: ${e.localizedMessage}")
+
+                // Фоновая регистрация ключа в облаке
+                try {
+                    val currentFighterId = getFighterPersonalId()
+                    val licenseData = hashMapOf(
+                        "licenseKey" to cleanKey,
+                        "fighterId" to currentFighterId,
+                        "callsign" to fighterCallsign,
+                        "activatedAt" to now,
+                        "expiresAt" to expiresAt,
+                        "durationDays" to 30,
+                        "status" to "ACTIVE",
+                        "source" to "Активация проверенного военного ключа"
+                    )
+                    firestore.collection("licenses").document(cleanKey)
+                        .set(licenseData, SetOptions.merge())
+                } catch (_: Exception) {}
+
+                Pair(true, "Ключ успешно активирован! Доступ открыт на 30 дней.")
             }
+        } catch (e: Exception) {
+            Log.w(TAG, "Network exception verifying key in Firestore, falling back to offline validation", e)
+            val now = System.currentTimeMillis()
+            val expiresAt = now + (30L * 24L * 60L * 60L * 1000L)
+            val sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            sp.edit()
+                .putString("active_license_key", cleanKey)
+                .putLong("license_expires_at", expiresAt)
+                .apply()
+            saveToPermanentVault(cleanKey, expiresAt)
+            updateRoomProfilePro(30)
+            refreshLicenseStatus()
+            Pair(true, "Ключ подтвержден цифровой подписью в оффлайн-режиме (активен 30 дней)")
         }
     }
 }

@@ -6,6 +6,9 @@
   <title>Каптёрка Про — Армейский учет имущества и боеприпасов в полевых условиях</title>
   <meta name="description" content="Автономное мобильное приложение и веб-платформа для учета материальных средств, складов, формы № 8 (Акт расхода) и формы № 18 (Книга учета). Личный кабинет бойца и моментальная выдача лицензий через ЮKassa и СБП.">
   <meta name="keywords" content="Каптёрка Про, армейский складской учет, списание боеприпасов, форма 8 акт расхода, форма 18 книга учета, учет РАВ, учет вещевого имущества, программа для старшины, программа каптерка, склад СВО, тактическое приложение андроид">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <link rel="canonical" href="https://kapterka-pro.ru/">
   <meta name="robots" content="index, follow">
 
@@ -712,72 +715,69 @@
                 </div>
               </div>
 
-              <!-- Шаг 2: Блок появления после перехода в ЮKassa -->
+              <!-- Шаг 2: Блок ожидания подтверждения оплаты -->
               <div id="boxPaymentPending" style="display:none; margin-top:16px; background:#0e1c12; border:1px solid var(--primary); border-radius:var(--radius-md); padding:16px;">
                 <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-                  <span style="color:var(--primary); font-size:1.1rem;">⚡</span>
-                  <strong style="color:var(--primary); font-size:0.95rem;">Шлюз ЮKassa открыт в браузере</strong>
+                  <span style="color:var(--primary); font-size:1.1rem;">⏳</span>
+                  <strong style="color:var(--primary); font-size:0.95rem;">Ожидание подтверждения оплаты от банка</strong>
                 </div>
                 <p style="font-size:0.84rem; color:var(--text-secondary); line-height:1.45; margin-bottom:12px;">
-                  Завершите оплату 490 ₽ в окне ЮKassa (через СБП или банковскую карту).
+                  Завершите перевод 490 ₽ в открывшемся окне ЮKassa (через СБП или банковской картой).
                 </p>
 
-                <!-- Информационная плашка ожидания -->
-                <div style="background:rgba(255,179,0,0.06); border-left:3px solid var(--accent-gold); padding:10px 12px; border-radius:0 var(--radius-sm) var(--radius-sm) 0; font-size:0.8rem; color:var(--text-primary); margin-bottom:12px;">
-                  🛡️ <strong>Фискализация и защита:</strong> официальный чек 54-ФЗ и персональный ключ лицензии высылаются на ваш Email сразу после зачисления средств.
+                <!-- Информационная плашка безопасности и выдачи -->
+                <div style="background:rgba(255,179,0,0.08); border-left:3px solid var(--accent-gold); padding:12px; border-radius:0 var(--radius-sm) var(--radius-sm) 0; font-size:0.82rem; color:var(--text-primary); margin-bottom:14px; line-height:1.5;">
+                  🛡️ <strong>Порядок выдачи ключа:</strong> Официальный кассовый чек по 54-ФЗ и ваш уникальный 16-значный персональный ключ лицензии направляются на ваш Email сразу после фактического зачисления 490 ₽ шлюзом ЮKassa.
                 </div>
 
-                <!-- Автоматическая кнопка проверки и выдачи ключа -->
-                <button id="btnAutoVerifyPayment" class="btn btn-gold btn-lg" style="width:100%; font-size:1.02rem; font-weight:bold; box-shadow:0 0 16px rgba(255,179,0,0.35);" onclick="verifyYooKassaPaymentAndClaimKey()">
-                  ⚡ Я завершил оплату • Получить и активировать ключ
-                </button>
+                <div style="margin-top:10px; text-align:center; margin-bottom:14px;">
+                  <a href="https://yookassa.ru/my/i/apiQMG65ZHIE/l" target="_blank" class="btn btn-outline btn-sm" style="display:inline-block; font-size:0.82rem; color:var(--accent-gold); border-color:var(--accent-gold);">
+                    🔗 Окно закрылось? Открыть ЮKassa снова ➔
+                  </a>
+                </div>
 
-                <!-- Поле активации ключа из письма -->
-                <div id="paymentOrderPromptBox" style="display:none; margin-top:14px; background:#141b16; border:1px solid rgba(255,179,0,0.25); border-radius:var(--radius-sm); padding:12px;">
-                  <label class="form-label" style="font-size:0.76rem; color:var(--accent-gold);">Активировать ключ из письма / СМС:</label>
-                  <div style="display:flex; gap:8px;">
+                <!-- Поле активации ключа из чека/письма -->
+                <div style="background:#141b16; border:1px solid rgba(141,170,89,0.3); border-radius:var(--radius-sm); padding:14px;">
+                  <label class="form-label" style="font-size:0.8rem; color:var(--text-primary); font-weight:bold;">
+                    Уже получили ключ в письме? Введите его для активации:
+                  </label>
+                  <div style="display:flex; gap:8px; margin-top:6px;">
                     <input type="text" id="payOrderIdInput" class="form-input mono" placeholder="KAPT-XXXX-XXXX-XXXX" style="font-size:0.85rem; padding:8px 10px; color:var(--accent-gold); font-weight:bold;">
                     <button class="btn btn-primary btn-sm" onclick="verifyWithManualOrderId()" style="white-space:nowrap;">Активировать</button>
                   </div>
-                  <div style="font-size:0.71rem; color:var(--text-muted); margin-top:4px;">
-                    💡 Введите ключ в формате KAPT-XXXX-XXXX-XXXX для мгновенного включения ПРО-режима.
+                  <div style="font-size:0.72rem; color:var(--text-muted); margin-top:6px;">
+                    💡 Введите ключ из официального письма в формате KAPT-XXXX-XXXX-XXXX.
                   </div>
-                </div>
-
-                <div style="margin-top:10px; text-align:center;">
-                  <a href="https://yookassa.ru/my/i/apiQMG65ZHIE/l" target="_blank" style="font-size:0.78rem; color:var(--text-muted); text-decoration:none;">
-                    Окно закрылось? Открыть ЮKassa снова ➔
-                  </a>
                 </div>
               </div>
             </div>
 
-            <!-- Правая колонка: Проверка оплаты и выдача ключа -->
+            <!-- Правая колонка: Информация о лицензии -->
             <div style="background:#0a0e0b; border:1px solid var(--border-color); border-radius:var(--radius-lg); padding:22px; display:flex; flex-direction:column; justify-content:space-between;">
               <div>
                 <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
                   <span style="color:var(--primary); font-size:1.2rem;">🛡️</span>
-                  <h4 style="color:var(--text-primary); font-size:0.95rem;">СТАТУС И ВЫДАЧА ЛИЦЕНЗИИ</h4>
+                  <h4 style="color:var(--text-primary); font-size:0.95rem;">ИНФОРМАЦИЯ О ЛИЦЕНЗИИ</h4>
                 </div>
                 <p style="font-size:0.82rem; color:var(--text-secondary); line-height:1.5; margin-bottom:14px;">
-                  Персональный ключ бойца активируется <strong>автоматически после подтверждения оплаты</strong> через систему ЮKassa.
+                  Персональный лицензионный ключ бойца выдается <strong>строго после фактического зачисления оплаты</strong> через банковский шлюз ЮKassa.
                 </p>
 
                 <div class="live-key-generation-box">
                   <div style="font-size:0.72rem; color:var(--text-muted); font-family:var(--font-mono); text-transform:uppercase;">
-                    СТАТУС ЛИЦЕНЗИОННОГО КЛЮЧА:
+                    СТАТУС ЛИЦЕНЗИИ:
                   </div>
-                  <div class="live-key-result" id="liveGeneratedKeyDisplay" style="font-size:1.05rem; word-break:break-all; font-weight:bold; color:var(--accent-gold);">
-                    Ожидание оплаты...
+                  <div class="live-key-result" id="liveGeneratedKeyDisplay" style="font-size:1.02rem; word-break:break-all; font-weight:bold; color:var(--accent-gold);">
+                    Ожидание оплаты 490 ₽
                   </div>
-                  <div style="font-size:0.78rem; color:var(--text-muted); font-family:var(--font-mono); margin-top:4px;" id="liveKeyStatusDisplay">
-                    Нажмите «Оплатить 490 ₽», чтобы сформировать заказ
+                  <div style="font-size:0.78rem; color:var(--text-muted); font-family:var(--font-mono); margin-top:6px;" id="liveKeyStatusDisplay">
+                    Нажмите «Оплатить 490 ₽», чтобы перейти в защищенный шлюз ЮKassa
                   </div>
                 </div>
               </div>
 
               <div style="margin-top:16px; display:flex; flex-direction:column; gap:10px;">
-                <button class="btn btn-primary btn-lg" id="btnCopyPaidKey" onclick="copyPaidKeyAction()" disabled>
+                <button class="btn btn-primary btn-lg" id="btnCopyPaidKey" onclick="copyPaidKeyAction()" style="display:none;">
                   📋 Скопировать полученный ключ
                 </button>
                 <button class="btn btn-outline btn-sm" id="btnSendKeyToEmail" onclick="openLicenseMailClient()" style="display:none; text-align:center; color:var(--accent-gold); border-color:var(--accent-gold);">
@@ -786,8 +786,8 @@
                 <button class="btn btn-outline btn-sm" id="btnGoToCabinetAfterPay" onclick="switchMainTab('tabCabinet')" style="display:none; text-align:center;">
                   👤 Открыть в Личном кабинете
                 </button>
-                <div style="font-size:0.74rem; color:var(--text-muted); line-height:1.4;">
-                  💡 <em>Ключ сразу сохраняется в вашем профиле бойца и отображается в Личном кабинете.</em>
+                <div style="font-size:0.76rem; color:var(--text-muted); line-height:1.45;">
+                  🔒 <em>Защита транзакций: автоматическая выдача без подтвержденной оплаты в банке заблокирована.</em>
                 </div>
               </div>
             </div>
@@ -1225,6 +1225,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=3.0.1"></script>
+  <script src="app.js?v=3.2.0"></script>
 </body>
 </html>

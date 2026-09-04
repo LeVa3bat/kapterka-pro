@@ -543,17 +543,48 @@ function generateNewUnitKey() {
   }
 }
 
-// 4. Military License Key Generation (KAPT-XXXX-XXXX-XXXX)
+// 4. Cryptographic Military License Key Checksum & Generation
+const CHECKSUM_CHARS = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+
+function computeKeyChecksum(p1, p2) {
+  const s = `KAPT-${p1}-${p2}-KAPT3RKA_881_MILITARY`;
+  let h1 = 0x811c9dc5 >>> 0;
+  let h2 = 0x5a2d1e39 >>> 0;
+  for (let i = 0; i < s.length; i++) {
+    const code = s.charCodeAt(i);
+    h1 = Math.imul(h1 ^ code, 0x01000193) >>> 0;
+    h2 = (Math.imul(h2 + code, 31) + 0x45) >>> 0;
+  }
+  const c0 = CHECKSUM_CHARS[(h1 >>> 24) & 0x1F];
+  const c1 = CHECKSUM_CHARS[(h1 >>> 16) & 0x1F];
+  const c2 = CHECKSUM_CHARS[(h2 >>> 24) & 0x1F];
+  const c3 = CHECKSUM_CHARS[(h2 >>> 16) & 0x1F];
+  return `${c0}${c1}${c2}${c3}`;
+}
+
+function verifyKeyChecksum(key) {
+  if (!key || typeof key !== 'string') return false;
+  const clean = key.trim().toUpperCase().replace(/\s+/g, '');
+  const parts = clean.split('-');
+  if (parts.length !== 4 || parts[0] !== 'KAPT' || parts[1].length !== 4 || parts[2].length !== 4 || parts[3].length !== 4) {
+    return false;
+  }
+  const expected = computeKeyChecksum(parts[1], parts[2]);
+  return parts[3] === expected;
+}
+
 function generateMilitaryLicenseKey() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   function seg(len) {
     let s = '';
     for (let i = 0; i < len; i++) {
-      s += chars.charAt(Math.floor(Math.random() * chars.length));
+      s += CHECKSUM_CHARS.charAt(Math.floor(Math.random() * CHECKSUM_CHARS.length));
     }
     return s;
   }
-  return `KAPT-${seg(4)}-${seg(4)}-${seg(4)}`;
+  const p1 = seg(4);
+  const p2 = seg(4);
+  const p3 = computeKeyChecksum(p1, p2);
+  return `KAPT-${p1}-${p2}-${p3}`;
 }
 
 // 5. Render Keys History Table
@@ -733,83 +764,10 @@ function processYooKassaPayment() {
   }, 400);
 }
 
-// Защищенная проверка: ИСКЛЮЧАЕТ возможность получения ключа без реальной оплаты
-function verifyYooKassaPaymentAndClaimKey() {
-  const callsign = localStorage.getItem('kapterka_pending_callsign') || document.getElementById('payCallsignInput')?.value.trim() || 'Боец';
-  const email = localStorage.getItem('kapterka_pending_email') || document.getElementById('payEmailInput')?.value.trim() || '';
-  const sessionId = localStorage.getItem('kapterka_pending_payment_id') || 'yk_order';
-  const btnVerify = document.getElementById('btnAutoVerifyPayment');
-  const liveStatus = document.getElementById('liveKeyStatusDisplay');
-
-  if (btnVerify) {
-    btnVerify.setAttribute('disabled', 'true');
-    btnVerify.innerHTML = '⏳ Связь с банком и шлюзом ЮKassa (ID: 1450722)...';
-  }
-
-  showToast('Проверка статуса в банке ЮKassa...');
-
-  setTimeout(() => {
-    if (btnVerify) {
-      btnVerify.removeAttribute('disabled');
-      btnVerify.innerHTML = '⚡ Проверить статус зачисления (ЮKassa)';
-    }
-
-    if (liveStatus) {
-      liveStatus.innerHTML = `⚠️ <b>Платеж еще не подтвержден банком ЮKassa.</b><br><span style="color:var(--text-secondary); font-size:0.8rem;">Завершите оплату 490 ₽ в приложении банка (СБП/Карта). После списания средств официальный чек и лицензионный ключ направляются на <b>${email || 'ваш email'}</b>. Если вы уже получили ключ в письме, введите его ниже для мгновенной активации:</span>`;
-    }
-
-    // Фокусируем поле ввода ключа
-    const input = document.getElementById('payOrderIdInput');
-    if (input) {
-      input.scrollIntoView({ behavior: 'smooth' });
-      input.focus();
-    }
-
-    // Telegram Alert администратору о запросе проверки
-    sendTelegramNotification(
-      `🔍 <b>Пользователь нажал «Я оплатил» (проверка статуса)</b>\n\n` +
-      `👤 <b>Боец:</b> ${callsign}\n` +
-      `📧 <b>Email:</b> ${email || 'Не указан'}\n` +
-      `🆔 <b>ID сессии:</b> <code>${sessionId}</code>\n` +
-      `⚠️ <i>Автоматическая выдача без подтверждения банка заблокирована. Ожидается зачисление 490 ₽.</i>`
-    );
-
-    showToast(`Платеж ожидает подтверждения банка ЮKassa. Введите ключ из письма.`);
-  }, 1200);
-}
-
-// Открытие почтовой программы с готовым письмом с ключом
-function openLicenseMailClient() {
-  const email = localStorage.getItem('kapterka_pending_email') || 'alex.666.881@gmail.com';
-  const callsign = localStorage.getItem('kapterka_pending_callsign') || 'Боец';
-  const keyElem = document.getElementById('liveGeneratedKeyDisplay');
-  const key = (keyElem ? keyElem.textContent.trim() : '') || localStorage.getItem(STORAGE_USER_LICENSE_KEY) || 'KAPT-PRO-KEY';
-
-  const subject = encodeURIComponent('Ваш лицензионный ключ «Каптёрка ПРО» (30 дней)');
-  const body = encodeURIComponent(
-    `Здравия желаем, ${callsign}!\n\n` +
-    `Благодарим за оплату лицензии программного комплекса «Каптёрка ПРО».\n\n` +
-    `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-    `ВАШ ЛИЦЕНЗИОННЫЙ КЛЮЧ:\n` +
-    `${key}\n` +
-    `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
-    `Срок действия: 30 суток (ПРО-доступ)\n` +
-    `Позывной владельца: ${callsign}\n\n` +
-    `Инструкция по активации:\n` +
-    `1. Откройте приложение «Каптёрка».\n` +
-    `2. Перейдите в меню «Ещё» -> «Лицензия бойца (ПРО)».\n` +
-    `3. Вставьте ключ и нажмите «Активировать».\n\n` +
-    `Официальная поддержка: support@kapterka-pro.ru\n` +
-    `Сайт: https://kapterka-pro.ru/`
-  );
-
-  window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
-}
-
 // Активация ключа бойцом (из письма на Email, СМС или от администратора)
 function verifyWithManualOrderId() {
   const input = document.getElementById('payOrderIdInput');
-  const enteredKey = input ? input.value.trim().toUpperCase() : '';
+  const enteredKey = input ? input.value.trim().toUpperCase().replace(/\s+/g, '') : '';
   const callsign = localStorage.getItem('kapterka_pending_callsign') || 'Боец';
 
   if (!enteredKey) {
@@ -817,10 +775,9 @@ function verifyWithManualOrderId() {
     return;
   }
 
-  // Проверка формата ключа: KAPT-XXXX-XXXX-XXXX
-  const keyRegex = /^KAPT-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/;
-  if (!keyRegex.test(enteredKey) && enteredKey.length < 10) {
-    showToast('❌ Недействительный ключ! Формат: KAPT-XXXX-XXXX-XXXX');
+  // Проверка криптографической подписи ключа
+  if (!verifyKeyChecksum(enteredKey)) {
+    showToast('❌ Ошибка: Ключ не прошел проверку подлинности!');
     return;
   }
 
@@ -834,13 +791,20 @@ function applyNewPaidKey(newKey, callsign) {
   const liveDisplay = document.getElementById('liveGeneratedKeyDisplay');
   const liveStatus = document.getElementById('liveKeyStatusDisplay');
   const btnCopy = document.getElementById('btnCopyPaidKey');
+  const btnMail = document.getElementById('btnSendKeyToEmail');
+  const btnCab = document.getElementById('btnGoToCabinetAfterPay');
 
   if (liveDisplay) {
     liveDisplay.textContent = newKey;
     liveDisplay.style.color = 'var(--accent-gold)';
   }
-  if (liveStatus) liveStatus.textContent = '✓ Оплачено 490 ₽ • 30 дней доступа';
-  if (btnCopy) btnCopy.removeAttribute('disabled');
+  if (liveStatus) liveStatus.textContent = '✓ Лицензия активна • 30 дней доступа';
+  if (btnCopy) {
+    btnCopy.style.display = 'block';
+    btnCopy.removeAttribute('disabled');
+  }
+  if (btnMail) btnMail.style.display = 'block';
+  if (btnCab) btnCab.style.display = 'block';
 
   // Update Local Storage active key
   localStorage.setItem(STORAGE_ACTIVE_KEY, newKey);
@@ -873,29 +837,29 @@ function applyNewPaidKey(newKey, callsign) {
   localStorage.setItem(STORAGE_KEYS_HISTORY, JSON.stringify(history));
   renderKeysHistory();
 
-  showToast(`Лицензия активирована! Выдан ключ: ${newKey}`);
+  showToast(`Лицензия активирована! Ключ: ${newKey}`);
 }
 
 // Ручная привязка ключа бойцом в Личном кабинете (для синхронизации с приложением на Android)
 function linkLicenseKeyInCabinet() {
   const input = document.getElementById('cabManualKeyInput');
   if (!input) return;
-  const key = input.value.trim().toUpperCase();
+  const key = input.value.trim().toUpperCase().replace(/\s+/g, '');
 
   if (!key) {
     showToast('Введите лицензионный ключ');
     return;
   }
 
-  if (key.length < 8) {
-    showToast('Некорректный формат ключа');
+  if (!verifyKeyChecksum(key)) {
+    showToast('❌ Ошибка: Ключ недействителен или подделан!');
     return;
   }
 
   const callsign = localStorage.getItem(STORAGE_USER_CALLSIGN) || 'Боец';
   applyNewPaidKey(key, callsign);
   input.value = '';
-  showToast(`Ключ ${key} успешно привязан к вашему личному кабинету!`);
+  showToast(`✓ Ключ ${key} успешно привязан к вашему личному кабинету!`);
 }
 
 // 8. Showcase data & carousel
