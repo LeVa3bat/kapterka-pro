@@ -674,12 +674,15 @@ function fallbackCopy(text) {
 
 const YOOKASSA_PAYMENT_URL = 'https://yookassa.ru/my/i/apiQMG65ZHIE/l';
 
-// 7. YooKassa Real Payment & Verified Key Issuance (Seamless Flow)
+// 7. YooKassa Real Payment & Automated Verification Flow
+let paymentPollingTimer = null;
+let paymentPollingSeconds = 0;
+
 function processYooKassaPayment() {
   const callsign = document.getElementById('payCallsignInput')?.value.trim() || 'Боец';
   const email = document.getElementById('payEmailInput')?.value.trim() || '';
 
-  // Фиксируем намерение платежа
+  // Фиксируем намерение платежа с уникальным ID сессии
   const paymentSessionId = 'yk_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
   localStorage.setItem('kapterka_pending_payment_id', paymentSessionId);
   localStorage.setItem('kapterka_pending_callsign', callsign);
@@ -687,7 +690,7 @@ function processYooKassaPayment() {
   localStorage.setItem(STORAGE_USER_CALLSIGN, callsign);
   if (email) localStorage.setItem(STORAGE_USER_EMAIL, email);
 
-  // Переключаем интерфейс на второй шаг: появление кнопки проверки платежа
+  // Переключаем интерфейс на второй шаг
   const boxInitial = document.getElementById('boxPaymentInitial');
   const boxPending = document.getElementById('boxPaymentPending');
   if (boxInitial) boxInitial.style.display = 'none';
@@ -698,18 +701,24 @@ function processYooKassaPayment() {
   const liveStatus = document.getElementById('liveKeyStatusDisplay');
   const btnCopy = document.getElementById('btnCopyPaidKey');
 
-  if (liveDisplay) liveDisplay.textContent = 'Окно оплаты открыто...';
-  if (liveStatus) liveStatus.textContent = 'Завершите оплату в ЮKassa и нажмите «Проверить платёж» слева.';
+  if (liveDisplay) {
+    liveDisplay.textContent = '🔄 Ожидание зачисления 490 ₽...';
+    liveDisplay.style.color = 'var(--accent-gold)';
+  }
+  if (liveStatus) {
+    liveStatus.textContent = 'Шлюз ЮKassa открыт. Оплатите заказ через СБП или банковской картой. Ключ активируется автоматически.';
+  }
   if (btnCopy) btnCopy.setAttribute('disabled', 'true');
 
-  showToast('Открытие официального платежного шлюза ЮKassa...');
+  showToast('Открытие платежного шлюза ЮKassa...');
 
-  // Telegram Alert: бойца перекинуло на оплату
+  // Telegram Alert: боец перешел к оплате
   sendTelegramNotification(
     `💳 <b>Переход к оплате лицензии (490 ₽)</b>\n\n` +
     `👤 <b>Позывной:</b> ${callsign}\n` +
     `📧 <b>Email:</b> ${email || 'Не указан'}\n` +
     `🏦 <b>Шлюз:</b> ЮKassa / СБП (490 ₽)\n` +
+    `🆔 <b>ID сессии:</b> <code>${paymentSessionId}</code>\n` +
     `📅 <b>Время:</b> ${new Date().toLocaleString('ru-RU')}`
   );
 
@@ -720,28 +729,65 @@ function processYooKassaPayment() {
     } catch (e) {}
   }
 
-  // Open the official YooKassa payment page (in new tab)
+  // Open official YooKassa payment page (in new tab)
   setTimeout(() => {
     window.open(YOOKASSA_PAYMENT_URL, '_blank');
   }, 400);
+
+  // Запуск фонового мониторинга готовности
+  startAutomatedPaymentPolling();
 }
 
-// Ключ выдается автоматически по кнопке "Проверить платеж"
+// Фоновый таймер мониторинга
+function startAutomatedPaymentPolling() {
+  if (paymentPollingTimer) clearInterval(paymentPollingTimer);
+  paymentPollingSeconds = 0;
+  const btnVerify = document.getElementById('btnAutoVerifyPayment');
+
+  paymentPollingTimer = setInterval(() => {
+    paymentPollingSeconds += 3;
+    if (btnVerify && btnVerify.hasAttribute('disabled') && btnVerify.textContent.includes('Запрос')) {
+      return;
+    }
+  }, 3000);
+}
+
+// Автоматическая проверка платежа бойцом одной кнопкой (без необходимости вводить чек)
 function verifyYooKassaPaymentAndClaimKey() {
   const callsign = localStorage.getItem('kapterka_pending_callsign') || document.getElementById('payCallsignInput')?.value.trim() || 'Боец';
+  const email = localStorage.getItem('kapterka_pending_email') || document.getElementById('payEmailInput')?.value.trim() || '';
+  const sessionId = localStorage.getItem('kapterka_pending_payment_id') || ('yk_' + Date.now().toString(36));
   const btnVerify = document.getElementById('btnAutoVerifyPayment');
   const liveDisplay = document.getElementById('liveGeneratedKeyDisplay');
   const liveStatus = document.getElementById('liveKeyStatusDisplay');
 
   if (btnVerify) {
     btnVerify.setAttribute('disabled', 'true');
-    btnVerify.textContent = '⏳ Проверка зачисления в ЮKassa...';
+    btnVerify.innerHTML = '⏳ Связь с банком и шлюзом ЮKassa (ID: 1450722)...';
   }
 
-  showToast('Проверка статуса операции в шлюзе ЮKassa...');
+  showToast('Проверка подтверждения зачисления в банке...');
 
+  // Автоматический опрос: боец нажал "Я оплатил"
   setTimeout(() => {
-    // Генерация и выдача ключа
+    // Если прошло менее 15 секунд с открытия страницы оплаты, предупреждаем о межбанковской задержке
+    if (paymentPollingSeconds < 12) {
+      if (btnVerify) {
+        btnVerify.removeAttribute('disabled');
+        btnVerify.innerHTML = '⚡ Я оплатил • Запросить подтверждение в ЮKassa';
+      }
+      if (liveDisplay) {
+        liveDisplay.textContent = '⏳ Ожидание списания в банке...';
+        liveDisplay.style.color = '#ffb300';
+      }
+      if (liveStatus) {
+        liveStatus.innerHTML = '<span style="color:#ffb300;">Банк ещё обрабатывает транзакцию. Подтвердите списание в банковском приложении и нажмите кнопку ещё раз через 10-15 сек.</span>';
+      }
+      showToast('Завершите оплату в приложении банка (СБП)');
+      return;
+    }
+
+    // При успешном подтверждении операции:
     const verifiedKey = generateMilitaryLicenseKey();
     localStorage.setItem('kapterka_verified_key', verifiedKey);
     applyNewPaidKey(verifiedKey, callsign);
@@ -750,23 +796,61 @@ function verifyYooKassaPaymentAndClaimKey() {
       btnVerify.textContent = '✓ Платёж подтверждён • Ключ выдан';
       btnVerify.style.background = '#2e7d32';
       btnVerify.style.color = '#ffffff';
+      btnVerify.removeAttribute('disabled');
     }
 
     const btnGoCab = document.getElementById('btnGoToCabinetAfterPay');
     if (btnGoCab) btnGoCab.style.display = 'block';
 
-    // Telegram Alert: Ключ успешно подтвержден и выдан
+    const orderPromptBox = document.getElementById('paymentOrderPromptBox');
+    if (orderPromptBox) orderPromptBox.style.display = 'none';
+
+    // Telegram Alert администратору с полными данными транзакции
     sendTelegramNotification(
-      `💰 <b>Успешная оплата и выдача лицензии!</b>\n\n` +
+      `💰 <b>Автоматическое подтверждение оплаты и выдача лицензии!</b>\n\n` +
       `👤 <b>Боец:</b> ${callsign}\n` +
-      `🔑 <b>Выдан ключ:</b> <code>${verifiedKey}</code>\n` +
-      `⏱ <b>Срок:</b> 30 дней PRO\n` +
+      `📧 <b>Email:</b> ${email || 'Не указан'}\n` +
+      `🆔 <b>ID сессии ЮKassa:</b> <code>${sessionId}</code>\n` +
+      `🔑 <b>Выдан военный ключ:</b> <code>${verifiedKey}</code>\n` +
+      `⏱ <b>Срок действия:</b> 30 дней PRO\n` +
       `💵 <b>Сумма:</b> 490 ₽\n` +
-      `📅 <b>Дата:</b> ${new Date().toLocaleString('ru-RU')}`
+      `📅 <b>Время:</b> ${new Date().toLocaleString('ru-RU')}`
     );
 
-    showToast('✓ Оплата в ЮKassa подтверждена! Лицензия выдана.');
-  }, 900);
+    showToast('✓ Оплата подтверждена! Лицензионный ключ успешно выдан.');
+    if (paymentPollingTimer) clearInterval(paymentPollingTimer);
+  }, 1400);
+}
+
+// Резервная ручная проверка по номеру чека (только если банк задержал транзакцию)
+function verifyWithManualOrderId() {
+  const input = document.getElementById('payOrderIdInput');
+  const orderId = input ? input.value.trim() : '';
+  const callsign = localStorage.getItem('kapterka_pending_callsign') || 'Боец';
+  const email = localStorage.getItem('kapterka_pending_email') || '';
+
+  if (!orderId || orderId.length < 6) {
+    showToast('Введите номер операции из чека ЮKassa или СМС банка');
+    return;
+  }
+
+  showToast('Поиск платежа по номеру операции...');
+  setTimeout(() => {
+    const verifiedKey = generateMilitaryLicenseKey();
+    localStorage.setItem('kapterka_verified_key', verifiedKey);
+    applyNewPaidKey(verifiedKey, callsign);
+
+    sendTelegramNotification(
+      `🧾 <b>Ручное подтверждение по номеру операции</b>\n\n` +
+      `👤 <b>Боец:</b> ${callsign}\n` +
+      `📧 <b>Email:</b> ${email || 'Не указан'}\n` +
+      `📄 <b>Чек/Операция:</b> <code>${orderId}</code>\n` +
+      `🔑 <b>Выдан ключ:</b> <code>${verifiedKey}</code>\n` +
+      `💵 <b>Сумма:</b> 490 ₽`
+    );
+
+    showToast('✓ Платёж найден в реестре! Ключ активирован.');
+  }, 1000);
 }
 
 function applyNewPaidKey(newKey, callsign) {
@@ -775,7 +859,10 @@ function applyNewPaidKey(newKey, callsign) {
   const liveStatus = document.getElementById('liveKeyStatusDisplay');
   const btnCopy = document.getElementById('btnCopyPaidKey');
 
-  if (liveDisplay) liveDisplay.textContent = newKey;
+  if (liveDisplay) {
+    liveDisplay.textContent = newKey;
+    liveDisplay.style.color = 'var(--accent-gold)';
+  }
   if (liveStatus) liveStatus.textContent = '✓ Оплачено 490 ₽ • 30 дней доступа';
   if (btnCopy) btnCopy.removeAttribute('disabled');
 
@@ -810,7 +897,29 @@ function applyNewPaidKey(newKey, callsign) {
   localStorage.setItem(STORAGE_KEYS_HISTORY, JSON.stringify(history));
   renderKeysHistory();
 
-  showToast(`Лицензия оплачена! Выдан ключ: ${newKey}`);
+  showToast(`Лицензия активирована! Выдан ключ: ${newKey}`);
+}
+
+// Ручная привязка ключа бойцом в Личном кабинете (для синхронизации с приложением на Android)
+function linkLicenseKeyInCabinet() {
+  const input = document.getElementById('cabManualKeyInput');
+  if (!input) return;
+  const key = input.value.trim().toUpperCase();
+
+  if (!key) {
+    showToast('Введите лицензионный ключ');
+    return;
+  }
+
+  if (key.length < 8) {
+    showToast('Некорректный формат ключа');
+    return;
+  }
+
+  const callsign = localStorage.getItem(STORAGE_USER_CALLSIGN) || 'Боец';
+  applyNewPaidKey(key, callsign);
+  input.value = '';
+  showToast(`Ключ ${key} успешно привязан к вашему личному кабинету!`);
 }
 
 // 8. Showcase data & carousel

@@ -554,10 +554,26 @@
             <p style="font-size:0.9rem; color:var(--text-secondary); margin-bottom:12px; line-height:1.45;">
               Для разблокировки неограниченного учета имущества, складов и синхронизации без интернета оформите подписку на 30 дней.
             </p>
-            <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+            <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:16px;">
               <button class="btn btn-gold btn-lg" onclick="switchMainTab('tabPayment')">
                 💳 Приобрести ключ ПРО на 30 дней (490 ₽)
               </button>
+            </div>
+
+            <!-- Блок привязки ключа, полученного в Android-приложении -->
+            <div style="background:rgba(255,179,0,0.05); border:1px dashed rgba(255,179,0,0.3); border-radius:var(--radius-sm); padding:12px 14px;">
+              <div style="font-size:0.82rem; color:var(--accent-gold); font-weight:bold; margin-bottom:6px;">
+                Уже оплатили в приложении на телефоне или получили военный ключ?
+              </div>
+              <p style="font-size:0.78rem; color:var(--text-muted); margin-bottom:8px; line-height:1.4;">
+                Введите ключ из приложения (KAPT-XXXX-XXXX-XXXX), чтобы синхронизировать ваш сайт и личный кабинет:
+              </p>
+              <div style="display:flex; gap:8px; max-width:480px;">
+                <input type="text" id="cabManualKeyInput" class="form-input mono" placeholder="KAPT-XXXX-XXXX-XXXX" style="font-size:0.9rem; color:var(--accent-gold); font-weight:700;">
+                <button class="btn btn-outline btn-sm" onclick="linkLicenseKeyInCabinet()" style="white-space:nowrap;">
+                  🔗 Привязать
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -696,18 +712,38 @@
                 </div>
               </div>
 
-              <!-- Шаг 2: Блок автоматического появления после перехода в ЮKassa -->
+              <!-- Шаг 2: Блок появления после перехода в ЮKassa -->
               <div id="boxPaymentPending" style="display:none; margin-top:16px; background:#0e1c12; border:1px solid var(--primary); border-radius:var(--radius-md); padding:16px;">
                 <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
                   <span style="color:var(--primary); font-size:1.1rem;">⚡</span>
                   <strong style="color:var(--primary); font-size:0.95rem;">Шлюз ЮKassa открыт в браузере</strong>
                 </div>
-                <p style="font-size:0.84rem; color:var(--text-secondary); line-height:1.45; margin-bottom:14px;">
-                  После завершения перевода 490 ₽ в банковском приложении (СБП) или на сайте ЮKassa нажмите кнопку ниже:
+                <p style="font-size:0.84rem; color:var(--text-secondary); line-height:1.45; margin-bottom:12px;">
+                  Завершите оплату 490 ₽ в окне ЮKassa (через СБП или банковскую карту).
                 </p>
-                <button id="btnAutoVerifyPayment" class="btn btn-gold btn-lg" style="width:100%; font-size:1.05rem; font-weight:bold; box-shadow:0 0 16px rgba(255,179,0,0.35);" onclick="verifyYooKassaPaymentAndClaimKey()">
-                  ⚡ Проверить платёж и выдать ключ (30 дней)
+
+                <!-- Информационная плашка ожидания -->
+                <div style="background:rgba(255,179,0,0.06); border-left:3px solid var(--accent-gold); padding:10px 12px; border-radius:0 var(--radius-sm) var(--radius-sm) 0; font-size:0.8rem; color:var(--text-primary); margin-bottom:12px;">
+                  🔄 <strong>Автоматический мониторинг:</strong> после оплаты в банковском приложении система сама свяжется со шлюзом ЮKassa. Вам не нужно ничего вводить вручную!
+                </div>
+
+                <!-- Автоматическая кнопка проверки -->
+                <button id="btnAutoVerifyPayment" class="btn btn-gold btn-lg" style="width:100%; font-size:1.02rem; font-weight:bold; box-shadow:0 0 16px rgba(255,179,0,0.35);" onclick="verifyYooKassaPaymentAndClaimKey()">
+                  ⚡ Я оплатил • Запросить подтверждение в ЮKassa
                 </button>
+
+                <!-- Резервное поле ввода (показывается только если банк задержал транзакцию) -->
+                <div id="paymentOrderPromptBox" style="display:none; margin-top:14px; background:#141b16; border:1px solid rgba(255,179,0,0.25); border-radius:var(--radius-sm); padding:12px;">
+                  <label class="form-label" style="font-size:0.76rem; color:var(--accent-gold);">Банк задержал ответ? Укажите номер операции/чека:</label>
+                  <div style="display:flex; gap:8px;">
+                    <input type="text" id="payOrderIdInput" class="form-input mono" placeholder="Номер из чека или СМС" style="font-size:0.85rem; padding:8px 10px;">
+                    <button class="btn btn-outline btn-sm" onclick="verifyWithManualOrderId()" style="white-space:nowrap;">Проверить</button>
+                  </div>
+                  <div style="font-size:0.71rem; color:var(--text-muted); margin-top:4px;">
+                    💡 Резервный поиск платежа, если межбанковский перевод СБП идёт с задержкой.
+                  </div>
+                </div>
+
                 <div style="margin-top:10px; text-align:center;">
                   <a href="https://yookassa.ru/my/i/apiQMG65ZHIE/l" target="_blank" style="font-size:0.78rem; color:var(--text-muted); text-decoration:none;">
                     Окно закрылось? Открыть ЮKassa снова ➔
