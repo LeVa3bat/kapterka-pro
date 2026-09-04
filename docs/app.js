@@ -764,17 +764,49 @@ async function processYooKassaPayment() {
     } catch (e) {}
   }
 
-  // 100% ОБХОД CORS: Прямой редирект на Google Script (который сам создаст платеж по API и перенаправит)
+  // Полная интеграция ЮKassa по API через Google Apps Script (JSONP CORS Bypass)
   const API_URL = window.KAPTERKA_API_URL || '';
   
   if (API_URL) {
-    showToast('Подключение к защищенному шлюзу ЮKassa...');
-    const redirectUrl = `${API_URL}?action=pay&email=${encodeURIComponent(email)}&callsign=${encodeURIComponent(callsign)}`;
+    showToast('Создание уникального защищенного платежа...');
     
-    // Открываем новую вкладку с нашим скриптом
-    setTimeout(() => {
-      window.open(redirectUrl, '_blank');
-    }, 100);
+    // Генерируем уникальное имя функции для JSONP
+    const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
+    
+    // Создаем функцию глобально
+    window[callbackName] = function(data) {
+      // Удаляем скрипт
+      document.getElementById(callbackName)?.remove();
+      delete window[callbackName];
+      
+      if (data.confirmation_url) {
+        window.open(data.confirmation_url, '_blank');
+        localStorage.setItem('kapterka_pending_payment_id', data.payment_id);
+      } else {
+        showToast('Ошибка при соединении с сервером. Перенаправление на резервную ссылку...');
+        console.error(data.error);
+        setTimeout(() => window.open(YOOKASSA_PAYMENT_URL, '_blank'), 1000);
+      }
+    };
+    
+    // Формируем URL с параметрами GET (JSONP)
+    const scriptUrl = `${API_URL}?action=pay&email=${encodeURIComponent(email)}&callsign=${encodeURIComponent(callsign)}&callback=${callbackName}`;
+    
+    // Создаем тег script и добавляем на страницу
+    const script = document.createElement('script');
+    script.id = callbackName;
+    script.src = scriptUrl;
+    
+    // Обработка ошибки загрузки
+    script.onerror = function() {
+      document.getElementById(callbackName)?.remove();
+      delete window[callbackName];
+      showToast('Сбой соединения. Перенаправление на базовую кассу...');
+      setTimeout(() => window.open(YOOKASSA_PAYMENT_URL, '_blank'), 1000);
+    };
+    
+    document.body.appendChild(script);
+    
   } else {
     // Резервный режим
     window.open(YOOKASSA_PAYMENT_URL, '_blank');
