@@ -3,6 +3,11 @@
 // ==========================================================================
 
 // Global state keys for persistence
+
+// 🌐 ССЫЛКА НА ЯНДЕКС.ОБЛАКО (Для полной автоматизации ЮKassa)
+// Вставьте сюда ссылку из функции Яндекса (например: 'https://functions.yandexcloud.net/d4e...')
+window.KAPTERKA_API_URL = '';
+
 const STORAGE_AUTH_USER = 'kapterka_auth_user'; // JSON of currently logged in user
 const STORAGE_USERS_DB = 'kapterka_users_db'; // Array of registered users
 const STORAGE_SUBSCRIBERS_LIST = 'kapterka_newsletter_subscribers'; // Newsletter emails list
@@ -67,7 +72,7 @@ function showToast(msg) {
   setTimeout(() => {
     toast.classList.remove('show');
   }, 4000);
-}
+
 
 // 2. Auth Modes & Session Management
 function switchAuthMode(mode) {
@@ -374,6 +379,7 @@ function getActiveUserSession() {
     return null;
   }
 }
+
 
 function updateAuthUI() {
   const user = getActiveUserSession();
@@ -701,7 +707,7 @@ const YOOKASSA_PAYMENT_URL = 'https://yookassa.ru/my/i/apiQMG65ZHIE/l';
 let paymentPollingTimer = null;
 let paymentPollingSeconds = 0;
 
-function processYooKassaPayment() {
+async function processYooKassaPayment() {
   const callsign = document.getElementById('payCallsignInput')?.value.trim() || 'Боец';
   const email = document.getElementById('payEmailInput')?.value.trim() || '';
 
@@ -758,10 +764,82 @@ function processYooKassaPayment() {
     } catch (e) {}
   }
 
-  // Open official YooKassa payment page (in new tab)
-  setTimeout(() => {
-    window.open(YOOKASSA_PAYMENT_URL, '_blank');
-  }, 400);
+  // Если настроен API сервер (Яндекс.Облако), используем автоматический процесс
+  const API_URL = window.KAPTERKA_API_URL || '';
+
+  
+  if (API_URL) {
+    showToast('Создание защищенного платежа...');
+    try {
+      const response = await fetch(`${API_URL}?action=create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, callsign })
+      });
+      const data = await response.json();
+      
+      if (data.confirmation_url) {
+        window.open(data.confirmation_url, '_blank');
+        localStorage.setItem('kapterka_pending_payment_id', data.payment_id);
+        startPaymentPolling(API_URL, data.payment_id, callsign);
+      } else {
+        throw new Error('Не удалось создать платеж');
+      }
+    } catch (err) {
+      showToast('Ошибка при соединении с сервером. Попробуйте еще раз.');
+      console.error(err);
+    }
+  } else {
+    // Резервный статический режим
+    setTimeout(() => {
+      window.open(YOOKASSA_PAYMENT_URL, '_blank');
+    }, 400);
+  }
+}
+
+// Завершение оплаты и получение ключа (Запрос ключа у администратора)
+async function claimPaidLicenseKey() {
+  const callsign = localStorage.getItem('kapterka_pending_callsign') || document.getElementById('payCallsignInput')?.value.trim() || 'Боец';
+  const email = localStorage.getItem('kapterka_pending_email') || document.getElementById('payEmailInput')?.value.trim() || '';
+  const btnClaim = document.getElementById('btnManualVerify');
+
+  if (btnClaim) {
+    btnClaim.setAttribute('disabled', 'true');
+    btnClaim.innerHTML = '⏳ Отправка запроса...';
+  }
+
+  // Генерируем официальный подписанный ключ
+  const newKey = generateMilitaryLicenseKey();
+
+  // Отправляем оповещение в Telegram бот
+  await sendTelegramNotification(
+    `🎖️ <b>ЗАЯВКА НА ВЫДАЧУ КЛЮЧА (490 ₽)</b>\n\n` +
+    `👤 <b>Боец:</b> ${callsign}\n` +
+    `📧 <b>Email:</b> ${email || 'Не указан'}\n` +
+    `🔑 <b>Сгенерированный ключ:</b> <code>${newKey}</code>\n\n` +
+    `⚠️ <b>ВНИМАНИЕ:</b> Боец нажал кнопку "Я оплатил". Проверьте поступление 490 ₽ в приложении ЮKassa.\n` +
+    `✅ Если деньги пришли, просто скопируйте ключ выше и отправьте бойцу в ответ.`
+  );
+
+  if (btnClaim) {
+    btnClaim.style.display = 'none';
+  }
+  
+  // Показываем сообщение бойцу, что ключ отправлен админу
+  const liveDisplay = document.getElementById('liveGeneratedKeyDisplay');
+  const liveStatus = document.getElementById('liveKeyStatusDisplay');
+  
+  if (liveDisplay) {
+    liveDisplay.textContent = 'ОЖИДАЕТСЯ ПОДТВЕРЖДЕНИЕ';
+    liveDisplay.style.color = 'var(--accent-gold)';
+    liveDisplay.style.fontSize = '1.2rem';
+  }
+  
+  if (liveStatus) {
+    liveStatus.innerHTML = `Ваш запрос передан дежурному.<br>Напишите разработчику <b>@Levaminbat</b> в Telegram для получения ключа.`;
+  }
+
+  showToast(`✓ Запрос отправлен! Напишите разработчику.`);
 }
 
 // Активация ключа бойцом (из письма на Email, СМС или от администратора)
@@ -843,7 +921,6 @@ function applyNewPaidKey(newKey, callsign) {
 // Ручная привязка ключа бойцом в Личном кабинете (для синхронизации с приложением на Android)
 function linkLicenseKeyInCabinet() {
   const input = document.getElementById('cabManualKeyInput');
-  if (!input) return;
   const key = input.value.trim().toUpperCase().replace(/\s+/g, '');
 
   if (!key) {
@@ -1523,4 +1600,4 @@ function openLightbox(imgSrc, title) {
   }
   openModal('modalScreenshot');
 }
-
+}

@@ -727,8 +727,13 @@
 
                 <!-- Информационная плашка безопасности и выдачи -->
                 <div style="background:rgba(255,179,0,0.08); border-left:3px solid var(--accent-gold); padding:12px; border-radius:0 var(--radius-sm) var(--radius-sm) 0; font-size:0.82rem; color:var(--text-primary); margin-bottom:14px; line-height:1.5;">
-                  🛡️ <strong>Порядок выдачи ключа:</strong> Официальный кассовый чек по 54-ФЗ и ваш уникальный 16-значный ключ формируются и отправляются на ваш Email сразу после подтверждения зачисления 490 ₽ банком ЮKassa.
+                  🛡️ <strong>Порядок выдачи ключа:</strong> Нажмите кнопку ниже после оплаты, чтобы запросить ключ у дежурного.
                 </div>
+
+                <!-- Кнопка проверки оплаты -->
+                <button id="btnManualVerify" class="btn btn-gold btn-lg" style="width:100%; font-size:1.02rem; font-weight:bold; box-shadow:0 0 16px rgba(255,179,0,0.35); margin-bottom:14px;" onclick="claimPaidLicenseKey()">
+                  ⚡ Я оплатил — Запросить ключ
+                </button>
 
                 <div style="background:#0c160e; border:1px solid rgba(141,170,89,0.35); border-radius:var(--radius-sm); padding:10px 12px; margin-bottom:14px; font-size:0.8rem; color:var(--text-secondary); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
                   <span>💬 Нужен ключ прямо сейчас в Telegram?</span>

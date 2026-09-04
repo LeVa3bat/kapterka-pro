@@ -1,0 +1,40 @@
+--- docs/app.js
++++ docs/app.js
+@@ -762,68 +762,6 @@
+   setTimeout(() => {
+     window.open(YOOKASSA_PAYMENT_URL, '_blank');
+   }, 400);
+-}
+-
+-let pollInterval = null;
+-
+-function startPaymentPolling(apiUrl, paymentId, callsign) {
+-  if (pollInterval) clearInterval(pollInterval);
+-  
+-  const liveDisplay = document.getElementById('liveGeneratedKeyDisplay');
+-  const btnManualVerify = document.getElementById('btnManualVerify');
+-  
+-  if (btnManualVerify) btnManualVerify.style.display = 'none';
+-  
+-  let attempts = 0;
+-  pollInterval = setInterval(async () => {
+-    attempts++;
+-    if (attempts > 60) { 
+-      clearInterval(pollInterval);
+-      if (liveDisplay) liveDisplay.textContent = 'Таймаут ожидания оплаты';
+-      return;
+-    }
+-    
+-    try {
+-      const response = await fetch(`${apiUrl}?action=check&payment_id=${paymentId}`);
+-      const data = await response.json();
+-      
+-      if (data.status === 'succeeded' && data.key) {
+-        clearInterval(pollInterval);
+-        applyNewPaidKey(data.key, callsign);
+-      }
+-    } catch (err) {
+-      // Игнорируем ошибки сети
+-    }
+-  }, 5000);
+ }
