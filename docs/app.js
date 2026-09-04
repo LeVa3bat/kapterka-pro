@@ -5,7 +5,7 @@
 // Global state keys for persistence
 
 // 🌐 ССЫЛКА НА GOOGLE APPS SCRIPT (Для полной автоматизации ЮKassa и Telegram)
-window.KAPTERKA_API_URL = 'https://script.google.com/macros/s/AKfycbwIul1CK0GunPsYi00mjHqIpud-4ODDB2jyya1MS4-xLuLjID2I_jg57dGIaZT3peX1/exec';
+window.KAPTERKA_API_URL = 'https://script.google.com/macros/s/AKfycbwuwY74vD9El1R6ZVvO3DDpJ7BkY-wX0ljRphWRSA-jgB33-duUAqEp0g03D_7oFzjqmA/exec';
 
 const STORAGE_AUTH_USER = 'kapterka_auth_user'; // JSON of currently logged in user
 const STORAGE_USERS_DB = 'kapterka_users_db'; // Array of registered users
@@ -764,17 +764,35 @@ async function processYooKassaPayment() {
     } catch (e) {}
   }
 
-  // Google Apps Script используется только для уведомлений, 
-  // саму ссылку на оплату открываем статическую.
-  // Пытаемся прокинуть email в ЮКассу через параметр URL, 
-  // чтобы она смогла вернуть его нам в вебхуке для автоматической отправки!
-  setTimeout(() => {
-    let paymentUrl = YOOKASSA_PAYMENT_URL;
-    if (email) {
-      paymentUrl += `?email=${encodeURIComponent(email)}`;
+  // Полная интеграция ЮKassa по API через Google Apps Script
+  const API_URL = window.KAPTERKA_API_URL || '';
+
+  if (API_URL) {
+    showToast('Создание защищенного платежа...');
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // Используем text/plain для обхода CORS preflight
+        body: JSON.stringify({ action: 'create_payment', email, callsign })
+      });
+      const data = await response.json();
+      
+      if (data.confirmation_url) {
+        window.open(data.confirmation_url, '_blank');
+        localStorage.setItem('kapterka_pending_payment_id', data.payment_id);
+      } else {
+        throw new Error(data.error || 'Не удалось создать платеж');
+      }
+    } catch (err) {
+      showToast('Ошибка при соединении с сервером. Попробуйте еще раз.');
+      console.error(err);
     }
-    window.open(paymentUrl, '_blank');
-  }, 400);
+  } else {
+    // Резервный статический режим (если API отключено)
+    setTimeout(() => {
+      window.open(YOOKASSA_PAYMENT_URL, '_blank');
+    }, 400);
+  }
 }
 
 // Завершение оплаты и получение ключа (Запрос ключа у администратора)

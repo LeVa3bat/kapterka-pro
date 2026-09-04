@@ -1,14 +1,14 @@
 /**
- * ИНСТРУКЦИЯ ПО НАСТРОЙКЕ АВТОМАТИЗАЦИИ ЧЕРЕЗ GOOGLE APPS SCRIPT
+ * АВТОМАТИЗАЦИЯ ВЫДАЧИ КЛЮЧЕЙ И УВЕДОМЛЕНИЙ TELEGRAM
  */
 
-// 1. ВАШИ ДАННЫЕ ДЛЯ ТЕЛЕГРАМА (НУЖЕН НОВЫЙ ТОКЕН!)
-// ВАЖНО: Получите новый токен в @BotFather, так как старый заблокирован Telegram из-за утечки на GitHub.
-const TELEGRAM_BOT_TOKEN = "ВАШ_НОВЫЙ_ТОКЕН_ОТ_BOTFATHER"; 
+// 1. ВАШИ ДАННЫЕ ДЛЯ ТЕЛЕГРАМА 
+const TELEGRAM_BOT_TOKEN = "8913866950:AAHcLToeSbgUuu2npb82Zd4-jmxlfwTu_kI"; 
 const TELEGRAM_CHAT_ID = "7426550032";
 
-// 2. СЕКРЕТНЫЙ КЛЮЧ ЮКАССЫ (необязателен для вебхука)
-const YOOKASSA_SECRET_KEY = ""; 
+// 2. ДАННЫЕ ВАШЕГО МАГАЗИНА ЮKASSA
+const YOOKASSA_SHOP_ID = "1450722";
+const YOOKASSA_SECRET_KEY = "live_**********QIh0"; // ВНИМАНИЕ: ВСТАВЬТЕ СЮДА ВАШ ПОЛНЫЙ СЕКРЕТНЫЙ КЛЮЧ ИЗ ЛИЧНОГО КАБИНЕТА ЮКАССЫ!
 
 const CHECKSUM_CHARS = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
 
@@ -42,48 +42,125 @@ function generateMilitaryLicenseKey() {
   return `KAPT-${p1}-${p2}-${checksum}`;
 }
 
+function sendTelegramMessage(text) {
+  if (TELEGRAM_BOT_TOKEN && TELEGRAM_BOT_TOKEN !== "") {
+    const tgUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+    UrlFetchApp.fetch(tgUrl, {
+      method: "post",
+      contentType: "application/json",
+      payload: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        text: text,
+        parse_mode: "HTML"
+      }),
+      muteHttpExceptions: true
+    });
+  }
+}
+
+// Позволяет делать запросы GET (для проверки)
+function doGet(e) {
+  return ContentService.createTextOutput("Kapterka API Server is running.");
+}
+
 function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents);
     
-    // Поддержка ручных уведомлений с сайта (например, форма обратной связи или клики кнопок)
+    // 1. Ручные уведомления с сайта (форма связи)
     if (data.action === "send_telegram") {
-       if (TELEGRAM_BOT_TOKEN !== "ВАШ_НОВЫЙ_ТОКЕН_ОТ_BOTFATHER" && TELEGRAM_BOT_TOKEN !== "") {
-          const tgUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-          UrlFetchApp.fetch(tgUrl, {
-            method: "post",
-            contentType: "application/json",
-            payload: JSON.stringify({
-              chat_id: data.chat_id || TELEGRAM_CHAT_ID,
-              text: data.text,
-              parse_mode: "HTML"
-            }),
-            muteHttpExceptions: true
-          });
-       }
+       sendTelegramMessage(data.text);
        return ContentService.createTextOutput("OK");
     }
 
-    // Проверяем, что это сообщение об успешной оплате
+    // 2. СОЗДАНИЕ ПЛАТЕЖА (Запрос от сайта)
+    if (data.action === "create_payment") {
+       if (YOOKASSA_SECRET_KEY.includes("***")) {
+          return ContentService.createTextOutput(JSON.stringify({
+            error: "В скрипте не указан полный YOOKASSA_SECRET_KEY!"
+          })).setMimeType(ContentService.MimeType.JSON);
+       }
+       
+       const email = data.email || "";
+       const callsign = data.callsign || "Боец";
+       
+       const payload = {
+         amount: {
+           value: "490.00",
+           currency: "RUB"
+         },
+         capture: true,
+         confirmation: {
+           type: "redirect",
+           return_url: "https://alex666881.github.io/kapterka/" // ЗАМЕНИТЕ НА ВАШ РЕАЛЬНЫЙ АДРЕС САЙТА ЕСЛИ ОН ДРУГОЙ
+         },
+         description: `Лицензия Каптёрка ПРО для ${callsign}`,
+         metadata: {
+           email: email,
+           callsign: callsign
+         }
+       };
+
+       // Добавляем чек для ФЗ-54, если передан email
+       if (email) {
+         payload.receipt = {
+           customer: { email: email },
+           items: [
+             {
+               description: "Лицензионный ключ Каптёрка ПРО",
+               quantity: "1.00",
+               amount: { value: "490.00", currency: "RUB" },
+               vat_code: 1, // Без НДС
+               payment_mode: "full_prepayment",
+               payment_subject: "commodity"
+             }
+           ]
+         };
+       }
+
+       const authHeader = "Basic " + Utilities.base64Encode(YOOKASSA_SHOP_ID + ":" + YOOKASSA_SECRET_KEY);
+       
+       const options = {
+         method: "post",
+         headers: {
+           "Idempotence-Key": Utilities.getUuid(),
+           "Authorization": authHeader
+         },
+         contentType: "application/json",
+         payload: JSON.stringify(payload),
+         muteHttpExceptions: true
+       };
+
+       const response = UrlFetchApp.fetch("https://api.yookassa.ru/v3/payments", options);
+       const result = JSON.parse(response.getContentText());
+
+       if (result.confirmation && result.confirmation.confirmation_url) {
+         return ContentService.createTextOutput(JSON.stringify({
+           confirmation_url: result.confirmation.confirmation_url,
+           payment_id: result.id
+         })).setMimeType(ContentService.MimeType.JSON);
+       } else {
+         return ContentService.createTextOutput(JSON.stringify({
+           error: "Ошибка создания платежа в ЮКассе: " + response.getContentText()
+         })).setMimeType(ContentService.MimeType.JSON);
+       }
+    }
+
+    // 3. АВТОМАТИЧЕСКАЯ ОБРАБОТКА ПЛАТЕЖЕЙ ОТ ЮКАССЫ (Вебхук)
     if (data.event === "payment.succeeded") {
       const payment = data.object;
       
-      // Ищем email (ЮKassa может присылать его в разных местах)
       let email = "Не указан";
-      if (payment.receipt_registration && payment.receipt_registration.customer && payment.receipt_registration.customer.email) {
-        email = payment.receipt_registration.customer.email;
-      } else if (payment.metadata && payment.metadata.email) {
+      if (payment.metadata && payment.metadata.email) {
         email = payment.metadata.email;
-      } else if (payment.authorization_details && payment.authorization_details.customer_email) {
-        email = payment.authorization_details.customer_email;
+      } else if (payment.receipt_registration && payment.receipt_registration.customer && payment.receipt_registration.customer.email) {
+        email = payment.receipt_registration.customer.email;
       }
       
       const price = payment.amount ? payment.amount.value : "Неизвестно";
-      
-      // 1. Генерируем новый лицензионный ключ всегда
       const newKey = generateMilitaryLicenseKey();
       
-      // 2. Отправляем ключ на почту покупателю, если email найден
+      // Отправляем ключ на почту покупателю
       if (email !== "Не указан") {
         try {
           MailApp.sendEmail({
@@ -99,34 +176,17 @@ function doPost(e) {
               <p>С уважением, разработчик ПО «Каптёрка Про»</p>
             `
           });
-        } catch(mailErr) {
-          // Игнорируем ошибку отправки почты, чтобы не прерывать телеграм
-        }
+        } catch(mailErr) {}
       }
       
-      // 3. ВСЕГДА Отправляем уведомление ВАМ в Телеграм (даже если email нет)
-      if (TELEGRAM_BOT_TOKEN !== "ВАШ_НОВЫЙ_ТОКЕН_ОТ_BOTFATHER" && TELEGRAM_BOT_TOKEN !== "") {
-        const tgUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-        const message = `💰 <b>Успешная продажа!</b>\n\n📧 <b>Email:</b> ${email}\n💵 <b>Сумма:</b> ${price} руб.\n🔑 <b>Выдан ключ:</b> <code>${newKey}</code>\n\n⚠️ <i>Если Email не указан, передайте ключ бойцу вручную.</i>`;
-        
-        UrlFetchApp.fetch(tgUrl, {
-          method: "post",
-          contentType: "application/json",
-          payload: JSON.stringify({
-            chat_id: TELEGRAM_CHAT_ID,
-            text: message,
-            parse_mode: "HTML"
-          }),
-          muteHttpExceptions: true
-        });
-      }
+      // Отправляем уведомление ВАМ в Телеграм
+      const message = `💰 <b>Успешная продажа!</b>\n\n📧 <b>Email:</b> ${email}\n💵 <b>Сумма:</b> ${price} руб.\n🔑 <b>Выдан ключ:</b> <code>${newKey}</code>\n\n✅ <i>Письмо с ключом отправлено бойцу на почту!</i>`;
+      sendTelegramMessage(message);
     }
     
-    // Обязательно отвечаем ЮКассе, что всё хорошо
     return ContentService.createTextOutput("OK").setMimeType(ContentService.MimeType.TEXT);
     
   } catch (error) {
-    // В случае сбоя логируем и отвечаем OK, чтобы Юкасса не спамила
     return ContentService.createTextOutput("OK").setMimeType(ContentService.MimeType.TEXT);
   }
 }
