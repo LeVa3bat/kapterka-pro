@@ -72,7 +72,7 @@ function showToast(msg) {
   setTimeout(() => {
     toast.classList.remove('show');
   }, 4000);
-
+}
 
 // 2. Auth Modes & Session Management
 function switchAuthMode(mode) {
@@ -1599,5 +1599,4 @@ function openLightbox(imgSrc, title) {
     dl.setAttribute('download', imgSrc);
   }
   openModal('modalScreenshot');
-}
 }
