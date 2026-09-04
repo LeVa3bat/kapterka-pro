@@ -764,35 +764,14 @@ async function processYooKassaPayment() {
     } catch (e) {}
   }
 
-  // Полная интеграция ЮKassa по API через Google Apps Script
-  const API_URL = window.KAPTERKA_API_URL || '';
-
-  if (API_URL) {
-    showToast('Создание защищенного платежа...');
-    try {
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // Используем text/plain для обхода CORS preflight
-        body: JSON.stringify({ action: 'create_payment', email, callsign })
-      });
-      const data = await response.json();
-      
-      if (data.confirmation_url) {
-        window.open(data.confirmation_url, '_blank');
-        localStorage.setItem('kapterka_pending_payment_id', data.payment_id);
-      } else {
-        throw new Error(data.error || 'Не удалось создать платеж');
-      }
-    } catch (err) {
-      showToast('Ошибка при соединении с сервером. Попробуйте еще раз.');
-      console.error(err);
+  // Google Apps Script используется для уведомлений и автоматической рассылки
+  setTimeout(() => {
+    let paymentUrl = YOOKASSA_PAYMENT_URL;
+    if (email) {
+      paymentUrl += `?email=${encodeURIComponent(email)}`;
     }
-  } else {
-    // Резервный статический режим (если API отключено)
-    setTimeout(() => {
-      window.open(YOOKASSA_PAYMENT_URL, '_blank');
-    }, 400);
-  }
+    window.open(paymentUrl, '_blank');
+  }, 400);
 }
 
 // Завершение оплаты и получение ключа (Запрос ключа у администратора)
