@@ -764,14 +764,21 @@ async function processYooKassaPayment() {
     } catch (e) {}
   }
 
-  // Google Apps Script используется для уведомлений и автоматической рассылки
-  setTimeout(() => {
-    let paymentUrl = YOOKASSA_PAYMENT_URL;
-    if (email) {
-      paymentUrl += `?email=${encodeURIComponent(email)}`;
-    }
-    window.open(paymentUrl, '_blank');
-  }, 400);
+  // 100% ОБХОД CORS: Прямой редирект на Google Script (который сам создаст платеж по API и перенаправит)
+  const API_URL = window.KAPTERKA_API_URL || '';
+  
+  if (API_URL) {
+    showToast('Подключение к защищенному шлюзу ЮKassa...');
+    const redirectUrl = `${API_URL}?action=pay&email=${encodeURIComponent(email)}&callsign=${encodeURIComponent(callsign)}`;
+    
+    // Открываем новую вкладку с нашим скриптом
+    setTimeout(() => {
+      window.open(redirectUrl, '_blank');
+    }, 100);
+  } else {
+    // Резервный режим
+    window.open(YOOKASSA_PAYMENT_URL, '_blank');
+  }
 }
 
 // Завершение оплаты и получение ключа (Запрос ключа у администратора)
