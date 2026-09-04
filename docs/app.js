@@ -49,10 +49,11 @@ async function sendTelegramNotification(text) {
       console.warn('API URL не настроен. Сообщение не отправлено:', text);
       return;
     }
-    // Отправляем запрос на наш Google Apps Script
+    // Отправляем запрос на наш Google Apps Script. 
+    // Используем text/plain, чтобы избежать ошибки CORS Preflight (OPTIONS)
     await fetch(API_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ action: 'send_telegram', text: text, chat_id: TG_ADMIN_CHAT_ID })
     });
   } catch (err) {
@@ -763,37 +764,11 @@ async function processYooKassaPayment() {
     } catch (e) {}
   }
 
-  // Если настроен API сервер (Яндекс.Облако), используем автоматический процесс
-  const API_URL = window.KAPTERKA_API_URL || '';
-
-  
-  if (API_URL) {
-    showToast('Создание защищенного платежа...');
-    try {
-      const response = await fetch(`${API_URL}?action=create`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, callsign })
-      });
-      const data = await response.json();
-      
-      if (data.confirmation_url) {
-        window.open(data.confirmation_url, '_blank');
-        localStorage.setItem('kapterka_pending_payment_id', data.payment_id);
-        startPaymentPolling(API_URL, data.payment_id, callsign);
-      } else {
-        throw new Error('Не удалось создать платеж');
-      }
-    } catch (err) {
-      showToast('Ошибка при соединении с сервером. Попробуйте еще раз.');
-      console.error(err);
-    }
-  } else {
-    // Резервный статический режим
-    setTimeout(() => {
-      window.open(YOOKASSA_PAYMENT_URL, '_blank');
-    }, 400);
-  }
+  // Google Apps Script используется только для уведомлений, 
+  // саму ссылку на оплату открываем статическую:
+  setTimeout(() => {
+    window.open(YOOKASSA_PAYMENT_URL, '_blank');
+  }, 400);
 }
 
 // Завершение оплаты и получение ключа (Запрос ключа у администратора)
