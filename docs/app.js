@@ -275,24 +275,28 @@ function verifyEmailPinCode() {
     } catch (e) {}
   }
 
-  // Telegram and Google Sheets Alert for new registered fighter
-  try {
-    const API_URL = 'https://script.google.com/macros/s/AKfycbzY2s1AkHwsnb32S-vJmFVItOpADz1MVQi0dDsMuti2pon-SAzw4ox75ZfwX559_ifEPw/exec';
-    if (API_URL) {
-      fetch(API_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({
-          action: 'register_user',
-          callsign: newUser.callsign || 'Боец',
-          rank: newUser.rank || 'Не указано',
-          unitName: newUser.unitName || '-',
-          email: newUser.email || 'Не указан'
-        })
-      }).catch(err => console.warn(err));
-    }
-  } catch (e) { console.warn(e); }
+  // Telegram Alert for new registered fighter
+  const TELEGRAM_BOT_TOKEN = "8913866950:AAGpjaRXWqd7aTly-Xbnyn3OVbVuIBYO-dU";
+  const TELEGRAM_CHAT_ID = "7426550032";
+  
+  if (TELEGRAM_BOT_TOKEN) {
+    const text = `🎖 <b>Новая регистрация в «Каптёрка ПРО»!</b>\n\n` +
+      `👤 <b>Позывной:</b> ${newUser.callsign || 'Боец'}\n` +
+      `⭐ <b>Звание:</b> ${newUser.rank || 'Не указано'}\n` +
+      `🛡 <b>Подразделение:</b> ${newUser.unitName || '—'}\n` +
+      `📧 <b>Email:</b> ${newUser.email}\n` +
+      `📅 <b>Дата:</b> ${new Date().toLocaleString('ru-RU')}`;
+      
+    fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        text: text,
+        parse_mode: 'HTML'
+      })
+    }).catch(e => console.warn(e));
+  }
 
   showToast(`🎉 Почта подтверждена! Добро пожаловать, ${newUser.callsign}! Вы подписаны на обновления ПО.`);
 }
