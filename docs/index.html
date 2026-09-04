@@ -707,6 +707,9 @@
 
               <!-- Шаг 1: Первичная кнопка оплаты -->
               <div id="boxPaymentInitial" style="margin-top:20px;">
+                <div style="background: rgba(255, 60, 60, 0.1); border: 1px solid rgba(255, 60, 60, 0.4); border-radius: 6px; padding: 10px; margin-bottom: 12px; font-size: 0.85rem; color: #ff6b6b; text-align: center;">
+                  <b>⚠️ Внимание:</b> Для успешной оплаты отключите VPN (банки блокируют платежи с иностранных серверов).
+                </div>
                 <button id="btnPayYooKassaMain" class="btn btn-gold btn-lg" style="width:100%; font-size:1.05rem;" onclick="processYooKassaPayment()">
                   💳 Оплатить 490 ₽ через ЮKassa / СБП
                 </button>
@@ -1237,6 +1240,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=5.2"></script>
+  <script src="app.js?v=5.3"></script>
 </body>
 </html>
