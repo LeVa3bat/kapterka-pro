@@ -275,16 +275,23 @@ function verifyEmailPinCode() {
     } catch (e) {}
   }
 
-  // Telegram Alert for new registered fighter
-  sendTelegramNotification(
-    `🎖 <b>Новая регистрация в «Каптёрка ПРО»!</b>\n\n` +
-    `👤 <b>Позывной:</b> ${newUser.callsign}\n` +
-    `⭐ <b>Звание:</b> ${newUser.rank || 'Не указано'}\n` +
-    `🛡 <b>Подразделение:</b> ${newUser.unitName || '—'}\n` +
-    `📧 <b>Email:</b> ${newUser.email}\n` +
-    `🔔 <b>Подписка на обновления:</b> ${newUser.subscribedToNewsletter ? 'Да' : 'Нет'}\n` +
-    `📅 <b>Дата:</b> ${new Date().toLocaleString('ru-RU')}`
-  );
+  // Telegram and Google Sheets Alert for new registered fighter
+  try {
+    const API_URL = window.KAPTERKA_API_URL || '';
+    if (API_URL) {
+      fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'register_user',
+          callsign: newUser.callsign,
+          rank: newUser.rank,
+          unitName: newUser.unitName,
+          email: newUser.email
+        })
+      });
+    }
+  } catch (e) { console.warn(e); }
 
   showToast(`🎉 Почта подтверждена! Добро пожаловать, ${newUser.callsign}! Вы подписаны на обновления ПО.`);
 }
