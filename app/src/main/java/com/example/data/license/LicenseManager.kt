@@ -279,27 +279,7 @@ class LicenseManager(
             }
         }
 
-        // 3. Поиск по позывному
-        if (foundKey.isBlank() && cleanCallsign.isNotBlank()) {
-            try {
-                val byCallsign = firestore.collection("licenses")
-                    .whereEqualTo("callsign", cleanCallsign)
-                    .get()
-                    .await()
-                for (doc in byCallsign.documents) {
-                    val key = doc.getString("licenseKey") ?: doc.id
-                    val exp = doc.getLong("expiresAt") ?: 0L
-                    val status = doc.getString("status") ?: "ACTIVE"
-                    if (key.isNotBlank() && status == "ACTIVE") {
-                        foundKey = key
-                        foundExpiresAt = exp
-                        break
-                    }
-                }
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed searching licenses by callsign", e)
-            }
-        }
+        // 3. (REMOVED: Поиск по позывному) - Это небезопасно, так как позывные могут совпадать. Лицензия привязывается только к email.
 
         // 4. Поиск в общем реестре бойцов 'fighters_registry'
         if (foundKey.isBlank() && cleanEmail.isNotBlank()) {
@@ -338,13 +318,7 @@ class LicenseManager(
 
             Pair(true, "Лицензия бойца успешно восстановлена из базы! Ключ: $foundKey (на $daysLeft дн.)")
         } else {
-            // Пробуем сейф устройства
-            val (vaultSuccess, vaultMsg) = restoreSavedLicense()
-            if (vaultSuccess) {
-                Pair(true, "Лицензия восстановлена из сейфа устройства: $vaultMsg")
-            } else {
-                Pair(false, "Оплаченная лицензия для «$cleanEmail» не найдена в реестре. Проверьте правильность email или введите ключ вручную.")
-            }
+            Pair(false, "Оплаченная лицензия для «$cleanEmail» не найдена в реестре.")
         }
     }
 

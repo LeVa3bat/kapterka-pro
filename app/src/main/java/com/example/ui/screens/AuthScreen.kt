@@ -88,7 +88,7 @@ fun AuthScreen(
     var unitKey by remember {
         mutableStateOf(
             if (!currentProfile?.unitKey.isNullOrBlank()) currentProfile?.unitKey!!
-            else "kapt_" + UUID.randomUUID().toString().take(6)
+            else ""
         )
     }
     var email by remember { mutableStateOf(currentProfile?.email?.ifBlank { "" } ?: "") }
@@ -163,7 +163,7 @@ fun AuthScreen(
                         onClick = {
                             val finalCallsign = callsign.trim().ifEmpty { "Командир" }
                             val finalUnit = unitName.trim().ifEmpty { "1-е Подразделение" }
-                            val finalKey = unitKey.trim().ifEmpty { "kapt_" + UUID.randomUUID().toString().take(6) }
+                            val finalKey = unitKey.trim()
                             val prof = (currentProfile ?: UserProfile()).copy(
                                 callsign = finalCallsign,
                                 unitName = finalUnit,
@@ -393,7 +393,7 @@ fun AuthScreen(
                             }
                             errorMessage = null
                             val cleanUnitName = unitName.trim().ifEmpty { "1-е Подразделение" }
-                            val cleanKey = unitKey.trim().ifEmpty { "kapt_" + UUID.randomUUID().toString().take(6) }
+                            val cleanKey = unitKey.trim()
                             val cleanEmail = email.trim()
 
                             val prof = (currentProfile ?: UserProfile()).copy(
@@ -429,7 +429,7 @@ fun AuthScreen(
                         onClick = {
                             val cleanCallsign = callsign.trim().ifEmpty { "Пользователь" }
                             val cleanUnitName = unitName.trim().ifEmpty { "1-е Подразделение" }
-                            val cleanKey = unitKey.trim().ifEmpty { "kapt_" + UUID.randomUUID().toString().take(6) }
+                            val cleanKey = unitKey.trim()
                             val cleanEmail = email.trim()
 
                             val prof = (currentProfile ?: UserProfile()).copy(

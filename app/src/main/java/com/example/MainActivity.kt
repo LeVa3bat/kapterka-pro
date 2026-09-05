@@ -322,8 +322,13 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel) {
                             },
                             onLogoutClick = {
                                 val current = profile ?: com.example.data.model.UserProfile()
-                                viewModel.updateProfile(current.copy(isLoggedIn = false))
-                                },
+                                viewModel.updateProfile(current.copy(
+                                    isLoggedIn = false,
+                                    isProActive = false,
+                                    proDaysLeft = 0
+                                ))
+                                viewModel.resetLicense()
+                            },
                             onUpdateProfile = { updated ->
                                 viewModel.updateProfile(updated)
                             },

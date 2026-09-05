@@ -431,12 +431,11 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             var resolvedKey = profile.unitKey.trim()
             var resolvedUnitName = profile.unitName.trim()
 
-            // 1. Проверяем облачный реестр бойцов по позывному / email, чтобы не потерять ключ подразделения
-            val cloudRecord = fighterRegistryManager.lookupFighter(profile.callsign)
-                ?: if (profile.email.isNotBlank()) fighterRegistryManager.lookupFighter(profile.email) else null
+            // 1. Проверяем облачный реестр бойцов по email, чтобы не потерять ключ подразделения
+            val cloudRecord = if (profile.email.isNotBlank()) fighterRegistryManager.lookupFighter(profile.email) else null
 
             if (cloudRecord != null) {
-                if (resolvedKey.isBlank() || resolvedKey.startsWith("kapt_") && cloudRecord.unitKey.isNotBlank()) {
+                if (resolvedKey.isBlank() && cloudRecord.unitKey.isNotBlank()) {
                     resolvedKey = cloudRecord.unitKey
                 }
                 if (resolvedUnitName.isBlank() || resolvedUnitName == "1-е Подразделение") {
@@ -499,7 +498,22 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         if (clean.isBlank()) return
         viewModelScope.launch {
             val current = userProfile.value ?: UserProfile()
-            repository.saveUserProfile(current.copy(unitKey = clean))
+            val updated = current.copy(unitKey = clean)
+            repository.saveUserProfile(updated)
+            
+            val curLicense = licenseManager.licenseStatus.value
+            fighterRegistryManager.registerOrUpdateFighter(
+                fighterId = licenseManager.getFighterPersonalId(),
+                callsign = updated.callsign,
+                unitName = updated.unitName,
+                unitKey = updated.unitKey,
+                email = updated.email,
+                licenseKey = curLicense.licenseKey.ifEmpty { curLicense.lastSavedKey },
+                isProActive = curLicense.isProActive,
+                expiresAt = System.currentTimeMillis() + (curLicense.daysRemaining.toLong() * 86400000L),
+                role = "Старшина подразделения"
+            )
+            
             repository.triggerCloudSync()
             _toastEvent.emit("Подключено к подразделению [$clean]")
         }
