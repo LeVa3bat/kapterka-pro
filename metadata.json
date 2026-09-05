@@ -1,6 +1,6 @@
 {
-  "name": "Каптёрка ПРО",
-  "description": "Воинский учет и снабжение подразделения. Управление имуществом, складами, заявками и формирование отчетов Excel.",
+  "name": "Каптёрка ПРО (v3.1.2)",
+  "description": "Воинский учет и снабжение подразделения. Исправлена синхронизация по коду.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
