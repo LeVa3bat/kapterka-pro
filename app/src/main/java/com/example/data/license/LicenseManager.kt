@@ -110,12 +110,10 @@ class LicenseManager(
      * Проверяет математическую и криптографическую подлинность ключа
      */
     fun verifyKeyChecksum(key: String): Boolean {
-        val clean = key.trim().uppercase(Locale.ROOT)
-            .replace(" ", "")
-            .replace("\n", "")
-            .replace("\r", "")
+        val clean = key.uppercase(Locale.ROOT)
+            .replace(Regex("[^A-Z0-9-]"), "")
         val parts = clean.split("-")
-        if (parts.size != 4 || parts[0] != "KAPT" || parts[1].length != 4 || parts[2].length != 4 || parts[3].length != 4) {
+        if (parts.size != 4 || (parts[0] != "KAPT" && parts[0] != "KPT") || parts[1].length != 4 || parts[2].length != 4 || parts[3].length != 4) {
             return false
         }
         val expected = computeKeyChecksum(parts[1], parts[2])
@@ -460,20 +458,14 @@ class LicenseManager(
      * Ручная активация существующего ключа (если боец получил ключ с сайта или от командира)
      */
     suspend fun activateKeyManually(enteredKey: String, fighterCallsign: String): Pair<Boolean, String> = withContext(Dispatchers.IO) {
-        val cleanKey = enteredKey.trim().uppercase(Locale.ROOT)
-            .replace(" ", "")
-            .replace("\n", "")
-            .replace("\r", "")
-            .replace("\t", "")
+        val cleanKey = enteredKey.uppercase(Locale.ROOT)
+            .replace(Regex("[^A-Z0-9-]"), "")
 
-        if (cleanKey.length < 12 || !cleanKey.startsWith("KAPT-")) {
-            return@withContext Pair(false, "Неверный формат ключа. Формат: KAPT-XXXX-XXXX-ZZZZ")
+        if (cleanKey.length < 12 || (!cleanKey.startsWith("KAPT-") && !cleanKey.startsWith("KPT-"))) {
+            return@withContext Pair(false, "Неверный формат ключа. Формат: KAPT-XXXX-XXXX-ZZZZ или KPT-XXXX-XXXX-ZZZZ")
         }
 
-        // 1. Строгая криптографическая проверка подписи ключа
-        if (!verifyKeyChecksum(cleanKey)) {
-            return@withContext Pair(false, "❌ Недействительный ключ! Ключ не прошел проверку подлинности.")
-        }
+        val isLocalValid = verifyKeyChecksum(cleanKey)
 
         try {
             val doc = firestore.collection("licenses").document(cleanKey).get().await()
@@ -519,6 +511,9 @@ class LicenseManager(
                 refreshLicenseStatus()
                 Pair(true, "Лицензия успешно активирована на $daysLeft дн.!")
             } else {
+                if (!isLocalValid) {
+                    return@withContext Pair(false, "❌ Недействительный ключ! Не найден в базе и не прошел проверку подлинности.")
+                }
                 // Ключ имеет верную подпись, но еще не зарегистрирован в облаке (выдан оффлайн)
                 val now = System.currentTimeMillis()
                 val expiresAt = now + (30L * 24L * 60L * 60L * 1000L)
@@ -552,6 +547,9 @@ class LicenseManager(
             }
         } catch (e: Exception) {
             Log.w(TAG, "Network exception verifying key in Firestore, falling back to offline validation", e)
+            if (!isLocalValid) {
+                return@withContext Pair(false, "❌ Недействительный ключ (отсутствует сеть для проверки в базе)!")
+            }
             val now = System.currentTimeMillis()
             val expiresAt = now + (30L * 24L * 60L * 60L * 1000L)
             val sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
