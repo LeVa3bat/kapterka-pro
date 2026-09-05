@@ -379,7 +379,7 @@ fun SplashScreen(
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "Версия программы: v3.1.0 PRO (Tactical Edition)",
+                    text = "Версия программы: v3.1.2 PRO (Tactical Edition)",
                     color = TacticalTextMuted,
                     fontSize = 11.sp,
                     fontFamily = FontFamily.Monospace,

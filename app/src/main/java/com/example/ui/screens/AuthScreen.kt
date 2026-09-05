@@ -297,19 +297,8 @@ fun AuthScreen(
                         value = unitKey,
                         onValueChange = { unitKey = it },
                         label = { Text("Код подразделения", color = TacticalTextSecondary, fontSize = 12.sp) },
-                        placeholder = { Text("Общий ключ для синхронизации", color = TacticalTextDim, fontSize = 12.sp) },
+                        placeholder = { Text("Оставьте пустым для автогенерации, либо введите код", color = TacticalTextDim, fontSize = 12.sp) },
                         singleLine = true,
-                        trailingIcon = {
-                            if (selectedTab == 0) {
-                                IconButton(onClick = { unitKey = "kapt_" + UUID.randomUUID().toString().take(6) }) {
-                                    Icon(
-                                        imageVector = Icons.Default.Refresh,
-                                        contentDescription = "Сгенерировать ключ",
-                                        tint = SageGreenBright
-                                    )
-                                }
-                            }
-                        },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(8.dp),
                         colors = OutlinedTextFieldDefaults.colors(

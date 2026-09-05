@@ -443,9 +443,6 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                 }
             }
 
-            if (resolvedKey.isBlank()) {
-                resolvedKey = "kapt_" + UUID.randomUUID().toString().take(6)
-            }
             if (resolvedUnitName.isBlank()) {
                 resolvedUnitName = "1-е Подразделение"
             }
