@@ -584,7 +584,7 @@ fun UserManualDialog(
                                             .height(36.dp),
                                         colors = ButtonDefaults.buttonColors(
                                             containerColor = SageGreenPrimary,
-                                            contentColor = Color(0xFF0C1710)
+                                            contentColor = Color.White
                                         ),
                                         shape = RoundedCornerShape(6.dp)
                                     ) {

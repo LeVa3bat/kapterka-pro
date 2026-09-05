@@ -195,7 +195,7 @@ fun DeveloperAccessPromptDialog(
                         },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = TacticalGold,
-                            contentColor = Color(0xFF1E1704)
+                            contentColor = Color.White
                         ),
                         shape = RoundedCornerShape(6.dp)
                     ) {

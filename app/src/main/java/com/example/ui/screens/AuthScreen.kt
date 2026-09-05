@@ -407,7 +407,7 @@ fun AuthScreen(
                             .testTag("submit_auth_button"),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = SageGreenPrimary,
-                            contentColor = Color(0xFF0F1B14)
+                            contentColor = Color.White
                         ),
                         shape = RoundedCornerShape(8.dp)
                     ) {

@@ -510,7 +510,7 @@ fun RequestsScreen(
                         text = "ОТПРАВИТЬ ЗАЯВКУ НА СКЛАД",
                         icon = Icons.Default.Send,
                         containerColor = SageGreenPrimary,
-                        contentColor = Color(0xFF0D0E10),
+                        contentColor = Color.White,
                         onClick = {
                             val validItems = draftItems.mapNotNull { d ->
                                 val itm = d.selectedItem ?: return@mapNotNull null

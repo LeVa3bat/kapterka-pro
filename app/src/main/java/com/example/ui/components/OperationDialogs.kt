@@ -172,7 +172,7 @@ fun IncomeOperationDialog(
             text = "СОХРАНИТЬ ПРИХОД НА СКЛАД",
             icon = Icons.Default.Add,
             containerColor = SageGreenPrimary,
-            contentColor = Color(0xFF0D0E10),
+            contentColor = Color.White,
             onClick = {
                 val validItems = draftItems.mapNotNull { draft ->
                     val item = draft.selectedItem ?: return@mapNotNull null
@@ -348,7 +348,7 @@ fun TransferOperationDialog(
             text = "ВЫПОЛНИТЬ ПЕРЕМЕЩЕНИЕ",
             icon = Icons.Default.ArrowDropDown,
             containerColor = TacticalTeal,
-            contentColor = Color(0xFF0D0E10),
+            contentColor = Color.White,
             onClick = {
                 val validItems = draftItems.mapNotNull { draft ->
                     val item = draft.selectedItem ?: return@mapNotNull null
@@ -522,7 +522,7 @@ fun IssueOperationDialog(
         TacticalFitButton(
             text = "ЗАФИКСИРОВАТЬ ВЫДАЧУ",
             containerColor = TacticalGold,
-            contentColor = Color(0xFF0D0E10),
+            contentColor = Color.White,
             onClick = {
                 val validItems = draftItems.mapNotNull { draft ->
                     val item = draft.selectedItem ?: return@mapNotNull null

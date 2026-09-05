@@ -235,7 +235,7 @@ fun MoreSettingsScreen(
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = SageGreenPrimary,
-                        contentColor = Color(0xFF0F1B14)
+                        contentColor = Color.White
                     )
                 ) {
                     Text("Сохранить", fontWeight = FontWeight.Bold)
@@ -378,7 +378,7 @@ fun MoreSettingsScreen(
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = SageGreenPrimary,
-                        contentColor = Color(0xFF0F1B14)
+                        contentColor = Color.White
                     )
                 ) {
                     Text("Добавить", fontWeight = FontWeight.Bold)
@@ -571,7 +571,7 @@ fun MoreSettingsScreen(
                             modifier = Modifier.weight(1f).height(38.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = SageGreenPrimary,
-                                contentColor = Color(0xFF0F1B14)
+                                contentColor = Color.White
                             ),
                             shape = RoundedCornerShape(6.dp)
                         ) {
@@ -670,7 +670,7 @@ fun MoreSettingsScreen(
                             .testTag("open_code_dialog_button"),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = SageGreenPrimary,
-                            contentColor = Color(0xFF0F1B14)
+                            contentColor = Color.White
                         ),
                         shape = RoundedCornerShape(6.dp)
                     ) {
@@ -709,7 +709,7 @@ fun MoreSettingsScreen(
                             .testTag("subscribe_pro_button"),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = TacticalGold,
-                            contentColor = Color(0xFF231B05)
+                            contentColor = Color.White
                         ),
                         shape = RoundedCornerShape(6.dp)
                     ) {
@@ -832,7 +832,7 @@ fun MoreSettingsScreen(
                             modifier = Modifier.weight(1f).height(36.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = SageGreenPrimary,
-                                contentColor = Color(0xFF0F1B14)
+                                contentColor = Color.White
                             ),
                             shape = RoundedCornerShape(6.dp)
                         ) {
@@ -882,7 +882,7 @@ fun MoreSettingsScreen(
                             .testTag("open_user_manual_button"),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = SageGreenPrimary,
-                            contentColor = Color(0xFF0D0E10)
+                            contentColor = Color.White
                         ),
                         shape = RoundedCornerShape(10.dp)
                     ) {

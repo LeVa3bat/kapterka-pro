@@ -350,7 +350,7 @@ fun SplashScreen(
                         .testTag("skip_splash_button"),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = SageGreenPrimary,
-                        contentColor = Color(0xFF09140D)
+                        contentColor = Color.White
                     ),
                     shape = RoundedCornerShape(8.dp)
                 ) {

@@ -144,7 +144,7 @@ fun AddPointDialog(
                         .testTag("save_point_button"),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = SageGreenPrimary,
-                        contentColor = Color(0xFF0F1B14)
+                        contentColor = Color.White
                     ),
                     shape = RoundedCornerShape(8.dp)
                 ) {
@@ -267,7 +267,7 @@ fun EditPointDialog(
                         modifier = Modifier.weight(1.5f),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = SageGreenPrimary,
-                            contentColor = Color(0xFF0F1B14)
+                            contentColor = Color.White
                         ),
                         shape = RoundedCornerShape(8.dp)
                     ) {
@@ -414,7 +414,7 @@ fun AddCustomItemDialog(
                         .testTag("submit_custom_item_button"),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = SageGreenPrimary,
-                        contentColor = Color(0xFF0F1B14)
+                        contentColor = Color.White
                     ),
                     shape = RoundedCornerShape(8.dp)
                 ) {
@@ -638,7 +638,7 @@ fun EditCatalogItemDialog(
                         modifier = Modifier.weight(1.5f),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = SageGreenPrimary,
-                            contentColor = Color(0xFF0F1B14)
+                            contentColor = Color.White
                         ),
                         shape = RoundedCornerShape(8.dp)
                     ) {
@@ -771,7 +771,7 @@ fun AdjustStockDialog(
                         .height(46.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = SageGreenPrimary,
-                        contentColor = Color(0xFF0F1B14)
+                        contentColor = Color.White
                     ),
                     shape = RoundedCornerShape(8.dp)
                 ) {

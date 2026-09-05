@@ -201,7 +201,7 @@ fun UnitKeySyncDialog(
                         .testTag("copy_unit_code_button"),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = SageGreenPrimary,
-                        contentColor = Color(0xFF0B1710)
+                        contentColor = Color.White
                     ),
                     shape = RoundedCornerShape(8.dp)
                 ) {
@@ -306,7 +306,7 @@ fun UnitKeySyncDialog(
                             modifier = Modifier.height(46.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = SageGreenPrimary,
-                                contentColor = Color(0xFF0F1B14)
+                                contentColor = Color.White
                             ),
                             shape = RoundedCornerShape(6.dp)
                         ) {

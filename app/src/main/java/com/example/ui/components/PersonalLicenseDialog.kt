@@ -437,7 +437,7 @@ fun PersonalLicenseDialog(
                                 Spacer(modifier = Modifier.height(10.dp))
                                 Button(
                                     onClick = { selectedTab = 1 },
-                                    colors = ButtonDefaults.buttonColors(containerColor = TacticalGold, contentColor = Color(0xFF1E1704)),
+                                    colors = ButtonDefaults.buttonColors(containerColor = TacticalGold, contentColor = Color.White),
                                     shape = RoundedCornerShape(6.dp),
                                     modifier = Modifier.fillMaxWidth().height(38.dp)
                                 ) {
@@ -498,7 +498,7 @@ fun PersonalLicenseDialog(
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = SageGreenPrimary,
-                            contentColor = Color(0xFF0F1B14)
+                            contentColor = Color.White
                         )
                     ) {
                         Icon(imageVector = Icons.Default.CloudDownload, contentDescription = null, modifier = Modifier.size(17.dp))
@@ -610,7 +610,7 @@ fun PersonalLicenseDialog(
                                         .testTag("yookassa_pay_button"),
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = TacticalGold,
-                                        contentColor = Color(0xFF1E1704)
+                                        contentColor = Color.White
                                     ),
                                     shape = RoundedCornerShape(8.dp)
                                 ) {
@@ -781,7 +781,7 @@ fun PersonalLicenseDialog(
                                                 modifier = Modifier.fillMaxWidth().height(42.dp),
                                                 colors = ButtonDefaults.buttonColors(
                                                     containerColor = SageGreenPrimary,
-                                                    contentColor = Color(0xFF0D180F)
+                                                    contentColor = Color.White
                                                 ),
                                                 shape = RoundedCornerShape(8.dp)
                                             ) {
@@ -844,7 +844,7 @@ fun PersonalLicenseDialog(
                                             .testTag("verify_payment_button"),
                                         colors = ButtonDefaults.buttonColors(
                                             containerColor = SageGreenBright,
-                                            contentColor = Color(0xFF0F1B14)
+                                            contentColor = Color.White
                                         ),
                                         shape = RoundedCornerShape(8.dp),
                                         enabled = !isVerifyingPayment
@@ -939,7 +939,7 @@ fun PersonalLicenseDialog(
                             shape = RoundedCornerShape(8.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = SageGreenPrimary,
-                                contentColor = Color(0xFF0D1812)
+                                contentColor = Color.White
                             )
                         ) {
                             Text("Ввести", fontWeight = FontWeight.Bold, fontSize = 12.sp)
