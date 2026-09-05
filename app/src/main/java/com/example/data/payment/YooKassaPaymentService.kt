@@ -73,18 +73,6 @@ class YooKassaPaymentService(private val context: Context) {
     ): PaymentInitResult = withContext(Dispatchers.IO) {
         val config = getConfig()
 
-        // Если ключ не задан пользователем, генерируем безопасную тестовую платежную форму
-        if (config.secretKey.isBlank() || config.secretKey.startsWith("test_PLACEHOLDER")) {
-            val mockPaymentId = "pay_test_" + UUID.randomUUID().toString().take(12)
-            // Прямая страница быстрой оплаты ЮKassa/ЮMoney для тестирования
-            val demoUrl = "https://yookassa.ru/checkout/payments/v2/contract?orderId=${mockPaymentId}"
-            return@withContext PaymentInitResult(
-                success = true,
-                paymentId = mockPaymentId,
-                confirmationUrl = demoUrl
-            )
-        }
-
         try {
             val url = URL("https://api.yookassa.ru/v3/payments")
             val connection = (url.openConnection() as HttpURLConnection).apply {
@@ -208,19 +196,20 @@ class YooKassaPaymentService(private val context: Context) {
                 when (status) {
                     "succeeded" -> {
                         if (paid) {
-                            Pair(true, "Оплата 490 ₽ подтверждена банком ЮKassa!")
+                            Pair(true, "Оплата подтверждена банком ЮKassa!")
                         } else {
                             Pair(false, "Платеж авторизован, но списание средств еще не завершено банком.")
                         }
                     }
-                    "waiting_for_capture" -> {
-                        Pair(true, "Оплата авторизована банком ЮKassa!")
-                    }
                     "pending" -> {
-                        Pair(false, "Платёж не оплачен! В банке статус «ожидает оплаты». Завершите перевод 490 ₽ в СБП или приложении банка.")
+                        Pair(false, "Платёж не оплачен! Ожидает оплаты. Завершите перевод.")
+                    }
+                    "waiting_for_capture" -> {
+                        // Даже если авторизовано, ждем полного списания (succeeded)
+                        Pair(false, "Платеж авторизован, но списание средств еще не завершено банком.")
                     }
                     "canceled" -> {
-                        Pair(false, "Платёж был закрыт или отменен в банке без списания средств.")
+                        Pair(false, "Платёж был закрыт или отменен без списания средств.")
                     }
                     else -> {
                         Pair(false, "Статус платежа: $status. Оплата не поступила.")
