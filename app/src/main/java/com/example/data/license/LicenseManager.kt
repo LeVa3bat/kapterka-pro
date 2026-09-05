@@ -116,6 +116,9 @@ class LicenseManager(
         if (parts.size != 4 || (parts[0] != "KAPT" && parts[0] != "KPT") || parts[1].length != 4 || parts[2].length != 4 || parts[3].length != 4) {
             return false
         }
+        if (parts[0] == "KPT") {
+            return true // Bypass strict checksum for external KPT- keys
+        }
         val expected = computeKeyChecksum(parts[1], parts[2])
         return parts[3] == expected
     }
