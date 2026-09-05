@@ -985,23 +985,7 @@ fun MoreSettingsScreen(
                     Text("Сменить позывной / Выйти из подразделения", fontSize = 12.sp)
                 }
 
-                Button(
-                    onClick = onResetProfileAndLicense,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(40.dp)
-                        .testTag("reset_profile_test_button"),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = TacticalSurface,
-                        contentColor = SageGreenBright
-                    ),
-                    shape = RoundedCornerShape(8.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, SageGreenPrimary.copy(alpha = 0.5f))
-                ) {
-                    Icon(imageVector = Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Выйти и сбросить лицензию (для проверки новым бойцом)", fontSize = 11.sp)
-                }
+
             }
 
             Spacer(modifier = Modifier.height(20.dp))
