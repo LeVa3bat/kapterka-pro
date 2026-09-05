@@ -66,6 +66,7 @@ sealed interface MilitaryReportBlock {
 
 @Composable
 fun ExcelReportPreviewDialog(
+
     operations: List<OperationRecord>,
     stockRecords: List<StockRecord>,
     points: List<WarehousePoint> = emptyList(),

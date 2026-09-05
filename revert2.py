@@ -1,10 +1,12 @@
-package com.example.data.local
-
-import com.example.data.model.InventoryItem
-import com.example.data.model.WarehousePoint
-
-object InitialData {
-    fun getDefaultItems(): List<InventoryItem> {
+import re
+def revert_initial_data(c):
+    with open('app/src/main/java/com/example/data/local/InitialData.kt', 'r', encoding='utf-8') as f:
+        c = f.read()
+    
+    start = c.find('fun getDefaultItems(appMode:')
+    end = c.find('fun getDefaultPoints(appMode:')
+    
+    items = """    fun getDefaultItems(): List<InventoryItem> {
         return listOf(
             InventoryItem("rav_01", "АК-12 (5.45)", "РАВ", "Автоматы", "шт.", "Кат. 2"),
             InventoryItem("rav_02", "АК-74М (5.45)", "РАВ", "Автоматы", "шт.", "Кат. 2"),
@@ -48,15 +50,18 @@ object InitialData {
         )
     }
 
-    fun getDefaultPoints(): List<WarehousePoint> {
+"""
+    points = """    fun getDefaultPoints(): List<WarehousePoint> {
         return listOf(
             WarehousePoint("base_sklad", "Базовый склад РАВ (КЗ)", "Основной склад подразделения"),
             WarehousePoint("point_1", "Передовая точка (ЛБС)", "Для выдачи на позиции"),
             WarehousePoint("med_sklad", "Медпункт", "Медицинское обеспечение")
         )
     }
-
-    fun getDefaultCategories(): List<String> {
-        return listOf("Служба РАВ", "Служба БПЛА и робототехники", "Служба связи и РЭБ", "Вещевая служба", "Медицинская служба", "Продовольственная служба", "ГСМ", "Автомобильная служба", "Инженерная служба", "Служба РХБЗ", "Трофеи", "Прочее")
-    }
 }
+"""
+    c = c[:start] + items + points
+    with open('app/src/main/java/com/example/data/local/InitialData.kt', 'w', encoding='utf-8') as f:
+        f.write(c)
+
+revert_initial_data('')

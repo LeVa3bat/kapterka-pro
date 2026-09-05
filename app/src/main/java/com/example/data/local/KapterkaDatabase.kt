@@ -79,10 +79,10 @@ abstract class KapterkaDatabase : RoomDatabase() {
                 )
 
                 // Initialize default points
-                dao.insertPoints(InitialData.defaultPoints)
+                // Points initialized in Repository
 
                 // Initialize catalog
-                dao.insertItems(InitialData.defaultItems)
+                // Items initialized in Repository
 
                 // Seed some initial realistic stock for Base Sklad to make the app live and ready
                 val baseStock = listOf(

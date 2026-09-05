@@ -69,6 +69,7 @@ import com.example.ui.theme.TacticalTextSecondary
 
 @Composable
 fun UnitKeySyncDialog(
+
     profile: UserProfile?,
     onRegenerateKey: () -> Unit,
     onUpdateUnitKey: (String) -> Unit = {},
@@ -212,7 +213,7 @@ fun UnitKeySyncDialog(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Скопировать код подразделения",
+                        text = "Скопировать " + "Код подразделения".lowercase(),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -370,5 +371,5 @@ private fun copyToClipboard(context: Context, text: String) {
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     val clip = ClipData.newPlainText("UnitCode", text)
     clipboard.setPrimaryClip(clip)
-    Toast.makeText(context, "Код подразделения $text скопирован в буфер", Toast.LENGTH_SHORT).show()
+    Toast.makeText(context, "$text скопирован в буфер", Toast.LENGTH_SHORT).show()
 }

@@ -72,12 +72,16 @@ import com.example.ui.theme.TacticalTextMuted
 import com.example.ui.theme.TacticalTextPrimary
 import com.example.ui.theme.TacticalTextSecondary
 import java.util.UUID
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun AuthScreen(
     currentProfile: UserProfile?,
     onCompleteAuth: (UserProfile) -> Unit
 ) {
+    val context = LocalContext.current
+    
+
     var selectedTab by remember { mutableIntStateOf(0) } // 0: Регистрация, 1: Вход
     var callsign by remember { mutableStateOf(currentProfile?.callsign?.ifBlank { "" } ?: "") }
     var unitName by remember { mutableStateOf(currentProfile?.unitName?.ifBlank { "" } ?: "") }
@@ -272,7 +276,7 @@ fun AuthScreen(
                         value = unitName,
                         onValueChange = { unitName = it },
                         label = { Text("Подразделение / Рота", color = TacticalTextSecondary, fontSize = 12.sp) },
-                        placeholder = { Text("Введите подразделение (например: 1-я рота)", color = TacticalTextDim, fontSize = 12.sp) },
+                        placeholder = { Text("Введите название: ${"1-е Подразделение"}", color = TacticalTextDim, fontSize = 12.sp) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(8.dp),
@@ -292,8 +296,8 @@ fun AuthScreen(
                     OutlinedTextField(
                         value = unitKey,
                         onValueChange = { unitKey = it },
-                        label = { Text("Ключ подразделения", color = TacticalTextSecondary, fontSize = 12.sp) },
-                        placeholder = { Text("Введите общий ключ или нажмите 🔄", color = TacticalTextDim, fontSize = 12.sp) },
+                        label = { Text("Код подразделения", color = TacticalTextSecondary, fontSize = 12.sp) },
+                        placeholder = { Text("Общий ключ для синхронизации", color = TacticalTextDim, fontSize = 12.sp) },
                         singleLine = true,
                         trailingIcon = {
                             if (selectedTab == 0) {
@@ -412,7 +416,7 @@ fun AuthScreen(
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(
-                            text = if (selectedTab == 0) "Зарегистрироваться и создать ключ" else "Войти в подразделение",
+                            text = if (selectedTab == 0) "Зарегистрироваться и создать ключ" else "Войти",
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp
                         )
@@ -487,3 +491,4 @@ fun AuthScreen(
         }
     }
 }
+

@@ -99,6 +99,7 @@ import com.example.ui.theme.TacticalTextSecondary
 
 @Composable
 fun MoreSettingsScreen(
+
     profile: UserProfile?,
     availableCategories: List<String>,
     syncState: com.example.data.sync.SyncState = com.example.data.sync.SyncState(),
@@ -121,7 +122,7 @@ fun MoreSettingsScreen(
     onOpenDeveloperBackdoor: () -> Unit = {}
 ) {
     val context = LocalContext.current
-    val unitKey = profile?.unitKey ?: "kapt_59e13b"
+        val unitKey = profile?.unitKey ?: "kapt_59e13b"
     var devVersionTaps by remember { androidx.compose.runtime.mutableIntStateOf(0) }
 
     // Accordions state: all collapsed by default to save space as requested
@@ -355,7 +356,7 @@ fun MoreSettingsScreen(
                         value = newCategoryName,
                         onValueChange = { newCategoryName = it },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Введите название", color = TacticalTextMuted) },
+                        placeholder = { Text("Название подразделения", color = TacticalTextMuted) },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = SageGreenPrimary,
                             unfocusedBorderColor = TacticalBorder,
@@ -606,7 +607,7 @@ fun MoreSettingsScreen(
         item {
             CollapsibleCard(
                 title = "Код подключения бойцов (без QR)",
-                subtitle = "Секретный код: $unitKey",
+                subtitle = "Секретный код склада/подразделения: $unitKey",
                 icon = Icons.Default.Key,
                 iconColor = SageGreenBright,
                 isExpanded = expandedConnectCode,
@@ -614,7 +615,7 @@ fun MoreSettingsScreen(
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
                     Text(
-                        text = "Для подключения других пользователей передайте им этот код. При входе на другом телефоне боец нажимает «Вход» и вводит данный код.",
+                        text = "Для подключения других пользователей передайте им этот код склада/подразделения. При входе на другом телефоне боец нажимает «Вход» и вводит данный код склада/подразделения.",
                         color = TacticalTextSecondary,
                         fontSize = 11.sp,
                         lineHeight = 15.sp
@@ -676,7 +677,7 @@ fun MoreSettingsScreen(
                     ) {
                         Icon(imageVector = Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(15.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Скопировать и показать код", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Text("Скопировать и показать код склада/подразделения", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -901,7 +902,7 @@ fun MoreSettingsScreen(
 
                     GuideItem(
                         q = "1. Как подключить других пользователей?",
-                        a = "Передайте коллегам или бойцам код склада/подразделения (вверху экрана). На другом телефоне при запуске выберите «Подключиться по коду» и введите код. Все склады, остатки и номенклатура мгновенно синхронизируются."
+                        a = "Передайте коллегам или бойцам код склада/подразделения (вверху экрана). На другом телефоне при запуске выберите «Подключиться по код склада/подразделенияу» и введите код склада/подразделения. Все склады, остатки и номенклатура мгновенно синхронизируются."
                     )
                     GuideItem(
                         q = "2. Списание и акты расхода (Форма 8)",

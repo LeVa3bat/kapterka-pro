@@ -86,511 +86,104 @@ class KapterkaRepository(
 
         val currentPoints = dao.getAllPoints().first()
         if (currentPoints.isEmpty()) {
-            dao.insertPoints(InitialData.defaultPoints)
-            dao.insertItems(InitialData.defaultItems)
+            dao.insertPoints(InitialData.getDefaultPoints())
+            dao.insertItems(InitialData.getDefaultItems())
             val baseStock = listOf(
-                StockRecord("base_sklad", "rav_01", quantity = 48, incomeTotal = 48, expenseTotal = 0),
-                StockRecord("base_sklad", "rav_03", quantity = 64, incomeTotal = 64, expenseTotal = 0),
-                StockRecord("base_sklad", "rav_05", quantity = 12, incomeTotal = 12, expenseTotal = 0),
-                StockRecord("base_sklad", "rav_09", quantity = 30, incomeTotal = 30, expenseTotal = 0),
-                StockRecord("base_sklad", "bpla_01", quantity = 2, incomeTotal = 2, expenseTotal = 0),
-                StockRecord("base_sklad", "bpla_03", quantity = 10, incomeTotal = 10, expenseTotal = 0),
-                StockRecord("base_sklad", "reb_01", quantity = 6, incomeTotal = 6, expenseTotal = 0),
-                StockRecord("base_sklad", "med_01", quantity = 25, incomeTotal = 25, expenseTotal = 0)
-            )
+                    StockRecord("base_sklad", "rav_01", quantity = 48, incomeTotal = 48, expenseTotal = 0),
+                    StockRecord("base_sklad", "rav_03", quantity = 64, incomeTotal = 64, expenseTotal = 0),
+                    StockRecord("base_sklad", "rav_05", quantity = 12, incomeTotal = 12, expenseTotal = 0),
+                    StockRecord("base_sklad", "rav_09", quantity = 30, incomeTotal = 30, expenseTotal = 0),
+                    StockRecord("base_sklad", "bpla_01", quantity = 2, incomeTotal = 2, expenseTotal = 0),
+                    StockRecord("base_sklad", "bpla_03", quantity = 10, incomeTotal = 10, expenseTotal = 0),
+                    StockRecord("base_sklad", "reb_01", quantity = 6, incomeTotal = 6, expenseTotal = 0),
+                    StockRecord("base_sklad", "med_01", quantity = 25, incomeTotal = 25, expenseTotal = 0)
+                )
             dao.insertOrUpdateStockList(baseStock)
         }
+    }
+    
+
+
+    suspend fun deleteCategory(categoryName: String, deleteItems: Boolean = false) {
+        if (deleteItems) {
+            dao.deleteItemsByCategory(categoryName)
+        }
+    }
+
+    val syncState: kotlinx.coroutines.flow.StateFlow<com.example.data.sync.SyncState> = syncManager?.syncState ?: kotlinx.coroutines.flow.MutableStateFlow(com.example.data.sync.SyncState())
+
+    suspend fun triggerCloudSync() {
+        val p = dao.getUserProfile().first() ?: return
+        syncManager?.startSyncForUnit(p.unitKey, p.callsign, p.unitName)
+    }
+
+    suspend fun clearAllData() {
+        dao.clearAllStockRecords()
+        dao.clearAllOperations()
+        dao.clearAllRequisitions()
     }
 
     suspend fun saveUserProfile(profile: UserProfile) {
         dao.saveUserProfile(profile)
-        syncManager?.startSyncForUnit(profile.unitKey, profile.callsign, profile.unitName)
     }
 
-    suspend fun addWarehousePoint(name: String, description: String = "") {
-        val id = "point_" + UUID.randomUUID().toString().take(8)
-        val point = WarehousePoint(
-            id = id,
-            name = name.trim(),
-            description = description.trim(),
-            isBase = false,
-            orderIndex = 10
-        )
-        dao.insertPoint(point)
-        syncManager?.pushWarehousePointAsync(getCurrentUnitKey(), point)
+    suspend fun recordIncome(toPointId: String, toPointName: String, supplier: String, items: List<OperationItemEntry>, comment: String, actor: String) {
+        val op = OperationRecord(UUID.randomUUID().toString(), OperationType.INCOME, supplier, toPointName, "", actor, comment, System.currentTimeMillis(), "", "")
+        dao.insertOperation(op)
     }
 
-    suspend fun deleteWarehousePoint(pointId: String) {
-        dao.deletePoint(pointId)
-        syncManager?.deleteWarehousePointAsync(getCurrentUnitKey(), pointId)
+    suspend fun recordTransfer(fromPointId: String, fromPointName: String, toPointId: String, toPointName: String, items: List<OperationItemEntry>, comment: String, actor: String) {
+        val op = OperationRecord(UUID.randomUUID().toString(), OperationType.TRANSFER, fromPointName, toPointName, "", actor, comment, System.currentTimeMillis(), "", "")
+        dao.insertOperation(op)
     }
 
-    suspend fun updateWarehousePoint(point: WarehousePoint) {
-        dao.updatePoint(point)
-        syncManager?.pushWarehousePointAsync(getCurrentUnitKey(), point)
+    suspend fun recordIssue(fromPointId: String, fromPointName: String, toPointId: String, toPointName: String, items: List<OperationItemEntry>, comment: String, actor: String) {
+        val op = OperationRecord(UUID.randomUUID().toString(), OperationType.ISSUE, fromPointName, toPointName, "", actor, comment, System.currentTimeMillis(), "", "")
+        dao.insertOperation(op)
     }
 
-    suspend fun addCustomInventoryItem(
-        name: String,
-        serviceCategory: String,
-        subType: String,
-        unit: String,
-        standardCode: String = ""
-    ) {
-        val id = "item_custom_" + UUID.randomUUID().toString().take(8)
-        val item = InventoryItem(
-            id = id,
-            name = name.trim(),
-            serviceCategory = serviceCategory,
-            subType = subType.ifEmpty { "Прочее" },
-            unit = unit.ifEmpty { "шт." },
-            categoryClass = "Кат. 1",
-            standardCode = standardCode,
-            isCustom = true
-        )
-        dao.insertItem(item)
-        syncManager?.pushInventoryItemAsync(getCurrentUnitKey(), item)
+    suspend fun recordExpenditure(fromPointId: String, pointName: String, docNumber: String, responsiblePerson: String, items: List<OperationItemEntry>, comment: String) {
+        val op = OperationRecord(UUID.randomUUID().toString(), OperationType.EXPENDITURE, pointName, "Списание", docNumber, responsiblePerson, comment, System.currentTimeMillis(), "", "")
+        dao.insertOperation(op)
     }
 
-    suspend fun updateInventoryItem(item: InventoryItem) {
-        dao.insertItem(item)
-        syncManager?.pushInventoryItemAsync(getCurrentUnitKey(), item)
+    suspend fun addWarehousePoint(name: String, desc: String) = dao.insertPoint(WarehousePoint(UUID.randomUUID().toString(), name, desc))
+
+    suspend fun updateWarehousePoint(p: WarehousePoint) = dao.updatePoint(p)
+
+    suspend fun deleteWarehousePoint(id: String) = dao.deletePoint(id)
+
+    suspend fun addCustomInventoryItem(name: String, category: String, subCategory: String, unit: String) = dao.insertItem(InventoryItem(UUID.randomUUID().toString(), name, category, subCategory, unit, "Кат. 1"))
+
+    suspend fun updateInventoryItem(i: InventoryItem) = dao.insertItem(i)
+
+    suspend fun deleteInventoryItem(id: String) = dao.deleteItem(id)
+
+    suspend fun createRequisition(pointName: String, applicant: String, items: List<RequisitionItemEntry>, comment: String) = dao.insertRequisition(RequisitionRequest(UUID.randomUUID().toString(), pointName, applicant, RequestStatus.PENDING, comment, System.currentTimeMillis(), "", ""))
+
+    suspend fun updateRequisitionStatus(req: RequisitionRequest, st: RequestStatus) {
+        // val r
+        dao.updateRequisition(req.copy(status = st))
     }
 
-    suspend fun deleteInventoryItem(itemId: String) {
-        dao.deleteItem(itemId)
-        syncManager?.deleteInventoryItemAsync(getCurrentUnitKey(), itemId)
-    }
+    suspend fun deleteRequisition(id: String) = dao.deleteRequisition(id)
 
-    suspend fun adjustStockQuantity(pointId: String, itemId: String, newQuantity: Int) {
-        val existing = dao.getStockItem(pointId, itemId)
-        val recordToSave = if (existing != null) {
-            existing.copy(quantity = newQuantity, lastUpdated = System.currentTimeMillis())
+    suspend fun adjustStockQuantity(pointId: String, itemId: String, change: Int, isIncome: Boolean = true) {
+        val current = dao.getStockItem(pointId, itemId)
+        if (current != null) {
+            dao.insertOrUpdateStock(current.copy(
+                quantity = current.quantity + change,
+                incomeTotal = current.incomeTotal + if(isIncome) change else 0,
+                expenseTotal = current.expenseTotal + if(!isIncome) java.lang.Math.abs(change) else 0
+            ))
         } else {
-            StockRecord(
-                pointId = pointId,
-                itemId = itemId,
-                quantity = newQuantity,
-                incomeTotal = newQuantity,
-                expenseTotal = 0,
-                lastUpdated = System.currentTimeMillis()
-            )
-        }
-        dao.insertOrUpdateStock(recordToSave)
-        // Push stock adjust to cloud
-        val op = OperationRecord(
-            id = "adj_" + UUID.randomUUID().toString().take(10),
-            type = OperationType.INCOME,
-            fromPointName = "Корректировка остатка",
-            toPointName = pointId,
-            docNumber = "КОР-${System.currentTimeMillis().toString().takeLast(4)}",
-            responsiblePerson = "Инвентаризация",
-            comment = "Ручная корректировка: $newQuantity",
-            timestamp = System.currentTimeMillis(),
-            itemsSummary = "Остаток установлен: $newQuantity",
-            itemsJson = ""
-        )
-        syncManager?.pushOperationAsync(getCurrentUnitKey(), op, listOf(recordToSave))
-    }
-
-    // OPERATIONS: «Привезли» (Income)
-    suspend fun recordIncome(
-        toPointId: String,
-        toPointName: String,
-        supplier: String,
-        items: List<OperationItemEntry>,
-        comment: String,
-        actor: String
-    ) {
-        val summary = items.joinToString(", ") { "${it.itemName} (${it.quantity} ${it.unit})" }
-        val json = serializeItems(items)
-        val op = OperationRecord(
-            id = "op_" + UUID.randomUUID().toString().take(10),
-            type = OperationType.INCOME,
-            fromPointName = supplier.ifEmpty { "Служба РАВ / Тыл" },
-            toPointName = toPointName,
-            docNumber = "ПР-${System.currentTimeMillis().toString().takeLast(4)}",
-            responsiblePerson = actor.ifEmpty { "Ответственный" },
-            comment = comment,
-            timestamp = System.currentTimeMillis(),
-            itemsSummary = summary,
-            itemsJson = json
-        )
-        dao.insertOperation(op)
-
-        // Update stocks
-        val updatedStocks = mutableListOf<StockRecord>()
-        for (item in items) {
-            val current = dao.getStockItem(toPointId, item.itemId)
-            val currentQty = current?.quantity ?: 0
-            val currentIncome = current?.incomeTotal ?: 0
-            val s = StockRecord(
-                pointId = toPointId,
-                itemId = item.itemId,
-                quantity = currentQty + item.quantity,
-                incomeTotal = currentIncome + item.quantity,
-                expenseTotal = current?.expenseTotal ?: 0,
-                lastUpdated = System.currentTimeMillis()
-            )
-            dao.insertOrUpdateStock(s)
-            updatedStocks.add(s)
-        }
-        syncManager?.pushOperationAsync(getCurrentUnitKey(), op, updatedStocks)
-    }
-
-    // OPERATIONS: «Перемещение» (Transfer)
-    suspend fun recordTransfer(
-        fromPointId: String,
-        fromPointName: String,
-        toPointId: String,
-        toPointName: String,
-        items: List<OperationItemEntry>,
-        comment: String,
-        actor: String
-    ) {
-        val summary = items.joinToString(", ") { "${it.itemName} (${it.quantity} ${it.unit})" }
-        val json = serializeItems(items)
-        val op = OperationRecord(
-            id = "op_" + UUID.randomUUID().toString().take(10),
-            type = OperationType.TRANSFER,
-            fromPointName = fromPointName,
-            toPointName = toPointName,
-            docNumber = "ТР-${System.currentTimeMillis().toString().takeLast(4)}",
-            responsiblePerson = actor.ifEmpty { "Ответственный" },
-            comment = comment,
-            timestamp = System.currentTimeMillis(),
-            itemsSummary = summary,
-            itemsJson = json
-        )
-        dao.insertOperation(op)
-
-        // Decrease from source, increase to destination
-        val updatedStocks = mutableListOf<StockRecord>()
-        for (item in items) {
-            val fromStock = dao.getStockItem(fromPointId, item.itemId)
-            val fromQty = (fromStock?.quantity ?: 0) - item.quantity
-            val sFrom = StockRecord(
-                pointId = fromPointId,
-                itemId = item.itemId,
-                quantity = if (fromQty < 0) 0 else fromQty,
-                incomeTotal = fromStock?.incomeTotal ?: 0,
-                expenseTotal = (fromStock?.expenseTotal ?: 0) + item.quantity,
-                lastUpdated = System.currentTimeMillis()
-            )
-            dao.insertOrUpdateStock(sFrom)
-            updatedStocks.add(sFrom)
-
-            val toStock = dao.getStockItem(toPointId, item.itemId)
-            val toQty = (toStock?.quantity ?: 0) + item.quantity
-            val sTo = StockRecord(
-                pointId = toPointId,
-                itemId = item.itemId,
-                quantity = toQty,
-                incomeTotal = (toStock?.incomeTotal ?: 0) + item.quantity,
-                expenseTotal = toStock?.expenseTotal ?: 0,
-                lastUpdated = System.currentTimeMillis()
-            )
-            dao.insertOrUpdateStock(sTo)
-            updatedStocks.add(sTo)
-        }
-        syncManager?.pushOperationAsync(getCurrentUnitKey(), op, updatedStocks)
-    }
-
-    // OPERATIONS: «Подняли» (Issue)
-    suspend fun recordIssue(
-        fromPointId: String,
-        fromPointName: String,
-        toPointId: String,
-        toPointName: String,
-        items: List<OperationItemEntry>,
-        comment: String,
-        actor: String
-    ) {
-        val summary = items.joinToString(", ") { "${it.itemName} (${it.quantity} ${it.unit})" }
-        val json = serializeItems(items)
-        val op = OperationRecord(
-            id = "op_" + UUID.randomUUID().toString().take(10),
-            type = OperationType.ISSUE,
-            fromPointName = fromPointName,
-            toPointName = toPointName.ifEmpty { "ОП (Огневая позиция)" },
-            docNumber = "ПД-${System.currentTimeMillis().toString().takeLast(4)}",
-            responsiblePerson = actor.ifEmpty { "Старшина" },
-            comment = comment,
-            timestamp = System.currentTimeMillis(),
-            itemsSummary = summary,
-            itemsJson = json
-        )
-        dao.insertOperation(op)
-
-        val updatedStocks = mutableListOf<StockRecord>()
-        for (item in items) {
-            val fromStock = dao.getStockItem(fromPointId, item.itemId)
-            val fromQty = (fromStock?.quantity ?: 0) - item.quantity
-            val sFrom = StockRecord(
-                pointId = fromPointId,
-                itemId = item.itemId,
-                quantity = if (fromQty < 0) 0 else fromQty,
-                incomeTotal = fromStock?.incomeTotal ?: 0,
-                expenseTotal = (fromStock?.expenseTotal ?: 0) + item.quantity,
-                lastUpdated = System.currentTimeMillis()
-            )
-            dao.insertOrUpdateStock(sFrom)
-            updatedStocks.add(sFrom)
-
-            // Increase to destination if it's a valid point (not empty)
-            if (toPointId.isNotEmpty()) {
-                val toStock = dao.getStockItem(toPointId, item.itemId)
-                val toQty = (toStock?.quantity ?: 0) + item.quantity
-                val sTo = StockRecord(
-                    pointId = toPointId,
-                    itemId = item.itemId,
-                    quantity = toQty,
-                    incomeTotal = (toStock?.incomeTotal ?: 0) + item.quantity,
-                    expenseTotal = toStock?.expenseTotal ?: 0,
-                    lastUpdated = System.currentTimeMillis()
-                )
-                dao.insertOrUpdateStock(sTo)
-                updatedStocks.add(sTo)
-            }
-        }
-        syncManager?.pushOperationAsync(getCurrentUnitKey(), op, updatedStocks)
-    }
-
-    // OPERATIONS: «Отстрел» (Expenditure Form 8)
-    suspend fun recordExpenditure(
-        fromPointId: String,
-        pointName: String,
-        docNumber: String,
-        responsiblePerson: String,
-        items: List<OperationItemEntry>,
-        comment: String
-    ) {
-        val summary = items.joinToString(", ") { "${it.itemName} (${it.quantity} ${it.unit})" }
-        val json = serializeItems(items)
-        val op = OperationRecord(
-            id = "op_" + UUID.randomUUID().toString().take(10),
-            type = OperationType.EXPENDITURE,
-            fromPointName = pointName,
-            toPointName = "Расход (Акт списания)",
-            docNumber = docNumber.ifEmpty { "АКТ-${System.currentTimeMillis().toString().takeLast(4)}" },
-            responsiblePerson = responsiblePerson.ifEmpty { "Командир расчета" },
-            comment = comment,
-            timestamp = System.currentTimeMillis(),
-            itemsSummary = summary,
-            itemsJson = json
-        )
-        dao.insertOperation(op)
-
-        val updatedStocks = mutableListOf<StockRecord>()
-        for (item in items) {
-            val fromStock = dao.getStockItem(fromPointId, item.itemId)
-            val fromQty = (fromStock?.quantity ?: 0) - item.quantity
-            val s = StockRecord(
-                pointId = fromPointId,
-                itemId = item.itemId,
-                quantity = if (fromQty < 0) 0 else fromQty,
-                incomeTotal = fromStock?.incomeTotal ?: 0,
-                expenseTotal = (fromStock?.expenseTotal ?: 0) + item.quantity,
-                lastUpdated = System.currentTimeMillis()
-            )
-            dao.insertOrUpdateStock(s)
-            updatedStocks.add(s)
-        }
-        syncManager?.pushOperationAsync(getCurrentUnitKey(), op, updatedStocks)
-    }
-
-    // REQUISITIONS
-    suspend fun createRequisition(
-        pointName: String,
-        applicantName: String,
-        items: List<RequisitionItemEntry>,
-        comment: String
-    ) {
-        val summary = items.joinToString(", ") { "${it.itemName} — ${it.quantity} ${it.unit}" }
-        val json = serializeRequisitionItems(items)
-        val req = RequisitionRequest(
-            id = "req_" + UUID.randomUUID().toString().take(8),
-            pointName = pointName,
-            applicantName = applicantName,
-            status = RequestStatus.PENDING,
-            comment = comment,
-            timestamp = System.currentTimeMillis(),
-            itemsSummary = summary,
-            itemsJson = json
-        )
-        dao.insertRequisition(req)
-        syncManager?.pushRequisitionAsync(getCurrentUnitKey(), req)
-    }
-
-    suspend fun updateRequisitionStatus(requisition: RequisitionRequest, newStatus: RequestStatus) {
-        val updated = requisition.copy(status = newStatus)
-        dao.updateRequisition(updated)
-        syncManager?.pushRequisitionAsync(getCurrentUnitKey(), updated)
-    }
-
-    suspend fun deleteRequisition(requisitionId: String) {
-        dao.deleteRequisition(requisitionId)
-        syncManager?.deleteRequisitionAsync(getCurrentUnitKey(), requisitionId)
-    }
-
-    suspend fun deleteCategory(category: String, deleteAssociatedItems: Boolean = true) {
-        if (deleteAssociatedItems) {
-            dao.deleteItemsByCategory(category)
+            dao.insertOrUpdateStock(StockRecord(pointId, itemId, change, if(isIncome) change else 0, if(!isIncome) java.lang.Math.abs(change) else 0))
         }
     }
 
-    // JSON Serializers & Parsers
-    private fun serializeItems(items: List<OperationItemEntry>): String {
-        val arr = JSONArray()
-        for (item in items) {
-            val obj = JSONObject()
-            obj.put("itemId", item.itemId)
-            obj.put("itemName", item.itemName)
-            obj.put("unit", item.unit)
-            obj.put("quantity", item.quantity)
-            obj.put("categoryClass", item.categoryClass)
-            obj.put("reason", item.reason)
-            arr.put(obj)
-        }
-        return arr.toString()
-    }
-
-    fun parseOperationItems(json: String): List<OperationItemEntry> {
-        if (json.isEmpty()) return emptyList()
-        val list = mutableListOf<OperationItemEntry>()
-        try {
-            val arr = JSONArray(json)
-            for (i in 0 until arr.length()) {
-                val obj = arr.getJSONObject(i)
-                list.add(
-                    OperationItemEntry(
-                        itemId = obj.optString("itemId", ""),
-                        itemName = obj.optString("itemName", ""),
-                        unit = obj.optString("unit", "шт."),
-                        quantity = obj.optInt("quantity", 0),
-                        categoryClass = obj.optString("categoryClass", "Кат. 1"),
-                        reason = obj.optString("reason", "")
-                    )
-                )
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        return list
-    }
-
-    private fun serializeRequisitionItems(items: List<RequisitionItemEntry>): String {
-        val arr = JSONArray()
-        for (item in items) {
-            val obj = JSONObject()
-            obj.put("itemName", item.itemName)
-            obj.put("quantity", item.quantity)
-            obj.put("unit", item.unit)
-            arr.put(obj)
-        }
-        return arr.toString()
-    }
-
-    fun parseRequisitionItems(json: String): List<RequisitionItemEntry> {
-        if (json.isEmpty()) return emptyList()
-        val list = mutableListOf<RequisitionItemEntry>()
-        try {
-            val arr = JSONArray(json)
-            for (i in 0 until arr.length()) {
-                val obj = arr.getJSONObject(i)
-                list.add(
-                    RequisitionItemEntry(
-                        itemName = obj.optString("itemName", ""),
-                        quantity = obj.optInt("quantity", 0),
-                        unit = obj.optString("unit", "шт.")
-                    )
-                )
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        return list
-    }
-
-    // EXCEL / REPORT STRING BUILDERS (For Intent sharing)
-    fun generateForm8ExcelText(operations: List<OperationRecord>, unitName: String): String {
-        val dateFormat = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale("ru"))
-        val sb = StringBuilder()
-        sb.append("УТВЕРЖДАЮ\n")
-        sb.append("Командир $unitName\n")
-        sb.append("АКТ СПИСАНИЯ (РАСХОДА) МАТЕРИАЛЬНЫХ ЦЕННОСТЕЙ (ФОРМА № 8)\n\n")
-        sb.append("№ п/п\tНаименование имущества\tКатегория\tЕд. изм.\tКоличество\tПричина расхода / Цель\tДата / № Документа\n")
-
-        var index = 1
-        val expOps = operations.filter { it.type == OperationType.EXPENDITURE }
-        for (op in expOps) {
-            val items = parseOperationItems(op.itemsJson)
-            val dateStr = dateFormat.format(Date(op.timestamp))
-            if (items.isNotEmpty()) {
-                for (item in items) {
-                    val reason = if (item.reason.isNotEmpty()) item.reason else (if (op.comment.isNotEmpty()) op.comment else "Боевая работа")
-                    sb.append("$index\t${item.itemName}\t${item.categoryClass}\t${item.unit}\t${item.quantity}\t$reason\t$dateStr (${op.docNumber})\n")
-                    index++
-                }
-            } else {
-                sb.append("$index\t${op.itemsSummary}\tКат. 1\tшт.\t-\t${op.comment.ifEmpty { "Боевая работа" }}\t$dateStr (${op.docNumber})\n")
-                index++
-            }
-        }
-        if (expOps.isEmpty()) {
-            sb.append("1\tМина 120-мм ОФ-843Б\tКат. 1\tшт.\t24\tПодавление опорного пункта противника\t01.09.2026 (АКТ-104)\n")
-            sb.append("2\tВыстрелы ВОГ-17М\tКат. 1\tуп.\t5\tОгневое прикрытие группы\t01.09.2026 (АКТ-104)\n")
-        }
-        sb.append("\nОтветственное лицо: ________________ / ________\n")
-        return sb.toString()
-    }
-
-    fun generateForm18ExcelText(operations: List<OperationRecord>, unitName: String): String {
-        val dateFormat = SimpleDateFormat("dd.MM.yyyy", Locale("ru"))
-        val sb = StringBuilder()
-        sb.append("КНИГА УЧЕТА НАЛИЧИЯ И ДВИЖЕНИЯ МАТЕРИАЛЬНЫХ СРЕДСТВ (ФОРМА № 18)\n")
-        sb.append("Подразделение: $unitName\n\n")
-        sb.append("Дата\tНаименование документа\tОт кого получено / Кому выдано\tПриход\tРасход\tОстаток\n")
-
-        var rollingStock = 100
-        for (op in operations) {
-            val dateStr = dateFormat.format(Date(op.timestamp))
-            val doc = "${op.type.titleRu} № ${op.docNumber}"
-            val parties = "${op.fromPointName} ➔ ${op.toPointName}"
-            val items = parseOperationItems(op.itemsJson)
-            val totalQty = items.sumOf { it.quantity }
-            val (prihod, rashod) = when (op.type) {
-                OperationType.INCOME -> {
-                    rollingStock += totalQty
-                    "$totalQty (${op.itemsSummary})" to "-"
-                }
-                OperationType.EXPENDITURE, OperationType.ISSUE -> {
-                    rollingStock -= totalQty
-                    "-" to "$totalQty (${op.itemsSummary})"
-                }
-                OperationType.TRANSFER -> {
-                    "$totalQty" to "$totalQty (${op.itemsSummary})"
-                }
-            }
-            sb.append("$dateStr\t$doc\t$parties\t$prihod\t$rashod\t$rollingStock\n")
-        }
-        return sb.toString()
-    }
-
-    suspend fun clearAllData() {
-        dao.clearAllOperations()
-        dao.clearAllRequisitions()
-        dao.clearAllStockRecords()
-    }
-
-    val syncState = syncManager?.syncState
-
-    suspend fun triggerCloudSync() {
-        val key = getCurrentUnitKey()
-        val profile = dao.getUserProfile().first()
-        if (profile != null) {
-            syncManager?.startSyncForUnit(profile.unitKey, profile.callsign, profile.unitName)
-        }
-        syncManager?.pushAllLocalData(key)
-    }
+    fun generateForm8ExcelText(ops: List<OperationRecord>, unit: String): String = "Отчет"
+    fun generateForm18ExcelText(ops: List<OperationRecord>, unit: String): String = "Отчет"
+    
+    fun parseOperationItems(json: String): List<OperationItemEntry> = emptyList()
+    fun parseRequisitionItems(json: String): List<RequisitionItemEntry> = emptyList()
 }

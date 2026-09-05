@@ -31,6 +31,8 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 
 class KapterkaViewModel(application: Application) : AndroidViewModel(application) {
+    
+
 
     private val repository: KapterkaRepository
 
@@ -59,12 +61,12 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
     private fun loadCategoriesFromPrefs(): List<String> {
         val saved = prefs.getStringSet("saved_categories", null)
         return if (saved != null && saved.isNotEmpty()) {
-            val defaultOrder = com.example.data.local.InitialData.defaultCategories
+            val defaultOrder = com.example.data.local.InitialData.getDefaultCategories()
             val list = defaultOrder.filter { it in saved }.toMutableList()
             saved.filter { it !in defaultOrder }.forEach { list.add(it) }
             list
         } else {
-            com.example.data.local.InitialData.defaultCategories
+            com.example.data.local.InitialData.getDefaultCategories()
         }
     }
 
@@ -100,7 +102,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun resetCategoriesToDefault() {
-        saveCategoriesToPrefs(com.example.data.local.InitialData.defaultCategories)
+        saveCategoriesToPrefs(com.example.data.local.InitialData.getDefaultCategories())
         viewModelScope.launch {
             _toastEvent.emit("Штатные группы восстановлены по умолчанию")
         }
@@ -287,7 +289,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         comment: String
     ) {
         viewModelScope.launch {
-            val actor = userProfile.value?.callsign ?: "Старшина"
+            val actor = userProfile.value?.callsign ?: "Старшина подразделения"
             repository.recordIssue(fromPointId, fromPointName, toPointId, toPointName, items, comment, actor)
             
             val summary = items.joinToString(", ") { "${it.itemName} (${it.quantity} ${it.unit})" }

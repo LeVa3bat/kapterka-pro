@@ -65,6 +65,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.sp
 import com.example.data.model.InventoryItem
 import com.example.data.model.StockRecord
@@ -143,7 +144,7 @@ fun MainDashboardScreen(
 ) {
     var selectedPointFilterId by remember { mutableStateOf<String?>(null) } // null = Все склады
     var adjustingStock by remember { mutableStateOf<PendingAdjustStock?>(null) }
-    val expandedPointIds = remember { mutableStateMapOf<String, Boolean>() }
+        val expandedPointIds = remember { mutableStateMapOf<String, Boolean>() }
 
     val categories = remember(availableCategories) {
         if (availableCategories.isNotEmpty()) {
@@ -797,7 +798,7 @@ fun MainDashboardScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "ВСЕГО ПО ПОДРАЗДЕЛЕНИЮ: $overallPositionsCount ПОЗ.",
+                                text = "ВСЕГО: $overallPositionsCount ПОЗ.",
                                 color = TacticalTextSecondary,
                                 fontSize = 10.5.sp,
                                 fontWeight = FontWeight.Bold
