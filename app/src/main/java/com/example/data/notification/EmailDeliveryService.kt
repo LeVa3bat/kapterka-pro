@@ -23,7 +23,7 @@ data class EmailConfig(
     val smtpUser: String = "",
     val smtpPass: String = "",
     val senderName: String = "Каптёрка ПРО",
-    val senderEmail: String = "support@kapterka-pro.ru"
+    val senderEmail: String = "alex.666.881@gmail.com"
 )
 
 object EmailDeliveryService {
@@ -40,7 +40,7 @@ object EmailDeliveryService {
             smtpUser = sp.getString("smtp_user", "") ?: "",
             smtpPass = sp.getString("smtp_pass", "") ?: "",
             senderName = sp.getString("sender_name", "Каптёрка ПРО") ?: "Каптёрка ПРО",
-            senderEmail = sp.getString("sender_email", "support@kapterka-pro.ru") ?: "support@kapterka-pro.ru"
+            senderEmail = sp.getString("sender_email", "alex.666.881@gmail.com") ?: "alex.666.881@gmail.com"
         )
     }
 
@@ -100,7 +100,7 @@ object EmailDeliveryService {
             ✓ Экспорт сводной книги учета материальных средств (Форма № 18).
             ✓ Полная автономная работа при активном РЭБ и синхронизация подразделений.
 
-            Служба поддержки: support@kapterka-pro.ru
+            Служба поддержки: alex.666.881@gmail.com
             Telegram разработчика: @Levaminbat
             Официальный сайт: https://kapterka-pro.ru/
         """.trimIndent()
@@ -199,7 +199,7 @@ object EmailDeliveryService {
                         </div>
                         <p style="font-size:13px; color:#9ab0a0; line-height:1.5;">Срок действия: 30 суток. В приложении разблокированы все функции: экспорт в Excel Формы № 8 и Формы № 18, неограниченный склад и автономная работа.</p>
                         <hr style="border:0; border-top:1px solid #233829; margin:20px 0;">
-                        <p style="font-size:12px; color:#6b8271;">Поддержка: support@kapterka-pro.ru | Telegram: @Levaminbat</p>
+                        <p style="font-size:12px; color:#6b8271;">Поддержка: alex.666.881@gmail.com | Telegram: @Levaminbat</p>
                     </div>
                 """.trimIndent())
             }
