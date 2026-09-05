@@ -411,21 +411,6 @@ fun PersonalLicenseDialog(
                                 }
 
                                 Spacer(modifier = Modifier.height(10.dp))
-
-                                OutlinedButton(
-                                    onClick = {
-                                        onResetLicense()
-                                        selectedTab = 1
-                                    },
-                                    modifier = Modifier.fillMaxWidth().height(34.dp),
-                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = TacticalTextMuted),
-                                    border = BorderStroke(1.dp, TacticalTextMuted.copy(alpha = 0.3f)),
-                                    shape = RoundedCornerShape(6.dp)
-                                ) {
-                                    Icon(imageVector = Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(14.dp))
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Сбросить лицензию (для проверки оплаты заново)", fontSize = 10.sp)
-                                }
                             }
                         }
                     } else {
