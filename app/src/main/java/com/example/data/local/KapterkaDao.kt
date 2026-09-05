@@ -48,7 +48,7 @@ interface KapterkaDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertItem(item: InventoryItem)
 
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertItems(items: List<InventoryItem>)
 
     @Query("DELETE FROM inventory_items WHERE id = :itemId")

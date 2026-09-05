@@ -60,13 +60,13 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
 
     private fun loadCategoriesFromPrefs(): List<String> {
         val saved = prefs.getStringSet("saved_categories", null)
+        val defaultOrder = com.example.data.local.InitialData.getDefaultCategories()
         return if (saved != null && saved.isNotEmpty()) {
-            val defaultOrder = com.example.data.local.InitialData.getDefaultCategories()
-            val list = defaultOrder.filter { it in saved }.toMutableList()
+            val list = defaultOrder.toMutableList() // Always include default categories (to force new ones)
             saved.filter { it !in defaultOrder }.forEach { list.add(it) }
             list
         } else {
-            com.example.data.local.InitialData.getDefaultCategories()
+            defaultOrder
         }
     }
 
@@ -386,7 +386,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
 
     fun updateRequisitionStatus(req: RequisitionRequest, newStatus: RequestStatus) {
         viewModelScope.launch {
-            repository.updateRequisitionStatus(req, newStatus)
+            repository.updateRequisitionStatus(req.id, newStatus)
             TacticalNotificationHelper.notifyRequisitionStatus(
                 context = getApplication(),
                 req = req,
