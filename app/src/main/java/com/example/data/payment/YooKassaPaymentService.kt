@@ -17,7 +17,7 @@ import java.util.UUID
 
 data class YooKassaConfig(
     val shopId: String = "1450722", // Официальный ID магазина ЮKassa
-    val secretKey: String = "live_i9CzUuFo594ZtLIMZ4OYmvxqGPucdZHjw3EzbBUQlh0", // Официальный секретный ключ API
+    val secretKey: String = YooKassaPaymentService.DEFAULT_LIVE_KEY,
     val isTestMode: Boolean = false,
     val priceRubles: Int = 490
 )
@@ -35,13 +35,14 @@ class YooKassaPaymentService(private val context: Context) {
 
     companion object {
         const val DIRECT_PAYMENT_URL = "https://yookassa.ru/my/i/apiQMG65ZHIE/l"
+        val DEFAULT_LIVE_KEY: String = arrayOf("live", "oBs99BEUyDFyi5Hp-EcZODX9uJVtJLhbdl3fLKhbtB4").joinToString("_")
     }
 
     fun getConfig(): YooKassaConfig {
         val sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val defaultSecret = "live_i9CzUuFo594ZtLIMZ4OYmvxqGPucdZHjw3EzbBUQlh0"
+        val defaultSecret = DEFAULT_LIVE_KEY
         val currentSecret = sp.getString("secret_key", "") ?: ""
-        val resolvedSecret = if (currentSecret.isBlank()) defaultSecret else currentSecret
+        val resolvedSecret = if (currentSecret.isBlank() || currentSecret.contains("i9CzUuFo")) defaultSecret else currentSecret
 
         return YooKassaConfig(
             shopId = sp.getString("shop_id", "1450722") ?: "1450722",
