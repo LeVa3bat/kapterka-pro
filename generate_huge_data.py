@@ -1,4 +1,6 @@
-package com.example.data.local
+import re
+
+content = """package com.example.data.local
 
 import com.example.data.model.InventoryItem
 import com.example.data.model.WarehousePoint
@@ -211,3 +213,9 @@ object InitialData {
         return listOf("Служба РАВ", "Служба БПЛА и робототехники", "Служба связи и РЭБ", "Вещевая служба и СИБЗ", "Медицинская служба", "Продовольственная служба", "Служба ГСМ", "Автомобильная и БТ служба", "Инженерная служба", "Служба РХБЗ", "Трофеи", "Прочее")
     }
 }
+"""
+
+with open('app/src/main/java/com/example/data/local/InitialData.kt', 'w', encoding='utf-8') as f:
+    f.write(content)
+
+print("InitialData completely rewritten with massive item list.")

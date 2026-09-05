@@ -111,7 +111,12 @@ class KapterkaRepository(
 
     suspend fun deleteCategory(categoryName: String, deleteItems: Boolean = false) {
         if (deleteItems) {
+            val itemsToDelete = dao.getItemsByCategory(categoryName).first()
             dao.deleteItemsByCategory(categoryName)
+            val unitKey = getCurrentUnitKey()
+            for (item in itemsToDelete) {
+                syncManager?.deleteInventoryItemAsync(unitKey, item.id)
+            }
         }
     }
 
@@ -137,9 +142,11 @@ class KapterkaRepository(
         val itemsJson = serializeOperationItems(items)
         val op = OperationRecord(java.util.UUID.randomUUID().toString(), OperationType.INCOME, supplier, toPointName, "", actor, comment, System.currentTimeMillis(), summary, itemsJson)
         dao.insertOperation(op)
+        val updatedStocks = mutableListOf<StockRecord>()
         for (item in items) {
-            adjustStockQuantity(toPointId, item.itemId, item.quantity, isIncome = true)
+            updatedStocks.add(adjustStockQuantity(toPointId, item.itemId, item.quantity, isIncome = true))
         }
+        syncManager?.pushOperationAsync(getCurrentUnitKey(), op, updatedStocks)
     }
 
     suspend fun recordTransfer(fromPointId: String, fromPointName: String, toPointId: String, toPointName: String, items: List<OperationItemEntry>, comment: String, actor: String) {
@@ -147,10 +154,12 @@ class KapterkaRepository(
         val itemsJson = serializeOperationItems(items)
         val op = OperationRecord(java.util.UUID.randomUUID().toString(), OperationType.TRANSFER, fromPointName, toPointName, "", actor, comment, System.currentTimeMillis(), summary, itemsJson)
         dao.insertOperation(op)
+        val updatedStocks = mutableListOf<StockRecord>()
         for (item in items) {
-            adjustStockQuantity(fromPointId, item.itemId, -item.quantity, isIncome = false)
-            adjustStockQuantity(toPointId, item.itemId, item.quantity, isIncome = true)
+            updatedStocks.add(adjustStockQuantity(fromPointId, item.itemId, -item.quantity, isIncome = false))
+            updatedStocks.add(adjustStockQuantity(toPointId, item.itemId, item.quantity, isIncome = true))
         }
+        syncManager?.pushOperationAsync(getCurrentUnitKey(), op, updatedStocks)
     }
 
     suspend fun recordIssue(fromPointId: String, fromPointName: String, toPointId: String, toPointName: String, items: List<OperationItemEntry>, comment: String, actor: String) {
@@ -158,10 +167,12 @@ class KapterkaRepository(
         val itemsJson = serializeOperationItems(items)
         val op = OperationRecord(java.util.UUID.randomUUID().toString(), OperationType.ISSUE, fromPointName, toPointName, "", actor, comment, System.currentTimeMillis(), summary, itemsJson)
         dao.insertOperation(op)
+        val updatedStocks = mutableListOf<StockRecord>()
         for (item in items) {
-            adjustStockQuantity(fromPointId, item.itemId, -item.quantity, isIncome = false)
+            updatedStocks.add(adjustStockQuantity(fromPointId, item.itemId, -item.quantity, isIncome = false))
             // No destination stock update because it's issued to soldiers (off-balance)
         }
+        syncManager?.pushOperationAsync(getCurrentUnitKey(), op, updatedStocks)
     }
 
     suspend fun recordExpenditure(fromPointId: String, pointName: String, docNumber: String, responsiblePerson: String, items: List<OperationItemEntry>, comment: String) {
@@ -169,40 +180,79 @@ class KapterkaRepository(
         val itemsJson = serializeOperationItems(items)
         val op = OperationRecord(java.util.UUID.randomUUID().toString(), OperationType.EXPENDITURE, pointName, "Списание", docNumber, responsiblePerson, comment, System.currentTimeMillis(), summary, itemsJson)
         dao.insertOperation(op)
+        val updatedStocks = mutableListOf<StockRecord>()
         for (item in items) {
-            adjustStockQuantity(fromPointId, item.itemId, -item.quantity, isIncome = false)
+            updatedStocks.add(adjustStockQuantity(fromPointId, item.itemId, -item.quantity, isIncome = false))
         }
+        syncManager?.pushOperationAsync(getCurrentUnitKey(), op, updatedStocks)
     }
 
-    suspend fun addWarehousePoint(name: String, desc: String) = dao.insertPoint(WarehousePoint(java.util.UUID.randomUUID().toString(), name, desc))
-    suspend fun updateWarehousePoint(p: WarehousePoint) = dao.updatePoint(p)
-    suspend fun deleteWarehousePoint(id: String) = dao.deletePoint(id)
-    suspend fun addCustomInventoryItem(name: String, category: String, subCategory: String, unit: String) = dao.insertItem(InventoryItem(java.util.UUID.randomUUID().toString(), name, category, subCategory, unit, "Кат. 1"))
-    suspend fun updateInventoryItem(i: InventoryItem) = dao.insertItem(i)
-    suspend fun deleteInventoryItem(id: String) = dao.deleteItem(id)
+    suspend fun addWarehousePoint(name: String, desc: String) {
+        val p = WarehousePoint(java.util.UUID.randomUUID().toString(), name, desc)
+        dao.insertPoint(p)
+        syncManager?.pushWarehousePointAsync(getCurrentUnitKey(), p)
+    }
+
+    suspend fun updateWarehousePoint(p: WarehousePoint) {
+        dao.updatePoint(p)
+        syncManager?.pushWarehousePointAsync(getCurrentUnitKey(), p)
+    }
+
+    suspend fun deleteWarehousePoint(id: String) {
+        dao.deletePoint(id)
+        syncManager?.deleteWarehousePointAsync(getCurrentUnitKey(), id)
+    }
+
+    suspend fun addCustomInventoryItem(name: String, category: String, subCategory: String, unit: String) {
+        val i = InventoryItem(java.util.UUID.randomUUID().toString(), name, category, subCategory, unit, "Кат. 1")
+        dao.insertItem(i)
+        syncManager?.pushInventoryItemAsync(getCurrentUnitKey(), i)
+    }
+
+    suspend fun updateInventoryItem(i: InventoryItem) {
+        dao.insertItem(i)
+        syncManager?.pushInventoryItemAsync(getCurrentUnitKey(), i)
+    }
+
+    suspend fun deleteInventoryItem(id: String) {
+        dao.deleteItem(id)
+        syncManager?.deleteInventoryItemAsync(getCurrentUnitKey(), id)
+    }
+
     suspend fun createRequisition(pointName: String, applicant: String, items: List<RequisitionItemEntry>, comment: String) {
         val summary = items.joinToString(", ") { "${it.itemName} - ${it.quantity} ${it.unit}" }
         val itemsJson = serializeRequisitionItems(items)
-        dao.insertRequisition(RequisitionRequest(java.util.UUID.randomUUID().toString(), pointName, applicant, RequestStatus.PENDING, comment, System.currentTimeMillis(), summary, itemsJson))
+        val r = RequisitionRequest(java.util.UUID.randomUUID().toString(), pointName, applicant, RequestStatus.PENDING, comment, System.currentTimeMillis(), summary, itemsJson)
+        dao.insertRequisition(r)
+        syncManager?.pushRequisitionAsync(getCurrentUnitKey(), r)
     }
     
     suspend fun updateRequisitionStatus(id: String, st: RequestStatus) {
         val r = dao.getAllRequisitions().first().find { it.id == id }
-        if (r != null) dao.updateRequisition(r.copy(status = st))
+        if (r != null) {
+            val updated = r.copy(status = st)
+            dao.updateRequisition(updated)
+            syncManager?.pushRequisitionAsync(getCurrentUnitKey(), updated)
+        }
     }
-    suspend fun deleteRequisition(id: String) = dao.deleteRequisition(id)
+    suspend fun deleteRequisition(id: String) {
+        dao.deleteRequisition(id)
+        syncManager?.deleteRequisitionAsync(getCurrentUnitKey(), id)
+    }
 
-    suspend fun adjustStockQuantity(pointId: String, itemId: String, change: Int, isIncome: Boolean = true) {
+    suspend fun adjustStockQuantity(pointId: String, itemId: String, change: Int, isIncome: Boolean = true): StockRecord {
         val current = dao.getStockItem(pointId, itemId)
-        if (current != null) {
-            dao.insertOrUpdateStock(current.copy(
+        val newRecord = if (current != null) {
+            current.copy(
                 quantity = current.quantity + change,
                 incomeTotal = current.incomeTotal + if(isIncome && change > 0) change else 0,
                 expenseTotal = current.expenseTotal + if(!isIncome || change < 0) java.lang.Math.abs(change) else 0
-            ))
+            )
         } else {
-            dao.insertOrUpdateStock(StockRecord(pointId, itemId, change, if(isIncome && change > 0) change else 0, if(!isIncome || change < 0) java.lang.Math.abs(change) else 0))
+            StockRecord(pointId, itemId, change, if(isIncome && change > 0) change else 0, if(!isIncome || change < 0) java.lang.Math.abs(change) else 0)
         }
+        dao.insertOrUpdateStock(newRecord)
+        return newRecord
     }
 
     fun generateForm8ExcelText(ops: List<OperationRecord>, unit: String): String = "Отчет"
