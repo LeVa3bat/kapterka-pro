@@ -172,8 +172,8 @@ fun ExcelReportPreviewDialog(
                             text = {
                                 Text(
                                     text = title,
-                                    fontSize = 12.sp,
-                                    fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium,
                                     color = if (selectedTab == index) SageGreenBright else TacticalTextMuted
                                 )
                             }
@@ -736,22 +736,6 @@ private fun buildForm8OfficialReport(
         }
     }
 
-    if (rows.isEmpty()) {
-        rows.add(
-            listOf(
-                "1",
-                "Мина 120-мм ОФ-843Б (образец)",
-                "Кат. 1",
-                "шт.",
-                "18",
-                "Подавление опорного пункта противника",
-                "$todayStr\n(ОП «Заря»)",
-                "АКТ-01"
-            )
-        )
-        totalQty = 18
-    }
-
     val totalRow = listOf(
         "ИТОГО",
         "Всего списано наименований: ${rows.size}",
@@ -895,23 +879,6 @@ private fun buildForm18OfficialReport(
         )
     }
 
-    if (rows.isEmpty()) {
-        rows.add(
-            listOf(
-                todayStr,
-                "Акт приема № 12",
-                "Служба снабжения ➔ Базовый склад",
-                "Мина 120-мм ОФ-843Б (24 шт.)",
-                "24",
-                "-",
-                "24",
-                "Проведено"
-            )
-        )
-        totalPrihod = 24
-        rollingStock = 24
-    }
-
     val totalRow = listOf(
         "ИТОГО",
         "Обороты за период",
@@ -1044,24 +1011,6 @@ private fun buildConsolidatedReport(
         idx++
     }
 
-    if (rows.isEmpty()) {
-        rows.add(
-            listOf(
-                "1",
-                "Мина 120-мм ОФ-843Б",
-                "Служба РАВ",
-                "шт.",
-                "18",
-                "9",
-                "Базовый склад: 5; ОП «Скала»: 2; ОП «Заря»: 2",
-                "9"
-            )
-        )
-        totalInc = 18
-        totalExp = 9
-        totalRem = 9
-    }
-
     val totalRow = listOf(
         "ИТОГО",
         "Всего позиций в ведомости: ${rows.size}",
@@ -1185,21 +1134,6 @@ private fun buildSinglePointReport(
         idx++
     }
 
-    if (rows.isEmpty()) {
-        rows.add(
-            listOf(
-                "-",
-                "Имущество на данной точке отсутствует",
-                "-",
-                "-",
-                "0",
-                "0",
-                "0",
-                "-"
-            )
-        )
-    }
-
     val totalRow = listOf(
         "ИТОГО",
         "Итого на точке «${point.name}»",
@@ -1297,20 +1231,6 @@ private fun buildRequisitionsReport(
                 req.status.titleRu,
                 req.itemsSummary,
                 req.comment.ifEmpty { "Плановая заявка" }
-            )
-        )
-    }
-
-    if (rows.isEmpty()) {
-        rows.add(
-            listOf(
-                "-",
-                "-",
-                "-",
-                "-",
-                "-",
-                "Активных заявок нет",
-                "-"
             )
         )
     }
