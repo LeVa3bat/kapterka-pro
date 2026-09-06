@@ -161,7 +161,8 @@ class KapterkaRepository(
         dao.insertOperation(op)
         val updatedStocks = mutableListOf<StockRecord>()
         for (item in items) {
-            updatedStocks.add(adjustStockQuantity(fromPointId, item.itemId, -item.quantity, isIncome = false))
+            val adjustedStock = adjustStockQuantity(fromPointId, item.itemId, -item.quantity, isIncome = false)
+            updatedStocks.add(adjustedStock)
             // No destination stock update because it's issued to soldiers (off-balance)
         }
         syncManager?.pushOperationAsync(getCurrentUnitKey(), op, updatedStocks)
