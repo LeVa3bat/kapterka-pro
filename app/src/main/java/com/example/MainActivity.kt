@@ -427,6 +427,7 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel) {
 
     if (showAddCustomItemDialog) {
         AddCustomItemDialog(
+            availableCategories = availableCategories,
             onDismiss = { showAddCustomItemDialog = false },
             onConfirm = { name, service, subType, unit ->
                 viewModel.addCustomItem(name, service, subType, unit)

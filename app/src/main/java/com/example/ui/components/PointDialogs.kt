@@ -281,27 +281,14 @@ fun EditPointDialog(
 
 @Composable
 fun AddCustomItemDialog(
+    availableCategories: List<String>,
     onDismiss: () -> Unit,
     onConfirm: (name: String, serviceCategory: String, subType: String, unit: String) -> Unit
 ) {
     var name by remember { mutableStateOf("") }
-    var serviceCategory by remember { mutableStateOf("Служба РАВ") }
+    var serviceCategory by remember { mutableStateOf(availableCategories.firstOrNull { it != "Все виды" } ?: "Служба РАВ") }
     var subType by remember { mutableStateOf("") }
     var unit by remember { mutableStateOf("шт.") }
-
-    val categories = listOf(
-        "Служба РАВ",
-        "Служба БПЛА и робототехники",
-        "Служба связи и РЭБ",
-        "Вещевая служба и СИБЗ",
-        "Медицинская служба",
-        "Инженерная служба",
-        "Служба ГСМ",
-        "Продовольственная служба",
-        "Автомобильная и БТ служба",
-        "Служба РХБЗ",
-        "Топографическая и штабная"
-    )
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -351,32 +338,13 @@ fun AddCustomItemDialog(
                 )
 
                 Spacer(modifier = Modifier.height(10.dp))
-
-                // Service Category selector
-                Text(
-                    text = "Служба обеспечения",
-                    color = TacticalTextSecondary,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium
+                TacticalSearchableTextDropdown(
+                    label = "Служба обеспечения",
+                    value = serviceCategory,
+                    onValueChange = { serviceCategory = it },
+                    suggestions = availableCategories.filter { it != "Все виды" },
+                    placeholder = "Выберите или введите..."
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-
-                var catExpanded by remember { mutableStateOf(false) }
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(TacticalSurfaceLight)
-                        .border(1.dp, TacticalBorder, RoundedCornerShape(8.dp))
-                        .padding(horizontal = 12.dp, vertical = 10.dp)
-                ) {
-                    Text(
-                        text = serviceCategory,
-                        color = TacticalTextPrimary,
-                        fontSize = 13.sp
-                    )
-                }
-
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Row(

@@ -1,0 +1,26 @@
+                // Service Category selector
+                Text(
+                    text = "Служба обеспечения",
+                    color = TacticalTextSecondary,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+
+                var catExpanded by remember { mutableStateOf(false) }
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(TacticalSurfaceLight)
+                        .border(1.dp, TacticalBorder, RoundedCornerShape(8.dp))
+                        .padding(horizontal = 12.dp, vertical = 10.dp)
+                ) {
+                    Text(
+                        text = serviceCategory,
+                        color = TacticalTextPrimary,
+                        fontSize = 13.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))

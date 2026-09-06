@@ -339,53 +339,55 @@ private fun OperationAccordionCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Route: From -> To
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = operation.fromPointName,
-                    color = TacticalTextPrimary,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = " ➔ ",
-                    color = SageGreenPrimary,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = operation.toPointName,
-                    color = SageGreenBright,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            // Items Summary
-            Text(
-                text = operation.itemsSummary,
-                color = TacticalTextSecondary,
-                fontSize = 12.sp,
-                maxLines = if (expanded) Int.MAX_VALUE else 2
-            )
-
             // EXPANDABLE ACCORDION DETAILS
             AnimatedVisibility(visible = expanded) {
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 10.dp)
-                        .background(TacticalBg)
-                        .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(6.dp))
-                        .padding(10.dp)
+                    modifier = Modifier.fillMaxWidth()
                 ) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    // Route: From -> To
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = operation.fromPointName,
+                            color = TacticalTextPrimary,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = " ➔ ",
+                            color = SageGreenPrimary,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = operation.toPointName,
+                            color = SageGreenBright,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    
+                    // Items Summary
+                    Text(
+                        text = operation.itemsSummary,
+                        color = TacticalTextSecondary,
+                        fontSize = 12.sp,
+                        maxLines = Int.MAX_VALUE
+                    )
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 10.dp)
+                            .background(TacticalBg)
+                            .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(6.dp))
+                            .padding(10.dp)
+                    ) {
                     Text(
                         text = "ДЕТАЛИЗАЦИЯ ПРОВОДКИ:",
                         color = TacticalTextMuted,
@@ -443,6 +445,7 @@ private fun OperationAccordionCard(
                         color = TacticalTextSecondary,
                         fontSize = 11.sp
                     )
+                }
                 }
             }
         }

@@ -128,9 +128,10 @@ fun RequestsScreen(
 
     var pendingWarningItems by remember { mutableStateOf<List<String>?>(null) }
 
-    // Map total stock available across all warehouses/points
-    val totalAvailableStocksMap = remember(stockRecords) {
-        stockRecords.groupBy { it.itemId }.mapValues { (_, records) -> records.sumOf { it.quantity } }
+    // Map stock available at the selected point
+    val availableStocksMapForSelectedPoint = remember(stockRecords, selectedPoint) {
+        val selectedPointId = selectedPoint.id
+        stockRecords.filter { it.pointId == selectedPointId }.groupBy { it.itemId }.mapValues { (_, records) -> records.sumOf { it.quantity } }
     }
 
     val callsignPresets = listOf(
@@ -422,7 +423,7 @@ fun RequestsScreen(
                                     label = "",
                                     catalogItems = catalogItems,
                                     selectedItem = draft.selectedItem,
-                                    availableStocksMap = totalAvailableStocksMap,
+                                    availableStocksMap = availableStocksMapForSelectedPoint,
                                     onItemSelected = { selected ->
                                         draft.selectedItem = selected
                                     }
@@ -464,7 +465,7 @@ fun RequestsScreen(
 
                                 // Warning if requested quantity exceeds total warehouse stock
                                 val selected = draft.selectedItem
-                                val totalAvail = if (selected != null) totalAvailableStocksMap[selected.id] ?: 0 else null
+                                val totalAvail = if (selected != null) availableStocksMapForSelectedPoint[selected.id] ?: 0 else null
                                 val reqQty = draft.quantityString.toIntOrNull() ?: 0
                                 if (totalAvail != null && reqQty > totalAvail) {
                                     Spacer(modifier = Modifier.height(6.dp))
@@ -522,7 +523,7 @@ fun RequestsScreen(
                                 val insufficient = draftItems.mapNotNull { d ->
                                     val itm = d.selectedItem ?: return@mapNotNull null
                                     val q = d.quantityString.toIntOrNull() ?: 1
-                                    val avail = totalAvailableStocksMap[itm.id] ?: 0
+                                    val avail = availableStocksMapForSelectedPoint[itm.id] ?: 0
                                     if (q > avail) {
                                         "${itm.name}: на остатках $avail ${itm.unit}, запрошено: $q ${itm.unit}"
                                     } else null

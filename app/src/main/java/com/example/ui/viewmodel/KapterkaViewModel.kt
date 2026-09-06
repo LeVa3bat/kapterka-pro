@@ -142,6 +142,13 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             viewModelScope.launch {
                 eventsFlow.collect { eventMsg ->
                     _toastEvent.emit(eventMsg)
+                    try {
+                        val ringtoneUri = android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION)
+                        val ringtone = android.media.RingtoneManager.getRingtone(application.applicationContext, ringtoneUri)
+                        ringtone.play()
+                    } catch (e: Exception) {
+                        android.util.Log.e("KapterkaViewModel", "Failed to play notification sound", e)
+                    }
                 }
             }
         }
