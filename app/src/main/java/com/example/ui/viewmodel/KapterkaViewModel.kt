@@ -487,7 +487,8 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             } else {
                 _toastEvent.emit("Вход выполнен! Подразделение: $resolvedUnitName")
             }
-
+            repository.triggerCloudSync()
+            
             // Отправляем уведомление разработчику в Telegram
             com.example.data.notification.TelegramNotifier.notifyRegistration(
                 callsign = updatedProfile.callsign,
