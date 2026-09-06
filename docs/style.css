@@ -295,6 +295,46 @@ h1, h2, h3, h4 {
   line-height: 1.6;
 }
 
+.update-banner {
+  display: flex;
+  background-color: rgba(226, 172, 85, 0.1);
+  border: 1px solid var(--tactical-gold);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 26px;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.update-banner-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.update-banner-text {
+  text-align: left;
+}
+
+.update-banner-text strong {
+  display: block;
+  color: var(--tactical-gold);
+  font-size: 0.95rem;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.update-banner-text p {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin: 0 0 8px 0;
+}
+
+.update-banner-text p:last-child {
+  margin-bottom: 0;
+}
+
 .hero-actions {
   display: flex;
   flex-wrap: wrap;
@@ -1083,6 +1123,15 @@ h1, h2, h3, h4 {
   }
   .hero-subtitle {
     font-size: 0.92rem;
+  }
+  .update-banner {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 12px;
+  }
+  .update-banner-text {
+    text-align: center;
   }
   .hero-actions {
     flex-direction: column;
