@@ -47,6 +47,9 @@ class FirebaseSyncManager(
     private val _syncState = MutableStateFlow(SyncState())
     val syncState: StateFlow<SyncState> = _syncState.asStateFlow()
 
+    private val _syncEvents = kotlinx.coroutines.flow.MutableSharedFlow<String>()
+    val syncEvents: kotlinx.coroutines.flow.SharedFlow<String> = _syncEvents
+
     private val deviceId: String by lazy {
         val prefs = context.getSharedPreferences("kapterka_sync_prefs", Context.MODE_PRIVATE)
         var id = prefs.getString("device_uuid", null)
@@ -105,6 +108,11 @@ class FirebaseSyncManager(
                     }
                 } catch (e: Exception) {
                     Log.w(TAG, "Error checking remote unit existence", e)
+                    _syncState.value = _syncState.value.copy(
+                        isSyncing = false,
+                        isOnline = false,
+                        syncMessage = "Ошибка Firestore: База отключена или нет прав. Проверьте консоль Firebase!"
+                    )
                 }
             }
         } catch (e: Exception) {
@@ -119,6 +127,7 @@ class FirebaseSyncManager(
 
     private fun registerUnitListeners(unitKey: String) {
         val unitRef = firestore.collection("units").document(unitKey)
+        var isFirstOpLoad = true
 
         // 1. Warehouse Points listener (с обработкой добавлений, правок и удалений)
         val pointsListener = unitRef.collection("warehouse_points")
@@ -225,10 +234,21 @@ class FirebaseSyncManager(
                     return@addSnapshotListener
                 }
                 if (snapshot != null) {
+                    val isInitial = isFirstOpLoad
+                    isFirstOpLoad = false
+                    
                     scope.launch(Dispatchers.IO) {
                         for (change in snapshot.documentChanges) {
                             val doc = change.document
                             val id = doc.getString("id") ?: doc.id
+                            
+                            if (change.type == DocumentChange.Type.ADDED && !isInitial && !doc.metadata.hasPendingWrites()) {
+                                val typeStr = doc.getString("type") ?: ""
+                                val resp = doc.getString("responsiblePerson") ?: ""
+                                val opName = when(typeStr) { "INCOME" -> "Приход"; "EXPENDITURE" -> "Списание"; "ISSUE" -> "Выдача"; "TRANSFER" -> "Перемещение"; else -> "Операция" }
+                                _syncEvents.emit("☁️ Новая операция от [$resp]: $opName")
+                            }
+                            
                             when (change.type) {
                                 DocumentChange.Type.ADDED, DocumentChange.Type.MODIFIED -> {
                                     try {
@@ -629,5 +649,24 @@ class FirebaseSyncManager(
             } catch (_: Exception) {}
         }
         listeners.clear()
+    }
+
+    fun clearCloudDataAsync(unitKey: String) {
+        scope.launch(Dispatchers.IO) {
+            try {
+                val cleanKey = unitKey.trim()
+                if (cleanKey.isEmpty()) return@launch
+                val unitRef = firestore.collection("units").document(cleanKey)
+                val collectionsToClear = listOf("stock_records", "operation_records", "requisitions")
+                for (col in collectionsToClear) {
+                    val snapshot = unitRef.collection(col).get().await()
+                    for (doc in snapshot.documents) {
+                        doc.reference.delete().await()
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error clearing cloud data", e)
+            }
+        }
     }
 }

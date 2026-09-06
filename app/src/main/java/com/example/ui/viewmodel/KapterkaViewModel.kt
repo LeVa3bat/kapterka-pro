@@ -137,6 +137,14 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         val database = KapterkaDatabase.getDatabase(application, viewModelScope)
         val syncManager = com.example.data.sync.FirebaseSyncManager(application, database.kapterkaDao(), viewModelScope)
         repository = KapterkaRepository(database.kapterkaDao(), syncManager)
+        
+        repository.syncEvents?.let { eventsFlow ->
+            viewModelScope.launch {
+                eventsFlow.collect { eventMsg ->
+                    _toastEvent.emit(eventMsg)
+                }
+            }
+        }
 
         licenseManager = com.example.data.license.LicenseManager(application, database.kapterkaDao(), viewModelScope)
         licenseStatus = licenseManager.licenseStatus

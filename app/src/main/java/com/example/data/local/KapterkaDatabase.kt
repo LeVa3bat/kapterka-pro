@@ -83,26 +83,6 @@ abstract class KapterkaDatabase : RoomDatabase() {
 
                 // Initialize catalog
                 // Items initialized in Repository
-
-                // Seed some initial realistic stock for Base Sklad to make the app live and ready
-                val baseStock = listOf(
-                    StockRecord("base_sklad", "rav_01", quantity = 48, incomeTotal = 48, expenseTotal = 0),
-                    StockRecord("base_sklad", "rav_03", quantity = 64, incomeTotal = 64, expenseTotal = 0),
-                    StockRecord("base_sklad", "rav_05", quantity = 12, incomeTotal = 12, expenseTotal = 0),
-                    StockRecord("base_sklad", "rav_09", quantity = 30, incomeTotal = 30, expenseTotal = 0),
-                    StockRecord("base_sklad", "rav_11", quantity = 40, incomeTotal = 40, expenseTotal = 0),
-                    StockRecord("base_sklad", "bpla_01", quantity = 2, incomeTotal = 2, expenseTotal = 0),
-                    StockRecord("base_sklad", "bpla_02", quantity = 1, incomeTotal = 1, expenseTotal = 0),
-                    StockRecord("base_sklad", "bpla_03", quantity = 10, incomeTotal = 10, expenseTotal = 0),
-                    StockRecord("base_sklad", "bpla_05", quantity = 20, incomeTotal = 20, expenseTotal = 0),
-                    StockRecord("base_sklad", "reb_01", quantity = 6, incomeTotal = 6, expenseTotal = 0),
-                    StockRecord("base_sklad", "reb_03", quantity = 1, incomeTotal = 1, expenseTotal = 0),
-                    StockRecord("base_sklad", "med_01", quantity = 25, incomeTotal = 25, expenseTotal = 0),
-                    StockRecord("base_sklad", "med_03", quantity = 20, incomeTotal = 20, expenseTotal = 0),
-                    StockRecord("base_sklad", "gsm_01", quantity = 200, incomeTotal = 200, expenseTotal = 0),
-                    StockRecord("base_sklad", "prod_01", quantity = 50, incomeTotal = 50, expenseTotal = 0)
-                )
-                dao.insertOrUpdateStockList(baseStock)
             }
         }
     }

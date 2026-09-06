@@ -35,6 +35,8 @@ class KapterkaRepository(
     val allOperations: Flow<List<OperationRecord>> = dao.getAllOperations()
     val allRequisitions: Flow<List<RequisitionRequest>> = dao.getAllRequisitions()
     val allStockRecords: Flow<List<StockRecord>> = dao.getAllStockRecords()
+    
+    val syncEvents: kotlinx.coroutines.flow.SharedFlow<String>? = syncManager?.syncEvents
 
     private suspend fun getCurrentUnitKey(): String {
         return dao.getUserProfile().first()?.unitKey ?: "kapt_59e13b"
@@ -131,6 +133,7 @@ class KapterkaRepository(
         dao.clearAllStockRecords()
         dao.clearAllOperations()
         dao.clearAllRequisitions()
+        syncManager?.clearCloudDataAsync(getCurrentUnitKey())
     }
 
     suspend fun saveUserProfile(profile: UserProfile) {
