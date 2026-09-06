@@ -103,6 +103,7 @@ fun TacticalHeader(
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
+                    .weight(1f, fill = false)
                     .clip(RoundedCornerShape(20.dp))
                     .background(TacticalSurfaceLight)
                     .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(20.dp))
@@ -120,14 +121,20 @@ fun TacticalHeader(
                     text = profile?.callsign ?: "Старшина",
                     color = TacticalTextPrimary,
                     fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
                 Text(
                     text = " • ${profile?.unitName ?: "1-я Рота"}",
                     color = TacticalTextSecondary,
-                    fontSize = 11.sp
+                    fontSize = 11.sp,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
             }
+            
+            Spacer(modifier = Modifier.width(6.dp))
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -180,14 +187,16 @@ fun TacticalHeader(
                         modifier = Modifier
                             .clip(RoundedCornerShape(100.dp))
                             .background(TacticalGold)
-                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                            .padding(horizontal = 10.dp, vertical = 5.dp)
                     ) {
                         Text(
                             text = "ДЕМО (3 ДНЯ)",
                             color = Color(0xFF0D0E10),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Black,
-                            letterSpacing = 0.5.sp
+                            letterSpacing = 0.5.sp,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Visible
                         )
                     }
                 }
