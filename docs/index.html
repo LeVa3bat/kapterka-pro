@@ -159,7 +159,7 @@
                   <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('hero')" class="btn btn-primary btn-lg" style="box-shadow:0 0 16px rgba(141,170,89,0.3);">
                     📥 Скачать APK (v3.1.8 PRO)
                   </a>
-                  <a href="https://apps.rustore.ru/app/com.aistudio.kapterka.jmwqve" target="_blank" rel="noopener noreferrer" style="display:inline-block; transition:transform 0.2s ease;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                  <a href="javascript:void(0)" onclick="openModal('modalRuStore')" style="display:inline-block; transition:transform 0.2s ease;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
                     <img src="rustore_badge.svg" alt="Доступно в RuStore" width="160" height="48" style="display:block; height:48px; width:auto; border-radius:8px; box-shadow:0 4px 14px rgba(0,91,255,0.25);">
                   </a>
                 </div>
@@ -1024,7 +1024,7 @@
               <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('direct')" class="btn btn-primary btn-lg" style="font-size:1.1rem; padding:16px 28px; box-shadow:0 0 20px rgba(141,170,89,0.4);">
                 📥 Скачать APK (Прямая ссылка, 18 МБ)
               </a>
-              <a href="https://apps.rustore.ru/app/com.aistudio.kapterka.jmwqve" target="_blank" rel="noopener noreferrer" style="display:inline-block; transition:transform 0.2s ease;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+              <a href="javascript:void(0)" onclick="openModal('modalRuStore')" style="display:inline-block; transition:transform 0.2s ease;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
                 <img src="rustore_badge.svg" alt="Доступно в RuStore" width="180" height="54" style="display:block; height:54px; width:auto; border-radius:8px; box-shadow:0 4px 16px rgba(0,91,255,0.3);">
               </a>
             </div>
@@ -1385,6 +1385,33 @@
         </a>
         <button class="btn btn-primary btn-sm" onclick="closeModal('modalScreenshot')" style="font-size: 0.8rem;">
           Закрыть
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: RuStore Pending Publication -->
+  <div class="modal-overlay" id="modalRuStore" onclick="if(event.target===this) closeModal('modalRuStore')">
+    <div class="modal-content" style="max-width: 480px; padding: 24px; text-align: center; background: #131915; border: 1px solid rgba(0, 91, 255, 0.4); box-shadow: 0 10px 40px rgba(0,0,0,0.8);">
+      <div style="width: 56px; height: 56px; margin: 0 auto 16px; border-radius: 14px; background: rgba(0,91,255,0.15); display: flex; align-items: center; justify-content: center; border: 1px solid rgba(0,91,255,0.4);">
+        <img src="rustore_badge.svg" alt="RuStore" style="height: 32px; width: auto;">
+      </div>
+      <h3 style="font-size: 1.25rem; color: #fff; margin-bottom: 12px; font-weight: 700;">Публикация в RuStore</h3>
+      <p style="font-size: 0.95rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 20px;">
+        Приложение «Каптёрка Про» (v3.1.8 PRO) успешно загружено в <strong>RuStore</strong> и прямо сейчас проходит завершающую модерацию каталога.
+      </p>
+      <div style="background: rgba(141,170,89,0.08); border: 1px solid rgba(141,170,89,0.25); border-radius: 8px; padding: 12px; margin-bottom: 20px; font-size: 0.88rem; color: var(--text-primary); text-align: left;">
+        ⚡ <strong>Не нужно ждать:</strong> Вы можете прямо сейчас установить официальный релизный APK без ограничений напрямую на телефон или планшет.
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('rustore_modal'); closeModal('modalRuStore');" class="btn btn-primary btn-lg" style="width: 100%; box-shadow: 0 0 16px rgba(141,170,89,0.35);">
+          📥 Скачать официальный APK (18 МБ)
+        </a>
+        <a href="https://apps.rustore.ru/app/com.aistudio.kapterka.jmwqve" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" style="color: #6da2ff; border-color: rgba(0,91,255,0.4); font-size: 0.82rem;">
+          Перейти на страницу в RuStore (если уже опубликовано) ➔
+        </a>
+        <button class="btn btn-secondary btn-sm" onclick="closeModal('modalRuStore')" style="margin-top: 4px;">
+          Понятно, закрыть
         </button>
       </div>
     </div>
