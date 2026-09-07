@@ -274,6 +274,11 @@ function verifyEmailPinCode() {
       window.ym(112255061, 'reachGoal', 'registration_complete', { callsign: newUser.callsign });
     } catch (e) {}
   }
+  if (typeof window.gtag === 'function') {
+    try {
+      window.gtag('event', 'sign_up', { method: 'cabinet_registration' });
+    } catch (e) {}
+  }
 
   // Безопасная отправка уведомления через Google Script (без токенов в коде!)
   try {
@@ -468,6 +473,20 @@ function switchMainTab(tabId) {
 
   // Scroll smoothly to top of content
   window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  // Track virtual pageview in Google Analytics and Yandex.Metrika
+  try {
+    if (typeof window.gtag === 'function') {
+      window.gtag('event', 'page_view', {
+        page_title: document.title,
+        page_location: window.location.origin + window.location.pathname + '#' + tabId,
+        page_path: '/#' + tabId
+      });
+    }
+    if (typeof window.ym === 'function') {
+      window.ym(112255061, 'hit', '/#' + tabId);
+    }
+  } catch (e) {}
 }
 
 // 3. Cabinet Profile Management
@@ -677,6 +696,11 @@ function copyKeyText(text) {
       window.ym(112255061, 'reachGoal', 'license_key_copied', { key: text });
     } catch (e) {}
   }
+  if (typeof window.gtag === 'function') {
+    try {
+      window.gtag('event', 'copy_license_key', { key: text });
+    } catch (e) {}
+  }
 
   if (navigator.clipboard && window.isSecureContext) {
     navigator.clipboard.writeText(text).then(() => {
@@ -694,6 +718,11 @@ function trackApkDownload(source) {
   if (typeof window.ym === 'function') {
     try {
       window.ym(112255061, 'reachGoal', 'apk_download_started', { source: source || 'direct' });
+    } catch (e) {}
+  }
+  if (typeof window.gtag === 'function') {
+    try {
+      window.gtag('event', 'download_apk', { event_category: 'APK', event_label: source || 'direct' });
     } catch (e) {}
   }
   showToast('📥 Скачивание APK-файла «Каптёрка Про v3.1.8» началось...');
@@ -777,6 +806,15 @@ async function processYooKassaPayment() {
   if (typeof window.ym === 'function') {
     try {
       window.ym(112255061, 'reachGoal', 'initiate_yookassa_payment', { callsign, email });
+    } catch (e) {}
+  }
+  if (typeof window.gtag === 'function') {
+    try {
+      window.gtag('event', 'begin_checkout', {
+        value: 490,
+        currency: 'RUB',
+        items: [{ item_name: 'Лицензия Каптёрка Про (30 дней)', price: 490, quantity: 1 }]
+      });
     } catch (e) {}
   }
 
