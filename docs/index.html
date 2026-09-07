@@ -11,6 +11,7 @@
   <meta http-equiv="Expires" content="0">
   <link rel="canonical" href="https://kapterka-pro.ru/">
   <meta name="robots" content="index, follow">
+  <meta name="google-site-verification" content="3271685078741b10" />
 
   <!-- Open Graph & Social Media SEO (Telegram, VK, WhatsApp) -->
   <meta property="og:type" content="website">
@@ -20,6 +21,24 @@
   <meta property="og:image" content="https://kapterka-pro.ru/favicon.svg">
   <meta property="og:site_name" content="Каптёрка Про">
   <meta property="og:locale" content="ru_RU">
+
+  <!-- Schema.org SoftwareApplication (SEO) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Каптёрка Про",
+    "operatingSystem": "Android",
+    "applicationCategory": "BusinessApplication",
+    "offers": {
+      "@type": "Offer",
+      "price": "490.00",
+      "priceCurrency": "RUB"
+    },
+    "description": "Автономное мобильное приложение для учета материальных средств, складов, формы № 8 (Акт расхода) и формы № 18 (Книга учета).",
+    "url": "https://kapterka-pro.ru/"
+  }
+  </script>
 
   <!-- Twitter Cards -->
   <meta name="twitter:card" content="summary_large_image">
@@ -125,11 +144,20 @@
             </div>
 
             <div class="hero-actions">
-              <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('hero')" class="btn btn-primary btn-lg" style="box-shadow:0 0 16px rgba(141,170,89,0.3);">
-                📥 Скачать APK (v3.1.8 PRO)
-              </a>
-              <button class="btn btn-gold btn-lg" onclick="switchMainTab('tabPayment')">Оформить лицензию 490 ₽ ➔</button>
-              <button class="btn btn-outline btn-lg" onclick="switchMainTab('tabCabinet')">Личный кабинет</button>
+              <div style="display:flex; flex-direction:column; gap:16px; align-items:center;">
+                <div style="display:flex; flex-wrap:wrap; gap:16px; justify-content:center;">
+                  <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('hero')" class="btn btn-primary btn-lg" style="box-shadow:0 0 16px rgba(141,170,89,0.3);">
+                    📥 Скачать APK (v3.1.8 PRO)
+                  </a>
+                  <a href="https://apps.rustore.ru/app/com.aistudio.kapterka.jmwqve" target="_blank" rel="noopener noreferrer" style="display:inline-block; height:48px;">
+                    <img src="https://www.rustore.ru/assets/images/download-rustore-white.svg" alt="Загрузить из RuStore" style="height:100%; border-radius:8px; box-shadow:0 0 16px rgba(255,255,255,0.1);">
+                  </a>
+                </div>
+                <div style="display:flex; flex-wrap:wrap; gap:16px; justify-content:center;">
+                  <button class="btn btn-gold btn-lg" onclick="switchMainTab('tabPayment')">Оформить лицензию 490 ₽ ➔</button>
+                  <button class="btn btn-outline btn-lg" onclick="switchMainTab('tabCabinet')">Личный кабинет</button>
+                </div>
+              </div>
             </div>
 
             <div class="hero-features-chips">
@@ -986,6 +1014,11 @@
               <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('direct')" class="btn btn-primary btn-lg" style="font-size:1.1rem; padding:16px 28px; box-shadow:0 0 20px rgba(141,170,89,0.4);">
                 📥 Скачать APK (Прямая ссылка, 18 МБ)
               </a>
+              <a href="https://apps.rustore.ru/app/com.aistudio.kapterka.jmwqve" target="_blank" rel="noopener noreferrer" style="display:inline-block; height:56px;">
+                <img src="https://www.rustore.ru/assets/images/download-rustore-white.svg" alt="Загрузить из RuStore" style="height:100%; border-radius:8px; box-shadow:0 0 16px rgba(255,255,255,0.1);">
+              </a>
+            </div>
+            <div style="margin-top:8px;">
               <a href="https://t.me/Levaminbat" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-lg" style="font-size:1rem; border-color:var(--accent-gold); color:var(--accent-gold);">
                 ✈️ Написать в Telegram (@Levaminbat)
               </a>
