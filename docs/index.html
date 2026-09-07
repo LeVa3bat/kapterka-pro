@@ -169,7 +169,10 @@
         </button>
       </div>
 
-      <div class="nav-actions">
+      <div class="nav-actions" style="display:flex; align-items:center; gap:8px;">
+        <a href="https://t.me/kapterka_pro" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" style="font-size:0.75rem; padding:5px 9px; color:#29b6f6; border-color:rgba(41,182,246,0.4); text-decoration:none; display:inline-flex; align-items:center; gap:4px;" title="Официальный Telegram-канал">
+          <span>📢</span> TG-канал
+        </a>
         <div class="user-quick-pill" id="userQuickPill" onclick="switchMainTab('tabCabinet')" title="Открыть Личный кабинет">
           <span class="status-indicator"></span>
           <span id="navCallsignDisplay">Войти / Регистрация</span>
@@ -256,6 +259,14 @@
               <button class="btn btn-outline btn-sm" onclick="openModal('modalOpsec')" style="font-size: 0.82rem; padding: 7px 14px; display: inline-flex; align-items: center; gap: 6px; border-color: rgba(255,85,85,0.4); color: #ff7777;">
                 <span>🛡️</span> Безопасность (OPSEC)
               </button>
+            </div>
+            <div style="margin-top: 12px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+              <a href="https://t.me/kapterka_pro" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" style="font-size: 0.82rem; padding: 6px 14px; display: inline-flex; align-items: center; gap: 6px; border-color: rgba(41,182,246,0.5); color: #29b6f6; background: rgba(41,182,246,0.07); text-decoration: none;">
+                <span>📢</span> TG-канал @kapterka_pro
+              </a>
+              <a href="https://t.me/kapterka_help_bot" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" style="font-size: 0.82rem; padding: 6px 14px; display: inline-flex; align-items: center; gap: 6px; border-color: rgba(91,192,190,0.5); color: #5bc0be; background: rgba(91,192,190,0.07); text-decoration: none;">
+                <span>🤖</span> Бот поддержки @kapterka_help_bot
+              </a>
             </div>
           </div>
 
@@ -658,6 +669,21 @@
             <p>Здесь сохранены ваши персональные ключи, привязка подразделений и история оплат</p>
           </div>
 
+          <!-- Информационный блок Telegram сообщества и бота -->
+          <div style="background:rgba(41,182,246,0.07); border:1px solid rgba(41,182,246,0.25); border-radius:var(--radius-sm); padding:12px 16px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <div style="font-size:0.85rem; color:var(--text-primary); line-height:1.4;">
+              📢 <strong>Официальный Telegram-канал «Каптёрка Про»:</strong> свежие сборки APK, шаблоны бланков и инструкции.
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <a href="https://t.me/kapterka_pro" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" style="font-size:0.8rem; color:#29b6f6; border-color:rgba(41,182,246,0.5); text-decoration:none;">
+                📢 Подписаться (@kapterka_pro)
+              </a>
+              <a href="https://t.me/kapterka_help_bot" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" style="font-size:0.8rem; color:#5bc0be; border-color:rgba(91,192,190,0.5); text-decoration:none;">
+                🤖 Бот поддержки
+              </a>
+            </div>
+          </div>
+
         <!-- Карточка 1: Когда лицензия активна и оплачена -->
         <div class="vault-key-card" id="cabActiveKeyCard" style="display:none;">
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
@@ -891,10 +917,15 @@
                 </button>
 
                 <div style="background:#0c160e; border:1px solid rgba(141,170,89,0.35); border-radius:var(--radius-sm); padding:10px 12px; margin-bottom:14px; font-size:0.8rem; color:var(--text-secondary); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
-                  <span>💬 Нужен ключ прямо сейчас в Telegram?</span>
-                  <a href="https://t.me/Levaminbat" target="_blank" class="btn btn-outline btn-sm" style="font-size:0.75rem; color:#5bc0be; border-color:#5bc0be; padding:3px 8px;">
-                    ✈️ Написать разработчику @Levaminbat
-                  </a>
+                  <span>💬 Нужен ключ прямо сейчас или есть вопрос?</span>
+                  <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                    <a href="https://t.me/kapterka_help_bot" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" style="font-size:0.75rem; color:#5bc0be; border-color:#5bc0be; padding:4px 8px; text-decoration:none;">
+                      🤖 Бот поддержки @kapterka_help_bot
+                    </a>
+                    <a href="https://t.me/Levaminbat" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" style="font-size:0.75rem; color:#29b6f6; border-color:rgba(41,182,246,0.5); padding:4px 8px; text-decoration:none;">
+                      ✈️ @Levaminbat
+                    </a>
+                  </div>
                 </div>
 
                 <div style="margin-top:10px; text-align:center; margin-bottom:14px;">
@@ -1162,12 +1193,18 @@
                 <img src="rustore_badge.svg" alt="Доступно в RuStore" width="180" height="54" style="display:block; height:54px; width:auto; border-radius:8px; box-shadow:0 4px 16px rgba(0,91,255,0.3);">
               </a>
             </div>
-            <div style="margin-top:8px;">
-              <a href="https://t.me/Levaminbat" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-lg" style="font-size:1rem; border-color:var(--accent-gold); color:var(--accent-gold);">
-                ✈️ Написать в Telegram (@Levaminbat)
+            <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap; justify-content:center;">
+              <a href="https://t.me/kapterka_pro" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-lg" style="font-size:0.95rem; border-color:#29b6f6; color:#29b6f6; background:rgba(41,182,246,0.08); display:inline-flex; align-items:center; gap:8px;">
+                <span>📢</span> Канал в Telegram (@kapterka_pro)
+              </a>
+              <a href="https://t.me/kapterka_help_bot" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-lg" style="font-size:0.95rem; border-color:#5bc0be; color:#5bc0be; background:rgba(91,192,190,0.08); display:inline-flex; align-items:center; gap:8px;">
+                <span>🤖</span> Бот поддержки (@kapterka_help_bot)
+              </a>
+              <a href="https://t.me/Levaminbat" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-lg" style="font-size:0.95rem; border-color:var(--accent-gold); color:var(--accent-gold); display:inline-flex; align-items:center; gap:8px;">
+                <span>✈️</span> @Levaminbat
               </a>
             </div>
-            <button class="btn btn-outline btn-sm" onclick="openModal('modalContact')" style="color:var(--text-secondary); border-color:rgba(255,255,255,0.15);">
+            <button class="btn btn-outline btn-sm" onclick="openModal('modalContact')" style="color:var(--text-secondary); border-color:rgba(255,255,255,0.15); margin-top:4px;">
               💬 Нужна помощь с установкой на планшет/телефон?
             </button>
           </div>
@@ -1369,14 +1406,18 @@
         </div>
 
         <div class="footer-col">
-          <h4>Связь с разработчиком</h4>
+          <h4>Связь и сообщество</h4>
           <ul class="footer-links">
-            <li><strong style="color:var(--text-primary);">Email:</strong> <a href="mailto:alex.666.881@gmail.com">alex.666.881@gmail.com</a></li>
-            <li><strong style="color:var(--text-primary);">Telegram:</strong> <a href="https://t.me/Levaminbat" target="_blank">@Levaminbat</a></li>
-            <li><strong style="color:var(--text-primary);">Поддержка:</strong> 24/7</li>
+            <li><strong style="color:var(--text-primary);">📢 Канал:</strong> <a href="https://t.me/kapterka_pro" target="_blank" rel="noopener noreferrer" style="color:#29b6f6;">@kapterka_pro</a></li>
+            <li><strong style="color:var(--text-primary);">🤖 Бот поддержки:</strong> <a href="https://t.me/kapterka_help_bot" target="_blank" rel="noopener noreferrer" style="color:#5bc0be;">@kapterka_help_bot</a></li>
+            <li><strong style="color:var(--text-primary);">💬 Разработчик:</strong> <a href="https://t.me/Levaminbat" target="_blank" rel="noopener noreferrer">@Levaminbat</a></li>
+            <li><strong style="color:var(--text-primary);">✉️ Email:</strong> <a href="mailto:alex.666.881@gmail.com">alex.666.881@gmail.com</a></li>
           </ul>
-          <div style="margin-top:14px;">
-            <button class="btn btn-outline" style="width:100%; padding:8px 14px; font-size:0.85rem;" onclick="openModal('modalContact')">
+          <div style="margin-top:14px; display:flex; flex-direction:column; gap:8px;">
+            <a href="https://t.me/kapterka_pro" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm" style="width:100%; padding:7px 12px; font-size:0.82rem; text-align:center; text-decoration:none;">
+              📢 Подписаться на канал
+            </a>
+            <button class="btn btn-outline btn-sm" style="width:100%; padding:7px 12px; font-size:0.82rem;" onclick="openModal('modalContact')">
               ✉️ Написать разработчику
             </button>
           </div>
@@ -1476,8 +1517,10 @@
         <p style="margin-bottom:16px;">По вопросам приобретения партий ключей для подразделений, индивидуальных доработок или техподдержки:</p>
         
         <div style="background:#0c0f0d; padding:14px; border-radius:10px; border:1px solid var(--border-color); margin-bottom:20px;">
-          <div>✉️ <strong>Email:</strong> alex.666.881@gmail.com</div>
-          <div style="margin-top:6px;">💬 <strong>Telegram:</strong> <a href="https://t.me/Levaminbat" target="_blank" style="color:var(--accent-gold); font-weight:bold;">@Levaminbat</a></div>
+          <div>📢 <strong>Telegram-канал:</strong> <a href="https://t.me/kapterka_pro" target="_blank" rel="noopener noreferrer" style="color:#29b6f6; font-weight:bold;">@kapterka_pro</a></div>
+          <div style="margin-top:6px;">🤖 <strong>Бот поддержки:</strong> <a href="https://t.me/kapterka_help_bot" target="_blank" rel="noopener noreferrer" style="color:#5bc0be; font-weight:bold;">@kapterka_help_bot</a></div>
+          <div style="margin-top:6px;">💬 <strong>Личка разработчика:</strong> <a href="https://t.me/Levaminbat" target="_blank" rel="noopener noreferrer" style="color:var(--accent-gold); font-weight:bold;">@Levaminbat</a></div>
+          <div style="margin-top:6px;">✉️ <strong>Email:</strong> alex.666.881@gmail.com</div>
           <div style="margin-top:6px;">🛡️ <strong>ИНН:</strong> 250104230398</div>
         </div>
 
