@@ -107,8 +107,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=3.0.2">
-  <link rel="stylesheet" href="tabs_and_cabinet.css?v=3.0.2">
+  <link rel="stylesheet" href="style.css?v=3.1.0">
+  <link rel="stylesheet" href="tabs_and_cabinet.css?v=3.1.0">
 
   <!-- Favicon & Mobile Icons (Тактическая светящаяся иконка Каптёрка Про) -->
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
@@ -153,16 +153,16 @@
       <!-- Compact Tab Navigation: Все разделено по вкладкам -->
       <div class="main-tab-nav" id="mainTabNav">
         <button class="main-tab-btn active" id="btnTabOverview" onclick="switchMainTab('tabOverview')">
-          ⚡ Обзор и Возможности
+          ⚡ Возможности
         </button>
         <button class="main-tab-btn" id="btnTabCabinet" onclick="switchMainTab('tabCabinet')">
           👤 Личный кабинет
         </button>
         <button class="main-tab-btn gold-tab" id="btnTabPayment" onclick="switchMainTab('tabPayment')">
-          💳 Оплата ЮKassa (490 ₽)
+          💳 Лицензия 490 ₽
         </button>
         <button class="main-tab-btn" id="btnTabSync" onclick="switchMainTab('tabSync')">
-          🔗 Подразделения и Роты
+          🔗 Роты и Склады
         </button>
         <button class="main-tab-btn" id="btnTabDownload" onclick="switchMainTab('tabDownload')">
           📥 Скачать APK
@@ -1566,6 +1566,30 @@
     </div>
   </div>
 
-  <script src="app.js?v=6.1"></script>
+  <!-- Mobile Bottom Tab Navigation (Easy thumb-reach navigation) -->
+  <nav class="mobile-bottom-tabs" aria-label="Быстрая навигация">
+    <button class="mobile-bottom-tab-btn active" id="mobileTabOverview" onclick="switchMainTab('tabOverview')">
+      <span class="tab-icon">⚡</span>
+      <span>Обзор</span>
+    </button>
+    <button class="mobile-bottom-tab-btn" id="mobileTabCabinet" onclick="switchMainTab('tabCabinet')">
+      <span class="tab-icon">👤</span>
+      <span>Кабинет</span>
+    </button>
+    <button class="mobile-bottom-tab-btn gold" id="mobileTabPayment" onclick="switchMainTab('tabPayment')">
+      <span class="tab-icon">💳</span>
+      <span>Лицензия</span>
+    </button>
+    <button class="mobile-bottom-tab-btn" id="mobileTabSync" onclick="switchMainTab('tabSync')">
+      <span class="tab-icon">🔗</span>
+      <span>Склады</span>
+    </button>
+    <button class="mobile-bottom-tab-btn" id="mobileTabDownload" onclick="switchMainTab('tabDownload')">
+      <span class="tab-icon">📥</span>
+      <span>APK</span>
+    </button>
+  </nav>
+
+  <script src="app.js?v=6.2"></script>
 </body>
 </html>

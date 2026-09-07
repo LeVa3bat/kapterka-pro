@@ -449,6 +449,23 @@ function switchMainTab(tabId) {
     if (activeBtn) activeBtn.classList.add('active');
   }
 
+  // Update mobile bottom nav highlight
+  document.querySelectorAll('.mobile-bottom-tab-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  const mobileBtnMap = {
+    'tabOverview': 'mobileTabOverview',
+    'tabCabinet': 'mobileTabCabinet',
+    'tabPayment': 'mobileTabPayment',
+    'tabSync': 'mobileTabSync',
+    'tabDownload': 'mobileTabDownload'
+  };
+  const activeMobileBtnId = mobileBtnMap[tabId];
+  if (activeMobileBtnId) {
+    const mobileBtn = document.getElementById(activeMobileBtnId);
+    if (mobileBtn) mobileBtn.classList.add('active');
+  }
+
   // Scroll smoothly to top of content
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }

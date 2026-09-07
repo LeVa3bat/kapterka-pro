@@ -35,13 +35,17 @@
 html {
   scroll-behavior: smooth;
   font-size: 16px;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
   background-color: var(--bg-main);
   color: var(--text-primary);
   font-family: var(--font-sans);
-  line-height: 1.55;
+  line-height: 1.6;
+  letter-spacing: -0.01em;
   overflow-x: hidden;
   background-image: 
     radial-gradient(circle at 15% 10%, rgba(141, 170, 89, 0.08) 0%, transparent 40%),
@@ -1306,17 +1310,18 @@ h1, h2, h3, h4 {
   }
 
   .hero-content h1 {
-    font-size: 1.45rem !important;
-    line-height: 1.22 !important;
+    font-size: 1.55rem !important;
+    line-height: 1.25 !important;
     word-break: normal !important;
     overflow-wrap: break-word !important;
-    margin-bottom: 8px !important;
+    margin-bottom: 10px !important;
+    letter-spacing: -0.02em !important;
   }
 
   .hero-subtitle {
-    font-size: 0.84rem !important;
-    line-height: 1.4 !important;
-    margin-bottom: 14px !important;
+    font-size: 0.9rem !important;
+    line-height: 1.5 !important;
+    margin-bottom: 16px !important;
   }
 
   .hero-actions {
@@ -1416,14 +1421,14 @@ h1, h2, h3, h4 {
   }
 
   .feature-card h3 {
-    font-size: 0.88rem !important;
-    line-height: 1.2 !important;
-    margin-bottom: 4px !important;
+    font-size: 0.94rem !important;
+    line-height: 1.3 !important;
+    margin-bottom: 6px !important;
   }
 
   .feature-card p {
-    font-size: 0.74rem !important;
-    line-height: 1.35 !important;
+    font-size: 0.82rem !important;
+    line-height: 1.45 !important;
   }
 
   .feature-tag {
