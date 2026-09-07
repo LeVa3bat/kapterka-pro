@@ -229,22 +229,30 @@
             </div>
 
             <div class="hero-features-chips">
-              <div class="chip">
+              <a href="javascript:void(0)" onclick="openModal('modalFeatures')" class="chip chip-clickable" title="Нажмите, чтобы открыть функционал МТО">
                 <span class="chip-icon">⚡</span>
                 <span>100% автономно без сети</span>
-              </div>
+              </a>
               <div class="chip">
                 <span class="chip-icon">🔑</span>
                 <span>Персональный ключ бойца</span>
               </div>
-              <div class="chip">
+              <a href="javascript:void(0)" onclick="openModal('modalOpsec')" class="chip chip-clickable" title="Нажмите, чтобы открыть архитектуру безопасности">
                 <span class="chip-icon">🛡️</span>
-                <span>Нет привязки 1 ключ = 1 рота</span>
-              </div>
+                <span>OPSEC: Нулевая телеметрия</span>
+              </a>
               <div class="chip">
                 <span class="chip-icon">📊</span>
                 <span>Форма 8 и Форма 18 для штаба</span>
               </div>
+            </div>
+            <div style="margin-top: 14px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+              <button class="btn btn-outline btn-sm" onclick="openModal('modalFeatures')" style="font-size: 0.82rem; padding: 7px 14px; display: inline-flex; align-items: center; gap: 6px; border-color: rgba(141,170,89,0.4); color: var(--primary);">
+                <span>⚙️</span> Полный функционал МТО
+              </button>
+              <button class="btn btn-outline btn-sm" onclick="openModal('modalOpsec')" style="font-size: 0.82rem; padding: 7px 14px; display: inline-flex; align-items: center; gap: 6px; border-color: rgba(255,85,85,0.4); color: #ff7777;">
+                <span>🛡️</span> Безопасность (OPSEC)
+              </button>
             </div>
           </div>
 
@@ -268,120 +276,6 @@
         </div>
       </div>
     </header>
-
-    <!-- Features Overview -->
-    <section class="section" id="features">
-      <div class="container">
-        <div class="section-header">
-          <div class="badge">Функционал МТО</div>
-          <h2>Что умеет программа «Каптёрка Про»</h2>
-          <p>Все инструменты воинского материального учета сведены в единый быстрый интерфейс</p>
-        </div>
-
-        <details style="background: rgba(0,0,0,0.2); border: 1px solid var(--color-border); border-radius: 8px; overflow: hidden; margin-top: 32px;">
-          <summary style="cursor: pointer; padding: 18px 24px; font-weight: bold; font-size: 1.1rem; color: #fff; display: flex; align-items: center; background: rgba(255,255,255,0.03);">
-            <span style="margin-right: 12px; font-size: 1.4rem;">⚙️</span> Развернуть список функций (Функционал МТО)
-          </summary>
-          <div style="padding: 24px; border-top: 1px solid var(--color-border);">
-            <div class="features-grid">
-              <div class="feature-card">
-                <div class="feature-icon-box">📦</div>
-                <h3>Многоскладской учет и точки</h3>
-                <p>Неограниченное число точек хранения: Базовый склад, Рота, ВОП «Север», СП «Высота», Автопарк, склад РАВ и Вещевой службы.</p>
-                <span class="feature-tag">Батальон / Рота / Взвод</span>
-              </div>
-
-          <div class="feature-card">
-            <div class="feature-icon-box">📴</div>
-            <h3>100% Офлайн и защита от РЭБ</h3>
-            <p>База данных SQLite (Room) работает локально на телефоне. Программа не требует интернета или сотовой связи при ведении учета.</p>
-            <span class="feature-tag">Полная автономность</span>
-          </div>
-
-          <div class="feature-card">
-            <div class="feature-icon-box">📜</div>
-            <h3>Форма № 8 и Форма № 18</h3>
-            <p>Оформление официальных воинских актов расхода (ф. 8) и ведение сквозной книги учета наличия и движения мат. средств (ф. 18).</p>
-            <span class="feature-tag">Уставные нормативы</span>
-          </div>
-
-          <div class="feature-card">
-            <div class="feature-icon-box">📊</div>
-            <h3>Экспорт в Excel и CSV</h3>
-            <p>Мгновенная выгрузка оборотных ведомостей и журналов операций в таблицы с разделителем «;» для открытия на компьютерах штаба.</p>
-            <span class="feature-tag">Готово для штаба</span>
-          </div>
-
-          <div class="feature-card">
-            <div class="feature-icon-box">🔑</div>
-            <h3>Персональный ключ бойца</h3>
-            <p>16-значный персональный ключ <code>KAPT-XXXX-XXXX-XXXX</code>. Боец может свободно менять подразделения — его лицензия сохраняется.</p>
-            <span class="feature-tag">Свобода ротации</span>
-          </div>
-
-          <div class="feature-card">
-            <div class="feature-icon-box">📡</div>
-            <h3>Синхронизация складов роты</h3>
-            <p>Связывание телефонов бойцов роты по общему ключу <code>kapt_xxxxxx</code>. Общий баланс БК и имущества при появлении связи.</p>
-            <span class="feature-tag">Командная работа</span>
-          </div>
-            </div>
-          </div>
-        </details>
-      </div>
-    </section>
-
-    <!-- Security Whitepaper Section (OPSEC) -->
-    <section class="section security-section" id="security" style="background-color: var(--color-surface-elevated); border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); padding: 80px 0;">
-      <div class="container">
-        <div class="section-header">
-          <div class="badge" style="background: rgba(255, 60, 60, 0.15); color: #ff5555; border: 1px solid rgba(255, 60, 60, 0.3);">Архитектура безопасности (OPSEC)</div>
-          <h2 style="font-family: monospace;">Безопасность фронтового уровня</h2>
-          <p style="color: var(--color-text-secondary); max-width: 800px; margin: 0 auto; font-family: monospace; font-size: 0.95rem; line-height: 1.6;">
-            Техническое обоснование безопасности использования программного комплекса «Каптёрка ПРО» в условиях активного радиоэлектронного подавления и перехвата (РЭБ / РЭР). Продукт спроектирован с учетом требований информационной безопасности (ИБ) для работы на линии боевого соприкосновения.
-          </p>
-        </div>
-        
-        <details style="margin-top: 24px; background: rgba(0,0,0,0.2); border: 1px solid var(--color-border); border-radius: 8px; overflow: hidden; font-family: monospace;">
-          <summary style="cursor: pointer; padding: 18px 24px; font-weight: bold; font-size: 1.1rem; color: #fff; display: flex; align-items: center; background: rgba(255,255,255,0.03);">
-            <span style="margin-right: 12px; font-size: 1.4rem;">🛡️</span> Развернуть техническое описание OPSEC
-          </summary>
-          <div style="padding: 24px; border-top: 1px solid var(--color-border);">
-            <div class="security-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
-          
-          <div class="security-card" style="background: var(--color-surface); padding: 28px; border-radius: 8px; border-left: 4px solid #ff5555; box-shadow: 0 8px 24px rgba(0,0,0,0.4); text-align: left;">
-            <div style="font-weight: bold; font-size: 1.15rem; margin-bottom: 12px; color: #fff; display: flex; align-items: center;">
-              <span style="font-size: 1.4rem; margin-right: 12px;">🚫</span> 1. Нулевая телеметрия и геолокация
-            </div>
-            <p style="color: #aaa; font-size: 0.9rem; line-height: 1.6; margin: 0;">Приложение не запрашивает и не использует API геолокации Android (GPS/ГЛОНАСС/Network). В манифесте приложения (AndroidManifest.xml) полностью отсутствуют разрешения ACCESS_FINE_LOCATION и ACCESS_COARSE_LOCATION. Сторонние аналитические трекеры (Yandex AppMetrica, Google Analytics) аппаратно исключены из сборки. Отслеживание перемещений устройства исключено на уровне ОС.</p>
-          </div>
-
-          <div class="security-card" style="background: var(--color-surface); padding: 28px; border-radius: 8px; border-left: 4px solid var(--color-primary); box-shadow: 0 8px 24px rgba(0,0,0,0.4); text-align: left;">
-            <div style="font-weight: bold; font-size: 1.15rem; margin-bottom: 12px; color: #fff; display: flex; align-items: center;">
-              <span style="font-size: 1.4rem; margin-right: 12px;">🔒</span> 2. Изолированная локальная БД
-            </div>
-            <p style="color: #aaa; font-size: 0.9rem; line-height: 1.6; margin: 0;">Весь массив учетных данных (остатки БК, экипировка, списки бойцов) сохраняется исключительно в изолированном хранилище устройства (App-Specific Storage) в формате SQLite (Jetpack Room). Файлы базы данных недоступны другим приложениям без наличия Root-прав. Архитектура построена на парадигме 100% Offline-First.</p>
-          </div>
-
-          <div class="security-card" style="background: var(--color-surface); padding: 28px; border-radius: 8px; border-left: 4px solid var(--color-primary-gold); box-shadow: 0 8px 24px rgba(0,0,0,0.4); text-align: left;">
-            <div style="font-weight: bold; font-size: 1.15rem; margin-bottom: 12px; color: #fff; display: flex; align-items: center;">
-              <span style="font-size: 1.4rem; margin-right: 12px;">📴</span> 3. Режим радиотишины (No Push)
-            </div>
-            <p style="color: #aaa; font-size: 0.9rem; line-height: 1.6; margin: 0;">Синхронизация остатков склада между бойцами подразделения происходит исключительно по ручной инициативе пользователя. Приложение не содержит фоновых сервисов для поддержания постоянного соединения (WebSocket, Push-уведомления). Это предотвращает случайное излучение радиомодуля смартфона (режим полного радиомолчания).</p>
-          </div>
-
-          <div class="security-card" style="background: var(--color-surface); padding: 28px; border-radius: 8px; border-left: 4px solid #4a90e2; box-shadow: 0 8px 24px rgba(0,0,0,0.4); text-align: left;">
-            <div style="font-weight: bold; font-size: 1.15rem; margin-bottom: 12px; color: #fff; display: flex; align-items: center;">
-              <span style="font-size: 1.4rem; margin-right: 12px;">🔑</span> 4. Оффлайн-Активация (Air-Gapped)
-            </div>
-            <p style="color: #aaa; font-size: 0.9rem; line-height: 1.6; margin: 0;">Активация военного ключа (KAPT / KPT) производится через криптографическую проверку контрольной суммы непосредственно на устройстве. При отсутствии сети приложение валидирует математическую подпись ключа и открывает PRO-доступ оффлайн. Соединение с биллинговыми серверами не является обязательным.</p>
-          </div>
-
-        </div>
-          </div>
-        </details>
-      </div>
-    </section>
 
         <!-- Sync Mechanism Section -->
     <section class="section sync-mech-section" id="sync-mech" style="background-color: var(--color-bg); padding: 0 0 40px 0;">
@@ -1153,6 +1047,100 @@
             <button class="btn btn-gold" onclick="switchMainTab('tabCabinet')">Управлять подразделением в кабинете ➔</button>
           </div>
         </div>
+
+        <!-- Section: Полный функционал МТО (Вынесен в отдельный защищенный блок) -->
+        <div id="tabSyncFeatures" style="margin-top: 48px; border-top: 1px solid var(--border-color); padding-top: 36px;">
+          <div class="section-header" style="text-align: left; margin-bottom: 24px;">
+            <div class="badge" style="background: rgba(141,170,89,0.15); color: var(--primary); border: 1px solid rgba(141,170,89,0.3);">Модули и уставной учет</div>
+            <h2 style="font-size: 1.65rem; margin: 10px 0;">Функциональные возможности комплекса «Каптёрка Про»</h2>
+            <p style="color: var(--text-secondary); margin: 0; font-size: 0.95rem;">Все инструменты воинского материального учета сведены в единую автономную систему без зависимости от интернета.</p>
+          </div>
+
+          <div class="features-grid">
+            <div class="feature-card">
+              <div class="feature-icon-box">📦</div>
+              <h3>Многоскладской учет и точки</h3>
+              <p>Неограниченное число точек хранения: Базовый склад, Рота, ВОП «Север», СП «Высота», Автопарк, склад РАВ и Вещевой службы.</p>
+              <span class="feature-tag">Батальон / Рота / Взвод</span>
+            </div>
+
+            <div class="feature-card">
+              <div class="feature-icon-box">📴</div>
+              <h3>100% Офлайн и защита от РЭБ</h3>
+              <p>База данных SQLite (Room) работает локально на телефоне. Программа не требует интернета или сотовой связи при ведении учета.</p>
+              <span class="feature-tag">Полная автономность</span>
+            </div>
+
+            <div class="feature-card">
+              <div class="feature-icon-box">📜</div>
+              <h3>Форма № 8 и Форма № 18</h3>
+              <p>Оформление официальных воинских актов расхода (ф. 8) и ведение сквозной книги учета наличия и движения мат. средств (ф. 18).</p>
+              <span class="feature-tag">Уставные нормативы</span>
+            </div>
+
+            <div class="feature-card">
+              <div class="feature-icon-box">📊</div>
+              <h3>Экспорт в Excel и CSV</h3>
+              <p>Мгновенная выгрузка оборотных ведомостей и журналов операций в таблицы с разделителем «;» для открытия на компьютерах штаба.</p>
+              <span class="feature-tag">Готово для штаба</span>
+            </div>
+
+            <div class="feature-card">
+              <div class="feature-icon-box">🔑</div>
+              <h3>Персональный ключ бойца</h3>
+              <p>16-значный персональный ключ <code>KAPT-XXXX-XXXX-XXXX</code>. Боец может свободно менять подразделения — его лицензия сохраняется.</p>
+              <span class="feature-tag">Свобода ротации</span>
+            </div>
+
+            <div class="feature-card">
+              <div class="feature-icon-box">📡</div>
+              <h3>Синхронизация складов роты</h3>
+              <p>Связывание телефонов бойцов роты по общему ключу <code>kapt_xxxxxx</code>. Общий баланс БК и имущества при появлении связи.</p>
+              <span class="feature-tag">Командная работа</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section: Архитектура безопасности (OPSEC) фронтового уровня -->
+        <div id="tabSyncOpsec" style="margin-top: 48px; border-top: 1px solid var(--border-color); padding-top: 36px;">
+          <div class="section-header" style="text-align: left; margin-bottom: 24px;">
+            <div class="badge" style="background: rgba(255, 60, 60, 0.15); color: #ff5555; border: 1px solid rgba(255, 60, 60, 0.3);">Архитектура безопасности (OPSEC)</div>
+            <h2 style="font-size: 1.65rem; margin: 10px 0; font-family: monospace;">Безопасность фронтового уровня</h2>
+            <p style="color: var(--text-secondary); margin: 0; font-family: monospace; font-size: 0.92rem; line-height: 1.6;">
+              Техническое обоснование безопасности использования программного комплекса «Каптёрка ПРО» в условиях активного радиоэлектронного подавления и перехвата (РЭБ / РЭР). Продукт спроектирован с учетом требований информационной безопасности (ИБ) для работы на линии боевого соприкосновения.
+            </p>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+            <div class="security-card" style="background: var(--bg-card); padding: 24px; border-radius: 12px; border-left: 4px solid #ff5555; border: 1px solid var(--border-color); border-left: 4px solid #ff5555;">
+              <div style="font-weight: 700; font-size: 1.05rem; margin-bottom: 10px; color: #fff; display: flex; align-items: center; gap: 8px;">
+                <span>🚫</span> 1. Нулевая телеметрия и геолокация
+              </div>
+              <p style="color: var(--text-secondary); font-size: 0.88rem; line-height: 1.6; margin: 0;">Приложение не запрашивает и не использует API геолокации Android (GPS/ГЛОНАСС). В манифесте полностью отсутствуют разрешения на доступ к геолокации. Сторонние аналитические трекеры исключены из сборки.</p>
+            </div>
+
+            <div class="security-card" style="background: var(--bg-card); padding: 24px; border-radius: 12px; border: 1px solid var(--border-color); border-left: 4px solid var(--primary);">
+              <div style="font-weight: 700; font-size: 1.05rem; margin-bottom: 10px; color: #fff; display: flex; align-items: center; gap: 8px;">
+                <span>🔒</span> 2. Изолированная локальная БД
+              </div>
+              <p style="color: var(--text-secondary); font-size: 0.88rem; line-height: 1.6; margin: 0;">Весь массив учетных данных (остатки БК, экипировка, списки бойцов) сохраняется исключительно в изолированном хранилище устройства (App-Specific Storage) в формате SQLite (Room). Архитектура построена на парадигме 100% Offline-First.</p>
+            </div>
+
+            <div class="security-card" style="background: var(--bg-card); padding: 24px; border-radius: 12px; border: 1px solid var(--border-color); border-left: 4px solid var(--accent-gold);">
+              <div style="font-weight: 700; font-size: 1.05rem; margin-bottom: 10px; color: #fff; display: flex; align-items: center; gap: 8px;">
+                <span>📴</span> 3. Режим радиотишины (No Push)
+              </div>
+              <p style="color: var(--text-secondary); font-size: 0.88rem; line-height: 1.6; margin: 0;">Синхронизация складов роты происходит исключительно по ручной команде пользователя. В приложении нет фоновых демонов и push-уведомлений, излучающих в радиоэфир.</p>
+            </div>
+
+            <div class="security-card" style="background: var(--bg-card); padding: 24px; border-radius: 12px; border: 1px solid var(--border-color); border-left: 4px solid #4a90e2;">
+              <div style="font-weight: 700; font-size: 1.05rem; margin-bottom: 10px; color: #fff; display: flex; align-items: center; gap: 8px;">
+                <span>🔑</span> 4. Оффлайн-Активация (Air-Gapped)
+              </div>
+              <p style="color: var(--text-secondary); font-size: 0.88rem; line-height: 1.6; margin: 0;">Активация военного ключа (KAPT) производится через криптографическую проверку контрольной суммы непосредственно на устройстве без обязательного соединения с биллингом.</p>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   </div>
@@ -1363,7 +1351,9 @@
         <div class="footer-col">
           <h4>Разделы платформы</h4>
           <ul class="footer-links">
-            <li><a href="javascript:void(0)" onclick="switchMainTab('tabOverview')">⚡ Обзор и возможности</a></li>
+            <li><a href="javascript:void(0)" onclick="switchMainTab('tabOverview')">⚡ Главный экран</a></li>
+            <li><a href="javascript:void(0)" onclick="openModal('modalFeatures')">⚙️ Функционал МТО</a></li>
+            <li><a href="javascript:void(0)" onclick="openModal('modalOpsec')">🛡️ Безопасность (OPSEC)</a></li>
             <li><a href="javascript:void(0)" onclick="switchMainTab('tabCabinet')">👤 Личный кабинет бойца</a></li>
             <li><a href="javascript:void(0)" onclick="switchMainTab('tabPayment')">💳 Оплата ЮKassa (490 ₽)</a></li>
             <li><a href="javascript:void(0)" onclick="switchMainTab('tabSync')">🔗 Ключи подразделений</a></li>
@@ -1535,6 +1525,136 @@
         <button class="btn btn-primary btn-sm" onclick="closeModal('modalScreenshot')" style="font-size: 0.8rem;">
           Закрыть
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Полный функционал МТО -->
+  <div class="modal-overlay" id="modalFeatures" onclick="if(event.target===this) closeModal('modalFeatures')">
+    <div class="modal-content" style="max-width: 820px; max-height: 88vh; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 1.4rem;">⚙️</span>
+          <div>
+            <h3 style="margin: 0; font-size: 1.15rem; color: #fff;">Функционал МТО «Каптёрка Про»</h3>
+            <div style="font-size: 0.75rem; color: var(--primary);">Все инструменты воинского материального учета</div>
+          </div>
+        </div>
+        <button class="modal-close" onclick="closeModal('modalFeatures')">×</button>
+      </div>
+      <div class="modal-body" style="padding: 20px; overflow-y: auto;">
+        <div class="features-grid" style="margin-bottom: 20px;">
+          <div class="feature-card">
+            <div class="feature-icon-box">📦</div>
+            <h3>Многоскладской учет и точки</h3>
+            <p>Неограниченное число точек хранения: Базовый склад, Рота, ВОП «Север», СП «Высота», Автопарк, склад РАВ и Вещевой службы.</p>
+            <span class="feature-tag">Батальон / Рота / Взвод</span>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon-box">📴</div>
+            <h3>100% Офлайн и защита от РЭБ</h3>
+            <p>База данных SQLite (Room) работает локально на телефоне. Программа не требует интернета или сотовой связи при ведении учета.</p>
+            <span class="feature-tag">Полная автономность</span>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon-box">📜</div>
+            <h3>Форма № 8 и Форма № 18</h3>
+            <p>Оформление официальных воинских актов расхода (ф. 8) и ведение сквозной книги учета наличия и движения мат. средств (ф. 18).</p>
+            <span class="feature-tag">Уставные нормативы</span>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon-box">📊</div>
+            <h3>Экспорт в Excel и CSV</h3>
+            <p>Мгновенная выгрузка оборотных ведомостей и журналов операций в таблицы с разделителем «;» для открытия на компьютерах штаба.</p>
+            <span class="feature-tag">Готово для штаба</span>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon-box">🔑</div>
+            <h3>Персональный ключ бойца</h3>
+            <p>16-значный персональный ключ <code>KAPT-XXXX-XXXX-XXXX</code>. Боец может свободно менять подразделения — его лицензия сохраняется.</p>
+            <span class="feature-tag">Свобода ротации</span>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon-box">📡</div>
+            <h3>Синхронизация складов роты</h3>
+            <p>Связывание телефонов бойцов роты по общему ключу <code>kapt_xxxxxx</code>. Общий баланс БК и имущества при появлении связи.</p>
+            <span class="feature-tag">Командная работа</span>
+          </div>
+        </div>
+
+        <div style="background: rgba(141,170,89,0.08); border: 1px solid rgba(141,170,89,0.25); border-radius: 8px; padding: 14px; font-size: 0.88rem; color: var(--text-primary); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <strong>Нужна помощь или консультация по функционалу?</strong>
+            <div style="color: var(--text-secondary); font-size: 0.82rem;">Свяжитесь с разработчиком или оформите лицензию для роты.</div>
+          </div>
+          <button class="btn btn-gold btn-sm" onclick="closeModal('modalFeatures'); switchMainTab('tabPayment');">Оформить лицензию 490 ₽</button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" onclick="closeModal('modalFeatures')">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Архитектура безопасности (OPSEC) -->
+  <div class="modal-overlay" id="modalOpsec" onclick="if(event.target===this) closeModal('modalOpsec')">
+    <div class="modal-content" style="max-width: 820px; max-height: 88vh; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 1.4rem;">🛡️</span>
+          <div>
+            <h3 style="margin: 0; font-size: 1.15rem; color: #fff; font-family: monospace;">Архитектура безопасности (OPSEC)</h3>
+            <div style="font-size: 0.75rem; color: #ff6666;">Безопасность фронтового уровня в условиях РЭБ/РЭР</div>
+          </div>
+        </div>
+        <button class="modal-close" onclick="closeModal('modalOpsec')">×</button>
+      </div>
+      <div class="modal-body" style="padding: 20px; overflow-y: auto;">
+        <p style="color: var(--text-secondary); font-size: 0.92rem; line-height: 1.6; margin-bottom: 20px; font-family: monospace;">
+          Техническое обоснование безопасности использования программного комплекса «Каптёрка ПРО» в условиях активного радиоэлектронного подавления и перехвата (РЭБ / РЭР). Продукт спроектирован с учетом требований информационной безопасности (ИБ) для работы на линии боевого соприкосновения.
+        </p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; margin-bottom: 20px;">
+          <div class="security-card" style="background: var(--bg-card); padding: 22px; border-radius: 12px; border: 1px solid var(--border-color); border-left: 4px solid #ff5555;">
+            <div style="font-weight: 700; font-size: 1.05rem; margin-bottom: 10px; color: #fff; display: flex; align-items: center; gap: 8px;">
+              <span>🚫</span> 1. Нулевая телеметрия и геолокация
+            </div>
+            <p style="color: var(--text-secondary); font-size: 0.88rem; line-height: 1.6; margin: 0;">Приложение не запрашивает и не использует API геолокации Android (GPS/ГЛОНАСС/Network). В манифесте полностью отсутствуют разрешения ACCESS_FINE_LOCATION и ACCESS_COARSE_LOCATION. Сторонние аналитические трекеры исключены из сборки.</p>
+          </div>
+
+          <div class="security-card" style="background: var(--bg-card); padding: 22px; border-radius: 12px; border: 1px solid var(--border-color); border-left: 4px solid var(--primary);">
+            <div style="font-weight: 700; font-size: 1.05rem; margin-bottom: 10px; color: #fff; display: flex; align-items: center; gap: 8px;">
+              <span>🔒</span> 2. Изолированная локальная БД
+            </div>
+            <p style="color: var(--text-secondary); font-size: 0.88rem; line-height: 1.6; margin: 0;">Весь массив учетных данных (остатки БК, экипировка, списки бойцов) сохраняется исключительно в изолированном хранилище устройства (App-Specific Storage) в формате SQLite (Jetpack Room). Файлы недоступны другим приложениям без Root-прав.</p>
+          </div>
+
+          <div class="security-card" style="background: var(--bg-card); padding: 22px; border-radius: 12px; border: 1px solid var(--border-color); border-left: 4px solid var(--accent-gold);">
+            <div style="font-weight: 700; font-size: 1.05rem; margin-bottom: 10px; color: #fff; display: flex; align-items: center; gap: 8px;">
+              <span>📴</span> 3. Режим радиотишины (No Push)
+            </div>
+            <p style="color: var(--text-secondary); font-size: 0.88rem; line-height: 1.6; margin: 0;">Синхронизация складов роты происходит исключительно по ручной инициативе пользователя. В приложении нет фоновых сервисов и push-уведомлений, излучающих в радиоэфир.</p>
+          </div>
+
+          <div class="security-card" style="background: var(--bg-card); padding: 22px; border-radius: 12px; border: 1px solid var(--border-color); border-left: 4px solid #4a90e2;">
+            <div style="font-weight: 700; font-size: 1.05rem; margin-bottom: 10px; color: #fff; display: flex; align-items: center; gap: 8px;">
+              <span>🔑</span> 4. Оффлайн-Активация (Air-Gapped)
+            </div>
+            <p style="color: var(--text-secondary); font-size: 0.88rem; line-height: 1.6; margin: 0;">Активация военного ключа (KAPT / KPT) производится через криптографическую проверку контрольной суммы непосредственно на устройстве без обязательного соединения с серверами.</p>
+          </div>
+        </div>
+
+        <div style="background: rgba(255,85,85,0.08); border: 1px solid rgba(255,85,85,0.25); border-radius: 8px; padding: 14px; font-size: 0.88rem; color: #ffcccc;">
+          🛡️ <strong>Соответствие уставным нормам:</strong> База данных роты никогда не покидает смартфон бойца без прямого ручного подтверждения командира.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" onclick="closeModal('modalOpsec')">Закрыть</button>
       </div>
     </div>
   </div>

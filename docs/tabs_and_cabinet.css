@@ -828,4 +828,21 @@
   }
 }
 
+/* Interactive Chips on Hero */
+.chip.chip-clickable {
+  text-decoration: none;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all 0.2s ease;
+}
+
+.chip.chip-clickable:hover {
+  background: rgba(141, 170, 89, 0.12);
+  border-color: rgba(141, 170, 89, 0.35);
+  transform: translateY(-1px);
+}
+
 
