@@ -1638,3 +1638,22 @@ function trackApkDownload(source) {
     console.warn('Analytics tracking error:', e);
   }
 }
+
+// Tactical FAQ Accordion
+function toggleFaq(btn) {
+  const item = btn.closest('.faq-item');
+  if (!item) return;
+  const isActive = item.classList.contains('active');
+  
+  // Close other open FAQ items for clean accordion effect
+  document.querySelectorAll('.faq-item').forEach(el => {
+    if (el !== item) el.classList.remove('active');
+  });
+
+  if (isActive) {
+    item.classList.remove('active');
+  } else {
+    item.classList.add('active');
+  }
+}
+
