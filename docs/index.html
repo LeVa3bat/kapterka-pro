@@ -49,8 +49,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=3.0.1">
-  <link rel="stylesheet" href="tabs_and_cabinet.css?v=3.0.1">
+  <link rel="stylesheet" href="style.css?v=3.0.2">
+  <link rel="stylesheet" href="tabs_and_cabinet.css?v=3.0.2">
 
   <!-- Favicon & Mobile Icons (Тактическая светящаяся иконка Каптёрка Про) -->
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
@@ -155,12 +155,12 @@
 
             <div class="hero-actions">
               <div style="display:flex; flex-direction:column; gap:16px; align-items:center;">
-                <div style="display:flex; flex-wrap:wrap; gap:16px; justify-content:center;">
+                <div style="display:flex; flex-wrap:wrap; gap:16px; justify-content:center; align-items:center;">
                   <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('hero')" class="btn btn-primary btn-lg" style="box-shadow:0 0 16px rgba(141,170,89,0.3);">
                     📥 Скачать APK (v3.1.8 PRO)
                   </a>
-                  <a href="https://apps.rustore.ru/app/com.aistudio.kapterka.jmwqve" target="_blank" rel="noopener noreferrer" style="display:inline-block; height:48px;">
-                    <img src="https://www.rustore.ru/assets/images/download-rustore-white.svg" alt="Загрузить из RuStore" style="height:100%; border-radius:8px; box-shadow:0 0 16px rgba(255,255,255,0.1);">
+                  <a href="https://apps.rustore.ru/app/com.aistudio.kapterka.jmwqve" target="_blank" rel="noopener noreferrer" style="display:inline-block; transition:transform 0.2s ease;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                    <img src="rustore_badge.svg" alt="Доступно в RuStore" width="160" height="48" style="display:block; height:48px; width:auto; border-radius:8px; box-shadow:0 4px 14px rgba(0,91,255,0.25);">
                   </a>
                 </div>
                 <div style="display:flex; flex-wrap:wrap; gap:16px; justify-content:center;">
@@ -1020,12 +1020,12 @@
           <p>Установите официальный APK-файл на смартфон или защищенный полевой планшет (Android 8.0+). Работает без Google Play и сервисов.</p>
           
           <div class="download-actions" style="display:flex; flex-direction:column; align-items:center; gap:12px;">
-            <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center; width:100%;">
+            <div style="display:flex; gap:16px; flex-wrap:wrap; justify-content:center; align-items:center; width:100%;">
               <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('direct')" class="btn btn-primary btn-lg" style="font-size:1.1rem; padding:16px 28px; box-shadow:0 0 20px rgba(141,170,89,0.4);">
                 📥 Скачать APK (Прямая ссылка, 18 МБ)
               </a>
-              <a href="https://apps.rustore.ru/app/com.aistudio.kapterka.jmwqve" target="_blank" rel="noopener noreferrer" style="display:inline-block; height:56px;">
-                <img src="https://www.rustore.ru/assets/images/download-rustore-white.svg" alt="Загрузить из RuStore" style="height:100%; border-radius:8px; box-shadow:0 0 16px rgba(255,255,255,0.1);">
+              <a href="https://apps.rustore.ru/app/com.aistudio.kapterka.jmwqve" target="_blank" rel="noopener noreferrer" style="display:inline-block; transition:transform 0.2s ease;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                <img src="rustore_badge.svg" alt="Доступно в RuStore" width="180" height="54" style="display:block; height:54px; width:auto; border-radius:8px; box-shadow:0 4px 16px rgba(0,91,255,0.3);">
               </a>
             </div>
             <div style="margin-top:8px;">
@@ -1390,6 +1390,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=5.9"></script>
+  <script src="app.js?v=6.0"></script>
 </body>
 </html>

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 48" width="160" height="48">
+  <defs>
+    <linearGradient id="rsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#005BFF"/>
+      <stop offset="100%" stop-color="#0039B3"/>
+    </linearGradient>
+  </defs>
+  <!-- Background Badge Container -->
+  <rect width="160" height="48" rx="8" fill="#111612" stroke="#253528" stroke-width="1.5"/>
+  <rect x="1" y="1" width="158" height="46" rx="7" fill="none" stroke="rgba(0,91,255,0.4)" stroke-width="1"/>
+  
+  <!-- RuStore Logo Icon (Stylized 3D Blocks) -->
+  <g transform="translate(14, 10)">
+    <!-- Top Diamond -->
+    <path d="M14 0 L26 7 L14 14 L2 7 Z" fill="#2E75FF"/>
+    <!-- Left Face -->
+    <path d="M2 7 L14 14 L14 26 L2 19 Z" fill="#0052E0"/>
+    <!-- Right Face -->
+    <path d="M14 14 L26 7 L26 19 L14 26 Z" fill="#003EB3"/>
+  </g>
+  
+  <!-- Texts -->
+  <text x="50" y="19" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="9" font-weight="600" fill="#99A69D" letter-spacing="0.5">ДОСТУПНО В</text>
+  <text x="50" y="34" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="16" font-weight="800" fill="#FFFFFF" letter-spacing="0.4">RuStore</text>
+</svg>

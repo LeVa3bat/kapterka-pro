@@ -1624,3 +1624,17 @@ function openLightbox(imgSrc, title) {
   }
   openModal('modalScreenshot');
 }
+
+// Track APK Downloads & RuStore clicks
+function trackApkDownload(source) {
+  try {
+    if (typeof ym === 'function') {
+      ym(112255061, 'reachGoal', 'apk_download', { source: source });
+    }
+    if (typeof gtag === 'function') {
+      gtag('event', 'download_apk', { 'event_category': 'APK', 'event_label': source });
+    }
+  } catch (e) {
+    console.warn('Analytics tracking error:', e);
+  }
+}
