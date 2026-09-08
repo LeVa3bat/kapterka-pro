@@ -215,6 +215,25 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel) {
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
+            val context = LocalContext.current
+            val isProOrDemoActive = (profile?.isProActive == true) || 
+                                    licenseStatus.isProActive || 
+                                    ((profile?.demoDaysLeft ?: 0) > 0) || 
+                                    licenseStatus.isDemoActive
+
+            val checkProAccess: (String, () -> Unit) -> Unit = { actionName, onGranted ->
+                if (isProOrDemoActive) {
+                    onGranted()
+                } else {
+                    Toast.makeText(
+                        context,
+                        "Демо-период (3 дня) истёк. Для $actionName требуется лицензия PRO.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    showPaymentProDialog = true
+                }
+            }
+
             AnimatedContent(
                 targetState = currentDestination,
                 transitionSpec = { fadeIn() togetherWith fadeOut() },
@@ -235,7 +254,11 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel) {
                             onIncomeClick = { showIncomeDialog = true },
                             onTransferClick = { showTransferDialog = true },
                             onIssueClick = { showIssueDialog = true },
-                            onExpenditureClick = { showExpenditureDialog = true },
+                            onExpenditureClick = {
+                                checkProAccess("списания по Форме № 8") {
+                                    showExpenditureDialog = true
+                                }
+                            },
                             onAddPointClick = { showAddPointDialog = true },
                             onEditPointClick = { editingPoint = it },
                             onAddCustomItemClick = { showAddCustomItemDialog = true },
@@ -245,8 +268,10 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel) {
                             onSyncClick = { viewModel.simulateCloudSync() },
                             onSecondPhoneClick = { showUnitKeySyncDialog = true },
                             onExportClick = {
-                                excelReportInitialTab = 0
-                                showExcelReportDialog = true
+                                checkProAccess("выгрузки отчетов в Excel") {
+                                    excelReportInitialTab = 0
+                                    showExcelReportDialog = true
+                                }
                             },
                             onBannerClick = { showPaymentProDialog = true },
                             onProfileClick = { currentDestination = AppDestination.MORE },
@@ -305,20 +330,28 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel) {
                             onOpenConnectCodeDialog = { showUnitKeySyncDialog = true },
                             onOpenPaymentPro = { showPaymentProDialog = true },
                             onExportFullConsolidatedClick = {
-                                excelReportInitialTab = 0
-                                showExcelReportDialog = true
+                                checkProAccess("выгрузки сводной ведомости") {
+                                    excelReportInitialTab = 0
+                                    showExcelReportDialog = true
+                                }
                             },
                             onExportPointSummaryClick = {
-                                excelReportInitialTab = 1.coerceAtMost(points.size)
-                                showExcelReportDialog = true
+                                checkProAccess("выгрузки ведомости остатков") {
+                                    excelReportInitialTab = 1.coerceAtMost(points.size)
+                                    showExcelReportDialog = true
+                                }
                             },
                             onExportForm8Click = {
-                                excelReportInitialTab = points.size + 1
-                                showExcelReportDialog = true
+                                checkProAccess("выгрузки Формы № 8") {
+                                    excelReportInitialTab = points.size + 1
+                                    showExcelReportDialog = true
+                                }
                             },
                             onExportForm18Click = {
-                                excelReportInitialTab = points.size + 2
-                                showExcelReportDialog = true
+                                checkProAccess("выгрузки Формы № 18") {
+                                    excelReportInitialTab = points.size + 2
+                                    showExcelReportDialog = true
+                                }
                             },
                             onLogoutClick = {
                                 val current = profile ?: com.example.data.model.UserProfile()

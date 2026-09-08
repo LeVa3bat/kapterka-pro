@@ -30,7 +30,9 @@ data class FighterLicenseStatus(
     val fighterId: String = "",
     val activationSource: String = "Демо-период",
     val lastSavedKey: String = "",
-    val savedKeys: List<String> = emptyList()
+    val savedKeys: List<String> = emptyList(),
+    val isDemoActive: Boolean = true,
+    val demoDaysLeft: Int = 3
 )
 
 class LicenseManager(
@@ -166,6 +168,35 @@ class LicenseManager(
         val lastSaved = vault.getString("vault_active_key", "") ?: key
         val allSaved = getAllSavedKeys()
 
+        // Расчет срока демо-режима (72 часа / 3 дня с момента первого запуска)
+        val demoStartTime = sp.getLong("demo_first_launch_time", 0L).let {
+            if (it <= 0L) {
+                sp.edit().putLong("demo_first_launch_time", now).apply()
+                now
+            } else it
+        }
+        val demoElapsed = now - demoStartTime
+        val demoTotalMillis = 3L * 24L * 60L * 60L * 1000L // 3 суток
+        val demoRemainingMillis = (demoTotalMillis - demoElapsed).coerceAtLeast(0L)
+        val isDemoActive = demoRemainingMillis > 0L
+        val calculatedDemoDays = if (isDemoActive) {
+            ((demoRemainingMillis / (24L * 60L * 60L * 1000L)) + 1).toInt().coerceIn(1, 3)
+        } else {
+            0
+        }
+
+        // Обновляем количество демо-дней в локальном профиле БД
+        scope.launch(Dispatchers.IO) {
+            try {
+                val currentProf = dao.getUserProfile().first()
+                if (currentProf != null && currentProf.demoDaysLeft != calculatedDemoDays) {
+                    dao.saveUserProfile(currentProf.copy(demoDaysLeft = calculatedDemoDays))
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error syncing demo days to user profile", e)
+            }
+        }
+
         if (expiresAt > now && key.isNotBlank()) {
             val days = ((expiresAt - now) / (1000L * 60 * 60 * 24)).toInt().coerceAtLeast(1)
             val sdf = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
@@ -177,7 +208,9 @@ class LicenseManager(
                 fighterId = fighterId,
                 activationSource = "Персональная лицензия ПРО (30 дн.)",
                 lastSavedKey = key,
-                savedKeys = allSaved
+                savedKeys = allSaved,
+                isDemoActive = false,
+                demoDaysLeft = 0
             )
         } else {
             // Лицензия истекла или не активирована, но показываем сохраненный ключ бойца
@@ -187,9 +220,11 @@ class LicenseManager(
                 daysRemaining = 0,
                 expiresAtDateFormatted = if (expiresAt > 0) "Истекла" else "Не активирована",
                 fighterId = fighterId,
-                activationSource = "Базовый доступ",
+                activationSource = if (isDemoActive) "Демо-период ($calculatedDemoDays дн.)" else "Демо-режим истёк",
                 lastSavedKey = lastSaved,
-                savedKeys = allSaved
+                savedKeys = allSaved,
+                isDemoActive = isDemoActive,
+                demoDaysLeft = calculatedDemoDays
             )
         }
     }
