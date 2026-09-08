@@ -40,9 +40,8 @@ class FirebaseSyncManager(
     private val scope: CoroutineScope
 ) {
     private val TAG = "KapterkaSync"
-    private val firestore: FirebaseFirestore by lazy {
-        FirebaseFirestore.getInstance()
-    }
+    private val firestore: FirebaseFirestore?
+        get() = FirebaseSafeHelper.getFirestore(context)
 
     private val _syncState = MutableStateFlow(SyncState())
     val syncState: StateFlow<SyncState> = _syncState.asStateFlow()
@@ -81,6 +80,16 @@ class FirebaseSyncManager(
         )
 
         try {
+            val db = firestore
+            if (db == null) {
+                _syncState.value = _syncState.value.copy(
+                    isSyncing = false,
+                    isOnline = false,
+                    syncMessage = "Локальный режим: облачная база не настроена"
+                )
+                return
+            }
+
             registerUnitListeners(cleanKey)
             sendPresencePing(cleanKey, callsign, unitName)
 
@@ -89,7 +98,7 @@ class FirebaseSyncManager(
             // Если в облаке пусто - инициализируем базу подразделения.
             scope.launch(Dispatchers.IO) {
                 try {
-                    val unitPointsSnapshot = firestore.collection("units")
+                    val unitPointsSnapshot = db.collection("units")
                         .document(cleanKey)
                         .collection("warehouse_points")
                         .limit(1)
@@ -111,7 +120,7 @@ class FirebaseSyncManager(
                     _syncState.value = _syncState.value.copy(
                         isSyncing = false,
                         isOnline = false,
-                        syncMessage = "Ошибка Firestore: База отключена или нет прав. Проверьте консоль Firebase!"
+                        syncMessage = "Режим офлайн / сеть недоступна"
                     )
                 }
             }
@@ -126,7 +135,8 @@ class FirebaseSyncManager(
     }
 
     private fun registerUnitListeners(unitKey: String) {
-        val unitRef = firestore.collection("units").document(unitKey)
+        val db = firestore ?: return
+        val unitRef = db.collection("units").document(unitKey)
         var isFirstOpLoad = true
 
         // 1. Warehouse Points listener (с обработкой добавлений, правок и удалений)
@@ -344,7 +354,8 @@ class FirebaseSyncManager(
     }
 
     private fun sendPresencePing(unitKey: String, callsign: String, unitName: String) {
-        val unitRef = firestore.collection("units").document(unitKey)
+        val db = firestore ?: return
+        val unitRef = db.collection("units").document(unitKey)
         val data = hashMapOf(
             "deviceId" to deviceId,
             "callsign" to callsign,
@@ -369,8 +380,9 @@ class FirebaseSyncManager(
 
     suspend fun pushAllLocalData(unitKey: String) {
         if (unitKey.isEmpty()) return
+        val db = firestore ?: return
         _syncState.value = _syncState.value.copy(isSyncing = true, syncMessage = "Отправка локальных данных в облако...")
-        val unitRef = firestore.collection("units").document(unitKey)
+        val unitRef = db.collection("units").document(unitKey)
 
         try {
             // Push points
@@ -480,8 +492,9 @@ class FirebaseSyncManager(
     fun pushOperationAsync(unitKey: String, op: OperationRecord, updatedStocks: List<StockRecord>) {
         if (unitKey.isEmpty()) return
         scope.launch(Dispatchers.IO) {
-            val unitRef = firestore.collection("units").document(unitKey)
             try {
+                val db = firestore ?: return@launch
+                val unitRef = db.collection("units").document(unitKey)
                 unitRef.collection("operation_records").document(op.id).set(
                     hashMapOf(
                         "id" to op.id,
@@ -519,7 +532,31 @@ class FirebaseSyncManager(
                     syncMessage = "Операция синхронизирована"
                 )
             } catch (e: Exception) {
-                Log.w(TAG, "Failed pushing op live, saved in Firestore cache", e)
+                Log.w(TAG, "Failed pushing op live, saved locally", e)
+            }
+        }
+    }
+
+    fun pushStockRecordAsync(unitKey: String, s: StockRecord) {
+        if (unitKey.isEmpty()) return
+        scope.launch(Dispatchers.IO) {
+            try {
+                val db = firestore ?: return@launch
+                val docId = "${s.pointId}___${s.itemId}"
+                db.collection("units").document(unitKey)
+                    .collection("stock_records").document(docId).set(
+                        hashMapOf(
+                            "pointId" to s.pointId,
+                            "itemId" to s.itemId,
+                            "quantity" to s.quantity,
+                            "incomeTotal" to s.incomeTotal,
+                            "expenseTotal" to s.expenseTotal,
+                            "lastUpdated" to s.lastUpdated
+                        ),
+                        SetOptions.merge()
+                    )
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed pushing stock record live", e)
             }
         }
     }
@@ -528,7 +565,8 @@ class FirebaseSyncManager(
         if (unitKey.isEmpty()) return
         scope.launch(Dispatchers.IO) {
             try {
-                firestore.collection("units").document(unitKey)
+                val db = firestore ?: return@launch
+                db.collection("units").document(unitKey)
                     .collection("requisitions").document(r.id).set(
                         hashMapOf(
                             "id" to r.id,
@@ -552,7 +590,8 @@ class FirebaseSyncManager(
         if (unitKey.isEmpty()) return
         scope.launch(Dispatchers.IO) {
             try {
-                firestore.collection("units").document(unitKey)
+                val db = firestore ?: return@launch
+                db.collection("units").document(unitKey)
                     .collection("requisitions").document(reqId).delete()
             } catch (e: Exception) {
                 Log.w(TAG, "Failed deleting req live", e)
@@ -564,7 +603,8 @@ class FirebaseSyncManager(
         if (unitKey.isEmpty()) return
         scope.launch(Dispatchers.IO) {
             try {
-                firestore.collection("units").document(unitKey)
+                val db = firestore ?: return@launch
+                db.collection("units").document(unitKey)
                     .collection("operation_records").document(opId).delete()
             } catch (e: Exception) {
                 Log.w(TAG, "Failed deleting operation live", e)
@@ -576,7 +616,8 @@ class FirebaseSyncManager(
         if (unitKey.isEmpty()) return
         scope.launch(Dispatchers.IO) {
             try {
-                firestore.collection("units").document(unitKey)
+                val db = firestore ?: return@launch
+                db.collection("units").document(unitKey)
                     .collection("warehouse_points").document(p.id).set(
                         hashMapOf(
                             "id" to p.id,
@@ -598,7 +639,8 @@ class FirebaseSyncManager(
         if (unitKey.isEmpty()) return
         scope.launch(Dispatchers.IO) {
             try {
-                firestore.collection("units").document(unitKey)
+                val db = firestore ?: return@launch
+                db.collection("units").document(unitKey)
                     .collection("warehouse_points").document(pointId).delete()
             } catch (e: Exception) {
                 Log.w(TAG, "Failed deleting point live", e)
@@ -610,7 +652,8 @@ class FirebaseSyncManager(
         if (unitKey.isEmpty()) return
         scope.launch(Dispatchers.IO) {
             try {
-                firestore.collection("units").document(unitKey)
+                val db = firestore ?: return@launch
+                db.collection("units").document(unitKey)
                     .collection("inventory_items").document(item.id).set(
                         hashMapOf(
                             "id" to item.id,
@@ -634,7 +677,8 @@ class FirebaseSyncManager(
         if (unitKey.isEmpty()) return
         scope.launch(Dispatchers.IO) {
             try {
-                firestore.collection("units").document(unitKey)
+                val db = firestore ?: return@launch
+                db.collection("units").document(unitKey)
                     .collection("inventory_items").document(itemId).delete()
             } catch (e: Exception) {
                 Log.w(TAG, "Failed deleting item live", e)
@@ -656,7 +700,8 @@ class FirebaseSyncManager(
             try {
                 val cleanKey = unitKey.trim()
                 if (cleanKey.isEmpty()) return@launch
-                val unitRef = firestore.collection("units").document(cleanKey)
+                val db = firestore ?: return@launch
+                val unitRef = db.collection("units").document(cleanKey)
                 val collectionsToClear = listOf("stock_records", "operation_records", "requisitions")
                 for (col in collectionsToClear) {
                     val snapshot = unitRef.collection(col).get().await()

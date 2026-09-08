@@ -81,8 +81,8 @@ class KapterkaRepository(
             currentProfile
         }
 
-        // Launch online synchronization for this unit only if user is logged in
-        if (activeProfile.isLoggedIn && activeProfile.unitKey.isNotBlank()) {
+        // Launch online synchronization for this unit if unitKey is configured
+        if (activeProfile.unitKey.isNotBlank()) {
             syncManager?.startSyncForUnit(activeProfile.unitKey, activeProfile.callsign, activeProfile.unitName)
         }
 
@@ -127,6 +127,9 @@ class KapterkaRepository(
 
     suspend fun saveUserProfile(profile: UserProfile) {
         dao.saveUserProfile(profile)
+        if (profile.unitKey.isNotBlank()) {
+            syncManager?.startSyncForUnit(profile.unitKey, profile.callsign, profile.unitName)
+        }
     }
 
     suspend fun recordIncome(toPointId: String, toPointName: String, supplier: String, items: List<OperationItemEntry>, comment: String, actor: String) {
@@ -243,12 +246,36 @@ class KapterkaRepository(
             current.copy(
                 quantity = current.quantity + change,
                 incomeTotal = current.incomeTotal + if(isIncome && change > 0) change else 0,
-                expenseTotal = current.expenseTotal + if(!isIncome || change < 0) java.lang.Math.abs(change) else 0
+                expenseTotal = current.expenseTotal + if(!isIncome || change < 0) java.lang.Math.abs(change) else 0,
+                lastUpdated = System.currentTimeMillis()
             )
         } else {
-            StockRecord(pointId, itemId, change, if(isIncome && change > 0) change else 0, if(!isIncome || change < 0) java.lang.Math.abs(change) else 0)
+            StockRecord(pointId, itemId, change, if(isIncome && change > 0) change else 0, if(!isIncome || change < 0) java.lang.Math.abs(change) else 0, System.currentTimeMillis())
         }
         dao.insertOrUpdateStock(newRecord)
+        syncManager?.pushStockRecordAsync(getCurrentUnitKey(), newRecord)
+        return newRecord
+    }
+
+    suspend fun setStockAbsoluteQuantity(pointId: String, itemId: String, absoluteQuantity: Int): StockRecord {
+        val current = dao.getStockItem(pointId, itemId)
+        val newRecord = if (current != null) {
+            current.copy(
+                quantity = absoluteQuantity,
+                lastUpdated = System.currentTimeMillis()
+            )
+        } else {
+            StockRecord(
+                pointId = pointId,
+                itemId = itemId,
+                quantity = absoluteQuantity,
+                incomeTotal = absoluteQuantity,
+                expenseTotal = 0,
+                lastUpdated = System.currentTimeMillis()
+            )
+        }
+        dao.insertOrUpdateStock(newRecord)
+        syncManager?.pushStockRecordAsync(getCurrentUnitKey(), newRecord)
         return newRecord
     }
 

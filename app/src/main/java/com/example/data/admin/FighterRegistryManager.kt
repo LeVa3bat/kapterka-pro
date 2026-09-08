@@ -46,7 +46,8 @@ class FighterRegistryManager(
     private val TAG = "FighterRegistryManager"
     private val PREFS_NAME = "kapterka_fighters_registry_cache"
     private val KEY_FIGHTERS_JSON = "cached_fighters_list"
-    private val firestore: FirebaseFirestore by lazy { FirebaseFirestore.getInstance() }
+    private val firestore: FirebaseFirestore?
+        get() = com.example.data.sync.FirebaseSafeHelper.getFirestore(context)
 
     private val _fighters = MutableStateFlow<List<FighterAdminRecord>>(emptyList())
     val fighters: StateFlow<List<FighterAdminRecord>> = _fighters.asStateFlow()
@@ -157,7 +158,8 @@ class FighterRegistryManager(
      */
     suspend fun fetchFightersFromCloud() = withContext(Dispatchers.IO) {
         try {
-            val snapshot = firestore.collection("fighters").get().await()
+            val db = firestore ?: return@withContext
+            val snapshot = db.collection("fighters").get().await()
             val now = System.currentTimeMillis()
             val sdf = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
             val fifteenMinutes = 15 * 60 * 1000L
@@ -282,9 +284,9 @@ class FighterRegistryManager(
                     "email" to email,
                     "deviceModel" to updatedRecord.deviceModel
                 )
-                firestore.collection("fighters").document(fighterId)
-                    .set(data, SetOptions.merge())
-                    .await()
+                firestore?.collection("fighters")?.document(fighterId)
+                    ?.set(data, SetOptions.merge())
+                    ?.await()
             } catch (e: Exception) {
                 Log.w(TAG, "Could not upload fighter to Firestore", e)
             }
@@ -302,7 +304,7 @@ class FighterRegistryManager(
 
         scope.launch(Dispatchers.IO) {
             try {
-                firestore.collection("fighters").document(fighterId).delete().await()
+                firestore?.collection("fighters")?.document(fighterId)?.delete()?.await()
             } catch (e: Exception) {
                 Log.w(TAG, "Error deleting fighter from Firestore", e)
             }
@@ -336,6 +338,7 @@ class FighterRegistryManager(
 
         scope.launch(Dispatchers.IO) {
             try {
+                val db = firestore ?: return@launch
                 val data = hashMapOf(
                     "licenseKey" to newKey,
                     "fighterId" to fighterId,
@@ -344,8 +347,8 @@ class FighterRegistryManager(
                     "durationDays" to days,
                     "status" to "ACTIVE"
                 )
-                firestore.collection("licenses").document(newKey).set(data).await()
-                firestore.collection("fighters").document(fighterId)
+                db.collection("licenses").document(newKey).set(data).await()
+                db.collection("fighters").document(fighterId)
                     .set(hashMapOf("licenseKey" to newKey, "expiresAt" to expiresAt), SetOptions.merge())
                     .await()
             } catch (e: Exception) {
@@ -368,7 +371,8 @@ class FighterRegistryManager(
         // 2. Поиск в облаке Firestore
         return withContext(Dispatchers.IO) {
             try {
-                val snap = firestore.collection("fighters").get().await()
+                val db = firestore ?: return@withContext null
+                val snap = db.collection("fighters").get().await()
                 for (doc in snap.documents) {
                     val em = doc.getString("email")?.lowercase(Locale.ROOT) ?: ""
                     if (em.isNotBlank() && em == q) {

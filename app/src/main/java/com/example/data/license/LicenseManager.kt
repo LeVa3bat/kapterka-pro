@@ -41,7 +41,8 @@ class LicenseManager(
     private val scope: CoroutineScope
 ) {
     private val TAG = "LicenseManager"
-    private val firestore: FirebaseFirestore by lazy { FirebaseFirestore.getInstance() }
+    private val firestore: FirebaseFirestore?
+        get() = com.example.data.sync.FirebaseSafeHelper.getFirestore(context)
     private val PREFS_NAME = "kapterka_fighter_license_prefs"
     private val PERMANENT_VAULT = "kapterka_license_permanent_vault"
 
@@ -273,18 +274,21 @@ class LicenseManager(
         // 1. Поиск в реестре лицензий Firestore по email
         if (cleanEmail.isNotBlank()) {
             try {
-                val byEmail = firestore.collection("licenses")
-                    .whereEqualTo("email", cleanEmail)
-                    .get()
-                    .await()
-                for (doc in byEmail.documents) {
-                    val key = doc.getString("licenseKey") ?: doc.id
-                    val exp = doc.getLong("expiresAt") ?: 0L
-                    val status = doc.getString("status") ?: "ACTIVE"
-                    if (key.isNotBlank() && status == "ACTIVE") {
-                        foundKey = key
-                        foundExpiresAt = exp
-                        break
+                val db = firestore
+                if (db != null) {
+                    val byEmail = db.collection("licenses")
+                        .whereEqualTo("email", cleanEmail)
+                        .get()
+                        .await()
+                    for (doc in byEmail.documents) {
+                        val key = doc.getString("licenseKey") ?: doc.id
+                        val exp = doc.getLong("expiresAt") ?: 0L
+                        val status = doc.getString("status") ?: "ACTIVE"
+                        if (key.isNotBlank() && status == "ACTIVE") {
+                            foundKey = key
+                            foundExpiresAt = exp
+                            break
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -295,18 +299,21 @@ class LicenseManager(
         // 2. Поиск по оригинальному регистру email
         if (foundKey.isBlank() && email.isNotBlank() && email.trim() != cleanEmail) {
             try {
-                val byEmailOrig = firestore.collection("licenses")
-                    .whereEqualTo("email", email.trim())
-                    .get()
-                    .await()
-                for (doc in byEmailOrig.documents) {
-                    val key = doc.getString("licenseKey") ?: doc.id
-                    val exp = doc.getLong("expiresAt") ?: 0L
-                    val status = doc.getString("status") ?: "ACTIVE"
-                    if (key.isNotBlank() && status == "ACTIVE") {
-                        foundKey = key
-                        foundExpiresAt = exp
-                        break
+                val db = firestore
+                if (db != null) {
+                    val byEmailOrig = db.collection("licenses")
+                        .whereEqualTo("email", email.trim())
+                        .get()
+                        .await()
+                    for (doc in byEmailOrig.documents) {
+                        val key = doc.getString("licenseKey") ?: doc.id
+                        val exp = doc.getLong("expiresAt") ?: 0L
+                        val status = doc.getString("status") ?: "ACTIVE"
+                        if (key.isNotBlank() && status == "ACTIVE") {
+                            foundKey = key
+                            foundExpiresAt = exp
+                            break
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -319,17 +326,20 @@ class LicenseManager(
         // 4. Поиск в общем реестре бойцов 'fighters_registry'
         if (foundKey.isBlank() && cleanEmail.isNotBlank()) {
             try {
-                val regDoc = firestore.collection("fighters_registry")
-                    .whereEqualTo("email", cleanEmail)
-                    .get()
-                    .await()
-                for (doc in regDoc.documents) {
-                    val key = doc.getString("licenseKey") ?: ""
-                    val isPro = doc.getBoolean("isProActive") ?: false
-                    if (key.isNotBlank() && isPro) {
-                        foundKey = key
-                        foundExpiresAt = now + 30L * 86400000L
-                        break
+                val db = firestore
+                if (db != null) {
+                    val regDoc = db.collection("fighters_registry")
+                        .whereEqualTo("email", cleanEmail)
+                        .get()
+                        .await()
+                    for (doc in regDoc.documents) {
+                        val key = doc.getString("licenseKey") ?: ""
+                        val isPro = doc.getBoolean("isProActive") ?: false
+                        if (key.isNotBlank() && isPro) {
+                            foundKey = key
+                            foundExpiresAt = now + 30L * 86400000L
+                            break
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -438,9 +448,9 @@ class LicenseManager(
                 "durationDays" to 30,
                 "status" to "ACTIVE"
             )
-            firestore.collection("licenses").document(newKey)
-                .set(licenseData, SetOptions.merge())
-                .await()
+            firestore?.collection("licenses")?.document(newKey)
+                ?.set(licenseData, SetOptions.merge())
+                ?.await()
         } catch (e: Exception) {
             Log.w(TAG, "Failed to upload license to Firestore immediately, saved locally", e)
         }
@@ -480,8 +490,9 @@ class LicenseManager(
         val isLocalValid = verifyKeyChecksum(cleanKey)
 
         try {
-            val doc = firestore.collection("licenses").document(cleanKey).get().await()
-            if (doc.exists()) {
+            val db = firestore
+            val doc = db?.collection("licenses")?.document(cleanKey)?.get()?.await()
+            if (doc != null && doc.exists()) {
                 val expiresAt = doc.getLong("expiresAt") ?: 0L
                 val status = doc.getString("status") ?: "ACTIVE"
                 val boundFighter = doc.getString("fighterId")
@@ -511,7 +522,7 @@ class LicenseManager(
 
                 // Привязываем к текущему бойцу в Firestore
                 try {
-                    firestore.collection("licenses").document(cleanKey).set(
+                    db.collection("licenses").document(cleanKey).set(
                         hashMapOf(
                             "fighterId" to currentFighterId,
                             "callsign" to fighterCallsign
@@ -551,8 +562,8 @@ class LicenseManager(
                         "status" to "ACTIVE",
                         "source" to "Активация проверенного военного ключа"
                     )
-                    firestore.collection("licenses").document(cleanKey)
-                        .set(licenseData, SetOptions.merge())
+                    db?.collection("licenses")?.document(cleanKey)
+                        ?.set(licenseData, SetOptions.merge())
                 } catch (_: Exception) {}
 
                 Pair(true, "Ключ успешно активирован! Доступ открыт на 30 дней.")

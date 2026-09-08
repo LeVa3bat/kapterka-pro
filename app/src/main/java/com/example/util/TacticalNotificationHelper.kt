@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -16,6 +17,7 @@ import com.example.data.model.RequestStatus
 import com.example.data.model.RequisitionRequest
 
 object TacticalNotificationHelper {
+    private const val TAG = "TacticalNotification"
     private const val CHANNEL_ID = "kapterka_tactical_channel"
     private const val CHANNEL_NAME = "Оповещения каптёрки (Боевые)"
     private const val CHANNEL_DESC = "Уведомления о перемещениях и выдаче имущества"
@@ -95,20 +97,21 @@ object TacticalNotificationHelper {
             }
         }
 
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle(title)
-            .setContentText(contentText)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setContentIntent(getPendingIntent(context))
-            .setAutoCancel(true)
-            .setColor(0xFF8DAA59.toInt()) // Tactical Sage Green
-            .build()
-
         try {
+            val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_stat_kapterka)
+                .setContentTitle(title)
+                .setContentText(contentText)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setContentIntent(getPendingIntent(context))
+                .setAutoCancel(true)
+                .setColor(0xFF8DAA59.toInt()) // Tactical Sage Green
+                .build()
+
             NotificationManagerCompat.from(context).notify(req.id.hashCode(), notification)
-        } catch (_: SecurityException) {
+        } catch (t: Throwable) {
+            Log.e(TAG, "Failed to post requisition notification", t)
         }
     }
 
@@ -132,21 +135,22 @@ object TacticalNotificationHelper {
             append(baseWarehouseStockSummary.ifEmpty { "Учет синхронизирован по подразделению" })
         }
 
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle(title)
-            .setContentText(contentText)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setContentIntent(getPendingIntent(context))
-            .setAutoCancel(true)
-            .setColor(0xFF4DB6AC.toInt()) // Tactical Teal
-            .build()
-
         try {
+            val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_stat_kapterka)
+                .setContentTitle(title)
+                .setContentText(contentText)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setContentIntent(getPendingIntent(context))
+                .setAutoCancel(true)
+                .setColor(0xFF4DB6AC.toInt()) // Tactical Teal
+                .build()
+
             val notifId = (System.currentTimeMillis() % 100000).toInt()
             NotificationManagerCompat.from(context).notify(notifId, notification)
-        } catch (_: SecurityException) {
+        } catch (t: Throwable) {
+            Log.e(TAG, "Failed to post transfer notification", t)
         }
     }
 
@@ -171,21 +175,22 @@ object TacticalNotificationHelper {
             }
         }
 
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle(title)
-            .setContentText(contentText)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .setContentIntent(getPendingIntent(context))
-            .setAutoCancel(true)
-            .setColor(0xFF8DAA59.toInt())
-            .build()
-
         try {
+            val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_stat_kapterka)
+                .setContentTitle(title)
+                .setContentText(contentText)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setContentIntent(getPendingIntent(context))
+                .setAutoCancel(true)
+                .setColor(0xFF8DAA59.toInt())
+                .build()
+
             val notifId = (System.currentTimeMillis() % 100000).toInt()
             NotificationManagerCompat.from(context).notify(notifId, notification)
-        } catch (_: SecurityException) {
+        } catch (t: Throwable) {
+            Log.e(TAG, "Failed to post income notification", t)
         }
     }
 
@@ -210,21 +215,22 @@ object TacticalNotificationHelper {
             }
         }
 
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle(title)
-            .setContentText(contentText)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setContentIntent(getPendingIntent(context))
-            .setAutoCancel(true)
-            .setColor(0xFFFFB300.toInt()) // Tactical Gold
-            .build()
-
         try {
+            val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_stat_kapterka)
+                .setContentTitle(title)
+                .setContentText(contentText)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setContentIntent(getPendingIntent(context))
+                .setAutoCancel(true)
+                .setColor(0xFFFFB300.toInt()) // Tactical Gold
+                .build()
+
             val notifId = (System.currentTimeMillis() % 100000).toInt()
             NotificationManagerCompat.from(context).notify(notifId, notification)
-        } catch (_: SecurityException) {
+        } catch (t: Throwable) {
+            Log.e(TAG, "Failed to post issue notification", t)
         }
     }
 
@@ -248,21 +254,22 @@ object TacticalNotificationHelper {
             append("Задача/Причина: ${if(reason.isEmpty()) "Боевая работа" else reason}")
         }
 
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle(title)
-            .setContentText(contentText)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .setContentIntent(getPendingIntent(context))
-            .setAutoCancel(true)
-            .setColor(0xFFE57373.toInt()) // Tactical Red
-            .build()
-
         try {
+            val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_stat_kapterka)
+                .setContentTitle(title)
+                .setContentText(contentText)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setContentIntent(getPendingIntent(context))
+                .setAutoCancel(true)
+                .setColor(0xFFE57373.toInt()) // Tactical Red
+                .build()
+
             val notifId = (System.currentTimeMillis() % 100000).toInt()
             NotificationManagerCompat.from(context).notify(notifId, notification)
-        } catch (_: SecurityException) {
+        } catch (t: Throwable) {
+            Log.e(TAG, "Failed to post expenditure notification", t)
         }
     }
 }
