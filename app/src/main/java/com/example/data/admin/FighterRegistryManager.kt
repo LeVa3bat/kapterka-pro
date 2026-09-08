@@ -159,7 +159,7 @@ class FighterRegistryManager(
      */
     suspend fun fetchFightersFromCloud() = withContext(Dispatchers.IO) {
         try {
-            val db = firestore ?: return@withContext
+            val db = firestore
             val snapshot = db.collection("fighters").get().await()
             val now = System.currentTimeMillis()
             val sdf = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
@@ -285,7 +285,7 @@ class FighterRegistryManager(
                     "email" to email,
                     "deviceModel" to updatedRecord.deviceModel
                 )
-                firestore?.collection("fighters")?.document(fighterId)
+                firestore.collection("fighters").document(fighterId)
                     ?.set(data, SetOptions.merge())
                     ?.await()
             } catch (e: Exception) {
@@ -305,7 +305,7 @@ class FighterRegistryManager(
 
         scope.launch(Dispatchers.IO) {
             try {
-                firestore?.collection("fighters")?.document(fighterId)?.delete()?.await()
+                firestore.collection("fighters").document(fighterId).delete().await()
             } catch (e: Exception) {
                 Log.w(TAG, "Error deleting fighter from Firestore", e)
             }
@@ -339,7 +339,7 @@ class FighterRegistryManager(
 
         scope.launch(Dispatchers.IO) {
             try {
-                val db = firestore ?: return@launch
+                val db = firestore
                 val data = hashMapOf(
                     "licenseKey" to newKey,
                     "fighterId" to fighterId,
@@ -372,7 +372,7 @@ class FighterRegistryManager(
         // 2. Поиск в облаке Firestore
         return withContext(Dispatchers.IO) {
             try {
-                val db = firestore ?: return@withContext null
+                val db = firestore
                 val snap = db.collection("fighters").get().await()
                 for (doc in snap.documents) {
                     val em = doc.getString("email")?.lowercase(Locale.ROOT) ?: ""

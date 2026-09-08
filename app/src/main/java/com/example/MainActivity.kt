@@ -111,6 +111,21 @@ class MainActivity : ComponentActivity() {
         val insetsController = WindowCompat.getInsetsController(window, window.decorView)
         insetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         insetsController.hide(WindowInsetsCompat.Type.systemBars())
+                try {
+            if (com.google.firebase.FirebaseApp.getApps(this).isEmpty()) {
+                val options = com.google.firebase.FirebaseOptions.Builder()
+                    .setApplicationId("1:946233715306:android:d2502913c49c0b985c7813")
+                    .setApiKey("AIzaSyAYyoG42TuQJFLxN0KnFIePZx-gAtizw0Q")
+                    .setProjectId("kapterka-pro")
+                    .setDatabaseUrl("https://kapterka-pro-default-rtdb.europe-west1.firebasedatabase.app")
+                    .setStorageBucket("kapterka-pro.firebasestorage.app")
+                    .setGcmSenderId("946233715306")
+                    .build()
+                com.google.firebase.FirebaseApp.initializeApp(this, options)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Firebase init error", e)
+        }
         TacticalNotificationHelper.createNotificationChannel(this)
 
         setContent {

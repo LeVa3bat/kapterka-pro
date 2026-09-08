@@ -42,7 +42,7 @@ class LicenseManager(
     private val scope: CoroutineScope
 ) {
     private val TAG = "LicenseManager"
-    private val firestore: FirebaseFirestore?
+    private val firestore: FirebaseFirestore
         by lazy { FirebaseFirestore.getInstance() }
     private val PREFS_NAME = "kapterka_fighter_license_prefs"
     private val PERMANENT_VAULT = "kapterka_license_permanent_vault"
@@ -449,9 +449,9 @@ class LicenseManager(
                 "durationDays" to 30,
                 "status" to "ACTIVE"
             )
-            firestore?.collection("licenses")?.document(newKey)
-                ?.set(licenseData, SetOptions.merge())
-                ?.await()
+            firestore.collection("licenses").document(newKey)
+                .set(licenseData, SetOptions.merge())
+                .await()
         } catch (e: Exception) {
             Log.w(TAG, "Failed to upload license to Firestore immediately, saved locally", e)
         }
@@ -492,7 +492,7 @@ class LicenseManager(
 
         try {
             val db = firestore
-            val doc = db?.collection("licenses")?.document(cleanKey)?.get()?.await()
+            val doc = db.collection("licenses").document(cleanKey).get().await()
             if (doc != null && doc.exists()) {
                 val expiresAt = doc.getLong("expiresAt") ?: 0L
                 val status = doc.getString("status") ?: "ACTIVE"
@@ -563,8 +563,8 @@ class LicenseManager(
                         "status" to "ACTIVE",
                         "source" to "Активация проверенного военного ключа"
                     )
-                    db?.collection("licenses")?.document(cleanKey)
-                        ?.set(licenseData, SetOptions.merge())
+                    db.collection("licenses").document(cleanKey)
+                        .set(licenseData, SetOptions.merge())
                 } catch (_: Exception) {}
 
                 Pair(true, "Ключ успешно активирован! Доступ открыт на 30 дней.")
