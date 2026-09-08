@@ -64,13 +64,13 @@ import com.example.ui.theme.TacticalTextSecondary
 
 @Composable
 fun TacticalHeader(
-
     profile: UserProfile?,
     onSyncClick: () -> Unit,
     onSecondPhoneClick: () -> Unit = {},
     onExportClick: () -> Unit,
     onProfileClick: () -> Unit,
     onHelpClick: () -> Unit = {},
+    onBannerClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -172,6 +172,7 @@ fun TacticalHeader(
                             .clip(RoundedCornerShape(100.dp))
                             .background(SageGreenDark)
                             .border(1.dp, SageGreenPrimary.copy(alpha = 0.5f), RoundedCornerShape(100.dp))
+                            .clickable { onBannerClick() }
                             .padding(horizontal = 10.dp, vertical = 4.dp)
                     ) {
                         Text(
@@ -183,15 +184,24 @@ fun TacticalHeader(
                         )
                     }
                 } else {
+                    val daysLeft = profile?.demoDaysLeft ?: 3
+                    val isExpired = daysLeft <= 0
+                    val badgeText = when {
+                        isExpired -> "ДЕМО ИСТЕКЛО"
+                        daysLeft == 1 -> "ДЕМО: 1 ДЕНЬ"
+                        else -> "ДЕМО: $daysLeft ДН."
+                    }
+
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(100.dp))
-                            .background(TacticalGold)
+                            .background(if (isExpired) Color(0xFFFF5252) else TacticalGold)
+                            .clickable { onBannerClick() }
                             .padding(horizontal = 10.dp, vertical = 5.dp)
                     ) {
                         Text(
-                            text = "ДЕМО (3 ДНЯ)",
-                            color = Color(0xFF0D0E10),
+                            text = badgeText,
+                            color = if (isExpired) Color.White else Color(0xFF0D0E10),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Black,
                             letterSpacing = 0.5.sp,
