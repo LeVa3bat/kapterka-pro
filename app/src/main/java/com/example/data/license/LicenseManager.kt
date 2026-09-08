@@ -1,5 +1,6 @@
 package com.example.data.license
 
+// Re-deploy trigger
 import android.content.Context
 import android.util.Log
 import com.example.data.local.KapterkaDao
