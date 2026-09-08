@@ -140,9 +140,9 @@ class KapterkaDatabaseTest {
 
     @Test
     fun testInitialDataPopulateCompleteness() {
-        assertTrue("Initial default points must not be empty", InitialData.defaultPoints.isNotEmpty())
-        assertTrue("Initial default items must not be empty", InitialData.defaultItems.isNotEmpty())
-        assertTrue("Must have at least one base warehouse", InitialData.defaultPoints.any { it.isBase })
-        assertTrue("Must have RAV category items", InitialData.defaultItems.any { it.serviceCategory == "Служба РАВ" })
+        assertTrue("Initial default points must not be empty", InitialData.getDefaultPoints().isNotEmpty())
+        assertTrue("Initial default items must not be empty", InitialData.getDefaultItems().isNotEmpty())
+        assertTrue("Must have at least one base warehouse", InitialData.getDefaultPoints().any { it.isBase })
+        assertTrue("Must have RAV category items", InitialData.getDefaultItems().any { it.serviceCategory == "Служба РАВ" })
     }
 }

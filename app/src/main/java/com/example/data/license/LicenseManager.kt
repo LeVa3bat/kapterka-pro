@@ -42,7 +42,7 @@ class LicenseManager(
 ) {
     private val TAG = "LicenseManager"
     private val firestore: FirebaseFirestore?
-        get() = com.example.data.sync.FirebaseSafeHelper.getFirestore(context)
+        by lazy { FirebaseFirestore.getInstance() }
     private val PREFS_NAME = "kapterka_fighter_license_prefs"
     private val PERMANENT_VAULT = "kapterka_license_permanent_vault"
 

@@ -46,8 +46,8 @@ class FighterRegistryManager(
     private val TAG = "FighterRegistryManager"
     private val PREFS_NAME = "kapterka_fighters_registry_cache"
     private val KEY_FIGHTERS_JSON = "cached_fighters_list"
-    private val firestore: FirebaseFirestore?
-        get() = com.example.data.sync.FirebaseSafeHelper.getFirestore(context)
+    private val firestore: FirebaseFirestore
+        by lazy { FirebaseFirestore.getInstance() }
 
     private val _fighters = MutableStateFlow<List<FighterAdminRecord>>(emptyList())
     val fighters: StateFlow<List<FighterAdminRecord>> = _fighters.asStateFlow()

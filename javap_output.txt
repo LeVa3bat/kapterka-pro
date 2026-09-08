@@ -1,0 +1,1946 @@
+Compiled from "FirebaseSyncManager.kt"
+public final class com.example.data.sync.FirebaseSyncManager {
+  private final android.content.Context context;
+
+  private final com.example.data.local.KapterkaDao dao;
+
+  private final kotlinx.coroutines.CoroutineScope scope;
+
+  private final java.lang.String TAG;
+
+  private final kotlin.Lazy firestore$delegate;
+
+  private final kotlinx.coroutines.flow.MutableStateFlow<com.example.data.sync.SyncState> _syncState;
+
+  private final kotlinx.coroutines.flow.StateFlow<com.example.data.sync.SyncState> syncState;
+
+  private final kotlinx.coroutines.flow.MutableSharedFlow<java.lang.String> _syncEvents;
+
+  private final kotlinx.coroutines.flow.SharedFlow<java.lang.String> syncEvents;
+
+  private final kotlin.Lazy deviceId$delegate;
+
+  private java.lang.String activeUnitKey;
+
+  private java.util.List<com.google.firebase.firestore.ListenerRegistration> listeners;
+
+  public static final int $stable;
+
+  public com.example.data.sync.FirebaseSyncManager(android.content.Context, com.example.data.local.KapterkaDao, kotlinx.coroutines.CoroutineScope);
+    Code:
+       0: aload_1
+       1: ldc           #9                  // String context
+       3: invokestatic  #15                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+       6: aload_2
+       7: ldc           #17                 // String dao
+       9: invokestatic  #15                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+      12: aload_3
+      13: ldc           #19                 // String scope
+      15: invokestatic  #15                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+      18: aload_0
+      19: invokespecial #22                 // Method java/lang/Object."<init>":()V
+      22: aload_0
+      23: aload_1
+      24: putfield      #25                 // Field context:Landroid/content/Context;
+      27: aload_0
+      28: aload_2
+      29: putfield      #28                 // Field dao:Lcom/example/data/local/KapterkaDao;
+      32: aload_0
+      33: aload_3
+      34: putfield      #31                 // Field scope:Lkotlinx/coroutines/CoroutineScope;
+      37: aload_0
+      38: ldc           #33                 // String KapterkaSync
+      40: putfield      #37                 // Field TAG:Ljava/lang/String;
+      43: aload_0
+      44: invokedynamic #56,  0             // InvokeDynamic #0:invoke:()Lkotlin/jvm/functions/Function0;
+      49: invokestatic  #62                 // Method kotlin/LazyKt.lazy:(Lkotlin/jvm/functions/Function0;)Lkotlin/Lazy;
+      52: putfield      #66                 // Field firestore$delegate:Lkotlin/Lazy;
+      55: aload_0
+      56: new           #68                 // class com/example/data/sync/SyncState
+      59: dup
+      60: iconst_0
+      61: lconst_0
+      62: iconst_0
+      63: iconst_0
+      64: aconst_null
+      65: bipush        31
+      67: aconst_null
+      68: invokespecial #71                 // Method com/example/data/sync/SyncState."<init>":(ZJZILjava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+      71: invokestatic  #77                 // Method kotlinx/coroutines/flow/StateFlowKt.MutableStateFlow:(Ljava/lang/Object;)Lkotlinx/coroutines/flow/MutableStateFlow;
+      74: putfield      #81                 // Field _syncState:Lkotlinx/coroutines/flow/MutableStateFlow;
+      77: aload_0
+      78: aload_0
+      79: getfield      #81                 // Field _syncState:Lkotlinx/coroutines/flow/MutableStateFlow;
+      82: invokestatic  #87                 // Method kotlinx/coroutines/flow/FlowKt.asStateFlow:(Lkotlinx/coroutines/flow/MutableStateFlow;)Lkotlinx/coroutines/flow/StateFlow;
+      85: putfield      #91                 // Field syncState:Lkotlinx/coroutines/flow/StateFlow;
+      88: aload_0
+      89: iconst_0
+      90: iconst_0
+      91: aconst_null
+      92: bipush        7
+      94: aconst_null
+      95: invokestatic  #97                 // Method kotlinx/coroutines/flow/SharedFlowKt.MutableSharedFlow$default:(IILkotlinx/coroutines/channels/BufferOverflow;ILjava/lang/Object;)Lkotlinx/coroutines/flow/MutableSharedFlow;
+      98: putfield      #101                // Field _syncEvents:Lkotlinx/coroutines/flow/MutableSharedFlow;
+     101: aload_0
+     102: aload_0
+     103: getfield      #101                // Field _syncEvents:Lkotlinx/coroutines/flow/MutableSharedFlow;
+     106: checkcast     #103                // class kotlinx/coroutines/flow/SharedFlow
+     109: putfield      #107                // Field syncEvents:Lkotlinx/coroutines/flow/SharedFlow;
+     112: aload_0
+     113: aload_0
+     114: invokedynamic #117,  0            // InvokeDynamic #1:invoke:(Lcom/example/data/sync/FirebaseSyncManager;)Lkotlin/jvm/functions/Function0;
+     119: invokestatic  #62                 // Method kotlin/LazyKt.lazy:(Lkotlin/jvm/functions/Function0;)Lkotlin/Lazy;
+     122: putfield      #120                // Field deviceId$delegate:Lkotlin/Lazy;
+     125: aload_0
+     126: ldc           #122                // String
+     128: putfield      #125                // Field activeUnitKey:Ljava/lang/String;
+     131: aload_0
+     132: new           #127                // class java/util/ArrayList
+     135: dup
+     136: invokespecial #128                // Method java/util/ArrayList."<init>":()V
+     139: checkcast     #130                // class java/util/List
+     142: putfield      #134                // Field listeners:Ljava/util/List;
+     145: return
+
+  private final com.google.firebase.firestore.FirebaseFirestore getFirestore();
+    Code:
+       0: aload_0
+       1: getfield      #66                 // Field firestore$delegate:Lkotlin/Lazy;
+       4: astore_1
+       5: aload_1
+       6: invokeinterface #142,  1          // InterfaceMethod kotlin/Lazy.getValue:()Ljava/lang/Object;
+      11: checkcast     #144                // class com/google/firebase/firestore/FirebaseFirestore
+      14: areturn
+
+  public final kotlinx.coroutines.flow.StateFlow<com.example.data.sync.SyncState> getSyncState();
+    Code:
+       0: aload_0
+       1: getfield      #91                 // Field syncState:Lkotlinx/coroutines/flow/StateFlow;
+       4: areturn
+
+  public final kotlinx.coroutines.flow.SharedFlow<java.lang.String> getSyncEvents();
+    Code:
+       0: aload_0
+       1: getfield      #107                // Field syncEvents:Lkotlinx/coroutines/flow/SharedFlow;
+       4: areturn
+
+  private final java.lang.String getDeviceId();
+    Code:
+       0: aload_0
+       1: getfield      #120                // Field deviceId$delegate:Lkotlin/Lazy;
+       4: astore_1
+       5: aload_1
+       6: invokeinterface #142,  1          // InterfaceMethod kotlin/Lazy.getValue:()Ljava/lang/Object;
+      11: checkcast     #153                // class java/lang/String
+      14: areturn
+
+  public final void startSyncForUnit(java.lang.String, java.lang.String, java.lang.String);
+    Code:
+       0: aload_1
+       1: ldc           #159                // String unitKey
+       3: invokestatic  #15                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+       6: aload_2
+       7: ldc           #161                // String callsign
+       9: invokestatic  #15                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+      12: aload_3
+      13: ldc           #163                // String unitName
+      15: invokestatic  #15                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+      18: aload_1
+      19: checkcast     #165                // class java/lang/CharSequence
+      22: invokestatic  #171                // Method kotlin/text/StringsKt.trim:(Ljava/lang/CharSequence;)Ljava/lang/CharSequence;
+      25: invokevirtual #174                // Method java/lang/Object.toString:()Ljava/lang/String;
+      28: astore        4
+      30: aload         4
+      32: checkcast     #165                // class java/lang/CharSequence
+      35: invokeinterface #178,  1          // InterfaceMethod java/lang/CharSequence.length:()I
+      40: ifne          47
+      43: iconst_1
+      44: goto          48
+      47: iconst_0
+      48: ifeq          52
+      51: return
+      52: aload_0
+      53: getfield      #125                // Field activeUnitKey:Ljava/lang/String;
+      56: aload         4
+      58: invokestatic  #182                // Method kotlin/jvm/internal/Intrinsics.areEqual:(Ljava/lang/Object;Ljava/lang/Object;)Z
+      61: ifeq          96
+      64: aload_0
+      65: getfield      #134                // Field listeners:Ljava/util/List;
+      68: checkcast     #184                // class java/util/Collection
+      71: invokeinterface #188,  1          // InterfaceMethod java/util/Collection.isEmpty:()Z
+      76: ifne          83
+      79: iconst_1
+      80: goto          84
+      83: iconst_0
+      84: ifeq          96
+      87: aload_0
+      88: aload         4
+      90: aload_2
+      91: aload_3
+      92: invokespecial #191                // Method sendPresencePing:(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+      95: return
+      96: aload_0
+      97: invokevirtual #194                // Method stopSync:()V
+     100: aload_0
+     101: aload         4
+     103: putfield      #125                // Field activeUnitKey:Ljava/lang/String;
+     106: aload_0
+     107: getfield      #81                 // Field _syncState:Lkotlinx/coroutines/flow/MutableStateFlow;
+     110: aload_0
+     111: getfield      #81                 // Field _syncState:Lkotlinx/coroutines/flow/MutableStateFlow;
+     114: invokeinterface #197,  1          // InterfaceMethod kotlinx/coroutines/flow/MutableStateFlow.getValue:()Ljava/lang/Object;
+     119: checkcast     #68                 // class com/example/data/sync/SyncState
+     122: iconst_1
+     123: lconst_0
+     124: iconst_0
+     125: iconst_0
+     126: aload         4
+     128: invokedynamic #209,  0            // InvokeDynamic #2:makeConcatWithConstants:(Ljava/lang/String;)Ljava/lang/String;
+     133: bipush        14
+     135: aconst_null
+     136: invokestatic  #213                // Method com/example/data/sync/SyncState.copy$default:(Lcom/example/data/sync/SyncState;ZJZILjava/lang/String;ILjava/lang/Object;)Lcom/example/data/sync/SyncState;
+     139: invokeinterface #217,  2          // InterfaceMethod kotlinx/coroutines/flow/MutableStateFlow.setValue:(Ljava/lang/Object;)V
+     144: nop
+     145: aload_0
+     146: aload         4
+     148: invokespecial #221                // Method registerUnitListeners:(Ljava/lang/String;)V
+     151: aload_0
+     152: aload         4
+     154: aload_2
+     155: aload_3
+     156: invokespecial #191                // Method sendPresencePing:(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+     159: aload_0
+     160: getfield      #31                 // Field scope:Lkotlinx/coroutines/CoroutineScope;
+     163: invokestatic  #227                // Method kotlinx/coroutines/Dispatchers.getIO:()Lkotlinx/coroutines/CoroutineDispatcher;
+     166: checkcast     #229                // class kotlin/coroutines/CoroutineContext
+     169: aconst_null
+     170: new           #231                // class com/example/data/sync/FirebaseSyncManager$startSyncForUnit$1
+     173: dup
+     174: aload_0
+     175: aload         4
+     177: aconst_null
+     178: invokespecial #234                // Method com/example/data/sync/FirebaseSyncManager$startSyncForUnit$1."<init>":(Lcom/example/data/sync/FirebaseSyncManager;Ljava/lang/String;Lkotlin/coroutines/Continuation;)V
+     181: checkcast     #236                // class kotlin/jvm/functions/Function2
+     184: iconst_2
+     185: aconst_null
+     186: invokestatic  #242                // Method kotlinx/coroutines/BuildersKt.launch$default:(Lkotlinx/coroutines/CoroutineScope;Lkotlin/coroutines/CoroutineContext;Lkotlinx/coroutines/CoroutineStart;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Lkotlinx/coroutines/Job;
+     189: pop
+     190: goto          259
+     193: astore        5
+     195: aload_0
+     196: getfield      #37                 // Field TAG:Ljava/lang/String;
+     199: ldc           #244                // String Error starting sync
+     201: aload         5
+     203: checkcast     #246                // class java/lang/Throwable
+     206: invokestatic  #252                // Method android/util/Log.e:(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)I
+     209: pop
+     210: aload_0
+     211: getfield      #81                 // Field _syncState:Lkotlinx/coroutines/flow/MutableStateFlow;
+     214: aload_0
+     215: getfield      #81                 // Field _syncState:Lkotlinx/coroutines/flow/MutableStateFlow;
+     218: invokeinterface #197,  1          // InterfaceMethod kotlinx/coroutines/flow/MutableStateFlow.getValue:()Ljava/lang/Object;
+     223: checkcast     #68                 // class com/example/data/sync/SyncState
+     226: iconst_0
+     227: lconst_0
+     228: iconst_0
+     229: iconst_0
+     230: aload         5
+     232: invokevirtual #255                // Method java/lang/Exception.getLocalizedMessage:()Ljava/lang/String;
+     235: dup
+     236: ifnonnull     243
+     239: pop
+     240: ldc_w         #257                // String Нет сети
+     243: invokedynamic #260,  0            // InvokeDynamic #3:makeConcatWithConstants:(Ljava/lang/String;)Ljava/lang/String;
+     248: bipush        10
+     250: aconst_null
+     251: invokestatic  #213                // Method com/example/data/sync/SyncState.copy$default:(Lcom/example/data/sync/SyncState;ZJZILjava/lang/String;ILjava/lang/Object;)Lcom/example/data/sync/SyncState;
+     254: invokeinterface #217,  2          // InterfaceMethod kotlinx/coroutines/flow/MutableStateFlow.setValue:(Ljava/lang/Object;)V
+     259: return
+    Exception table:
+       from    to  target type
+         144   190   193   Class java/lang/Exception
+
+  private final void registerUnitListeners(java.lang.String);
+    Code:
+       0: aload_0
+       1: invokespecial #264                // Method getFirestore:()Lcom/google/firebase/firestore/FirebaseFirestore;
+       4: ldc_w         #266                // String units
+       7: invokevirtual #270                // Method com/google/firebase/firestore/FirebaseFirestore.collection:(Ljava/lang/String;)Lcom/google/firebase/firestore/CollectionReference;
+      10: aload_1
+      11: invokevirtual #276                // Method com/google/firebase/firestore/CollectionReference.document:(Ljava/lang/String;)Lcom/google/firebase/firestore/DocumentReference;
+      14: dup
+      15: ldc_w         #278                // String document(...)
+      18: invokestatic  #281                // Method kotlin/jvm/internal/Intrinsics.checkNotNullExpressionValue:(Ljava/lang/Object;Ljava/lang/String;)V
+      21: astore_2
+      22: new           #283                // class kotlin/jvm/internal/Ref$BooleanRef
+      25: dup
+      26: invokespecial #284                // Method kotlin/jvm/internal/Ref$BooleanRef."<init>":()V
+      29: astore_3
+      30: aload_3
+      31: iconst_1
+      32: putfield      #288                // Field kotlin/jvm/internal/Ref$BooleanRef.element:Z
+      35: aload_2
+      36: ldc_w         #290                // String warehouse_points
+      39: invokevirtual #293                // Method com/google/firebase/firestore/DocumentReference.collection:(Ljava/lang/String;)Lcom/google/firebase/firestore/CollectionReference;
+      42: aload_0
+      43: invokedynamic #306,  0            // InvokeDynamic #4:onEvent:(Lcom/example/data/sync/FirebaseSyncManager;)Lcom/google/firebase/firestore/EventListener;
+      48: invokevirtual #310                // Method com/google/firebase/firestore/CollectionReference.addSnapshotListener:(Lcom/google/firebase/firestore/EventListener;)Lcom/google/firebase/firestore/ListenerRegistration;
+      51: dup
+      52: ldc_w         #312                // String addSnapshotListener(...)
+      55: invokestatic  #281                // Method kotlin/jvm/internal/Intrinsics.checkNotNullExpressionValue:(Ljava/lang/Object;Ljava/lang/String;)V
+      58: astore        4
+      60: aload_0
+      61: getfield      #134                // Field listeners:Ljava/util/List;
+      64: aload         4
+      66: invokeinterface #316,  2          // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z
+      71: pop
+      72: aload_2
+      73: ldc_w         #318                // String inventory_items
+      76: invokevirtual #293                // Method com/google/firebase/firestore/DocumentReference.collection:(Ljava/lang/String;)Lcom/google/firebase/firestore/CollectionReference;
+      79: aload_0
+      80: invokedynamic #323,  0            // InvokeDynamic #5:onEvent:(Lcom/example/data/sync/FirebaseSyncManager;)Lcom/google/firebase/firestore/EventListener;
+      85: invokevirtual #310                // Method com/google/firebase/firestore/CollectionReference.addSnapshotListener:(Lcom/google/firebase/firestore/EventListener;)Lcom/google/firebase/firestore/ListenerRegistration;
+      88: dup
+      89: ldc_w         #312                // String addSnapshotListener(...)
+      92: invokestatic  #281                // Method kotlin/jvm/internal/Intrinsics.checkNotNullExpressionValue:(Ljava/lang/Object;Ljava/lang/String;)V
+      95: astore        5
+      97: aload_0
+      98: getfield      #134                // Field listeners:Ljava/util/List;
+     101: aload         5
+     103: invokeinterface #316,  2          // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z
+     108: pop
+     109: aload_2
+     110: ldc_w         #325                // String stock_records
+     113: invokevirtual #293                // Method com/google/firebase/firestore/DocumentReference.collection:(Ljava/lang/String;)Lcom/google/firebase/firestore/CollectionReference;
+     116: aload_0
+     117: invokedynamic #330,  0            // InvokeDynamic #6:onEvent:(Lcom/example/data/sync/FirebaseSyncManager;)Lcom/google/firebase/firestore/EventListener;
+     122: invokevirtual #310                // Method com/google/firebase/firestore/CollectionReference.addSnapshotListener:(Lcom/google/firebase/firestore/EventListener;)Lcom/google/firebase/firestore/ListenerRegistration;
+     125: dup
+     126: ldc_w         #312                // String addSnapshotListener(...)
+     129: invokestatic  #281                // Method kotlin/jvm/internal/Intrinsics.checkNotNullExpressionValue:(Ljava/lang/Object;Ljava/lang/String;)V
+     132: astore        6
+     134: aload_0
+     135: getfield      #134                // Field listeners:Ljava/util/List;
+     138: aload         6
+     140: invokeinterface #316,  2          // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z
+     145: pop
+     146: aload_2
+     147: ldc_w         #332                // String operation_records
+     150: invokevirtual #293                // Method com/google/firebase/firestore/DocumentReference.collection:(Ljava/lang/String;)Lcom/google/firebase/firestore/CollectionReference;
+     153: aload_0
+     154: aload_3
+     155: invokedynamic #340,  0            // InvokeDynamic #7:onEvent:(Lcom/example/data/sync/FirebaseSyncManager;Lkotlin/jvm/internal/Ref$BooleanRef;)Lcom/google/firebase/firestore/EventListener;
+     160: invokevirtual #310                // Method com/google/firebase/firestore/CollectionReference.addSnapshotListener:(Lcom/google/firebase/firestore/EventListener;)Lcom/google/firebase/firestore/ListenerRegistration;
+     163: dup
+     164: ldc_w         #312                // String addSnapshotListener(...)
+     167: invokestatic  #281                // Method kotlin/jvm/internal/Intrinsics.checkNotNullExpressionValue:(Ljava/lang/Object;Ljava/lang/String;)V
+     170: astore        7
+     172: aload_0
+     173: getfield      #134                // Field listeners:Ljava/util/List;
+     176: aload         7
+     178: invokeinterface #316,  2          // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z
+     183: pop
+     184: aload_2
+     185: ldc_w         #342                // String requisitions
+     188: invokevirtual #293                // Method com/google/firebase/firestore/DocumentReference.collection:(Ljava/lang/String;)Lcom/google/firebase/firestore/CollectionReference;
+     191: aload_0
+     192: invokedynamic #347,  0            // InvokeDynamic #8:onEvent:(Lcom/example/data/sync/FirebaseSyncManager;)Lcom/google/firebase/firestore/EventListener;
+     197: invokevirtual #310                // Method com/google/firebase/firestore/CollectionReference.addSnapshotListener:(Lcom/google/firebase/firestore/EventListener;)Lcom/google/firebase/firestore/ListenerRegistration;
+     200: dup
+     201: ldc_w         #312                // String addSnapshotListener(...)
+     204: invokestatic  #281                // Method kotlin/jvm/internal/Intrinsics.checkNotNullExpressionValue:(Ljava/lang/Object;Ljava/lang/String;)V
+     207: astore        8
+     209: aload_0
+     210: getfield      #134                // Field listeners:Ljava/util/List;
+     213: aload         8
+     215: invokeinterface #316,  2          // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z
+     220: pop
+     221: aload_2
+     222: ldc_w         #349                // String devices
+     225: invokevirtual #293                // Method com/google/firebase/firestore/DocumentReference.collection:(Ljava/lang/String;)Lcom/google/firebase/firestore/CollectionReference;
+     228: aload_0
+     229: invokedynamic #354,  0            // InvokeDynamic #9:onEvent:(Lcom/example/data/sync/FirebaseSyncManager;)Lcom/google/firebase/firestore/EventListener;
+     234: invokevirtual #310                // Method com/google/firebase/firestore/CollectionReference.addSnapshotListener:(Lcom/google/firebase/firestore/EventListener;)Lcom/google/firebase/firestore/ListenerRegistration;
+     237: dup
+     238: ldc_w         #312                // String addSnapshotListener(...)
+     241: invokestatic  #281                // Method kotlin/jvm/internal/Intrinsics.checkNotNullExpressionValue:(Ljava/lang/Object;Ljava/lang/String;)V
+     244: astore        9
+     246: aload_0
+     247: getfield      #134                // Field listeners:Ljava/util/List;
+     250: aload         9
+     252: invokeinterface #316,  2          // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z
+     257: pop
+     258: return
+
+  private final void sendPresencePing(java.lang.String, java.lang.String, java.lang.String);
+    Code:
+       0: aload_0
+       1: invokespecial #264                // Method getFirestore:()Lcom/google/firebase/firestore/FirebaseFirestore;
+       4: ldc_w         #266                // String units
+       7: invokevirtual #270                // Method com/google/firebase/firestore/FirebaseFirestore.collection:(Ljava/lang/String;)Lcom/google/firebase/firestore/CollectionReference;
+      10: aload_1
+      11: invokevirtual #276                // Method com/google/firebase/firestore/CollectionReference.document:(Ljava/lang/String;)Lcom/google/firebase/firestore/DocumentReference;
+      14: dup
+      15: ldc_w         #278                // String document(...)
+      18: invokestatic  #281                // Method kotlin/jvm/internal/Intrinsics.checkNotNullExpressionValue:(Ljava/lang/Object;Ljava/lang/String;)V
+      21: astore        4
+      23: bipush        6
+      25: anewarray     #367                // class kotlin/Pair
+      28: astore        6
+      30: aload         6
+      32: iconst_0
+      33: ldc_w         #369                // String deviceId
+      36: aload_0
+      37: invokespecial #371                // Method getDeviceId:()Ljava/lang/String;
+      40: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+      43: aastore
+      44: aload         6
+      46: iconst_1
+      47: ldc           #161                // String callsign
+      49: aload_2
+      50: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+      53: aastore
+      54: aload         6
+      56: iconst_2
+      57: ldc           #163                // String unitName
+      59: aload_3
+      60: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+      63: aastore
+      64: aload         6
+      66: iconst_3
+      67: ldc_w         #379                // String deviceModel
+      70: getstatic     #384                // Field android/os/Build.MANUFACTURER:Ljava/lang/String;
+      73: getstatic     #387                // Field android/os/Build.MODEL:Ljava/lang/String;
+      76: invokedynamic #392,  0            // InvokeDynamic #10:makeConcatWithConstants:(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+      81: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+      84: aastore
+      85: aload         6
+      87: iconst_4
+      88: ldc_w         #394                // String timestamp
+      91: invokestatic  #400                // Method com/google/firebase/firestore/FieldValue.serverTimestamp:()Lcom/google/firebase/firestore/FieldValue;
+      94: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+      97: aastore
+      98: aload         6
+     100: iconst_5
+     101: ldc_w         #402                // String timestampMillis
+     104: invokestatic  #408                // Method java/lang/System.currentTimeMillis:()J
+     107: invokestatic  #414                // Method java/lang/Long.valueOf:(J)Ljava/lang/Long;
+     110: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+     113: aastore
+     114: aload         6
+     116: invokestatic  #420                // Method kotlin/collections/MapsKt.hashMapOf:([Lkotlin/Pair;)Ljava/util/HashMap;
+     119: astore        5
+     121: aload         4
+     123: ldc_w         #349                // String devices
+     126: invokevirtual #293                // Method com/google/firebase/firestore/DocumentReference.collection:(Ljava/lang/String;)Lcom/google/firebase/firestore/CollectionReference;
+     129: aload_0
+     130: invokespecial #371                // Method getDeviceId:()Ljava/lang/String;
+     133: invokevirtual #276                // Method com/google/firebase/firestore/CollectionReference.document:(Ljava/lang/String;)Lcom/google/firebase/firestore/DocumentReference;
+     136: aload         5
+     138: invokestatic  #426                // Method com/google/firebase/firestore/SetOptions.merge:()Lcom/google/firebase/firestore/SetOptions;
+     141: invokevirtual #430                // Method com/google/firebase/firestore/DocumentReference.set:(Ljava/lang/Object;Lcom/google/firebase/firestore/SetOptions;)Lcom/google/android/gms/tasks/Task;
+     144: pop
+     145: aload         4
+     147: iconst_3
+     148: anewarray     #367                // class kotlin/Pair
+     151: astore        6
+     153: aload         6
+     155: iconst_0
+     156: ldc           #159                // String unitKey
+     158: aload_1
+     159: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+     162: aastore
+     163: aload         6
+     165: iconst_1
+     166: ldc           #163                // String unitName
+     168: aload_3
+     169: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+     172: aastore
+     173: aload         6
+     175: iconst_2
+     176: ldc_w         #432                // String lastActivity
+     179: invokestatic  #400                // Method com/google/firebase/firestore/FieldValue.serverTimestamp:()Lcom/google/firebase/firestore/FieldValue;
+     182: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+     185: aastore
+     186: aload         6
+     188: invokestatic  #420                // Method kotlin/collections/MapsKt.hashMapOf:([Lkotlin/Pair;)Ljava/util/HashMap;
+     191: invokestatic  #426                // Method com/google/firebase/firestore/SetOptions.merge:()Lcom/google/firebase/firestore/SetOptions;
+     194: invokevirtual #430                // Method com/google/firebase/firestore/DocumentReference.set:(Ljava/lang/Object;Lcom/google/firebase/firestore/SetOptions;)Lcom/google/android/gms/tasks/Task;
+     197: pop
+     198: return
+
+  public final java.lang.Object pushAllLocalData(java.lang.String, kotlin.coroutines.Continuation<? super kotlin.Unit>);
+    Code:
+       0: aload_2
+       1: instanceof    #440                // class com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1
+       4: ifeq          41
+       7: aload_2
+       8: checkcast     #440                // class com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1
+      11: astore        13
+      13: aload         13
+      15: getfield      #444                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.label:I
+      18: ldc_w         #445                // int -2147483648
+      21: iand
+      22: ifeq          41
+      25: aload         13
+      27: dup
+      28: getfield      #444                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.label:I
+      31: ldc_w         #445                // int -2147483648
+      34: isub
+      35: putfield      #444                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.label:I
+      38: goto          52
+      41: new           #440                // class com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1
+      44: dup
+      45: aload_0
+      46: aload_2
+      47: invokespecial #448                // Method com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1."<init>":(Lcom/example/data/sync/FirebaseSyncManager;Lkotlin/coroutines/Continuation;)V
+      50: astore        13
+      52: aload         13
+      54: getfield      #452                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.result:Ljava/lang/Object;
+      57: astore        12
+      59: invokestatic  #457                // Method kotlin/coroutines/intrinsics/IntrinsicsKt.getCOROUTINE_SUSPENDED:()Ljava/lang/Object;
+      62: astore        14
+      64: aload         13
+      66: getfield      #444                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.label:I
+      69: tableswitch   { // 0 to 5
+                     0: 108
+                     1: 238
+                     2: 490
+                     3: 788
+                     4: 1097
+                     5: 1470
+               default: 1840
+          }
+     108: aload         12
+     110: invokestatic  #462                // Method kotlin/ResultKt.throwOnFailure:(Ljava/lang/Object;)V
+     113: aload_1
+     114: checkcast     #165                // class java/lang/CharSequence
+     117: invokeinterface #178,  1          // InterfaceMethod java/lang/CharSequence.length:()I
+     122: ifne          129
+     125: iconst_1
+     126: goto          130
+     129: iconst_0
+     130: ifeq          137
+     133: getstatic     #468                // Field kotlin/Unit.INSTANCE:Lkotlin/Unit;
+     136: areturn
+     137: aload_0
+     138: getfield      #81                 // Field _syncState:Lkotlinx/coroutines/flow/MutableStateFlow;
+     141: aload_0
+     142: getfield      #81                 // Field _syncState:Lkotlinx/coroutines/flow/MutableStateFlow;
+     145: invokeinterface #197,  1          // InterfaceMethod kotlinx/coroutines/flow/MutableStateFlow.getValue:()Ljava/lang/Object;
+     150: checkcast     #68                 // class com/example/data/sync/SyncState
+     153: iconst_1
+     154: lconst_0
+     155: iconst_0
+     156: iconst_0
+     157: ldc_w         #470                // String Отправка локальных данных в облако...
+     160: bipush        14
+     162: aconst_null
+     163: invokestatic  #213                // Method com/example/data/sync/SyncState.copy$default:(Lcom/example/data/sync/SyncState;ZJZILjava/lang/String;ILjava/lang/Object;)Lcom/example/data/sync/SyncState;
+     166: invokeinterface #217,  2          // InterfaceMethod kotlinx/coroutines/flow/MutableStateFlow.setValue:(Ljava/lang/Object;)V
+     171: aload_0
+     172: invokespecial #264                // Method getFirestore:()Lcom/google/firebase/firestore/FirebaseFirestore;
+     175: ldc_w         #266                // String units
+     178: invokevirtual #270                // Method com/google/firebase/firestore/FirebaseFirestore.collection:(Ljava/lang/String;)Lcom/google/firebase/firestore/CollectionReference;
+     181: aload_1
+     182: invokevirtual #276                // Method com/google/firebase/firestore/CollectionReference.document:(Ljava/lang/String;)Lcom/google/firebase/firestore/DocumentReference;
+     185: dup
+     186: ldc_w         #278                // String document(...)
+     189: invokestatic  #281                // Method kotlin/jvm/internal/Intrinsics.checkNotNullExpressionValue:(Ljava/lang/Object;Ljava/lang/String;)V
+     192: astore_3
+     193: nop
+     194: aload_0
+     195: getfield      #28                 // Field dao:Lcom/example/data/local/KapterkaDao;
+     198: invokeinterface #476,  1          // InterfaceMethod com/example/data/local/KapterkaDao.getAllPoints:()Lkotlinx/coroutines/flow/Flow;
+     203: aload         13
+     205: aload         13
+     207: aload_1
+     208: invokestatic  #482                // Method kotlin/coroutines/jvm/internal/SpillingKt.nullOutSpilledVariable:(Ljava/lang/Object;)Ljava/lang/Object;
+     211: putfield      #485                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.L$0:Ljava/lang/Object;
+     214: aload         13
+     216: aload_3
+     217: putfield      #488                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.L$1:Ljava/lang/Object;
+     220: aload         13
+     222: iconst_1
+     223: putfield      #444                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.label:I
+     226: invokestatic  #492                // Method kotlinx/coroutines/flow/FlowKt.first:(Lkotlinx/coroutines/flow/Flow;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+     229: dup
+     230: aload         14
+     232: if_acmpne     264
+     235: aload         14
+     237: areturn
+     238: aload         13
+     240: getfield      #488                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.L$1:Ljava/lang/Object;
+     243: checkcast     #292                // class com/google/firebase/firestore/DocumentReference
+     246: astore_3
+     247: aload         13
+     249: getfield      #485                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.L$0:Ljava/lang/Object;
+     252: checkcast     #153                // class java/lang/String
+     255: astore_1
+     256: nop
+     257: aload         12
+     259: invokestatic  #462                // Method kotlin/ResultKt.throwOnFailure:(Ljava/lang/Object;)V
+     262: aload         12
+     264: checkcast     #130                // class java/util/List
+     267: astore        4
+     269: aload         4
+     271: invokeinterface #496,  1          // InterfaceMethod java/util/List.iterator:()Ljava/util/Iterator;
+     276: astore        5
+     278: aload         5
+     280: invokeinterface #501,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+     285: ifeq          436
+     288: aload         5
+     290: invokeinterface #504,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+     295: checkcast     #506                // class com/example/data/model/WarehousePoint
+     298: astore        6
+     300: aload_3
+     301: ldc_w         #290                // String warehouse_points
+     304: invokevirtual #293                // Method com/google/firebase/firestore/DocumentReference.collection:(Ljava/lang/String;)Lcom/google/firebase/firestore/CollectionReference;
+     307: aload         6
+     309: invokevirtual #509                // Method com/example/data/model/WarehousePoint.getId:()Ljava/lang/String;
+     312: invokevirtual #276                // Method com/google/firebase/firestore/CollectionReference.document:(Ljava/lang/String;)Lcom/google/firebase/firestore/DocumentReference;
+     315: bipush        6
+     317: anewarray     #367                // class kotlin/Pair
+     320: astore        7
+     322: aload         7
+     324: iconst_0
+     325: ldc_w         #511                // String id
+     328: aload         6
+     330: invokevirtual #509                // Method com/example/data/model/WarehousePoint.getId:()Ljava/lang/String;
+     333: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+     336: aastore
+     337: aload         7
+     339: iconst_1
+     340: ldc_w         #513                // String name
+     343: aload         6
+     345: invokevirtual #516                // Method com/example/data/model/WarehousePoint.getName:()Ljava/lang/String;
+     348: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+     351: aastore
+     352: aload         7
+     354: iconst_2
+     355: ldc_w         #518                // String description
+     358: aload         6
+     360: invokevirtual #521                // Method com/example/data/model/WarehousePoint.getDescription:()Ljava/lang/String;
+     363: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+     366: aastore
+     367: aload         7
+     369: iconst_3
+     370: ldc_w         #523                // String isBase
+     373: aload         6
+     375: invokevirtual #525                // Method com/example/data/model/WarehousePoint.isBase:()Z
+     378: invokestatic  #531                // Method kotlin/coroutines/jvm/internal/Boxing.boxBoolean:(Z)Ljava/lang/Boolean;
+     381: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+     384: aastore
+     385: aload         7
+     387: iconst_4
+     388: ldc_w         #533                // String orderIndex
+     391: aload         6
+     393: invokevirtual #536                // Method com/example/data/model/WarehousePoint.getOrderIndex:()I
+     396: invokestatic  #540                // Method kotlin/coroutines/jvm/internal/Boxing.boxInt:(I)Ljava/lang/Integer;
+     399: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+     402: aastore
+     403: aload         7
+     405: iconst_5
+     406: ldc_w         #542                // String createdAt
+     409: aload         6
+     411: invokevirtual #545                // Method com/example/data/model/WarehousePoint.getCreatedAt:()J
+     414: invokestatic  #548                // Method kotlin/coroutines/jvm/internal/Boxing.boxLong:(J)Ljava/lang/Long;
+     417: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+     420: aastore
+     421: aload         7
+     423: invokestatic  #420                // Method kotlin/collections/MapsKt.hashMapOf:([Lkotlin/Pair;)Ljava/util/HashMap;
+     426: invokestatic  #426                // Method com/google/firebase/firestore/SetOptions.merge:()Lcom/google/firebase/firestore/SetOptions;
+     429: invokevirtual #430                // Method com/google/firebase/firestore/DocumentReference.set:(Ljava/lang/Object;Lcom/google/firebase/firestore/SetOptions;)Lcom/google/android/gms/tasks/Task;
+     432: pop
+     433: goto          278
+     436: aload_0
+     437: getfield      #28                 // Field dao:Lcom/example/data/local/KapterkaDao;
+     440: invokeinterface #551,  1          // InterfaceMethod com/example/data/local/KapterkaDao.getAllItems:()Lkotlinx/coroutines/flow/Flow;
+     445: aload         13
+     447: aload         13
+     449: aload_1
+     450: invokestatic  #482                // Method kotlin/coroutines/jvm/internal/SpillingKt.nullOutSpilledVariable:(Ljava/lang/Object;)Ljava/lang/Object;
+     453: putfield      #485                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.L$0:Ljava/lang/Object;
+     456: aload         13
+     458: aload_3
+     459: putfield      #488                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.L$1:Ljava/lang/Object;
+     462: aload         13
+     464: aload         4
+     466: invokestatic  #482                // Method kotlin/coroutines/jvm/internal/SpillingKt.nullOutSpilledVariable:(Ljava/lang/Object;)Ljava/lang/Object;
+     469: putfield      #554                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.L$2:Ljava/lang/Object;
+     472: aload         13
+     474: iconst_2
+     475: putfield      #444                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.label:I
+     478: invokestatic  #492                // Method kotlinx/coroutines/flow/FlowKt.first:(Lkotlinx/coroutines/flow/Flow;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+     481: dup
+     482: aload         14
+     484: if_acmpne     526
+     487: aload         14
+     489: areturn
+     490: aload         13
+     492: getfield      #554                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.L$2:Ljava/lang/Object;
+     495: checkcast     #130                // class java/util/List
+     498: astore        4
+     500: aload         13
+     502: getfield      #488                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.L$1:Ljava/lang/Object;
+     505: checkcast     #292                // class com/google/firebase/firestore/DocumentReference
+     508: astore_3
+     509: aload         13
+     511: getfield      #485                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.L$0:Ljava/lang/Object;
+     514: checkcast     #153                // class java/lang/String
+     517: astore_1
+     518: nop
+     519: aload         12
+     521: invokestatic  #462                // Method kotlin/ResultKt.throwOnFailure:(Ljava/lang/Object;)V
+     524: aload         12
+     526: checkcast     #130                // class java/util/List
+     529: astore        5
+     531: aload         5
+     533: invokeinterface #496,  1          // InterfaceMethod java/util/List.iterator:()Ljava/util/Iterator;
+     538: astore        6
+     540: aload         6
+     542: invokeinterface #501,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+     547: ifeq          724
+     550: aload         6
+     552: invokeinterface #504,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+     557: checkcast     #556                // class com/example/data/model/InventoryItem
+     560: astore        7
+     562: aload_3
+     563: ldc_w         #318                // String inventory_items
+     566: invokevirtual #293                // Method com/google/firebase/firestore/DocumentReference.collection:(Ljava/lang/String;)Lcom/google/firebase/firestore/CollectionReference;
+     569: aload         7
+     571: invokevirtual #557                // Method com/example/data/model/InventoryItem.getId:()Ljava/lang/String;
+     574: invokevirtual #276                // Method com/google/firebase/firestore/CollectionReference.document:(Ljava/lang/String;)Lcom/google/firebase/firestore/DocumentReference;
+     577: bipush        8
+     579: anewarray     #367                // class kotlin/Pair
+     582: astore        8
+     584: aload         8
+     586: iconst_0
+     587: ldc_w         #511                // String id
+     590: aload         7
+     592: invokevirtual #557                // Method com/example/data/model/InventoryItem.getId:()Ljava/lang/String;
+     595: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+     598: aastore
+     599: aload         8
+     601: iconst_1
+     602: ldc_w         #513                // String name
+     605: aload         7
+     607: invokevirtual #558                // Method com/example/data/model/InventoryItem.getName:()Ljava/lang/String;
+     610: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+     613: aastore
+     614: aload         8
+     616: iconst_2
+     617: ldc_w         #560                // String serviceCategory
+     620: aload         7
+     622: invokevirtual #563                // Method com/example/data/model/InventoryItem.getServiceCategory:()Ljava/lang/String;
+     625: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+     628: aastore
+     629: aload         8
+     631: iconst_3
+     632: ldc_w         #565                // String subType
+     635: aload         7
+     637: invokevirtual #568                // Method com/example/data/model/InventoryItem.getSubType:()Ljava/lang/String;
+     640: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+     643: aastore
+     644: aload         8
+     646: iconst_4
+     647: ldc_w         #570                // String unit
+     650: aload         7
+     652: invokevirtual #573                // Method com/example/data/model/InventoryItem.getUnit:()Ljava/lang/String;
+     655: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+     658: aastore
+     659: aload         8
+     661: iconst_5
+     662: ldc_w         #575                // String categoryClass
+     665: aload         7
+     667: invokevirtual #578                // Method com/example/data/model/InventoryItem.getCategoryClass:()Ljava/lang/String;
+     670: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+     673: aastore
+     674: aload         8
+     676: bipush        6
+     678: ldc_w         #580                // String standardCode
+     681: aload         7
+     683: invokevirtual #583                // Method com/example/data/model/InventoryItem.getStandardCode:()Ljava/lang/String;
+     686: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+     689: aastore
+     690: aload         8
+     692: bipush        7
+     694: ldc_w         #585                // String isCustom
+     697: aload         7
+     699: invokevirtual #587                // Method com/example/data/model/InventoryItem.isCustom:()Z
+     702: invokestatic  #531                // Method kotlin/coroutines/jvm/internal/Boxing.boxBoolean:(Z)Ljava/lang/Boolean;
+     705: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+     708: aastore
+     709: aload         8
+     711: invokestatic  #420                // Method kotlin/collections/MapsKt.hashMapOf:([Lkotlin/Pair;)Ljava/util/HashMap;
+     714: invokestatic  #426                // Method com/google/firebase/firestore/SetOptions.merge:()Lcom/google/firebase/firestore/SetOptions;
+     717: invokevirtual #430                // Method com/google/firebase/firestore/DocumentReference.set:(Ljava/lang/Object;Lcom/google/firebase/firestore/SetOptions;)Lcom/google/android/gms/tasks/Task;
+     720: pop
+     721: goto          540
+     724: aload_0
+     725: getfield      #28                 // Field dao:Lcom/example/data/local/KapterkaDao;
+     728: invokeinterface #590,  1          // InterfaceMethod com/example/data/local/KapterkaDao.getAllStockRecords:()Lkotlinx/coroutines/flow/Flow;
+     733: aload         13
+     735: aload         13
+     737: aload_1
+     738: invokestatic  #482                // Method kotlin/coroutines/jvm/internal/SpillingKt.nullOutSpilledVariable:(Ljava/lang/Object;)Ljava/lang/Object;
+     741: putfield      #485                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.L$0:Ljava/lang/Object;
+     744: aload         13
+     746: aload_3
+     747: putfield      #488                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.L$1:Ljava/lang/Object;
+     750: aload         13
+     752: aload         4
+     754: invokestatic  #482                // Method kotlin/coroutines/jvm/internal/SpillingKt.nullOutSpilledVariable:(Ljava/lang/Object;)Ljava/lang/Object;
+     757: putfield      #554                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.L$2:Ljava/lang/Object;
+     760: aload         13
+     762: aload         5
+     764: invokestatic  #482                // Method kotlin/coroutines/jvm/internal/SpillingKt.nullOutSpilledVariable:(Ljava/lang/Object;)Ljava/lang/Object;
+     767: putfield      #593                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.L$3:Ljava/lang/Object;
+     770: aload         13
+     772: iconst_3
+     773: putfield      #444                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.label:I
+     776: invokestatic  #492                // Method kotlinx/coroutines/flow/FlowKt.first:(Lkotlinx/coroutines/flow/Flow;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+     779: dup
+     780: aload         14
+     782: if_acmpne     834
+     785: aload         14
+     787: areturn
+     788: aload         13
+     790: getfield      #593                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.L$3:Ljava/lang/Object;
+     793: checkcast     #130                // class java/util/List
+     796: astore        5
+     798: aload         13
+     800: getfield      #554                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.L$2:Ljava/lang/Object;
+     803: checkcast     #130                // class java/util/List
+     806: astore        4
+     808: aload         13
+     810: getfield      #488                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.L$1:Ljava/lang/Object;
+     813: checkcast     #292                // class com/google/firebase/firestore/DocumentReference
+     816: astore_3
+     817: aload         13
+     819: getfield      #485                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.L$0:Ljava/lang/Object;
+     822: checkcast     #153                // class java/lang/String
+     825: astore_1
+     826: nop
+     827: aload         12
+     829: invokestatic  #462                // Method kotlin/ResultKt.throwOnFailure:(Ljava/lang/Object;)V
+     832: aload         12
+     834: checkcast     #130                // class java/util/List
+     837: astore        6
+     839: aload         6
+     841: invokeinterface #496,  1          // InterfaceMethod java/util/List.iterator:()Ljava/util/Iterator;
+     846: astore        7
+     848: aload         7
+     850: invokeinterface #501,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+     855: ifeq          1023
+     858: aload         7
+     860: invokeinterface #504,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+     865: checkcast     #595                // class com/example/data/model/StockRecord
+     868: astore        8
+     870: aload         8
+     872: invokevirtual #598                // Method com/example/data/model/StockRecord.getPointId:()Ljava/lang/String;
+     875: aload         8
+     877: invokevirtual #601                // Method com/example/data/model/StockRecord.getItemId:()Ljava/lang/String;
+     880: invokedynamic #604,  0            // InvokeDynamic #11:makeConcatWithConstants:(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+     885: astore        9
+     887: aload_3
+     888: ldc_w         #325                // String stock_records
+     891: invokevirtual #293                // Method com/google/firebase/firestore/DocumentReference.collection:(Ljava/lang/String;)Lcom/google/firebase/firestore/CollectionReference;
+     894: aload         9
+     896: invokevirtual #276                // Method com/google/firebase/firestore/CollectionReference.document:(Ljava/lang/String;)Lcom/google/firebase/firestore/DocumentReference;
+     899: bipush        6
+     901: anewarray     #367                // class kotlin/Pair
+     904: astore        10
+     906: aload         10
+     908: iconst_0
+     909: ldc_w         #606                // String pointId
+     912: aload         8
+     914: invokevirtual #598                // Method com/example/data/model/StockRecord.getPointId:()Ljava/lang/String;
+     917: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+     920: aastore
+     921: aload         10
+     923: iconst_1
+     924: ldc_w         #608                // String itemId
+     927: aload         8
+     929: invokevirtual #601                // Method com/example/data/model/StockRecord.getItemId:()Ljava/lang/String;
+     932: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+     935: aastore
+     936: aload         10
+     938: iconst_2
+     939: ldc_w         #610                // String quantity
+     942: aload         8
+     944: invokevirtual #613                // Method com/example/data/model/StockRecord.getQuantity:()I
+     947: invokestatic  #540                // Method kotlin/coroutines/jvm/internal/Boxing.boxInt:(I)Ljava/lang/Integer;
+     950: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+     953: aastore
+     954: aload         10
+     956: iconst_3
+     957: ldc_w         #615                // String incomeTotal
+     960: aload         8
+     962: invokevirtual #618                // Method com/example/data/model/StockRecord.getIncomeTotal:()I
+     965: invokestatic  #540                // Method kotlin/coroutines/jvm/internal/Boxing.boxInt:(I)Ljava/lang/Integer;
+     968: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+     971: aastore
+     972: aload         10
+     974: iconst_4
+     975: ldc_w         #620                // String expenseTotal
+     978: aload         8
+     980: invokevirtual #623                // Method com/example/data/model/StockRecord.getExpenseTotal:()I
+     983: invokestatic  #540                // Method kotlin/coroutines/jvm/internal/Boxing.boxInt:(I)Ljava/lang/Integer;
+     986: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+     989: aastore
+     990: aload         10
+     992: iconst_5
+     993: ldc_w         #625                // String lastUpdated
+     996: aload         8
+     998: invokevirtual #628                // Method com/example/data/model/StockRecord.getLastUpdated:()J
+    1001: invokestatic  #548                // Method kotlin/coroutines/jvm/internal/Boxing.boxLong:(J)Ljava/lang/Long;
+    1004: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+    1007: aastore
+    1008: aload         10
+    1010: invokestatic  #420                // Method kotlin/collections/MapsKt.hashMapOf:([Lkotlin/Pair;)Ljava/util/HashMap;
+    1013: invokestatic  #426                // Method com/google/firebase/firestore/SetOptions.merge:()Lcom/google/firebase/firestore/SetOptions;
+    1016: invokevirtual #430                // Method com/google/firebase/firestore/DocumentReference.set:(Ljava/lang/Object;Lcom/google/firebase/firestore/SetOptions;)Lcom/google/android/gms/tasks/Task;
+    1019: pop
+    1020: goto          848
+    1023: aload_0
+    1024: getfield      #28                 // Field dao:Lcom/example/data/local/KapterkaDao;
+    1027: invokeinterface #631,  1          // InterfaceMethod com/example/data/local/KapterkaDao.getAllOperations:()Lkotlinx/coroutines/flow/Flow;
+    1032: aload         13
+    1034: aload         13
+    1036: aload_1
+    1037: invokestatic  #482                // Method kotlin/coroutines/jvm/internal/SpillingKt.nullOutSpilledVariable:(Ljava/lang/Object;)Ljava/lang/Object;
+    1040: putfield      #485                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.L$0:Ljava/lang/Object;
+    1043: aload         13
+    1045: aload_3
+    1046: putfield      #488                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.L$1:Ljava/lang/Object;
+    1049: aload         13
+    1051: aload         4
+    1053: invokestatic  #482                // Method kotlin/coroutines/jvm/internal/SpillingKt.nullOutSpilledVariable:(Ljava/lang/Object;)Ljava/lang/Object;
+    1056: putfield      #554                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.L$2:Ljava/lang/Object;
+    1059: aload         13
+    1061: aload         5
+    1063: invokestatic  #482                // Method kotlin/coroutines/jvm/internal/SpillingKt.nullOutSpilledVariable:(Ljava/lang/Object;)Ljava/lang/Object;
+    1066: putfield      #593                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.L$3:Ljava/lang/Object;
+    1069: aload         13
+    1071: aload         6
+    1073: invokestatic  #482                // Method kotlin/coroutines/jvm/internal/SpillingKt.nullOutSpilledVariable:(Ljava/lang/Object;)Ljava/lang/Object;
+    1076: putfield      #634                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.L$4:Ljava/lang/Object;
+    1079: aload         13
+    1081: iconst_4
+    1082: putfield      #444                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.label:I
+    1085: invokestatic  #492                // Method kotlinx/coroutines/flow/FlowKt.first:(Lkotlinx/coroutines/flow/Flow;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+    1088: dup
+    1089: aload         14
+    1091: if_acmpne     1153
+    1094: aload         14
+    1096: areturn
+    1097: aload         13
+    1099: getfield      #634                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.L$4:Ljava/lang/Object;
+    1102: checkcast     #130                // class java/util/List
+    1105: astore        6
+    1107: aload         13
+    1109: getfield      #593                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.L$3:Ljava/lang/Object;
+    1112: checkcast     #130                // class java/util/List
+    1115: astore        5
+    1117: aload         13
+    1119: getfield      #554                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.L$2:Ljava/lang/Object;
+    1122: checkcast     #130                // class java/util/List
+    1125: astore        4
+    1127: aload         13
+    1129: getfield      #488                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.L$1:Ljava/lang/Object;
+    1132: checkcast     #292                // class com/google/firebase/firestore/DocumentReference
+    1135: astore_3
+    1136: aload         13
+    1138: getfield      #485                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.L$0:Ljava/lang/Object;
+    1141: checkcast     #153                // class java/lang/String
+    1144: astore_1
+    1145: nop
+    1146: aload         12
+    1148: invokestatic  #462                // Method kotlin/ResultKt.throwOnFailure:(Ljava/lang/Object;)V
+    1151: aload         12
+    1153: checkcast     #130                // class java/util/List
+    1156: astore        7
+    1158: aload         7
+    1160: invokeinterface #496,  1          // InterfaceMethod java/util/List.iterator:()Ljava/util/Iterator;
+    1165: astore        8
+    1167: aload         8
+    1169: invokeinterface #501,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+    1174: ifeq          1386
+    1177: aload         8
+    1179: invokeinterface #504,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+    1184: checkcast     #636                // class com/example/data/model/OperationRecord
+    1187: astore        9
+    1189: aload_3
+    1190: ldc_w         #332                // String operation_records
+    1193: invokevirtual #293                // Method com/google/firebase/firestore/DocumentReference.collection:(Ljava/lang/String;)Lcom/google/firebase/firestore/CollectionReference;
+    1196: aload         9
+    1198: invokevirtual #637                // Method com/example/data/model/OperationRecord.getId:()Ljava/lang/String;
+    1201: invokevirtual #276                // Method com/google/firebase/firestore/CollectionReference.document:(Ljava/lang/String;)Lcom/google/firebase/firestore/DocumentReference;
+    1204: bipush        10
+    1206: anewarray     #367                // class kotlin/Pair
+    1209: astore        10
+    1211: aload         10
+    1213: iconst_0
+    1214: ldc_w         #511                // String id
+    1217: aload         9
+    1219: invokevirtual #637                // Method com/example/data/model/OperationRecord.getId:()Ljava/lang/String;
+    1222: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+    1225: aastore
+    1226: aload         10
+    1228: iconst_1
+    1229: ldc_w         #639                // String type
+    1232: aload         9
+    1234: invokevirtual #643                // Method com/example/data/model/OperationRecord.getType:()Lcom/example/data/model/OperationType;
+    1237: invokevirtual #647                // Method com/example/data/model/OperationType.name:()Ljava/lang/String;
+    1240: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+    1243: aastore
+    1244: aload         10
+    1246: iconst_2
+    1247: ldc_w         #649                // String fromPointName
+    1250: aload         9
+    1252: invokevirtual #652                // Method com/example/data/model/OperationRecord.getFromPointName:()Ljava/lang/String;
+    1255: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+    1258: aastore
+    1259: aload         10
+    1261: iconst_3
+    1262: ldc_w         #654                // String toPointName
+    1265: aload         9
+    1267: invokevirtual #657                // Method com/example/data/model/OperationRecord.getToPointName:()Ljava/lang/String;
+    1270: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+    1273: aastore
+    1274: aload         10
+    1276: iconst_4
+    1277: ldc_w         #659                // String docNumber
+    1280: aload         9
+    1282: invokevirtual #662                // Method com/example/data/model/OperationRecord.getDocNumber:()Ljava/lang/String;
+    1285: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+    1288: aastore
+    1289: aload         10
+    1291: iconst_5
+    1292: ldc_w         #664                // String responsiblePerson
+    1295: aload         9
+    1297: invokevirtual #667                // Method com/example/data/model/OperationRecord.getResponsiblePerson:()Ljava/lang/String;
+    1300: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+    1303: aastore
+    1304: aload         10
+    1306: bipush        6
+    1308: ldc_w         #669                // String comment
+    1311: aload         9
+    1313: invokevirtual #672                // Method com/example/data/model/OperationRecord.getComment:()Ljava/lang/String;
+    1316: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+    1319: aastore
+    1320: aload         10
+    1322: bipush        7
+    1324: ldc_w         #394                // String timestamp
+    1327: aload         9
+    1329: invokevirtual #675                // Method com/example/data/model/OperationRecord.getTimestamp:()J
+    1332: invokestatic  #548                // Method kotlin/coroutines/jvm/internal/Boxing.boxLong:(J)Ljava/lang/Long;
+    1335: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+    1338: aastore
+    1339: aload         10
+    1341: bipush        8
+    1343: ldc_w         #677                // String itemsSummary
+    1346: aload         9
+    1348: invokevirtual #680                // Method com/example/data/model/OperationRecord.getItemsSummary:()Ljava/lang/String;
+    1351: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+    1354: aastore
+    1355: aload         10
+    1357: bipush        9
+    1359: ldc_w         #682                // String itemsJson
+    1362: aload         9
+    1364: invokevirtual #685                // Method com/example/data/model/OperationRecord.getItemsJson:()Ljava/lang/String;
+    1367: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+    1370: aastore
+    1371: aload         10
+    1373: invokestatic  #420                // Method kotlin/collections/MapsKt.hashMapOf:([Lkotlin/Pair;)Ljava/util/HashMap;
+    1376: invokestatic  #426                // Method com/google/firebase/firestore/SetOptions.merge:()Lcom/google/firebase/firestore/SetOptions;
+    1379: invokevirtual #430                // Method com/google/firebase/firestore/DocumentReference.set:(Ljava/lang/Object;Lcom/google/firebase/firestore/SetOptions;)Lcom/google/android/gms/tasks/Task;
+    1382: pop
+    1383: goto          1167
+    1386: aload_0
+    1387: getfield      #28                 // Field dao:Lcom/example/data/local/KapterkaDao;
+    1390: invokeinterface #688,  1          // InterfaceMethod com/example/data/local/KapterkaDao.getAllRequisitions:()Lkotlinx/coroutines/flow/Flow;
+    1395: aload         13
+    1397: aload         13
+    1399: aload_1
+    1400: invokestatic  #482                // Method kotlin/coroutines/jvm/internal/SpillingKt.nullOutSpilledVariable:(Ljava/lang/Object;)Ljava/lang/Object;
+    1403: putfield      #485                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.L$0:Ljava/lang/Object;
+    1406: aload         13
+    1408: aload_3
+    1409: putfield      #488                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.L$1:Ljava/lang/Object;
+    1412: aload         13
+    1414: aload         4
+    1416: invokestatic  #482                // Method kotlin/coroutines/jvm/internal/SpillingKt.nullOutSpilledVariable:(Ljava/lang/Object;)Ljava/lang/Object;
+    1419: putfield      #554                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.L$2:Ljava/lang/Object;
+    1422: aload         13
+    1424: aload         5
+    1426: invokestatic  #482                // Method kotlin/coroutines/jvm/internal/SpillingKt.nullOutSpilledVariable:(Ljava/lang/Object;)Ljava/lang/Object;
+    1429: putfield      #593                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.L$3:Ljava/lang/Object;
+    1432: aload         13
+    1434: aload         6
+    1436: invokestatic  #482                // Method kotlin/coroutines/jvm/internal/SpillingKt.nullOutSpilledVariable:(Ljava/lang/Object;)Ljava/lang/Object;
+    1439: putfield      #634                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.L$4:Ljava/lang/Object;
+    1442: aload         13
+    1444: aload         7
+    1446: invokestatic  #482                // Method kotlin/coroutines/jvm/internal/SpillingKt.nullOutSpilledVariable:(Ljava/lang/Object;)Ljava/lang/Object;
+    1449: putfield      #691                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.L$5:Ljava/lang/Object;
+    1452: aload         13
+    1454: iconst_5
+    1455: putfield      #444                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.label:I
+    1458: invokestatic  #492                // Method kotlinx/coroutines/flow/FlowKt.first:(Lkotlinx/coroutines/flow/Flow;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+    1461: dup
+    1462: aload         14
+    1464: if_acmpne     1536
+    1467: aload         14
+    1469: areturn
+    1470: aload         13
+    1472: getfield      #691                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.L$5:Ljava/lang/Object;
+    1475: checkcast     #130                // class java/util/List
+    1478: astore        7
+    1480: aload         13
+    1482: getfield      #634                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.L$4:Ljava/lang/Object;
+    1485: checkcast     #130                // class java/util/List
+    1488: astore        6
+    1490: aload         13
+    1492: getfield      #593                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.L$3:Ljava/lang/Object;
+    1495: checkcast     #130                // class java/util/List
+    1498: astore        5
+    1500: aload         13
+    1502: getfield      #554                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.L$2:Ljava/lang/Object;
+    1505: checkcast     #130                // class java/util/List
+    1508: astore        4
+    1510: aload         13
+    1512: getfield      #488                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.L$1:Ljava/lang/Object;
+    1515: checkcast     #292                // class com/google/firebase/firestore/DocumentReference
+    1518: astore_3
+    1519: aload         13
+    1521: getfield      #485                // Field com/example/data/sync/FirebaseSyncManager$pushAllLocalData$1.L$0:Ljava/lang/Object;
+    1524: checkcast     #153                // class java/lang/String
+    1527: astore_1
+    1528: nop
+    1529: aload         12
+    1531: invokestatic  #462                // Method kotlin/ResultKt.throwOnFailure:(Ljava/lang/Object;)V
+    1534: aload         12
+    1536: checkcast     #130                // class java/util/List
+    1539: astore        8
+    1541: aload         8
+    1543: invokeinterface #496,  1          // InterfaceMethod java/util/List.iterator:()Ljava/util/Iterator;
+    1548: astore        9
+    1550: aload         9
+    1552: invokeinterface #501,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+    1557: ifeq          1737
+    1560: aload         9
+    1562: invokeinterface #504,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+    1567: checkcast     #693                // class com/example/data/model/RequisitionRequest
+    1570: astore        10
+    1572: aload_3
+    1573: ldc_w         #342                // String requisitions
+    1576: invokevirtual #293                // Method com/google/firebase/firestore/DocumentReference.collection:(Ljava/lang/String;)Lcom/google/firebase/firestore/CollectionReference;
+    1579: aload         10
+    1581: invokevirtual #694                // Method com/example/data/model/RequisitionRequest.getId:()Ljava/lang/String;
+    1584: invokevirtual #276                // Method com/google/firebase/firestore/CollectionReference.document:(Ljava/lang/String;)Lcom/google/firebase/firestore/DocumentReference;
+    1587: bipush        8
+    1589: anewarray     #367                // class kotlin/Pair
+    1592: astore        11
+    1594: aload         11
+    1596: iconst_0
+    1597: ldc_w         #511                // String id
+    1600: aload         10
+    1602: invokevirtual #694                // Method com/example/data/model/RequisitionRequest.getId:()Ljava/lang/String;
+    1605: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+    1608: aastore
+    1609: aload         11
+    1611: iconst_1
+    1612: ldc_w         #696                // String pointName
+    1615: aload         10
+    1617: invokevirtual #699                // Method com/example/data/model/RequisitionRequest.getPointName:()Ljava/lang/String;
+    1620: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+    1623: aastore
+    1624: aload         11
+    1626: iconst_2
+    1627: ldc_w         #701                // String applicantName
+    1630: aload         10
+    1632: invokevirtual #704                // Method com/example/data/model/RequisitionRequest.getApplicantName:()Ljava/lang/String;
+    1635: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+    1638: aastore
+    1639: aload         11
+    1641: iconst_3
+    1642: ldc_w         #706                // String status
+    1645: aload         10
+    1647: invokevirtual #710                // Method com/example/data/model/RequisitionRequest.getStatus:()Lcom/example/data/model/RequestStatus;
+    1650: invokevirtual #713                // Method com/example/data/model/RequestStatus.name:()Ljava/lang/String;
+    1653: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+    1656: aastore
+    1657: aload         11
+    1659: iconst_4
+    1660: ldc_w         #669                // String comment
+    1663: aload         10
+    1665: invokevirtual #714                // Method com/example/data/model/RequisitionRequest.getComment:()Ljava/lang/String;
+    1668: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+    1671: aastore
+    1672: aload         11
+    1674: iconst_5
+    1675: ldc_w         #394                // String timestamp
+    1678: aload         10
+    1680: invokevirtual #715                // Method com/example/data/model/RequisitionRequest.getTimestamp:()J
+    1683: invokestatic  #548                // Method kotlin/coroutines/jvm/internal/Boxing.boxLong:(J)Ljava/lang/Long;
+    1686: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+    1689: aastore
+    1690: aload         11
+    1692: bipush        6
+    1694: ldc_w         #677                // String itemsSummary
+    1697: aload         10
+    1699: invokevirtual #716                // Method com/example/data/model/RequisitionRequest.getItemsSummary:()Ljava/lang/String;
+    1702: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+    1705: aastore
+    1706: aload         11
+    1708: bipush        7
+    1710: ldc_w         #682                // String itemsJson
+    1713: aload         10
+    1715: invokevirtual #717                // Method com/example/data/model/RequisitionRequest.getItemsJson:()Ljava/lang/String;
+    1718: invokestatic  #377                // Method kotlin/TuplesKt.to:(Ljava/lang/Object;Ljava/lang/Object;)Lkotlin/Pair;
+    1721: aastore
+    1722: aload         11
+    1724: invokestatic  #420                // Method kotlin/collections/MapsKt.hashMapOf:([Lkotlin/Pair;)Ljava/util/HashMap;
+    1727: invokestatic  #426                // Method com/google/firebase/firestore/SetOptions.merge:()Lcom/google/firebase/firestore/SetOptions;
+    1730: invokevirtual #430                // Method com/google/firebase/firestore/DocumentReference.set:(Ljava/lang/Object;Lcom/google/firebase/firestore/SetOptions;)Lcom/google/android/gms/tasks/Task;
+    1733: pop
+    1734: goto          1550
+    1737: aload_0
+    1738: getfield      #81                 // Field _syncState:Lkotlinx/coroutines/flow/MutableStateFlow;
+    1741: aload_0
+    1742: getfield      #81                 // Field _syncState:Lkotlinx/coroutines/flow/MutableStateFlow;
+    1745: invokeinterface #197,  1          // InterfaceMethod kotlinx/coroutines/flow/MutableStateFlow.getValue:()Ljava/lang/Object;
+    1750: checkcast     #68                 // class com/example/data/sync/SyncState
+    1753: astore        9
+    1755: invokestatic  #408                // Method java/lang/System.currentTimeMillis:()J
+    1758: lstore        10
+    1760: aload         9
+    1762: iconst_0
+    1763: lload         10
+    1765: iconst_1
+    1766: iconst_0
+    1767: ldc_w         #719                // String База подразделения синхронизирована (онлайн)
+    1770: bipush        8
+    1772: aconst_null
+    1773: invokestatic  #213                // Method com/example/data/sync/SyncState.copy$default:(Lcom/example/data/sync/SyncState;ZJZILjava/lang/String;ILjava/lang/Object;)Lcom/example/data/sync/SyncState;
+    1776: invokeinterface #217,  2          // InterfaceMethod kotlinx/coroutines/flow/MutableStateFlow.setValue:(Ljava/lang/Object;)V
+    1781: goto          1836
+    1784: astore        4
+    1786: aload_0
+    1787: getfield      #37                 // Field TAG:Ljava/lang/String;
+    1790: ldc_w         #721                // String Error pushing local data
+    1793: aload         4
+    1795: checkcast     #246                // class java/lang/Throwable
+    1798: invokestatic  #252                // Method android/util/Log.e:(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)I
+    1801: pop
+    1802: aload_0
+    1803: getfield      #81                 // Field _syncState:Lkotlinx/coroutines/flow/MutableStateFlow;
+    1806: aload_0
+    1807: getfield      #81                 // Field _syncState:Lkotlinx/coroutines/flow/MutableStateFlow;
+    1810: invokeinterface #197,  1          // InterfaceMethod kotlinx/coroutines/flow/MutableStateFlow.getValue:()Ljava/lang/Object;
+    1815: checkcast     #68                 // class com/example/data/sync/SyncState
+    1818: iconst_0
+    1819: lconst_0
+    1820: iconst_0
+    1821: iconst_0
+    1822: ldc_w         #723                // String Данные сохранены локально (ожидание сети)
+    1825: bipush        14
+    1827: aconst_null
+    1828: invokestatic  #213                // Method com/example/data/sync/SyncState.copy$default:(Lcom/example/data/sync/SyncState;ZJZILjava/lang/String;ILjava/lang/Object;)Lcom/example/data/sync/SyncState;
+    1831: invokeinterface #217,  2          // InterfaceMethod kotlinx/coroutines/flow/MutableStateFlow.setValue:(Ljava/lang/Object;)V
+    1836: getstatic     #468                // Field kotlin/Unit.INSTANCE:Lkotlin/Unit;
+    1839: areturn
+    1840: new           #725                // class java/lang/IllegalStateException
+    1843: dup
+    1844: ldc_w         #727                // String call to \'resume\' before \'invoke\' with coroutine
+    1847: invokespecial #729                // Method java/lang/IllegalStateException."<init>":(Ljava/lang/String;)V
+    1850: athrow
+    Exception table:
+       from    to  target type
+         193   229  1784   Class java/lang/Exception
+         256   481  1784   Class java/lang/Exception
+         518   779  1784   Class java/lang/Exception
+         826  1088  1784   Class java/lang/Exception
+        1145  1461  1784   Class java/lang/Exception
+        1528  1781  1784   Class java/lang/Exception
+
+  public final void pushOperationAsync(java.lang.String, com.example.data.model.OperationRecord, java.util.List<com.example.data.model.StockRecord>);
+    Code:
+       0: aload_1
+       1: ldc           #159                // String unitKey
+       3: invokestatic  #15                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+       6: aload_2
+       7: ldc_w         #755                // String op
+      10: invokestatic  #15                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+      13: aload_3
+      14: ldc_w         #757                // String updatedStocks
+      17: invokestatic  #15                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+      20: aload_1
+      21: checkcast     #165                // class java/lang/CharSequence
+      24: invokeinterface #178,  1          // InterfaceMethod java/lang/CharSequence.length:()I
+      29: ifne          36
+      32: iconst_1
+      33: goto          37
+      36: iconst_0
+      37: ifeq          41
+      40: return
+      41: aload_0
+      42: getfield      #31                 // Field scope:Lkotlinx/coroutines/CoroutineScope;
+      45: invokestatic  #227                // Method kotlinx/coroutines/Dispatchers.getIO:()Lkotlinx/coroutines/CoroutineDispatcher;
+      48: checkcast     #229                // class kotlin/coroutines/CoroutineContext
+      51: aconst_null
+      52: new           #759                // class com/example/data/sync/FirebaseSyncManager$pushOperationAsync$1
+      55: dup
+      56: aload_0
+      57: aload_1
+      58: aload_2
+      59: aload_3
+      60: aconst_null
+      61: invokespecial #762                // Method com/example/data/sync/FirebaseSyncManager$pushOperationAsync$1."<init>":(Lcom/example/data/sync/FirebaseSyncManager;Ljava/lang/String;Lcom/example/data/model/OperationRecord;Ljava/util/List;Lkotlin/coroutines/Continuation;)V
+      64: checkcast     #236                // class kotlin/jvm/functions/Function2
+      67: iconst_2
+      68: aconst_null
+      69: invokestatic  #242                // Method kotlinx/coroutines/BuildersKt.launch$default:(Lkotlinx/coroutines/CoroutineScope;Lkotlin/coroutines/CoroutineContext;Lkotlinx/coroutines/CoroutineStart;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Lkotlinx/coroutines/Job;
+      72: pop
+      73: return
+
+  public final void pushRequisitionAsync(java.lang.String, com.example.data.model.RequisitionRequest);
+    Code:
+       0: aload_1
+       1: ldc           #159                // String unitKey
+       3: invokestatic  #15                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+       6: aload_2
+       7: ldc_w         #765                // String r
+      10: invokestatic  #15                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+      13: aload_1
+      14: checkcast     #165                // class java/lang/CharSequence
+      17: invokeinterface #178,  1          // InterfaceMethod java/lang/CharSequence.length:()I
+      22: ifne          29
+      25: iconst_1
+      26: goto          30
+      29: iconst_0
+      30: ifeq          34
+      33: return
+      34: aload_0
+      35: getfield      #31                 // Field scope:Lkotlinx/coroutines/CoroutineScope;
+      38: invokestatic  #227                // Method kotlinx/coroutines/Dispatchers.getIO:()Lkotlinx/coroutines/CoroutineDispatcher;
+      41: checkcast     #229                // class kotlin/coroutines/CoroutineContext
+      44: aconst_null
+      45: new           #767                // class com/example/data/sync/FirebaseSyncManager$pushRequisitionAsync$1
+      48: dup
+      49: aload_0
+      50: aload_1
+      51: aload_2
+      52: aconst_null
+      53: invokespecial #770                // Method com/example/data/sync/FirebaseSyncManager$pushRequisitionAsync$1."<init>":(Lcom/example/data/sync/FirebaseSyncManager;Ljava/lang/String;Lcom/example/data/model/RequisitionRequest;Lkotlin/coroutines/Continuation;)V
+      56: checkcast     #236                // class kotlin/jvm/functions/Function2
+      59: iconst_2
+      60: aconst_null
+      61: invokestatic  #242                // Method kotlinx/coroutines/BuildersKt.launch$default:(Lkotlinx/coroutines/CoroutineScope;Lkotlin/coroutines/CoroutineContext;Lkotlinx/coroutines/CoroutineStart;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Lkotlinx/coroutines/Job;
+      64: pop
+      65: return
+
+  public final void deleteRequisitionAsync(java.lang.String, java.lang.String);
+    Code:
+       0: aload_1
+       1: ldc           #159                // String unitKey
+       3: invokestatic  #15                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+       6: aload_2
+       7: ldc_w         #774                // String reqId
+      10: invokestatic  #15                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+      13: aload_1
+      14: checkcast     #165                // class java/lang/CharSequence
+      17: invokeinterface #178,  1          // InterfaceMethod java/lang/CharSequence.length:()I
+      22: ifne          29
+      25: iconst_1
+      26: goto          30
+      29: iconst_0
+      30: ifeq          34
+      33: return
+      34: aload_0
+      35: getfield      #31                 // Field scope:Lkotlinx/coroutines/CoroutineScope;
+      38: invokestatic  #227                // Method kotlinx/coroutines/Dispatchers.getIO:()Lkotlinx/coroutines/CoroutineDispatcher;
+      41: checkcast     #229                // class kotlin/coroutines/CoroutineContext
+      44: aconst_null
+      45: new           #776                // class com/example/data/sync/FirebaseSyncManager$deleteRequisitionAsync$1
+      48: dup
+      49: aload_0
+      50: aload_1
+      51: aload_2
+      52: aconst_null
+      53: invokespecial #779                // Method com/example/data/sync/FirebaseSyncManager$deleteRequisitionAsync$1."<init>":(Lcom/example/data/sync/FirebaseSyncManager;Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)V
+      56: checkcast     #236                // class kotlin/jvm/functions/Function2
+      59: iconst_2
+      60: aconst_null
+      61: invokestatic  #242                // Method kotlinx/coroutines/BuildersKt.launch$default:(Lkotlinx/coroutines/CoroutineScope;Lkotlin/coroutines/CoroutineContext;Lkotlinx/coroutines/CoroutineStart;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Lkotlinx/coroutines/Job;
+      64: pop
+      65: return
+
+  public final void deleteOperationAsync(java.lang.String, java.lang.String);
+    Code:
+       0: aload_1
+       1: ldc           #159                // String unitKey
+       3: invokestatic  #15                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+       6: aload_2
+       7: ldc_w         #782                // String opId
+      10: invokestatic  #15                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+      13: aload_1
+      14: checkcast     #165                // class java/lang/CharSequence
+      17: invokeinterface #178,  1          // InterfaceMethod java/lang/CharSequence.length:()I
+      22: ifne          29
+      25: iconst_1
+      26: goto          30
+      29: iconst_0
+      30: ifeq          34
+      33: return
+      34: aload_0
+      35: getfield      #31                 // Field scope:Lkotlinx/coroutines/CoroutineScope;
+      38: invokestatic  #227                // Method kotlinx/coroutines/Dispatchers.getIO:()Lkotlinx/coroutines/CoroutineDispatcher;
+      41: checkcast     #229                // class kotlin/coroutines/CoroutineContext
+      44: aconst_null
+      45: new           #784                // class com/example/data/sync/FirebaseSyncManager$deleteOperationAsync$1
+      48: dup
+      49: aload_0
+      50: aload_1
+      51: aload_2
+      52: aconst_null
+      53: invokespecial #785                // Method com/example/data/sync/FirebaseSyncManager$deleteOperationAsync$1."<init>":(Lcom/example/data/sync/FirebaseSyncManager;Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)V
+      56: checkcast     #236                // class kotlin/jvm/functions/Function2
+      59: iconst_2
+      60: aconst_null
+      61: invokestatic  #242                // Method kotlinx/coroutines/BuildersKt.launch$default:(Lkotlinx/coroutines/CoroutineScope;Lkotlin/coroutines/CoroutineContext;Lkotlinx/coroutines/CoroutineStart;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Lkotlinx/coroutines/Job;
+      64: pop
+      65: return
+
+  public final void pushWarehousePointAsync(java.lang.String, com.example.data.model.WarehousePoint);
+    Code:
+       0: aload_1
+       1: ldc           #159                // String unitKey
+       3: invokestatic  #15                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+       6: aload_2
+       7: ldc_w         #788                // String p
+      10: invokestatic  #15                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+      13: aload_1
+      14: checkcast     #165                // class java/lang/CharSequence
+      17: invokeinterface #178,  1          // InterfaceMethod java/lang/CharSequence.length:()I
+      22: ifne          29
+      25: iconst_1
+      26: goto          30
+      29: iconst_0
+      30: ifeq          34
+      33: return
+      34: aload_0
+      35: getfield      #31                 // Field scope:Lkotlinx/coroutines/CoroutineScope;
+      38: invokestatic  #227                // Method kotlinx/coroutines/Dispatchers.getIO:()Lkotlinx/coroutines/CoroutineDispatcher;
+      41: checkcast     #229                // class kotlin/coroutines/CoroutineContext
+      44: aconst_null
+      45: new           #790                // class com/example/data/sync/FirebaseSyncManager$pushWarehousePointAsync$1
+      48: dup
+      49: aload_0
+      50: aload_1
+      51: aload_2
+      52: aconst_null
+      53: invokespecial #793                // Method com/example/data/sync/FirebaseSyncManager$pushWarehousePointAsync$1."<init>":(Lcom/example/data/sync/FirebaseSyncManager;Ljava/lang/String;Lcom/example/data/model/WarehousePoint;Lkotlin/coroutines/Continuation;)V
+      56: checkcast     #236                // class kotlin/jvm/functions/Function2
+      59: iconst_2
+      60: aconst_null
+      61: invokestatic  #242                // Method kotlinx/coroutines/BuildersKt.launch$default:(Lkotlinx/coroutines/CoroutineScope;Lkotlin/coroutines/CoroutineContext;Lkotlinx/coroutines/CoroutineStart;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Lkotlinx/coroutines/Job;
+      64: pop
+      65: return
+
+  public final void deleteWarehousePointAsync(java.lang.String, java.lang.String);
+    Code:
+       0: aload_1
+       1: ldc           #159                // String unitKey
+       3: invokestatic  #15                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+       6: aload_2
+       7: ldc_w         #606                // String pointId
+      10: invokestatic  #15                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+      13: aload_1
+      14: checkcast     #165                // class java/lang/CharSequence
+      17: invokeinterface #178,  1          // InterfaceMethod java/lang/CharSequence.length:()I
+      22: ifne          29
+      25: iconst_1
+      26: goto          30
+      29: iconst_0
+      30: ifeq          34
+      33: return
+      34: aload_0
+      35: getfield      #31                 // Field scope:Lkotlinx/coroutines/CoroutineScope;
+      38: invokestatic  #227                // Method kotlinx/coroutines/Dispatchers.getIO:()Lkotlinx/coroutines/CoroutineDispatcher;
+      41: checkcast     #229                // class kotlin/coroutines/CoroutineContext
+      44: aconst_null
+      45: new           #796                // class com/example/data/sync/FirebaseSyncManager$deleteWarehousePointAsync$1
+      48: dup
+      49: aload_0
+      50: aload_1
+      51: aload_2
+      52: aconst_null
+      53: invokespecial #797                // Method com/example/data/sync/FirebaseSyncManager$deleteWarehousePointAsync$1."<init>":(Lcom/example/data/sync/FirebaseSyncManager;Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)V
+      56: checkcast     #236                // class kotlin/jvm/functions/Function2
+      59: iconst_2
+      60: aconst_null
+      61: invokestatic  #242                // Method kotlinx/coroutines/BuildersKt.launch$default:(Lkotlinx/coroutines/CoroutineScope;Lkotlin/coroutines/CoroutineContext;Lkotlinx/coroutines/CoroutineStart;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Lkotlinx/coroutines/Job;
+      64: pop
+      65: return
+
+  public final void pushInventoryItemAsync(java.lang.String, com.example.data.model.InventoryItem);
+    Code:
+       0: aload_1
+       1: ldc           #159                // String unitKey
+       3: invokestatic  #15                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+       6: aload_2
+       7: ldc_w         #800                // String item
+      10: invokestatic  #15                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+      13: aload_1
+      14: checkcast     #165                // class java/lang/CharSequence
+      17: invokeinterface #178,  1          // InterfaceMethod java/lang/CharSequence.length:()I
+      22: ifne          29
+      25: iconst_1
+      26: goto          30
+      29: iconst_0
+      30: ifeq          34
+      33: return
+      34: aload_0
+      35: getfield      #31                 // Field scope:Lkotlinx/coroutines/CoroutineScope;
+      38: invokestatic  #227                // Method kotlinx/coroutines/Dispatchers.getIO:()Lkotlinx/coroutines/CoroutineDispatcher;
+      41: checkcast     #229                // class kotlin/coroutines/CoroutineContext
+      44: aconst_null
+      45: new           #802                // class com/example/data/sync/FirebaseSyncManager$pushInventoryItemAsync$1
+      48: dup
+      49: aload_0
+      50: aload_1
+      51: aload_2
+      52: aconst_null
+      53: invokespecial #805                // Method com/example/data/sync/FirebaseSyncManager$pushInventoryItemAsync$1."<init>":(Lcom/example/data/sync/FirebaseSyncManager;Ljava/lang/String;Lcom/example/data/model/InventoryItem;Lkotlin/coroutines/Continuation;)V
+      56: checkcast     #236                // class kotlin/jvm/functions/Function2
+      59: iconst_2
+      60: aconst_null
+      61: invokestatic  #242                // Method kotlinx/coroutines/BuildersKt.launch$default:(Lkotlinx/coroutines/CoroutineScope;Lkotlin/coroutines/CoroutineContext;Lkotlinx/coroutines/CoroutineStart;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Lkotlinx/coroutines/Job;
+      64: pop
+      65: return
+
+  public final void deleteInventoryItemAsync(java.lang.String, java.lang.String);
+    Code:
+       0: aload_1
+       1: ldc           #159                // String unitKey
+       3: invokestatic  #15                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+       6: aload_2
+       7: ldc_w         #608                // String itemId
+      10: invokestatic  #15                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+      13: aload_1
+      14: checkcast     #165                // class java/lang/CharSequence
+      17: invokeinterface #178,  1          // InterfaceMethod java/lang/CharSequence.length:()I
+      22: ifne          29
+      25: iconst_1
+      26: goto          30
+      29: iconst_0
+      30: ifeq          34
+      33: return
+      34: aload_0
+      35: getfield      #31                 // Field scope:Lkotlinx/coroutines/CoroutineScope;
+      38: invokestatic  #227                // Method kotlinx/coroutines/Dispatchers.getIO:()Lkotlinx/coroutines/CoroutineDispatcher;
+      41: checkcast     #229                // class kotlin/coroutines/CoroutineContext
+      44: aconst_null
+      45: new           #808                // class com/example/data/sync/FirebaseSyncManager$deleteInventoryItemAsync$1
+      48: dup
+      49: aload_0
+      50: aload_1
+      51: aload_2
+      52: aconst_null
+      53: invokespecial #809                // Method com/example/data/sync/FirebaseSyncManager$deleteInventoryItemAsync$1."<init>":(Lcom/example/data/sync/FirebaseSyncManager;Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)V
+      56: checkcast     #236                // class kotlin/jvm/functions/Function2
+      59: iconst_2
+      60: aconst_null
+      61: invokestatic  #242                // Method kotlinx/coroutines/BuildersKt.launch$default:(Lkotlinx/coroutines/CoroutineScope;Lkotlin/coroutines/CoroutineContext;Lkotlinx/coroutines/CoroutineStart;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Lkotlinx/coroutines/Job;
+      64: pop
+      65: return
+
+  public final void stopSync();
+    Code:
+       0: aload_0
+       1: getfield      #134                // Field listeners:Ljava/util/List;
+       4: invokeinterface #496,  1          // InterfaceMethod java/util/List.iterator:()Ljava/util/Iterator;
+       9: astore_1
+      10: aload_1
+      11: invokeinterface #501,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+      16: ifeq          43
+      19: aload_1
+      20: invokeinterface #504,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+      25: checkcast     #811                // class com/google/firebase/firestore/ListenerRegistration
+      28: astore_2
+      29: nop
+      30: aload_2
+      31: invokeinterface #814,  1          // InterfaceMethod com/google/firebase/firestore/ListenerRegistration.remove:()V
+      36: goto          10
+      39: astore_3
+      40: goto          10
+      43: aload_0
+      44: getfield      #134                // Field listeners:Ljava/util/List;
+      47: invokeinterface #817,  1          // InterfaceMethod java/util/List.clear:()V
+      52: return
+    Exception table:
+       from    to  target type
+          29    36    39   Class java/lang/Exception
+
+  public final void clearCloudDataAsync(java.lang.String);
+    Code:
+       0: aload_1
+       1: ldc           #159                // String unitKey
+       3: invokestatic  #15                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+       6: aload_0
+       7: getfield      #31                 // Field scope:Lkotlinx/coroutines/CoroutineScope;
+      10: invokestatic  #227                // Method kotlinx/coroutines/Dispatchers.getIO:()Lkotlinx/coroutines/CoroutineDispatcher;
+      13: checkcast     #229                // class kotlin/coroutines/CoroutineContext
+      16: aconst_null
+      17: new           #821                // class com/example/data/sync/FirebaseSyncManager$clearCloudDataAsync$1
+      20: dup
+      21: aload_1
+      22: aload_0
+      23: aconst_null
+      24: invokespecial #824                // Method com/example/data/sync/FirebaseSyncManager$clearCloudDataAsync$1."<init>":(Ljava/lang/String;Lcom/example/data/sync/FirebaseSyncManager;Lkotlin/coroutines/Continuation;)V
+      27: checkcast     #236                // class kotlin/jvm/functions/Function2
+      30: iconst_2
+      31: aconst_null
+      32: invokestatic  #242                // Method kotlinx/coroutines/BuildersKt.launch$default:(Lkotlinx/coroutines/CoroutineScope;Lkotlin/coroutines/CoroutineContext;Lkotlinx/coroutines/CoroutineStart;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Lkotlinx/coroutines/Job;
+      35: pop
+      36: return
+
+  private static final com.google.firebase.firestore.FirebaseFirestore firestore_delegate$lambda$0();
+    Code:
+       0: invokestatic  #827                // Method com/google/firebase/firestore/FirebaseFirestore.getInstance:()Lcom/google/firebase/firestore/FirebaseFirestore;
+       3: dup
+       4: ldc_w         #829                // String getInstance(...)
+       7: invokestatic  #281                // Method kotlin/jvm/internal/Intrinsics.checkNotNullExpressionValue:(Ljava/lang/Object;Ljava/lang/String;)V
+      10: areturn
+
+  private static final java.lang.String deviceId_delegate$lambda$1(com.example.data.sync.FirebaseSyncManager);
+    Code:
+       0: aload_0
+       1: getfield      #25                 // Field context:Landroid/content/Context;
+       4: ldc_w         #831                // String kapterka_sync_prefs
+       7: iconst_0
+       8: invokevirtual #837                // Method android/content/Context.getSharedPreferences:(Ljava/lang/String;I)Landroid/content/SharedPreferences;
+      11: astore_1
+      12: aload_1
+      13: ldc_w         #839                // String device_uuid
+      16: aconst_null
+      17: invokeinterface #844,  3          // InterfaceMethod android/content/SharedPreferences.getString:(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+      22: astore_2
+      23: aload_2
+      24: ifnonnull     71
+      27: invokestatic  #850                // Method java/util/UUID.randomUUID:()Ljava/util/UUID;
+      30: invokevirtual #851                // Method java/util/UUID.toString:()Ljava/lang/String;
+      33: dup
+      34: ldc_w         #853                // String toString(...)
+      37: invokestatic  #281                // Method kotlin/jvm/internal/Intrinsics.checkNotNullExpressionValue:(Ljava/lang/Object;Ljava/lang/String;)V
+      40: bipush        8
+      42: invokestatic  #857                // Method kotlin/text/StringsKt.take:(Ljava/lang/String;I)Ljava/lang/String;
+      45: invokedynamic #860,  0            // InvokeDynamic #12:makeConcatWithConstants:(Ljava/lang/String;)Ljava/lang/String;
+      50: astore_2
+      51: aload_1
+      52: invokeinterface #864,  1          // InterfaceMethod android/content/SharedPreferences.edit:()Landroid/content/SharedPreferences$Editor;
+      57: ldc_w         #839                // String device_uuid
+      60: aload_2
+      61: invokeinterface #870,  3          // InterfaceMethod android/content/SharedPreferences$Editor.putString:(Ljava/lang/String;Ljava/lang/String;)Landroid/content/SharedPreferences$Editor;
+      66: invokeinterface #873,  1          // InterfaceMethod android/content/SharedPreferences$Editor.apply:()V
+      71: aload_2
+      72: areturn
+
+  private static final void registerUnitListeners$lambda$2(com.example.data.sync.FirebaseSyncManager, com.google.firebase.firestore.QuerySnapshot, com.google.firebase.firestore.FirebaseFirestoreException);
+    Code:
+       0: aload_2
+       1: ifnull        20
+       4: aload_0
+       5: getfield      #37                 // Field TAG:Ljava/lang/String;
+       8: ldc_w         #878                // String Points listener error
+      11: aload_2
+      12: checkcast     #246                // class java/lang/Throwable
+      15: invokestatic  #881                // Method android/util/Log.w:(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)I
+      18: pop
+      19: return
+      20: aload_1
+      21: ifnull        54
+      24: aload_0
+      25: getfield      #31                 // Field scope:Lkotlinx/coroutines/CoroutineScope;
+      28: invokestatic  #227                // Method kotlinx/coroutines/Dispatchers.getIO:()Lkotlinx/coroutines/CoroutineDispatcher;
+      31: checkcast     #229                // class kotlin/coroutines/CoroutineContext
+      34: aconst_null
+      35: new           #883                // class com/example/data/sync/FirebaseSyncManager$registerUnitListeners$pointsListener$1$1
+      38: dup
+      39: aload_1
+      40: aload_0
+      41: aconst_null
+      42: invokespecial #886                // Method com/example/data/sync/FirebaseSyncManager$registerUnitListeners$pointsListener$1$1."<init>":(Lcom/google/firebase/firestore/QuerySnapshot;Lcom/example/data/sync/FirebaseSyncManager;Lkotlin/coroutines/Continuation;)V
+      45: checkcast     #236                // class kotlin/jvm/functions/Function2
+      48: iconst_2
+      49: aconst_null
+      50: invokestatic  #242                // Method kotlinx/coroutines/BuildersKt.launch$default:(Lkotlinx/coroutines/CoroutineScope;Lkotlin/coroutines/CoroutineContext;Lkotlinx/coroutines/CoroutineStart;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Lkotlinx/coroutines/Job;
+      53: pop
+      54: return
+
+  private static final void registerUnitListeners$lambda$3(com.example.data.sync.FirebaseSyncManager, com.google.firebase.firestore.QuerySnapshot, com.google.firebase.firestore.FirebaseFirestoreException);
+    Code:
+       0: aload_2
+       1: ifnull        20
+       4: aload_0
+       5: getfield      #37                 // Field TAG:Ljava/lang/String;
+       8: ldc_w         #892                // String Items listener error
+      11: aload_2
+      12: checkcast     #246                // class java/lang/Throwable
+      15: invokestatic  #881                // Method android/util/Log.w:(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)I
+      18: pop
+      19: return
+      20: aload_1
+      21: ifnull        54
+      24: aload_0
+      25: getfield      #31                 // Field scope:Lkotlinx/coroutines/CoroutineScope;
+      28: invokestatic  #227                // Method kotlinx/coroutines/Dispatchers.getIO:()Lkotlinx/coroutines/CoroutineDispatcher;
+      31: checkcast     #229                // class kotlin/coroutines/CoroutineContext
+      34: aconst_null
+      35: new           #894                // class com/example/data/sync/FirebaseSyncManager$registerUnitListeners$itemsListener$1$1
+      38: dup
+      39: aload_1
+      40: aload_0
+      41: aconst_null
+      42: invokespecial #895                // Method com/example/data/sync/FirebaseSyncManager$registerUnitListeners$itemsListener$1$1."<init>":(Lcom/google/firebase/firestore/QuerySnapshot;Lcom/example/data/sync/FirebaseSyncManager;Lkotlin/coroutines/Continuation;)V
+      45: checkcast     #236                // class kotlin/jvm/functions/Function2
+      48: iconst_2
+      49: aconst_null
+      50: invokestatic  #242                // Method kotlinx/coroutines/BuildersKt.launch$default:(Lkotlinx/coroutines/CoroutineScope;Lkotlin/coroutines/CoroutineContext;Lkotlinx/coroutines/CoroutineStart;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Lkotlinx/coroutines/Job;
+      53: pop
+      54: return
+
+  private static final void registerUnitListeners$lambda$4(com.example.data.sync.FirebaseSyncManager, com.google.firebase.firestore.QuerySnapshot, com.google.firebase.firestore.FirebaseFirestoreException);
+    Code:
+       0: aload_2
+       1: ifnull        20
+       4: aload_0
+       5: getfield      #37                 // Field TAG:Ljava/lang/String;
+       8: ldc_w         #897                // String Stock listener error
+      11: aload_2
+      12: checkcast     #246                // class java/lang/Throwable
+      15: invokestatic  #881                // Method android/util/Log.w:(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)I
+      18: pop
+      19: return
+      20: aload_1
+      21: ifnull        54
+      24: aload_0
+      25: getfield      #31                 // Field scope:Lkotlinx/coroutines/CoroutineScope;
+      28: invokestatic  #227                // Method kotlinx/coroutines/Dispatchers.getIO:()Lkotlinx/coroutines/CoroutineDispatcher;
+      31: checkcast     #229                // class kotlin/coroutines/CoroutineContext
+      34: aconst_null
+      35: new           #899                // class com/example/data/sync/FirebaseSyncManager$registerUnitListeners$stockListener$1$1
+      38: dup
+      39: aload_1
+      40: aload_0
+      41: aconst_null
+      42: invokespecial #900                // Method com/example/data/sync/FirebaseSyncManager$registerUnitListeners$stockListener$1$1."<init>":(Lcom/google/firebase/firestore/QuerySnapshot;Lcom/example/data/sync/FirebaseSyncManager;Lkotlin/coroutines/Continuation;)V
+      45: checkcast     #236                // class kotlin/jvm/functions/Function2
+      48: iconst_2
+      49: aconst_null
+      50: invokestatic  #242                // Method kotlinx/coroutines/BuildersKt.launch$default:(Lkotlinx/coroutines/CoroutineScope;Lkotlin/coroutines/CoroutineContext;Lkotlinx/coroutines/CoroutineStart;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Lkotlinx/coroutines/Job;
+      53: pop
+      54: return
+
+  private static final void registerUnitListeners$lambda$5(com.example.data.sync.FirebaseSyncManager, kotlin.jvm.internal.Ref$BooleanRef, com.google.firebase.firestore.QuerySnapshot, com.google.firebase.firestore.FirebaseFirestoreException);
+    Code:
+       0: aload_3
+       1: ifnull        20
+       4: aload_0
+       5: getfield      #37                 // Field TAG:Ljava/lang/String;
+       8: ldc_w         #902                // String Operations listener error
+      11: aload_3
+      12: checkcast     #246                // class java/lang/Throwable
+      15: invokestatic  #881                // Method android/util/Log.w:(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)I
+      18: pop
+      19: return
+      20: aload_2
+      21: ifnull        67
+      24: aload_1
+      25: getfield      #288                // Field kotlin/jvm/internal/Ref$BooleanRef.element:Z
+      28: istore        4
+      30: aload_1
+      31: iconst_0
+      32: putfield      #288                // Field kotlin/jvm/internal/Ref$BooleanRef.element:Z
+      35: aload_0
+      36: getfield      #31                 // Field scope:Lkotlinx/coroutines/CoroutineScope;
+      39: invokestatic  #227                // Method kotlinx/coroutines/Dispatchers.getIO:()Lkotlinx/coroutines/CoroutineDispatcher;
+      42: checkcast     #229                // class kotlin/coroutines/CoroutineContext
+      45: aconst_null
+      46: new           #904                // class com/example/data/sync/FirebaseSyncManager$registerUnitListeners$opListener$1$1
+      49: dup
+      50: aload_2
+      51: iload         4
+      53: aload_0
+      54: aconst_null
+      55: invokespecial #907                // Method com/example/data/sync/FirebaseSyncManager$registerUnitListeners$opListener$1$1."<init>":(Lcom/google/firebase/firestore/QuerySnapshot;ZLcom/example/data/sync/FirebaseSyncManager;Lkotlin/coroutines/Continuation;)V
+      58: checkcast     #236                // class kotlin/jvm/functions/Function2
+      61: iconst_2
+      62: aconst_null
+      63: invokestatic  #242                // Method kotlinx/coroutines/BuildersKt.launch$default:(Lkotlinx/coroutines/CoroutineScope;Lkotlin/coroutines/CoroutineContext;Lkotlinx/coroutines/CoroutineStart;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Lkotlinx/coroutines/Job;
+      66: pop
+      67: return
+
+  private static final void registerUnitListeners$lambda$6(com.example.data.sync.FirebaseSyncManager, com.google.firebase.firestore.QuerySnapshot, com.google.firebase.firestore.FirebaseFirestoreException);
+    Code:
+       0: aload_2
+       1: ifnull        20
+       4: aload_0
+       5: getfield      #37                 // Field TAG:Ljava/lang/String;
+       8: ldc_w         #911                // String Requisition listener error
+      11: aload_2
+      12: checkcast     #246                // class java/lang/Throwable
+      15: invokestatic  #881                // Method android/util/Log.w:(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)I
+      18: pop
+      19: return
+      20: aload_1
+      21: ifnull        54
+      24: aload_0
+      25: getfield      #31                 // Field scope:Lkotlinx/coroutines/CoroutineScope;
+      28: invokestatic  #227                // Method kotlinx/coroutines/Dispatchers.getIO:()Lkotlinx/coroutines/CoroutineDispatcher;
+      31: checkcast     #229                // class kotlin/coroutines/CoroutineContext
+      34: aconst_null
+      35: new           #913                // class com/example/data/sync/FirebaseSyncManager$registerUnitListeners$reqListener$1$1
+      38: dup
+      39: aload_1
+      40: aload_0
+      41: aconst_null
+      42: invokespecial #914                // Method com/example/data/sync/FirebaseSyncManager$registerUnitListeners$reqListener$1$1."<init>":(Lcom/google/firebase/firestore/QuerySnapshot;Lcom/example/data/sync/FirebaseSyncManager;Lkotlin/coroutines/Continuation;)V
+      45: checkcast     #236                // class kotlin/jvm/functions/Function2
+      48: iconst_2
+      49: aconst_null
+      50: invokestatic  #242                // Method kotlinx/coroutines/BuildersKt.launch$default:(Lkotlinx/coroutines/CoroutineScope;Lkotlin/coroutines/CoroutineContext;Lkotlinx/coroutines/CoroutineStart;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Lkotlinx/coroutines/Job;
+      53: pop
+      54: return
+
+  private static final void registerUnitListeners$lambda$8(com.example.data.sync.FirebaseSyncManager, com.google.firebase.firestore.QuerySnapshot, com.google.firebase.firestore.FirebaseFirestoreException);
+    Code:
+       0: aload_1
+       1: ifnull        202
+       4: invokestatic  #408                // Method java/lang/System.currentTimeMillis:()J
+       7: lstore_3
+       8: aload_1
+       9: invokevirtual #920                // Method com/google/firebase/firestore/QuerySnapshot.getDocuments:()Ljava/util/List;
+      12: dup
+      13: ldc_w         #922                // String getDocuments(...)
+      16: invokestatic  #281                // Method kotlin/jvm/internal/Intrinsics.checkNotNullExpressionValue:(Ljava/lang/Object;Ljava/lang/String;)V
+      19: checkcast     #924                // class java/lang/Iterable
+      22: astore        6
+      24: iconst_0
+      25: istore        7
+      27: aload         6
+      29: instanceof    #184                // class java/util/Collection
+      32: ifeq          52
+      35: aload         6
+      37: checkcast     #184                // class java/util/Collection
+      40: invokeinterface #188,  1          // InterfaceMethod java/util/Collection.isEmpty:()Z
+      45: ifeq          52
+      48: iconst_0
+      49: goto          150
+      52: iconst_0
+      53: istore        8
+      55: aload         6
+      57: invokeinterface #925,  1          // InterfaceMethod java/lang/Iterable.iterator:()Ljava/util/Iterator;
+      62: astore        9
+      64: aload         9
+      66: invokeinterface #501,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+      71: ifeq          148
+      74: aload         9
+      76: invokeinterface #504,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+      81: astore        10
+      83: aload         10
+      85: checkcast     #927                // class com/google/firebase/firestore/DocumentSnapshot
+      88: astore        11
+      90: iconst_0
+      91: istore        12
+      93: aload         11
+      95: ldc_w         #402                // String timestampMillis
+      98: invokevirtual #931                // Method com/google/firebase/firestore/DocumentSnapshot.getLong:(Ljava/lang/String;)Ljava/lang/Long;
+     101: dup
+     102: ifnull        111
+     105: invokevirtual #934                // Method java/lang/Long.longValue:()J
+     108: goto          113
+     111: pop
+     112: lconst_0
+     113: lstore        13
+     115: lload_3
+     116: lload         13
+     118: lsub
+     119: ldc2_w        #935                // long 900000l
+     122: lcmp
+     123: ifge          130
+     126: iconst_1
+     127: goto          131
+     130: iconst_0
+     131: ifeq          64
+     134: iinc          8, 1
+     137: iload         8
+     139: ifge          64
+     142: invokestatic  #941                // Method kotlin/collections/CollectionsKt.throwCountOverflow:()V
+     145: goto          64
+     148: iload         8
+     150: istore        5
+     152: aload_0
+     153: getfield      #81                 // Field _syncState:Lkotlinx/coroutines/flow/MutableStateFlow;
+     156: aload_0
+     157: getfield      #81                 // Field _syncState:Lkotlinx/coroutines/flow/MutableStateFlow;
+     160: invokeinterface #197,  1          // InterfaceMethod kotlinx/coroutines/flow/MutableStateFlow.getValue:()Ljava/lang/Object;
+     165: checkcast     #68                 // class com/example/data/sync/SyncState
+     168: astore        6
+     170: iload         5
+     172: ifle          180
+     175: iload         5
+     177: goto          181
+     180: iconst_1
+     181: istore        7
+     183: aload         6
+     185: iconst_0
+     186: lconst_0
+     187: iconst_1
+     188: iload         7
+     190: aconst_null
+     191: bipush        19
+     193: aconst_null
+     194: invokestatic  #213                // Method com/example/data/sync/SyncState.copy$default:(Lcom/example/data/sync/SyncState;ZJZILjava/lang/String;ILjava/lang/Object;)Lcom/example/data/sync/SyncState;
+     197: invokeinterface #217,  2          // InterfaceMethod kotlinx/coroutines/flow/MutableStateFlow.setValue:(Ljava/lang/Object;)V
+     202: return
+
+  public static final com.google.firebase.firestore.FirebaseFirestore access$getFirestore(com.example.data.sync.FirebaseSyncManager);
+    Code:
+       0: aload_0
+       1: invokespecial #264                // Method getFirestore:()Lcom/google/firebase/firestore/FirebaseFirestore;
+       4: areturn
+
+  public static final kotlinx.coroutines.flow.MutableStateFlow access$get_syncState$p(com.example.data.sync.FirebaseSyncManager);
+    Code:
+       0: aload_0
+       1: getfield      #81                 // Field _syncState:Lkotlinx/coroutines/flow/MutableStateFlow;
+       4: areturn
+
+  public static final java.lang.String access$getTAG$p(com.example.data.sync.FirebaseSyncManager);
+    Code:
+       0: aload_0
+       1: getfield      #37                 // Field TAG:Ljava/lang/String;
+       4: areturn
+
+  public static final com.example.data.local.KapterkaDao access$getDao$p(com.example.data.sync.FirebaseSyncManager);
+    Code:
+       0: aload_0
+       1: getfield      #28                 // Field dao:Lcom/example/data/local/KapterkaDao;
+       4: areturn
+
+  public static final kotlinx.coroutines.flow.MutableSharedFlow access$get_syncEvents$p(com.example.data.sync.FirebaseSyncManager);
+    Code:
+       0: aload_0
+       1: getfield      #101                // Field _syncEvents:Lkotlinx/coroutines/flow/MutableSharedFlow;
+       4: areturn
+
+  static {};
+    Code:
+       0: bipush        8
+       2: putstatic     #969                // Field $stable:I
+       5: return
+}

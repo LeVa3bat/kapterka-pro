@@ -201,7 +201,7 @@ object InitialData {
 
     fun getDefaultPoints(): List<WarehousePoint> {
         return listOf(
-            WarehousePoint("base_sklad", "Базовый склад (КЗ)", "Основной склад подразделения"),
+            WarehousePoint("base_sklad", "Базовый склад (КЗ)", "Основной склад подразделения", isBase = true),
             WarehousePoint("point_1", "Передовая точка (ЛБС)", "Для выдачи на позиции"),
             WarehousePoint("med_sklad", "Медпункт", "Медицинское обеспечение")
         )
