@@ -725,7 +725,7 @@ function trackApkDownload(source) {
       window.gtag('event', 'download_apk', { event_category: 'APK', event_label: source || 'direct' });
     } catch (e) {}
   }
-  showToast('📥 Скачивание APK-файла «Каптёрка Про v3.1.9» началось...');
+  showToast('📥 Скачивание APK-файла «Каптёрка Про v3.2.0» началось...');
 }
 
 function fallbackCopy(text) {
