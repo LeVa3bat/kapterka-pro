@@ -186,7 +186,15 @@ class FirebaseSyncManager(
                     } else {
                         dao.insertOperation(op)
                         if (!isFirstOpLoad && dc.type == DocumentChange.Type.ADDED) {
-                            _syncEvents.emit("Новая операция: ${op.type.name} (Док. ${op.docNumber})")
+                            val typeName = when (op.type) {
+                                OperationType.INCOME -> "📥 Поставка на «${op.toPointName.ifBlank { "склад" }}»"
+                                OperationType.TRANSFER -> "🔄 Перемещение: ${op.fromPointName.ifBlank { "Склад" }} ➔ ${op.toPointName}"
+                                OperationType.ISSUE -> "🎯 Выдача на «${op.toPointName}»"
+                                OperationType.EXPENDITURE -> "💥 Списание ф. 8 на «${op.fromPointName.ifBlank { op.toPointName }}»"
+                            }
+                            val docPart = if (op.docNumber.isNotBlank() && !op.docNumber.trim().equals("документ", ignoreCase = true)) " • Акт № ${op.docNumber}" else ""
+                            val summaryPart = if (op.itemsSummary.isNotBlank()) ": ${op.itemsSummary}" else ""
+                            _syncEvents.emit("Синхронизация: $typeName$docPart$summaryPart")
                         }
                     }
                 }

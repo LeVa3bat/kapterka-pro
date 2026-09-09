@@ -656,12 +656,63 @@ fun MainDashboardScreen(
                     }
                 }
             } else {
-                // Collapsible Point Lists to avoid information overload
+                // Quick Expand/Collapse all warehouses bar
+                item {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "ТОЧКИ И СКЛАДЫ (${points.size})",
+                            color = TacticalTextMuted,
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.5.sp
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(TacticalSurfaceLight)
+                                    .clickable {
+                                        points.forEach { pt -> expandedPointIds[pt.id] = false }
+                                    }
+                                    .padding(horizontal = 7.dp, vertical = 3.dp)
+                            ) {
+                                Text(
+                                    text = "Свернуть все",
+                                    color = TacticalTextSecondary,
+                                    fontSize = 10.sp
+                                )
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(TacticalSurfaceLight)
+                                    .clickable {
+                                        points.forEach { pt -> expandedPointIds[pt.id] = true }
+                                    }
+                                    .padding(horizontal = 7.dp, vertical = 3.dp)
+                            ) {
+                                Text(
+                                    text = "Развернуть все",
+                                    color = SageGreenBright,
+                                    fontSize = 10.sp
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Collapsible Point Lists to avoid information overload - hidden by default upon entrance
                 itemsIndexed(points, key = { _, pt -> pt.id }) { _, point ->
                     val pointRows = getItemsForPoint(point.id)
                     val pointStockSum = pointRows.sumOf { it.quantity }
-                    // Default to expanded (true) so the user immediately sees the synchronized warehouse contents
-                    val isExpanded = expandedPointIds[point.id] ?: true
+                    // Default to collapsed (false) so that on entrance all lists are hidden
+                    val isExpanded = expandedPointIds[point.id] ?: false
 
                     Card(
                         modifier = Modifier
