@@ -135,7 +135,9 @@ class KapterkaRepository(
     suspend fun recordIncome(toPointId: String, toPointName: String, supplier: String, items: List<OperationItemEntry>, comment: String, actor: String) {
         val summary = items.joinToString(", ") { "${it.itemName} - ${it.quantity} ${it.unit}" }
         val itemsJson = serializeOperationItems(items)
-        val op = OperationRecord(java.util.UUID.randomUUID().toString(), OperationType.INCOME, supplier, toPointName, "", actor, comment, System.currentTimeMillis(), summary, itemsJson)
+        val src = supplier.ifBlank { "Служба снабжения / Тыл" }
+        val dest = toPointName.ifBlank { "Базовый склад" }
+        val op = OperationRecord(java.util.UUID.randomUUID().toString(), OperationType.INCOME, src, dest, "", actor, comment, System.currentTimeMillis(), summary, itemsJson)
         dao.insertOperation(op)
         val updatedStocks = mutableListOf<StockRecord>()
         for (item in items) {
@@ -178,7 +180,7 @@ class KapterkaRepository(
     suspend fun recordExpenditure(fromPointId: String, pointName: String, docNumber: String, responsiblePerson: String, items: List<OperationItemEntry>, comment: String) {
         val summary = items.joinToString(", ") { "${it.itemName} - ${it.quantity} ${it.unit}" }
         val itemsJson = serializeOperationItems(items)
-        val op = OperationRecord(java.util.UUID.randomUUID().toString(), OperationType.EXPENDITURE, pointName, "Списание", docNumber, responsiblePerson, comment, System.currentTimeMillis(), summary, itemsJson)
+        val op = OperationRecord(java.util.UUID.randomUUID().toString(), OperationType.EXPENDITURE, pointName, "Списание (ф. 8)", docNumber, responsiblePerson, comment, System.currentTimeMillis(), summary, itemsJson)
         dao.insertOperation(op)
         val updatedStocks = mutableListOf<StockRecord>()
         for (item in items) {

@@ -261,14 +261,15 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             val actor = userProfile.value?.callsign ?: "Ответственный"
             repository.recordIncome(toPointId, toPointName, supplier, items, comment, actor)
             val summary = items.joinToString(", ") { "${it.itemName} (${it.quantity} ${it.unit})" }
+            val src = supplier.ifBlank { "Служба снабжения / Тыл" }
             TacticalNotificationHelper.notifyIncome(
                 context = getApplication(),
                 toPoint = toPointName,
-                supplier = supplier.ifEmpty { "Служба снабжения" },
+                supplier = src,
                 itemsSummary = summary,
                 baseWarehouseStockSummary = getBaseStockSummary()
             )
-            _toastEvent.emit("Операция «Привезли» успешно сохранена")
+            _toastEvent.emit("📥 ПРИВЕЗЛИ на $toPointName\nОткуда: $src\nПринято: $summary")
         }
     }
 
@@ -291,7 +292,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                 itemsSummary = summary,
                 baseWarehouseStockSummary = getBaseStockSummary()
             )
-            _toastEvent.emit("Перемещение выполнено: $fromPointName ➔ $toPointName")
+            _toastEvent.emit("🔄 ПЕРЕМЕЩЕНИЕ:\nМаршрут: $fromPointName ➔ $toPointName\nПередано: $summary")
         }
     }
 
@@ -316,7 +317,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                 baseWarehouseStockSummary = getBaseStockSummary()
             )
             
-            _toastEvent.emit("Имущество выдано («Подняли»)")
+            _toastEvent.emit("⬆️ ПОДНЯЛИ (ВЫДАНО):\nМаршрут: $fromPointName ➔ $toPointName\nВыдано: $summary")
         }
     }
 
@@ -338,7 +339,8 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                 itemsSummary = summary,
                 reason = comment
             )
-            _toastEvent.emit("Акт расхода (ф. 8) оформлен: № $docNumber")
+            val docLabel = if (docNumber.isNotBlank()) " (Акт № $docNumber)" else ""
+            _toastEvent.emit("💥 РАСХОД (Ф. 8)$docLabel:\nТочка: $pointName\nСписано: $summary")
         }
     }
 

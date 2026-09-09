@@ -164,12 +164,13 @@ object TacticalNotificationHelper {
         if (!hasNotificationPermission(context)) return
         createNotificationChannel(context)
 
+        val src = supplier.ifBlank { "Служба снабжения / Тыл" }
         val title = "📥 Приход на склад: $toPoint"
-        val contentText = "От: $supplier • $itemsSummary"
+        val contentText = "Откуда: $src • $itemsSummary"
 
         val bigText = buildString {
-            append("Поставщик / Источник: $supplier\n")
-            append("Принято на склад: $itemsSummary\n\n")
+            append("Поставщик / Источник: $src\n")
+            append("Принято на склад ($toPoint): $itemsSummary\n\n")
             if (baseWarehouseStockSummary.isNotEmpty()) {
                 append("📦 Текущий остаток склада:\n$baseWarehouseStockSummary")
             }
@@ -181,7 +182,7 @@ object TacticalNotificationHelper {
                 .setContentTitle(title)
                 .setContentText(contentText)
                 .setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setContentIntent(getPendingIntent(context))
                 .setAutoCancel(true)
                 .setColor(0xFF8DAA59.toInt())
@@ -244,12 +245,13 @@ object TacticalNotificationHelper {
         if (!hasNotificationPermission(context)) return
         createNotificationChannel(context)
 
-        val title = "💥 Расход имущества (Акт ф.8 № $docNumber)"
+        val docTitle = if (docNumber.isNotBlank()) " (Акт ф.8 № $docNumber)" else " (ф. 8)"
+        val title = "💥 Расход имущества$docTitle"
         val contentText = "Позиция: $pointName • Списано: $itemsSummary"
 
         val bigText = buildString {
             append("Точка списания: $pointName\n")
-            append("Акт расхода: № $docNumber\n")
+            if (docNumber.isNotBlank()) append("Акт расхода: № $docNumber\n")
             append("Списано: $itemsSummary\n")
             append("Задача/Причина: ${if(reason.isEmpty()) "Боевая работа" else reason}")
         }
@@ -260,7 +262,7 @@ object TacticalNotificationHelper {
                 .setContentTitle(title)
                 .setContentText(contentText)
                 .setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setContentIntent(getPendingIntent(context))
                 .setAutoCancel(true)
                 .setColor(0xFFE57373.toInt()) // Tactical Red

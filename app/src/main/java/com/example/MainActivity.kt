@@ -10,24 +10,41 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Assignment
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -41,8 +58,11 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -88,8 +108,11 @@ import com.example.ui.theme.TacticalBorder
 import com.example.ui.theme.TacticalBorderSubtle
 import com.example.ui.theme.TacticalGold
 import com.example.ui.theme.TacticalSurface
+import com.example.ui.theme.TacticalSurfaceLight
 import com.example.ui.theme.TacticalTextMuted
+import com.example.ui.theme.TacticalTextPrimary
 import com.example.ui.viewmodel.KapterkaViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 
 enum class AppDestination(val title: String, val icon: ImageVector, val tag: String) {
@@ -187,10 +210,16 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel) {
     var showExcelReportDialog by remember { mutableStateOf(false) }
     var showUserManualDialog by remember { mutableStateOf(false) }
 
-    // Toast Events from ViewModel
+    // Toast Events from ViewModel with rich in-app tactical popup banner
+    var inAppToastMessage by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(Unit) {
         viewModel.toastEvent.collectLatest { msg ->
-            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+            inAppToastMessage = msg
+            Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+            delay(5000)
+            if (inAppToastMessage == msg) {
+                inAppToastMessage = null
+            }
         }
     }
 
@@ -231,6 +260,79 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel) {
                 .padding(innerPadding)
         ) {
             val context = LocalContext.current
+
+            // TACTICAL IN-APP POPUP BANNER ("Всплывающее сообщение о проводке")
+            AnimatedVisibility(
+                visible = inAppToastMessage != null,
+                enter = fadeIn() + slideInVertically { -it },
+                exit = fadeOut() + slideOutVertically { -it },
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .zIndex(300f)
+                    .padding(horizontal = 14.dp, vertical = 10.dp)
+            ) {
+                inAppToastMessage?.let { msg ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { inAppToastMessage = null },
+                        colors = CardDefaults.cardColors(containerColor = TacticalSurfaceLight),
+                        border = BorderStroke(1.5.dp, SageGreenPrimary),
+                        shape = RoundedCornerShape(10.dp),
+                        elevation = CardDefaults.cardElevation(8.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(SageGreenDark),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = null,
+                                    tint = SageGreenBright,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "ОПЕРАЦИЯ ЗАФИКСИРОВАНА",
+                                    color = SageGreenBright,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    letterSpacing = 0.5.sp
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = msg,
+                                    color = TacticalTextPrimary,
+                                    fontSize = 12.sp,
+                                    lineHeight = 16.sp
+                                )
+                            }
+                            IconButton(
+                                onClick = { inAppToastMessage = null },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Закрыть",
+                                    tint = TacticalTextMuted,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
             val isProOrDemoActive = (profile?.isProActive == true) || 
                                     licenseStatus.isProActive || 
                                     ((profile?.demoDaysLeft ?: 0) > 0) || 
@@ -299,6 +401,8 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel) {
                             operations = operations,
                             filterType = historyFilterType,
                             searchQuery = historySearchQuery,
+                            catalogItems = catalogItems,
+                            availableCategories = availableCategories,
                             onFilterChange = { viewModel.setHistoryFilterType(it) },
                             onSearchChange = { viewModel.setHistorySearchQuery(it) },
                             parseItems = { viewModel.parseOperationItems(it) }

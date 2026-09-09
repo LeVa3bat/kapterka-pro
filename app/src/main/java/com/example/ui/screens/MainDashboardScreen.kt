@@ -660,7 +660,8 @@ fun MainDashboardScreen(
                 itemsIndexed(points, key = { _, pt -> pt.id }) { _, point ->
                     val pointRows = getItemsForPoint(point.id)
                     val pointStockSum = pointRows.sumOf { it.quantity }
-                    val isExpanded = expandedPointIds[point.id] ?: false
+                    // Default to expanded (true) so the user immediately sees the synchronized warehouse contents
+                    val isExpanded = expandedPointIds[point.id] ?: true
 
                     Card(
                         modifier = Modifier
