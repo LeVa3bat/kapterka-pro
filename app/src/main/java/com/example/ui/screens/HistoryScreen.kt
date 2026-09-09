@@ -133,89 +133,36 @@ fun HistoryScreen(
 ) {
     val dateFormat = remember { SimpleDateFormat("dd.MM.yyyy HH:mm", Locale("ru")) }
     var selectedCategoryFilter by remember { mutableStateOf("Все службы") }
-    var activeViewTab by remember { mutableStateOf(0) } // 0 = По проводкам, 1 = По службам
     val expandedOpIds = remember { mutableStateMapOf<String, Boolean>() }
-    val expandedServiceIds = remember { mutableStateMapOf<String, Boolean>() }
 
-    val categoryFilterOptions = remember(availableCategories) {
-        val base = listOf("Все службы")
-        val clean = availableCategories.filter { it != "Все виды" && it != "Все службы" }
-        if (clean.isEmpty()) {
-            base + listOf("Служба РАВ", "Вещевая служба", "Служба БПЛА и робототехники", "Медицинская служба", "Продовольственная служба", "ГСМ / Техническая служба", "Служба связи")
-        } else {
-            base + clean
-        }
-    }
+    val filteredOperations = remember(operations, filterType, selectedCategoryFilter, searchQuery, catalogItems) {
+        operations.filter { op ->
+            val matchesType = filterType == null || op.type == filterType
+            val parsedItems = parseItems(op.itemsJson)
 
-    val filteredOperations = operations.filter { op ->
-        val matchesType = filterType == null || op.type == filterType
-        val parsedItems = parseItems(op.itemsJson)
-
-        val matchesCategory = if (selectedCategoryFilter == "Все службы") {
-            true
-        } else {
-            parsedItems.any { resolveItemCategory(it, catalogItems) == selectedCategoryFilter } ||
-                    op.itemsSummary.contains(selectedCategoryFilter, ignoreCase = true)
-        }
-
-        val matchesQuery = if (searchQuery.trim().isEmpty()) true
-        else {
-            val q = searchQuery.trim().lowercase()
-            op.docNumber.lowercase().contains(q) ||
-                    op.fromPointName.lowercase().contains(q) ||
-                    op.toPointName.lowercase().contains(q) ||
-                    op.itemsSummary.lowercase().contains(q) ||
-                    op.comment.lowercase().contains(q) ||
-                    op.responsiblePerson.lowercase().contains(q) ||
-                    parsedItems.any { 
-                        it.itemName.lowercase().contains(q) || 
-                                resolveItemCategory(it, catalogItems).lowercase().contains(q) 
-                    }
-        }
-        matchesType && matchesCategory && matchesQuery
-    }
-
-    // Grouping for "По службам" tab: service -> list of (operation, items of this service)
-    val groupedByService = remember(filteredOperations, catalogItems) {
-        val standardServices = listOf(
-            "Служба РАВ",
-            "Служба БПЛА и робототехники",
-            "Вещевая служба",
-            "Медицинская служба",
-            "Продовольственная служба",
-            "ГСМ / Техническая служба",
-            "Служба связи",
-            "Прочее имущество"
-        )
-        val result = mutableMapOf<String, MutableList<Pair<OperationRecord, List<OperationItemEntry>>>>()
-        standardServices.forEach { result[it] = mutableListOf() }
-
-        filteredOperations.forEach { op ->
-            val parsed = parseItems(op.itemsJson)
-            if (parsed.isNotEmpty()) {
-                val byCat = parsed.groupBy { resolveItemCategory(it, catalogItems) }
-                byCat.forEach { (cat, itemsInCat) ->
-                    val list = result.getOrPut(cat) { mutableListOf() }
-                    list.add(op to itemsInCat)
-                }
-            } else if (op.itemsSummary.isNotBlank()) {
-                // Determine best category from summary
-                val cat = when {
-                    op.itemsSummary.contains("РАВ", true) || op.itemsSummary.contains("патрон", true) || op.itemsSummary.contains("гранат", true) -> "Служба РАВ"
-                    op.itemsSummary.contains("БПЛА", true) || op.itemsSummary.contains("дрон", true) || op.itemsSummary.contains("мавик", true) -> "Служба БПЛА и робототехники"
-                    op.itemsSummary.contains("вещев", true) || op.itemsSummary.contains("форм", true) || op.itemsSummary.contains("ботинк", true) -> "Вещевая служба"
-                    op.itemsSummary.contains("мед", true) || op.itemsSummary.contains("жгут", true) || op.itemsSummary.contains("аптечк", true) -> "Медицинская служба"
-                    op.itemsSummary.contains("прод", true) || op.itemsSummary.contains("сухпай", true) || op.itemsSummary.contains("тушен", true) -> "Продовольственная служба"
-                    op.itemsSummary.contains("гсм", true) || op.itemsSummary.contains("дизел", true) || op.itemsSummary.contains("бензин", true) -> "ГСМ / Техническая служба"
-                    op.itemsSummary.contains("связ", true) || op.itemsSummary.contains("раци", true) -> "Служба связи"
-                    else -> "Прочее имущество"
-                }
-                val list = result.getOrPut(cat) { mutableListOf() }
-                list.add(op to listOf(OperationItemEntry("summary", op.itemsSummary, "ед.", 1, "")))
+            val matchesCategory = if (selectedCategoryFilter == "Все службы") {
+                true
+            } else {
+                parsedItems.any { resolveItemCategory(it, catalogItems) == selectedCategoryFilter } ||
+                        op.itemsSummary.contains(selectedCategoryFilter, ignoreCase = true)
             }
+
+            val matchesQuery = if (searchQuery.trim().isEmpty()) true
+            else {
+                val q = searchQuery.trim().lowercase()
+                op.docNumber.lowercase().contains(q) ||
+                        op.fromPointName.lowercase().contains(q) ||
+                        op.toPointName.lowercase().contains(q) ||
+                        op.itemsSummary.lowercase().contains(q) ||
+                        op.comment.lowercase().contains(q) ||
+                        op.responsiblePerson.lowercase().contains(q) ||
+                        parsedItems.any { 
+                            it.itemName.lowercase().contains(q) || 
+                                    resolveItemCategory(it, catalogItems).lowercase().contains(q) 
+                        }
+            }
+            matchesType && matchesCategory && matchesQuery
         }
-        // Filter out empty services
-        result.filter { it.value.isNotEmpty() }
     }
 
     LazyColumn(
@@ -234,7 +181,7 @@ fun HistoryScreen(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Полная тактическая история движения имущества с разбивкой по службам",
+                    text = "Тактическая история движения и проводок имущества",
                     color = TacticalTextMuted,
                     fontSize = 12.sp
                 )
@@ -275,86 +222,123 @@ fun HistoryScreen(
             Spacer(modifier = Modifier.height(8.dp))
         }
 
-        // Filter 1: Operation Types
+        // UNIFIED SINGLE FILTER ROW (One clean, informative line)
         item {
-            val countIncome = operations.count { it.type == OperationType.INCOME }
-            val countTransfer = operations.count { it.type == OperationType.TRANSFER }
-            val countIssue = operations.count { it.type == OperationType.ISSUE }
-            val countExpenditure = operations.count { it.type == OperationType.EXPENDITURE }
+            val countIncome = remember(operations) { operations.count { it.type == OperationType.INCOME } }
+            val countTransfer = remember(operations) { operations.count { it.type == OperationType.TRANSFER } }
+            val countIssue = remember(operations) { operations.count { it.type == OperationType.ISSUE } }
+            val countExpenditure = remember(operations) { operations.count { it.type == OperationType.EXPENDITURE } }
+
+            val serviceChips = listOf(
+                "Служба РАВ",
+                "Служба БПЛА и робототехники",
+                "Вещевая служба",
+                "Медицинская служба",
+                "Продовольственная служба",
+                "ГСМ / Техническая служба",
+                "Служба связи",
+                "Прочее имущество"
+            )
 
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                // All
                 HistoryFilterChip(
                     label = "Все (${operations.size})",
-                    isSelected = filterType == null,
-                    onClick = { onFilterChange(null) }
+                    isSelected = filterType == null && selectedCategoryFilter == "Все службы",
+                    onClick = {
+                        onFilterChange(null)
+                        selectedCategoryFilter = "Все службы"
+                    }
                 )
+
+                // Types
                 HistoryFilterChip(
                     label = "Привезли ($countIncome)",
                     isSelected = filterType == OperationType.INCOME,
-                    onClick = { onFilterChange(OperationType.INCOME) }
+                    onClick = {
+                        onFilterChange(if (filterType == OperationType.INCOME) null else OperationType.INCOME)
+                    }
                 )
                 HistoryFilterChip(
                     label = "Перемещение ($countTransfer)",
                     isSelected = filterType == OperationType.TRANSFER,
-                    onClick = { onFilterChange(OperationType.TRANSFER) }
+                    onClick = {
+                        onFilterChange(if (filterType == OperationType.TRANSFER) null else OperationType.TRANSFER)
+                    }
                 )
                 HistoryFilterChip(
                     label = "Подняли ($countIssue)",
                     isSelected = filterType == OperationType.ISSUE,
-                    onClick = { onFilterChange(OperationType.ISSUE) }
+                    onClick = {
+                        onFilterChange(if (filterType == OperationType.ISSUE) null else OperationType.ISSUE)
+                    }
                 )
                 HistoryFilterChip(
-                    label = "Расход ф.8 ($countExpenditure)",
+                    label = "Расход ($countExpenditure)",
                     isSelected = filterType == OperationType.EXPENDITURE,
-                    onClick = { onFilterChange(OperationType.EXPENDITURE) }
+                    onClick = {
+                        onFilterChange(if (filterType == OperationType.EXPENDITURE) null else OperationType.EXPENDITURE)
+                    }
                 )
-            }
 
-            Spacer(modifier = Modifier.height(6.dp))
-        }
+                // Divider between types and services
+                Box(
+                    modifier = Modifier
+                        .height(20.dp)
+                        .width(1.dp)
+                        .background(TacticalBorderSubtle)
+                )
 
-        // Filter 2: Service Categories
-        item {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                categoryFilterOptions.forEach { cat ->
+                // Services
+                serviceChips.forEach { cat ->
                     val isSel = selectedCategoryFilter == cat
-                    val emoji = if (cat == "Все службы") "🗂️" else getCategoryEmoji(cat)
+                    val emoji = getCategoryEmoji(cat)
+                    val shortName = when (cat) {
+                        "Служба РАВ" -> "РАВ"
+                        "Служба БПЛА и робототехники" -> "БПЛА"
+                        "Вещевая служба" -> "Вещевая"
+                        "Медицинская служба" -> "Мед"
+                        "Продовольственная служба" -> "Прод"
+                        "ГСМ / Техническая служба" -> "ГСМ"
+                        "Служба связи" -> "Связь"
+                        else -> "Прочее"
+                    }
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(6.dp))
-                            .background(if (isSel) TacticalSurfaceLight else TacticalBg)
+                            .background(if (isSel) SageGreenDark else TacticalSurfaceLight)
                             .border(
                                 1.dp,
-                                if (isSel) SageGreenPrimary else TacticalBorderSubtle,
+                                if (isSel) SageGreenBright else TacticalBorder,
                                 RoundedCornerShape(6.dp)
                             )
-                            .clickable { selectedCategoryFilter = cat }
-                            .padding(horizontal = 8.dp, vertical = 5.dp)
+                            .clickable {
+                                selectedCategoryFilter = if (selectedCategoryFilter == cat) "Все службы" else cat
+                            }
+                            .padding(horizontal = 9.dp, vertical = 6.dp)
                     ) {
                         Text(
-                            text = "$emoji $cat",
-                            color = if (isSel) SageGreenBright else TacticalTextMuted,
-                            fontSize = 11.sp,
-                            fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal
+                            text = "$emoji $shortName",
+                            color = if (isSel) SageGreenBright else TacticalTextSecondary,
+                            fontSize = 12.sp,
+                            fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal,
+                            maxLines = 1,
+                            softWrap = false
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(6.dp))
         }
 
-        // Accordion Controls Header: View Mode Switcher + Expand/Collapse All
+        // Sub-header: Count indicator & Expand/Collapse Toggle
         item {
             Row(
                 modifier = Modifier
@@ -363,85 +347,54 @@ fun HistoryScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // View Mode Switcher
-                Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(TacticalSurfaceLight)
-                        .padding(2.dp),
-                    horizontalArrangement = Arrangement.spacedBy(2.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(if (activeViewTab == 0) SageGreenPrimary else Color.Transparent)
-                            .clickable { activeViewTab = 0 }
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            text = "📋 Проводки (${filteredOperations.size})",
-                            color = if (activeViewTab == 0) Color(0xFF0F1B14) else TacticalTextMuted,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(if (activeViewTab == 1) SageGreenPrimary else Color.Transparent)
-                            .clickable { activeViewTab = 1 }
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            text = "🛡️ По службам (${groupedByService.size})",
-                            color = if (activeViewTab == 1) Color(0xFF0F1B14) else TacticalTextMuted,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
+                Text(
+                    text = "Проводок: ${filteredOperations.size}" +
+                            if (selectedCategoryFilter != "Все службы") " • $selectedCategoryFilter" else "",
+                    color = TacticalTextMuted,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
 
-                // Expand / Collapse All buttons
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Box(
+                if (filteredOperations.isNotEmpty()) {
+                    val allExpanded = filteredOperations.all { expandedOpIds[it.id] == true }
+                    Row(
                         modifier = Modifier
                             .clip(RoundedCornerShape(4.dp))
                             .background(TacticalSurfaceLight)
+                            .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(4.dp))
                             .clickable {
-                                filteredOperations.forEach { expandedOpIds[it.id] = false }
-                                groupedByService.keys.forEach { expandedServiceIds[it] = false }
+                                val target = !allExpanded
+                                filteredOperations.forEach { expandedOpIds[it.id] = target }
                             }
-                            .padding(horizontal = 6.dp, vertical = 4.dp)
+                            .padding(horizontal = 9.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "Свернуть все",
-                            color = TacticalTextMuted,
-                            fontSize = 10.sp
+                        Icon(
+                            imageVector = if (allExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            contentDescription = null,
+                            tint = SageGreenBright,
+                            modifier = Modifier.size(15.dp)
                         )
-                    }
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(TacticalSurfaceLight)
-                            .clickable {
-                                filteredOperations.forEach { expandedOpIds[it.id] = true }
-                                groupedByService.keys.forEach { expandedServiceIds[it] = true }
-                            }
-                            .padding(horizontal = 6.dp, vertical = 4.dp)
-                    ) {
+                        Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "Развернуть все",
+                            text = if (allExpanded) "Свернуть все" else "Развернуть все",
                             color = SageGreenBright,
-                            fontSize = 10.sp
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            softWrap = false
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
         }
 
-        // Main Accordions Display
+        // Main Operations Display
         if (filteredOperations.isEmpty()) {
             item {
                 Column(
@@ -465,8 +418,7 @@ fun HistoryScreen(
                     )
                 }
             }
-        } else if (activeViewTab == 0) {
-            // MODE 1: Chronological Operations List - each operation is an accordion, collapsed by default
+        } else {
             items(filteredOperations, key = { it.id }) { op ->
                 val isOpExpanded = expandedOpIds[op.id] ?: false
                 OperationAccordionCard(
@@ -477,21 +429,6 @@ fun HistoryScreen(
                     isExpanded = isOpExpanded,
                     onToggleExpand = {
                         expandedOpIds[op.id] = !isOpExpanded
-                    }
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-        } else {
-            // MODE 2: Accordions grouped by Military Services (РАВ, БПЛА, Вещевая, Мед, Прод, ГСМ, Связь, Прочее)
-            items(groupedByService.entries.toList(), key = { it.key }) { (serviceName, opEntries) ->
-                val isServiceExpanded = expandedServiceIds[serviceName] ?: false
-                ServiceTopLevelAccordion(
-                    serviceName = serviceName,
-                    entries = opEntries,
-                    dateFormat = dateFormat,
-                    isExpanded = isServiceExpanded,
-                    onToggle = {
-                        expandedServiceIds[serviceName] = !isServiceExpanded
                     }
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -541,7 +478,6 @@ private fun OperationAccordionCard(
     onToggleExpand: () -> Unit
 ) {
     val items = remember(operation.itemsJson) { parseItems(operation.itemsJson) }
-    var forceExpandCategories by remember { mutableStateOf<Boolean?>(null) }
 
     val (badgeBg, badgeText, badgeTitle) = when (operation.type) {
         OperationType.INCOME -> Triple(SageGreenDark, SageGreenBright, "ПРИВЕЗЛИ")
@@ -627,169 +563,56 @@ private fun OperationAccordionCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // ROW 2: Route Display - "ПОЛНОЦЕННАЯ ИСТОРИЯ ОТКУДА И КУДА"
-            when (operation.type) {
-                OperationType.INCOME -> {
-                    val fromClean = operation.fromPointName.ifBlank { "Служба снабжения / Тыл" }
-                    val toClean = operation.toPointName.ifBlank { "Базовый склад" }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Откуда:",
-                            color = TacticalTextMuted,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Normal
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = fromClean,
-                            color = SageGreenBright,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "➔",
-                            color = SageGreenPrimary,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "Куда:",
-                            color = TacticalTextMuted,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Normal
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = toClean,
-                            color = TacticalTextPrimary,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-                OperationType.TRANSFER -> {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Откуда:",
-                            color = TacticalTextMuted,
-                            fontSize = 12.sp
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = operation.fromPointName.ifBlank { "Склад отправки" },
-                            color = TacticalTealText,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "➔",
-                            color = TacticalTealText,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "Куда:",
-                            color = TacticalTextMuted,
-                            fontSize = 12.sp
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = operation.toPointName.ifBlank { "Склад назначения" },
-                            color = TacticalTextPrimary,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-                OperationType.ISSUE -> {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Со склада:",
-                            color = TacticalTextMuted,
-                            fontSize = 12.sp
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = operation.fromPointName.ifBlank { "Базовый склад" },
-                            color = TacticalGoldText,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "➔",
-                            color = TacticalGoldText,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "Выдано на:",
-                            color = TacticalTextMuted,
-                            fontSize = 12.sp
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = operation.toPointName.ifBlank { "Подразделение" },
-                            color = TacticalTextPrimary,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-                OperationType.EXPENDITURE -> {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Точка списания:",
-                            color = TacticalTextMuted,
-                            fontSize = 12.sp
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = operation.fromPointName.ifBlank { operation.toPointName.ifBlank { "Позиция" } },
-                            color = TacticalRedText,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "➔ Списание имущества (ф. 8)",
-                            color = TacticalTextSecondary,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
+            // ROW 2: Route Display - single clean line with balanced weights
+            val (fromName, toName) = when (operation.type) {
+                OperationType.INCOME -> Pair(
+                    operation.fromPointName.ifBlank { "Снабжение / Тыл" },
+                    operation.toPointName.ifBlank { "Базовый склад" }
+                )
+                OperationType.TRANSFER -> Pair(
+                    operation.fromPointName.ifBlank { "Склад отправки" },
+                    operation.toPointName.ifBlank { "Склад назначения" }
+                )
+                OperationType.ISSUE -> Pair(
+                    operation.fromPointName.ifBlank { "Базовый склад" },
+                    operation.toPointName.ifBlank { "Подразделение" }
+                )
+                OperationType.EXPENDITURE -> Pair(
+                    operation.fromPointName.ifBlank { operation.toPointName.ifBlank { "Позиция" } },
+                    "Списание (ф. 8)"
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = fromName,
+                    color = SageGreenBright,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "➔",
+                    color = SageGreenPrimary,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = toName,
+                    color = TacticalTextPrimary,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
             }
 
             // ROW 3: Summary of items (always visible on card)
@@ -826,7 +649,10 @@ private fun OperationAccordionCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f, fill = false)
+                ) {
                     Icon(
                         imageVector = Icons.Default.Person,
                         contentDescription = null,
@@ -837,17 +663,21 @@ private fun OperationAccordionCard(
                     Text(
                         text = "Ответственный: ${operation.responsiblePerson.ifBlank { "Старшина" }}",
                         color = TacticalTextMuted,
-                        fontSize = 11.sp
+                        fontSize = 11.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
 
                 if (operation.comment.isNotBlank()) {
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "💬 ${operation.comment}",
                         color = TacticalGoldText,
                         fontSize = 11.sp,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
                     )
                 }
             }
@@ -868,69 +698,113 @@ private fun OperationAccordionCard(
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "СПИСКИ ПО СЛУЖБАМ (АККОРДЕОНЫ):",
-                            color = SageGreenBright,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.5.sp
-                        )
-
-                        if (items.isNotEmpty()) {
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(4.dp))
-                                        .background(TacticalSurfaceLight)
-                                        .clickable { forceExpandCategories = false }
-                                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                                ) {
-                                    Text(
-                                        text = "Свернуть службы",
-                                        color = TacticalTextMuted,
-                                        fontSize = 9.5.sp
-                                    )
-                                }
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(4.dp))
-                                        .background(TacticalSurfaceLight)
-                                        .clickable { forceExpandCategories = true }
-                                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                                ) {
-                                    Text(
-                                        text = "Раскрыть службы",
-                                        color = SageGreenBright,
-                                        fontSize = 9.5.sp
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
                     if (items.isNotEmpty()) {
-                        // Group items by Service Category
                         val groupedByCategory = remember(items, catalogItems) {
                             items.groupBy { resolveItemCategory(it, catalogItems) }
                         }
 
-                        groupedByCategory.forEach { (categoryName, categoryItems) ->
-                            OperationCategoryAccordion(
-                                categoryName = categoryName,
-                                categoryItems = categoryItems,
-                                forceExpanded = forceExpandCategories
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            groupedByCategory.forEach { (categoryName, categoryItems) ->
+                                val emoji = getCategoryEmoji(categoryName)
+                                val totalUnits = categoryItems.sumOf { it.quantity }
+
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(TacticalBg)
+                                        .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(6.dp))
+                                        .padding(8.dp)
+                                ) {
+                                    // Service Header
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.weight(1f, fill = false)
+                                        ) {
+                                            Text(text = emoji, fontSize = 14.sp)
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text(
+                                                text = categoryName,
+                                                color = SageGreenBright,
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                        }
+                                        Text(
+                                            text = "$totalUnits ед.",
+                                            color = SageGreenBright,
+                                            fontSize = 11.5.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            fontFamily = FontFamily.Monospace
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.height(4.dp))
+
+                                    // Items
+                                    categoryItems.forEachIndexed { idx, item ->
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 2.dp),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = "${idx + 1}. ${item.itemName}",
+                                                color = TacticalTextPrimary,
+                                                fontSize = 11.5.sp,
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = "${item.quantity} ${item.unit}",
+                                                color = TacticalTextSecondary,
+                                                fontSize = 11.5.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                fontFamily = FontFamily.Monospace
+                                            )
+                                        }
+                                        if (item.reason.isNotBlank()) {
+                                            Text(
+                                                text = "   Цель: ${item.reason}",
+                                                color = TacticalTextMuted,
+                                                fontSize = 10.sp,
+                                                modifier = Modifier.padding(bottom = 2.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
                     } else if (operation.itemsSummary.isNotBlank()) {
-                        OperationSummaryAccordion(summary = operation.itemsSummary)
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(TacticalBg)
+                                .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(6.dp))
+                                .padding(8.dp)
+                        ) {
+                            operation.itemsSummary.split(",").forEachIndexed { idx, part ->
+                                val clean = part.trim()
+                                if (clean.isNotBlank()) {
+                                    Text(
+                                        text = "${idx + 1}. $clean",
+                                        color = TacticalTextPrimary,
+                                        fontSize = 11.5.sp,
+                                        modifier = Modifier.padding(vertical = 2.dp)
+                                    )
+                                }
+                            }
+                        }
                     }
 
                     if (operation.comment.isNotBlank()) {
@@ -954,439 +828,3 @@ private fun OperationAccordionCard(
     }
 }
 
-// Top-Level Accordion for Service Tab (e.g. 💣 Служба РАВ, 🛸 БПЛА, etc.)
-@Composable
-private fun ServiceTopLevelAccordion(
-    serviceName: String,
-    entries: List<Pair<OperationRecord, List<OperationItemEntry>>>,
-    dateFormat: SimpleDateFormat,
-    isExpanded: Boolean,
-    onToggle: () -> Unit
-) {
-    val emoji = getCategoryEmoji(serviceName)
-    val totalUnits = entries.sumOf { (_, items) -> items.sumOf { it.quantity } }
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .clickable { onToggle() },
-        colors = CardDefaults.cardColors(containerColor = TacticalSurface),
-        border = BorderStroke(1.dp, if (isExpanded) SageGreenPrimary else TacticalBorder)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp)
-        ) {
-            // Service Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(text = emoji, fontSize = 16.sp)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Column {
-                        Text(
-                            text = serviceName,
-                            color = TacticalTextPrimary,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "${entries.size} проводок • $totalUnits ед. имущества",
-                            color = SageGreenBright,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
-
-                Icon(
-                    imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                    contentDescription = null,
-                    tint = SageGreenBright,
-                    modifier = Modifier.size(22.dp)
-                )
-            }
-
-            // Expanded body: list of operations inside this service (each also an accordion!)
-            AnimatedVisibility(visible = isExpanded) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 10.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(1.dp)
-                            .background(TacticalBorderSubtle)
-                    )
-
-                    entries.forEachIndexed { index, (op, serviceItems) ->
-                        ServiceOperationEntryCard(
-                            index = index + 1,
-                            operation = op,
-                            serviceItems = serviceItems,
-                            dateFormat = dateFormat
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-// Sub-card inside ServiceTopLevelAccordion for each operation
-@Composable
-private fun ServiceOperationEntryCard(
-    index: Int,
-    operation: OperationRecord,
-    serviceItems: List<OperationItemEntry>,
-    dateFormat: SimpleDateFormat
-) {
-    var subExpanded by remember { mutableStateOf(false) }
-
-    val (badgeBg, badgeText, badgeTitle) = when (operation.type) {
-        OperationType.INCOME -> Triple(SageGreenDark, SageGreenBright, "ПРИВЕЗЛИ")
-        OperationType.TRANSFER -> Triple(TacticalTealDark, TacticalTealText, "ПЕРЕМЕЩЕНИЕ")
-        OperationType.ISSUE -> Triple(TacticalGoldDark, TacticalGoldText, "ПОДНЯЛИ")
-        OperationType.EXPENDITURE -> Triple(TacticalRedDark, TacticalRedText, "ОТСТРЕЛ (Ф. 8)")
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(6.dp))
-            .background(TacticalBg)
-            .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(6.dp))
-    ) {
-        // Entry header (clickable accordion)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { subExpanded = !subExpanded }
-                .padding(horizontal = 10.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(3.dp))
-                            .background(badgeBg)
-                            .padding(horizontal = 5.dp, vertical = 2.dp)
-                    ) {
-                        Text(
-                            text = badgeTitle,
-                            color = badgeText,
-                            fontSize = 9.5.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    if (operation.docNumber.isNotBlank()) {
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "Акт № ${operation.docNumber}",
-                            color = TacticalTextPrimary,
-                            fontSize = 10.5.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Monospace
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = dateFormat.format(Date(operation.timestamp)),
-                        color = TacticalTextDim,
-                        fontSize = 10.sp
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                // Route summary
-                val routeText = when (operation.type) {
-                    OperationType.INCOME -> "Откуда: ${operation.fromPointName.ifBlank { "Снабжение / Тыл" }} ➔ ${operation.toPointName}"
-                    OperationType.TRANSFER, OperationType.ISSUE -> "${operation.fromPointName} ➔ ${operation.toPointName}"
-                    OperationType.EXPENDITURE -> "Точка расхода: ${operation.fromPointName.ifBlank { operation.toPointName }}"
-                }
-                Text(
-                    text = routeText,
-                    color = TacticalTextMuted,
-                    fontSize = 11.sp
-                )
-            }
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "${serviceItems.sumOf { it.quantity }} ед.",
-                    color = SageGreenBright,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Monospace
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Icon(
-                    imageVector = if (subExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                    contentDescription = null,
-                    tint = TacticalTextMuted,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-        }
-
-        // Sub items accordion body
-        AnimatedVisibility(visible = subExpanded) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 10.dp, vertical = 6.dp)
-            ) {
-                serviceItems.forEachIndexed { itemIdx, item ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 2.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "${itemIdx + 1}. ${item.itemName}",
-                            color = TacticalTextPrimary,
-                            fontSize = 11.5.sp,
-                            modifier = Modifier.weight(1f)
-                        )
-                        Text(
-                            text = "${item.quantity} ${item.unit}",
-                            color = SageGreenBright,
-                            fontSize = 11.5.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Monospace
-                        )
-                    }
-                }
-
-                if (operation.comment.isNotBlank()) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Примечание: ${operation.comment}",
-                        color = TacticalGoldText,
-                        fontSize = 10.5.sp
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = "Ответственный: ${operation.responsiblePerson.ifBlank { "Старшина" }}",
-                    color = TacticalTextDim,
-                    fontSize = 9.5.sp
-                )
-            }
-        }
-    }
-}
-
-// Sub-Component: Accordion for each Category inside an operation (collapsed by default)
-@Composable
-private fun OperationCategoryAccordion(
-    categoryName: String,
-    categoryItems: List<OperationItemEntry>,
-    forceExpanded: Boolean? = null
-) {
-    var categoryExpanded by remember(forceExpanded) { mutableStateOf(forceExpanded ?: false) }
-    val emoji = getCategoryEmoji(categoryName)
-    val totalQty = categoryItems.sumOf { it.quantity }
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(6.dp))
-            .background(TacticalBg)
-            .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(6.dp))
-    ) {
-        // Category Accordion Header
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { categoryExpanded = !categoryExpanded }
-                .padding(horizontal = 10.dp, vertical = 7.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text = emoji,
-                    fontSize = 14.sp
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = categoryName,
-                    color = SageGreenBright,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(TacticalSurfaceLight)
-                        .padding(horizontal = 5.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        text = "${categoryItems.size} наим. • $totalQty ед.",
-                        color = TacticalTextSecondary,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-            }
-
-            Icon(
-                imageVector = if (categoryExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                contentDescription = null,
-                tint = TacticalTextMuted,
-                modifier = Modifier.size(18.dp)
-            )
-        }
-
-        // Category Accordion Items Body
-        AnimatedVisibility(visible = categoryExpanded) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 10.dp, vertical = 6.dp)
-            ) {
-                categoryItems.forEachIndexed { index, item ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 3.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(
-                            modifier = Modifier.weight(1f),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "${index + 1}.",
-                                color = TacticalTextMuted,
-                                fontSize = 11.sp,
-                                modifier = Modifier.width(18.dp)
-                            )
-                            Text(
-                                text = item.itemName,
-                                color = TacticalTextPrimary,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                            if (item.categoryClass.isNotBlank()) {
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(3.dp))
-                                        .background(TacticalSurfaceLight)
-                                        .padding(horizontal = 4.dp, vertical = 1.dp)
-                                ) {
-                                    Text(
-                                        text = item.categoryClass,
-                                        color = TacticalTextMuted,
-                                        fontSize = 9.sp
-                                    )
-                                }
-                            }
-                        }
-
-                        Text(
-                            text = "${item.quantity} ${item.unit}",
-                            color = SageGreenBright,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Monospace
-                        )
-                    }
-
-                    if (item.reason.isNotBlank()) {
-                        Text(
-                            text = "     ↳ Цель: ${item.reason}",
-                            color = TacticalTextMuted,
-                            fontSize = 10.sp,
-                            modifier = Modifier.padding(bottom = 2.dp)
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-// Sub-Component: Accordion for fallback plain-text operations (collapsed by default)
-@Composable
-private fun OperationSummaryAccordion(summary: String) {
-    var isExpanded by remember { mutableStateOf(false) }
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(6.dp))
-            .background(TacticalBg)
-            .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(6.dp))
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { isExpanded = !isExpanded }
-                .padding(horizontal = 10.dp, vertical = 7.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(text = "📦", fontSize = 14.sp)
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "Имущество проводки (список)",
-                    color = SageGreenBright,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-            Icon(
-                imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                contentDescription = null,
-                tint = TacticalTextMuted,
-                modifier = Modifier.size(18.dp)
-            )
-        }
-
-        AnimatedVisibility(visible = isExpanded) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 10.dp, vertical = 6.dp)
-            ) {
-                summary.split(",").forEachIndexed { index, part ->
-                    val clean = part.trim()
-                    if (clean.isNotBlank()) {
-                        Text(
-                            text = "${index + 1}. $clean",
-                            color = TacticalTextPrimary,
-                            fontSize = 12.sp,
-                            modifier = Modifier.padding(vertical = 2.dp)
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
