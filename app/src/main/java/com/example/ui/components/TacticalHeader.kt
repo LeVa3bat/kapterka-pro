@@ -71,6 +71,8 @@ fun TacticalHeader(
     onProfileClick: () -> Unit,
     onHelpClick: () -> Unit = {},
     onBannerClick: () -> Unit = {},
+    isDarkTheme: Boolean = false,
+    onToggleTheme: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -140,6 +142,29 @@ fun TacticalHeader(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
+                // Theme Toggle Pill (Day / Tactical Night)
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(100.dp))
+                        .background(TacticalSurfaceLight)
+                        .border(1.dp, TacticalBorder, RoundedCornerShape(100.dp))
+                        .clickable { onToggleTheme() }
+                        .padding(horizontal = 8.dp, vertical = 5.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = if (isDarkTheme) "☀️" else "🌙",
+                        fontSize = 12.sp
+                    )
+                    Spacer(modifier = Modifier.width(3.dp))
+                    Text(
+                        text = if (isDarkTheme) "СВЕТ" else "ТЬМА",
+                        color = TacticalTextPrimary,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
                 // Interactive Guide Pill
                 Row(
                     modifier = Modifier

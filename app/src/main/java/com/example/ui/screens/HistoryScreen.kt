@@ -37,6 +37,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -134,6 +135,10 @@ fun HistoryScreen(
     val dateFormat = remember { SimpleDateFormat("dd.MM.yyyy HH:mm", Locale("ru")) }
     var selectedCategoryFilter by remember { mutableStateOf("Все службы") }
     val expandedOpIds = remember { mutableStateMapOf<String, Boolean>() }
+
+    LaunchedEffect(filterType, selectedCategoryFilter, searchQuery) {
+        expandedOpIds.clear()
+    }
 
     val filteredOperations = remember(operations, filterType, selectedCategoryFilter, searchQuery, catalogItems) {
         operations.filter { op ->
@@ -583,111 +588,67 @@ private fun OperationAccordionCard(
                 )
             }
 
+            // ROW 2: Route & Count (Compact single line)
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = fromName,
-                    color = SageGreenBright,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "➔",
-                    color = SageGreenPrimary,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = toName,
-                    color = TacticalTextPrimary,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false)
-                )
-            }
-
-            // ROW 3: Summary of items (always visible on card)
-            if (operation.itemsSummary.isNotBlank()) {
-                Spacer(modifier = Modifier.height(6.dp))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(TacticalBg, RoundedCornerShape(4.dp))
-                        .padding(horizontal = 8.dp, vertical = 5.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Inventory2,
-                        contentDescription = null,
-                        tint = SageGreenPrimary,
-                        modifier = Modifier.size(13.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = operation.itemsSummary,
-                        color = TacticalTextSecondary,
-                        fontSize = 12.sp,
-                        maxLines = if (isExpanded) 6 else 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-
-            // ROW 4: Responsible Person and Comment (Always visible)
-            Spacer(modifier = Modifier.height(6.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.weight(1f, fill = false)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = null,
-                        tint = TacticalTextDim,
-                        modifier = Modifier.size(12.dp)
+                    Text(
+                        text = fromName,
+                        color = SageGreenBright,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "Ответственный: ${operation.responsiblePerson.ifBlank { "Старшина" }}",
+                        text = "➔",
+                        color = SageGreenPrimary,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = toName,
+                        color = TacticalTextPrimary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                val totalUnits = remember(items) { items.sumOf { it.quantity } }
+                val countSummary = if (items.isNotEmpty()) {
+                    "${items.size} наим. • $totalUnits ед."
+                } else if (operation.itemsSummary.isNotBlank()) {
+                    operation.itemsSummary.take(20)
+                } else ""
+
+                if (countSummary.isNotBlank()) {
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "📦 $countSummary",
                         color = TacticalTextMuted,
                         fontSize = 11.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-
-                if (operation.comment.isNotBlank()) {
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "💬 ${operation.comment}",
-                        color = TacticalGoldText,
-                        fontSize = 11.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false)
-                    )
-                }
             }
 
-            // EXPANDED SECTION: ACCORDION BY CATEGORY
+            // EXPANDED SECTION: DETAILS & ACCORDION BY CATEGORY
             AnimatedVisibility(visible = isExpanded) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 10.dp)
+                        .padding(top = 8.dp)
                 ) {
                     Box(
                         modifier = Modifier
@@ -696,7 +657,75 @@ private fun OperationAccordionCard(
                             .background(TacticalBorderSubtle)
                     )
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Responsible Person & Comment
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f, fill = false)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = null,
+                                tint = TacticalTextDim,
+                                modifier = Modifier.size(12.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Ответственный: ${operation.responsiblePerson.ifBlank { "Старшина" }}",
+                                color = TacticalTextMuted,
+                                fontSize = 11.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+
+                        if (operation.comment.isNotBlank()) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "💬 ${operation.comment}",
+                                color = TacticalGoldText,
+                                fontSize = 11.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f, fill = false)
+                            )
+                        }
+                    }
+
+                    // Summary of items banner
+                    if (operation.itemsSummary.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(TacticalBg, RoundedCornerShape(4.dp))
+                                .padding(horizontal = 8.dp, vertical = 5.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Inventory2,
+                                contentDescription = null,
+                                tint = SageGreenPrimary,
+                                modifier = Modifier.size(13.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = operation.itemsSummary,
+                                color = TacticalTextSecondary,
+                                fontSize = 12.sp,
+                                maxLines = 6,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     if (items.isNotEmpty()) {
                         val groupedByCategory = remember(items, catalogItems) {

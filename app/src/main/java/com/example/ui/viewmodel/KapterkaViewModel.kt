@@ -108,6 +108,21 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    // Theme Mode (Light / Dark)
+    private val _isDarkTheme = MutableStateFlow(prefs.getBoolean("is_dark_theme", false))
+    val isDarkTheme: StateFlow<Boolean> = _isDarkTheme.asStateFlow()
+
+    fun toggleTheme() {
+        val newTheme = !_isDarkTheme.value
+        _isDarkTheme.value = newTheme
+        prefs.edit().putBoolean("is_dark_theme", newTheme).apply()
+    }
+
+    fun setDarkTheme(enabled: Boolean) {
+        _isDarkTheme.value = enabled
+        prefs.edit().putBoolean("is_dark_theme", enabled).apply()
+    }
+
     // Selected state on Main Dashboard
     private val _selectedPointId = MutableStateFlow<String>("base_sklad")
     val selectedPointId: StateFlow<String> = _selectedPointId.asStateFlow()

@@ -125,14 +125,18 @@ fun UserManualDialog(
     var selectedCategoryIndex by remember { mutableIntStateOf(0) }
     val listState = rememberLazyListState()
 
-    val guideSections = remember {
+    val sageBright = SageGreenBright
+    val tealText = TacticalTealText
+    val goldText = TacticalGoldText
+
+    val guideSections = remember(sageBright, tealText, goldText) {
         listOf(
             GuideSection(
                 id = "quick_start",
                 title = "1. Быстрый старт и подключение",
                 shortSubtitle = "Вход, код подразделения, синхронизация",
                 icon = Icons.Default.Key,
-                badgeColor = SageGreenBright,
+                badgeColor = sageBright,
                 forWho = "Военные, гражданские, волонтеры",
                 steps = listOf(
                     GuideStep(
@@ -161,7 +165,7 @@ fun UserManualDialog(
                 title = "2. Склады, точки и просмотр остатков",
                 shortSubtitle = "Опорные пункты, цеха, фильтры по службам",
                 icon = Icons.Default.Warehouse,
-                badgeColor = TacticalTealText,
+                badgeColor = tealText,
                 forWho = "Кладовщики, старшины, командиры",
                 steps = listOf(
                     GuideStep(
@@ -190,7 +194,7 @@ fun UserManualDialog(
                 title = "3. Операции: Приход, Расход, Выдача, Перемещение",
                 shortSubtitle = "Акты списания, закрепление за бойцами",
                 icon = Icons.Default.TrendingUp,
-                badgeColor = TacticalGoldText,
+                badgeColor = goldText,
                 forWho = "Все пользователи",
                 steps = listOf(
                     GuideStep(
@@ -225,7 +229,7 @@ fun UserManualDialog(
                 title = "4. Электронные заявки и потребности",
                 shortSubtitle = "Подача потребностей, сборка, выдача",
                 icon = Icons.Default.Assignment,
-                badgeColor = SageGreenBright,
+                badgeColor = sageBright,
                 forWho = "Командиры отделений, цеха, снабженцы",
                 steps = listOf(
                     GuideStep(
@@ -248,7 +252,7 @@ fun UserManualDialog(
                 title = "5. Армейская и складская отчетность (Excel)",
                 shortSubtitle = "Форма № 8, Форма № 18, инвентаризация",
                 icon = Icons.Default.TableChart,
-                badgeColor = TacticalTealText,
+                badgeColor = tealText,
                 forWho = "Старшины, бухгалтеры, начальники служб",
                 steps = listOf(
                     GuideStep(
@@ -277,7 +281,7 @@ fun UserManualDialog(
                 title = "6. Для гражданского персонала и волонтеров",
                 shortSubtitle = "Учет гуманитарной помощи, складов и инструментов",
                 icon = Icons.Default.People,
-                badgeColor = SageGreenBright,
+                badgeColor = sageBright,
                 forWho = "Волонтеры, гражданские склады, цеха",
                 steps = listOf(
                     GuideStep(

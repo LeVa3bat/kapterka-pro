@@ -57,6 +57,8 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -119,7 +121,9 @@ fun MoreSettingsScreen(
     onResetProfileAndLicense: () -> Unit = {},
     onResetDataClick: () -> Unit,
     onOpenManualClick: () -> Unit = {},
-    onOpenDeveloperBackdoor: () -> Unit = {}
+    onOpenDeveloperBackdoor: () -> Unit = {},
+    isDarkTheme: Boolean = false,
+    onToggleTheme: () -> Unit = {}
 ) {
     val context = LocalContext.current
         val unitKey = profile?.unitKey ?: "kapt_59e13b"
@@ -413,6 +417,70 @@ fun MoreSettingsScreen(
                     color = TacticalTextMuted,
                     fontSize = 12.sp
                 )
+            }
+        }
+
+        // 0. THEME SWITCH CARD (Светлая / Тёмная)
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 10.dp),
+                colors = CardDefaults.cardColors(containerColor = TacticalSurface),
+                border = BorderStroke(1.dp, TacticalBorder),
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onToggleTheme() }
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(38.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(SageGreenDark),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = if (isDarkTheme) "🌙" else "☀️",
+                                fontSize = 20.sp
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "Тема: ${if (isDarkTheme) "Тёмная (Боевая ночная)" else "Светлая (Дневная)"}",
+                                color = TacticalTextPrimary,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = if (isDarkTheme) "Антибликовый тактический ночной режим" else "Высококонтрастный дневной режим",
+                                color = TacticalTextMuted,
+                                fontSize = 11.sp
+                            )
+                        }
+                    }
+
+                    Switch(
+                        checked = isDarkTheme,
+                        onCheckedChange = { onToggleTheme() },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = SageGreenPrimary,
+                            checkedTrackColor = SageGreenDark,
+                            uncheckedThumbColor = TacticalTextMuted,
+                            uncheckedTrackColor = TacticalSurfaceLight
+                        )
+                    )
+                }
             }
         }
 
@@ -1017,7 +1085,7 @@ fun MoreSettingsScreen(
                 )
                 Spacer(modifier = Modifier.height(3.dp))
                 Text(
-                    text = "Версия программы: v3.2.0 PRO (Tactical Edition)",
+                    text = "Версия программы: v3.3.0 PRO (Tactical Edition)",
                     color = TacticalTextMuted,
                     fontSize = 11.sp,
                     fontFamily = FontFamily.Monospace,

@@ -16,11 +16,19 @@ import com.example.R
 import com.example.data.model.RequestStatus
 import com.example.data.model.RequisitionRequest
 
+/**
+ * TacticalNotificationHelper
+ * Handles notifications. System status bar notifications are disabled per user request
+ * to prevent notification bar clutter, relying purely on the top in-app banner.
+ */
 object TacticalNotificationHelper {
     private const val TAG = "TacticalNotification"
     private const val CHANNEL_ID = "kapterka_tactical_channel"
     private const val CHANNEL_NAME = "Оповещения каптёрки (Боевые)"
     private const val CHANNEL_DESC = "Уведомления о перемещениях и выдаче имущества"
+
+    // System notifications disabled per user request: "Слишком много уведомлений, оставь только баннер сверху"
+    var isSystemNotificationEnabled: Boolean = false
 
     fun createNotificationChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -68,6 +76,7 @@ object TacticalNotificationHelper {
         req: RequisitionRequest,
         status: RequestStatus
     ) {
+        if (!isSystemNotificationEnabled) return
         if (!hasNotificationPermission(context)) return
         createNotificationChannel(context)
 
@@ -106,7 +115,7 @@ object TacticalNotificationHelper {
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setContentIntent(getPendingIntent(context))
                 .setAutoCancel(true)
-                .setColor(0xFF8DAA59.toInt()) // Tactical Sage Green
+                .setColor(0xFF8DAA59.toInt())
                 .build()
 
             NotificationManagerCompat.from(context).notify(req.id.hashCode(), notification)
@@ -122,6 +131,7 @@ object TacticalNotificationHelper {
         itemsSummary: String,
         baseWarehouseStockSummary: String
     ) {
+        if (!isSystemNotificationEnabled) return
         if (!hasNotificationPermission(context)) return
         createNotificationChannel(context)
 
@@ -144,7 +154,7 @@ object TacticalNotificationHelper {
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setContentIntent(getPendingIntent(context))
                 .setAutoCancel(true)
-                .setColor(0xFF4DB6AC.toInt()) // Tactical Teal
+                .setColor(0xFF4DB6AC.toInt())
                 .build()
 
             val notifId = (System.currentTimeMillis() % 100000).toInt()
@@ -161,6 +171,7 @@ object TacticalNotificationHelper {
         itemsSummary: String,
         baseWarehouseStockSummary: String
     ) {
+        if (!isSystemNotificationEnabled) return
         if (!hasNotificationPermission(context)) return
         createNotificationChannel(context)
 
@@ -202,6 +213,7 @@ object TacticalNotificationHelper {
         itemsSummary: String,
         baseWarehouseStockSummary: String
     ) {
+        if (!isSystemNotificationEnabled) return
         if (!hasNotificationPermission(context)) return
         createNotificationChannel(context)
 
@@ -225,7 +237,7 @@ object TacticalNotificationHelper {
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setContentIntent(getPendingIntent(context))
                 .setAutoCancel(true)
-                .setColor(0xFFFFB300.toInt()) // Tactical Gold
+                .setColor(0xFFFFB300.toInt())
                 .build()
 
             val notifId = (System.currentTimeMillis() % 100000).toInt()
@@ -242,6 +254,7 @@ object TacticalNotificationHelper {
         itemsSummary: String,
         reason: String
     ) {
+        if (!isSystemNotificationEnabled) return
         if (!hasNotificationPermission(context)) return
         createNotificationChannel(context)
 
@@ -265,7 +278,7 @@ object TacticalNotificationHelper {
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setContentIntent(getPendingIntent(context))
                 .setAutoCancel(true)
-                .setColor(0xFFE57373.toInt()) // Tactical Red
+                .setColor(0xFFE57373.toInt())
                 .build()
 
             val notifId = (System.currentTimeMillis() % 100000).toInt()

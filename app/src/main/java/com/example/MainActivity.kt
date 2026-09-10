@@ -152,15 +152,16 @@ class MainActivity : ComponentActivity() {
         TacticalNotificationHelper.createNotificationChannel(this)
 
         setContent {
-            MyApplicationTheme {
-                KapterkaAppRoot(viewModel = viewModel)
+            val isDarkTheme by viewModel.isDarkTheme.collectAsState()
+            MyApplicationTheme(darkTheme = isDarkTheme) {
+                KapterkaAppRoot(viewModel = viewModel, isDarkTheme = isDarkTheme)
             }
         }
     }
 }
 
 @Composable
-fun KapterkaAppRoot(viewModel: KapterkaViewModel) {
+fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) {
     var isSplashVisible by remember { mutableStateOf(true) }
     var currentDestination by remember { mutableStateOf(AppDestination.HOME) }
     val context = LocalContext.current
@@ -215,7 +216,6 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel) {
     LaunchedEffect(Unit) {
         viewModel.toastEvent.collectLatest { msg ->
             inAppToastMessage = msg
-            Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
             delay(5000)
             if (inAppToastMessage == msg) {
                 inAppToastMessage = null
@@ -392,7 +392,9 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel) {
                             },
                             onBannerClick = { showPaymentProDialog = true },
                             onProfileClick = { currentDestination = AppDestination.MORE },
-                            onHelpClick = { showUserManualDialog = true }
+                            onHelpClick = { showUserManualDialog = true },
+                            isDarkTheme = isDarkTheme,
+                            onToggleTheme = { viewModel.toggleTheme() }
                         )
                     }
 
@@ -492,7 +494,9 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel) {
                             },
                             onResetDataClick = { viewModel.clearAllData() },
                             onOpenManualClick = { showUserManualDialog = true },
-                            onOpenDeveloperBackdoor = { showDevAuthPrompt = true }
+                            onOpenDeveloperBackdoor = { showDevAuthPrompt = true },
+                            isDarkTheme = isDarkTheme,
+                            onToggleTheme = { viewModel.toggleTheme() }
                         )
                     }
                 }

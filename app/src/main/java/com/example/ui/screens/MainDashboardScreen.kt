@@ -141,7 +141,9 @@ fun MainDashboardScreen(
     onExportClick: () -> Unit,
     onBannerClick: () -> Unit,
     onProfileClick: () -> Unit,
-    onHelpClick: () -> Unit = {}
+    onHelpClick: () -> Unit = {},
+    isDarkTheme: Boolean = false,
+    onToggleTheme: () -> Unit = {}
 ) {
     var selectedPointFilterId by remember { mutableStateOf<String?>(null) } // null = Все склады
     var adjustingStock by remember { mutableStateOf<PendingAdjustStock?>(null) }
@@ -236,7 +238,9 @@ fun MainDashboardScreen(
                 onExportClick = onExportClick,
                 onProfileClick = onProfileClick,
                 onHelpClick = onHelpClick,
-                onBannerClick = onBannerClick
+                onBannerClick = onBannerClick,
+                isDarkTheme = isDarkTheme,
+                onToggleTheme = onToggleTheme
             )
         }
 
