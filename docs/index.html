@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Каптёрка Про — Армейский учет имущества и боеприпасов в полевых условиях</title>
-  <meta name="description" content="Автономное мобильное приложение и веб-платформа для учета материальных средств, складов, формы № 8 (Акт расхода) и формы № 18 (Книга учета). Личный кабинет бойца и моментальная выдача лицензий через ЮKassa и СБП.">
-  <meta name="keywords" content="Каптёрка Про, армейский складской учет, списание боеприпасов, форма 8 акт расхода, форма 18 книга учета, учет РАВ, учет вещевого имущества, программа для старшины, программа каптерка, склад СВО, тактическое приложение андроид">
+  <title>Каптёрка Про — Простой карманный блокнот учёта складов и вещей без интернета</title>
+  <meta name="description" content="Удобный карманный блокнот на Android для учёта любого имущества и вещей на складе, в мастерской или на опорнике. Работает без интернета, синхронизируется с напарником по коду и заменяет тетрадки.">
+  <meta name="keywords" content="блокнот складского учета, учет имущества андроид, каптерка про, учет остатков без интернета, простой склад на телефоне, учет вещей на складе, программа для склада">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -16,8 +16,8 @@
   <!-- Open Graph & Social Media SEO (Telegram, VK, WhatsApp) -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://kapterka-pro.ru/">
-  <meta property="og:title" content="Каптёрка Про — Армейский учет имущества и боеприпасов">
-  <meta property="og:description" content="100% автономное решение для старшин, командиров и волонтёров. Учет складов, акты списания и экспорт в Excel прямо на смартфоне.">
+  <meta property="og:title" content="Каптёрка Про — Простой карманный блокнот учёта вещей без интернета">
+  <meta property="og:description" content="Забудьте про исчирканные тетрадки. Удобный блокнот на телефон: считает остатки, работает без связи в подвале и передает список напарнику по коду.">
   <meta property="og:image" content="https://kapterka-pro.ru/favicon.svg">
   <meta property="og:site_name" content="Каптёрка Про">
   <meta property="og:locale" content="ru_RU">
@@ -153,16 +153,16 @@
       <!-- Compact Tab Navigation: Все разделено по вкладкам -->
       <div class="main-tab-nav" id="mainTabNav">
         <button class="main-tab-btn active" id="btnTabOverview" onclick="switchMainTab('tabOverview')">
-          ⚡ Возможности
+          ⚡ Что умеет
         </button>
         <button class="main-tab-btn" id="btnTabCabinet" onclick="switchMainTab('tabCabinet')">
           👤 Личный кабинет
         </button>
         <button class="main-tab-btn gold-tab" id="btnTabPayment" onclick="switchMainTab('tabPayment')">
-          💳 Лицензия 490 ₽
+          💳 Доступ (3 дня бесплатно)
         </button>
         <button class="main-tab-btn" id="btnTabSync" onclick="switchMainTab('tabSync')">
-          🔗 Роты и Склады
+          🤝 Работа вдвоём
         </button>
         <button class="main-tab-btn" id="btnTabDownload" onclick="switchMainTab('tabDownload')">
           📥 Скачать APK
@@ -196,67 +196,70 @@
           <div class="hero-content">
             <div class="badge">
               <span class="badge-dot"></span>
-              Полевой учет МТО • 100% Оффлайн
+              Карманный блокнот учёта • 100% без интернета
             </div>
             <h1>
-              Учет имущества и складов <span>без интернета</span> на передовой
+              Простой блокнот, который <span>заменяет тетрадку</span> и считает остатки
             </h1>
             <p class="hero-subtitle">
-              Специализированный тактический комплекс для командиров, старшин и начскладов. Ведение Базового склада, ВОП, СП, автоматическое оформление <strong>Формы № 8 (Акт расхода)</strong>, <strong>Формы № 18 (Книга учета)</strong> и экспорт в Excel.
+              Забудьте про исчирканные блокноты и путаницу в записях. Считайте любые вещи на складе, в гараже, мастерской или на опорнике. Быстрый приход и выдача в два клика, работа без связи в подвале и передача списка напарнику по короткому коду.
             </p>
 
             <div class="update-banner">
-              <div class="update-banner-icon">🚀</div>
+              <div class="update-banner-icon">✨</div>
               <div class="update-banner-text">
-                <strong>ОБНОВЛЕНИЕ 3.3.0 PRO: ДНЕВНАЯ/НОЧНАЯ ТЕМА И КОМПАКТНЫЙ ЖУРНАЛ</strong>
-                <p>Выпущена версия 3.3.0 PRO: добавлен переключатель светлой и антибликовой ночной темы в шапке и настройках, карточки Журнала операций теперь по умолчанию компактно свернуты до одной строки с маршрутом и числом единиц, оптимизирована система уведомлений.</p>
+                <strong>ОБНОВЛЕНИЕ 3.3.0: НОЧНОЙ РЕЖИМ И КОМПАКТНЫЙ ЖУРНАЛ</strong>
+                <p>Добавлена ночная антибликовая тема (не слепит глаза в темноте), компактный вид записей и быстрые подсказки на каждый день.</p>
               </div>
             </div>
 
             <div class="hero-actions">
               <div style="display:flex; flex-direction:column; gap:16px; align-items:center;">
                 <div style="display:flex; flex-wrap:wrap; gap:16px; justify-content:center; align-items:center;">
-                  <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('hero')" class="btn btn-primary btn-lg" style="box-shadow:0 0 16px rgba(141,170,89,0.3);">
-                    📥 Скачать APK (v3.3.0 PRO)
+                  <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('hero')" class="btn btn-primary btn-lg" style="box-shadow:0 0 16px rgba(141,170,89,0.3); font-size:1.05rem; padding:15px 26px;">
+                    📥 Скачать бесплатно APK (18 МБ)
                   </a>
                   <a href="javascript:void(0)" onclick="openModal('modalRuStore')" style="display:inline-block; transition:transform 0.2s ease;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
                     <img src="rustore_badge.svg" alt="Доступно в RuStore" width="160" height="48" style="display:block; height:48px; width:auto; border-radius:8px; box-shadow:0 4px 14px rgba(0,91,255,0.25);">
                   </a>
                 </div>
-                <div style="display:flex; flex-wrap:wrap; gap:16px; justify-content:center;">
-                  <button class="btn btn-gold btn-lg" onclick="switchMainTab('tabPayment')">Оформить лицензию 490 ₽ ➔</button>
-                  <button class="btn btn-outline btn-lg" onclick="switchMainTab('tabCabinet')">Личный кабинет</button>
+                <div style="font-size:0.84rem; color:var(--text-muted); text-align:center;">
+                  ⚡ Ставится за 15 секунд на любой Android • 3 дня полного доступа бесплатно
+                </div>
+                <div style="display:flex; flex-wrap:wrap; gap:14px; justify-content:center;">
+                  <button class="btn btn-gold btn-md" onclick="switchMainTab('tabPayment')">Тарифы и продление ➔</button>
+                  <button class="btn btn-outline btn-md" onclick="switchMainTab('tabCabinet')">Личный кабинет</button>
                 </div>
               </div>
             </div>
 
             <div class="hero-features-chips">
-              <a href="javascript:void(0)" onclick="openModal('modalFeatures')" class="chip chip-clickable" title="Нажмите, чтобы открыть функционал МТО">
-                <span class="chip-icon">⚡</span>
-                <span>100% автономно без сети</span>
+              <a href="javascript:void(0)" onclick="openModal('modalFeatures')" class="chip chip-clickable" title="Нажмите, чтобы узнать, что умеет блокнот">
+                <span class="chip-icon">📴</span>
+                <span>Работает без интернета</span>
               </a>
-              <a href="javascript:void(0)" onclick="openModal('modalSyncMech')" class="chip chip-clickable" title="Нажмите, чтобы открыть механизм синхронизации роты">
-                <span class="chip-icon">🔑</span>
-                <span>Персональный ключ бойца</span>
+              <a href="javascript:void(0)" onclick="switchMainTab('tabSync')" class="chip chip-clickable" title="Нажмите, чтобы узнать, как вести склад вдвоём">
+                <span class="chip-icon">🤝</span>
+                <span>Синхронизация с напарником</span>
               </a>
-              <a href="javascript:void(0)" onclick="openModal('modalOpsec')" class="chip chip-clickable" title="Нажмите, чтобы открыть архитектуру безопасности">
-                <span class="chip-icon">🛡️</span>
-                <span>OPSEC: Нулевая телеметрия</span>
+              <a href="javascript:void(0)" onclick="openModal('modalFeatures')" class="chip chip-clickable" title="Нажмите, чтобы посмотреть примеры отчетов">
+                <span class="chip-icon">📊</span>
+                <span>Отчёт в Excel за секунду</span>
               </a>
-              <a href="javascript:void(0)" onclick="switchMainTab('tabSync')" class="chip chip-clickable" title="Перейти к синхронизации рот и складов">
-                <span class="chip-icon">🔗</span>
-                <span>Ключ роты kapt_xxxxxx</span>
+              <a href="javascript:void(0)" onclick="openModal('modalOpsec')" class="chip chip-clickable" title="Нажмите, чтобы узнать о защите записей">
+                <span class="chip-icon">🔒</span>
+                <span>Данные только в телефоне</span>
               </a>
             </div>
             <div style="margin-top: 14px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
               <button class="btn btn-outline btn-sm" onclick="openModal('modalFeatures')" style="font-size: 0.82rem; padding: 7px 14px; display: inline-flex; align-items: center; gap: 6px; border-color: rgba(141,170,89,0.4); color: var(--primary);">
-                <span>⚙️</span> Функционал МТО
+                <span>💡</span> Что умеет блокнот
               </button>
               <button class="btn btn-outline btn-sm" onclick="openModal('modalSyncMech')" style="font-size: 0.82rem; padding: 7px 14px; display: inline-flex; align-items: center; gap: 6px; border-color: rgba(91,192,190,0.4); color: #5bc0be;">
-                <span>🔗</span> Механизм синхронизации
+                <span>🤝</span> Как работать вдвоём
               </button>
               <button class="btn btn-outline btn-sm" onclick="openModal('modalOpsec')" style="font-size: 0.82rem; padding: 7px 14px; display: inline-flex; align-items: center; gap: 6px; border-color: rgba(255,85,85,0.4); color: #ff7777;">
-                <span>🛡️</span> Безопасность (OPSEC)
+                <span>🔒</span> Защита и оффлайн
               </button>
             </div>
             <div style="margin-top: 12px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
@@ -294,9 +297,9 @@
     <section class="section carousel-section" id="screens">
       <div class="container">
         <div class="section-header">
-          <div class="badge badge-gold">Реальные скриншоты v3.3.0 PRO</div>
-          <h2>Тактический интерфейс приложения</h2>
-          <p>7 ключевых экранов смартфона: от защиты Room DB и воинских точек до заявок передовой и выгрузки Excel</p>
+          <div class="badge badge-gold">Как это выглядит в телефоне</div>
+          <h2>Простые и понятные экраны</h2>
+          <p>Всё сделано крупно и наглядно: чтобы быстро записать приход или выдачу даже на бегу и в темноте</p>
         </div>
 
         <div class="carousel-3d-stage">
@@ -307,86 +310,86 @@
             <div class="carousel-viewport">
               <div class="carousel-track" id="carouselTrack">
                 <!-- Slide 1 -->
-                <div class="carousel-slide" onclick="openLightbox('real_screen_1.jpg', 'Экран 1: Тактический запуск и AES-256')">
+                <div class="carousel-slide" onclick="openLightbox('real_screen_1.jpg', 'Экран 1: Быстрый запуск')">
                   <div class="carousel-img-frame">
                     <span class="carousel-badge-corner">1 / 7</span>
-                    <img src="real_screen_1.jpg" alt="1. Тактический запуск и защита Room DB" loading="lazy">
+                    <img src="real_screen_1.jpg" alt="1. Быстрый запуск" loading="lazy">
                   </div>
                   <div class="carousel-meta">
-                    <div class="carousel-meta-title">🛡️ 1. Тактический старт</div>
-                    <div class="carousel-meta-desc">Анимация радарного сканера, верификация ключа AES-256 и мгновенная инициализация Room DB.</div>
+                    <div class="carousel-meta-title">⚡ 1. Быстрый вход</div>
+                    <div class="carousel-meta-desc">Открывается за 2 секунды без паролей. Все данные хранятся прямо в памяти телефона.</div>
                   </div>
                 </div>
 
                 <!-- Slide 2 -->
-                <div class="carousel-slide" onclick="openLightbox('real_screen_2.jpg', 'Экран 2: Главный командный экран склада')">
+                <div class="carousel-slide" onclick="openLightbox('real_screen_2.jpg', 'Экран 2: Главный экран и остатки')">
                   <div class="carousel-img-frame">
                     <span class="carousel-badge-corner">2 / 7</span>
                     <img src="real_screen_2.jpg" alt="2. Главный экран: точки и остатки" loading="lazy">
                   </div>
                   <div class="carousel-meta">
-                    <div class="carousel-meta-title">🏠 2. Командный экран</div>
-                    <div class="carousel-meta-desc">Быстрые действия: «Приход», «Перенос», «Выдача», «Расход ф.8», точки учета: Базовый склад, ОП «Скала», ОП «Заря».</div>
+                    <div class="carousel-meta-title">🏠 2. Главный экран</div>
+                    <div class="carousel-meta-desc">Крупные кнопки: «Приход», «Перенос», «Выдача». Сразу видно, сколько вещей на каком складе или точке.</div>
                   </div>
                 </div>
 
                 <!-- Slide 3 -->
-                <div class="carousel-slide" onclick="openLightbox('real_screen_3.jpg', 'Экран 3: Журнал операций и движений ТМЦ')">
+                <div class="carousel-slide" onclick="openLightbox('real_screen_3.jpg', 'Экран 3: История всех записей')">
                   <div class="carousel-img-frame">
                     <span class="carousel-badge-corner">3 / 7</span>
                     <img src="real_screen_3.jpg" alt="3. Журнал операций" loading="lazy">
                   </div>
                   <div class="carousel-meta">
-                    <div class="carousel-meta-title">⏱️ 3. Журнал операций</div>
-                    <div class="carousel-meta-desc">Полная история движений ТМЦ с фильтрацией по актам Формы № 8, приходам и внутренним перемещениям.</div>
+                    <div class="carousel-meta-title">⏱️ 3. История записей</div>
+                    <div class="carousel-meta-desc">Кто, сколько и куда отдал. Ни одна вещь не потеряется, каждую запись можно открыть и проверить.</div>
                   </div>
                 </div>
 
                 <!-- Slide 4 -->
-                <div class="carousel-slide" onclick="openLightbox('real_screen_4.jpg', 'Экран 4: Формирование заявок на снабжение')">
+                <div class="carousel-slide" onclick="openLightbox('real_screen_4.jpg', 'Экран 4: Список нужных вещей')">
                   <div class="carousel-img-frame">
                     <span class="carousel-badge-corner">4 / 7</span>
                     <img src="real_screen_4.jpg" alt="4. Заявки на снабжение" loading="lazy">
                   </div>
                   <div class="carousel-meta">
-                    <div class="carousel-meta-title">📋 4. Заявки снабжения</div>
-                    <div class="carousel-meta-desc">Выбор точки назначения с онлайн-остатками склада, позывной заявителя, позиции, статус «Собрана» и «Выдана».</div>
+                    <div class="carousel-meta-title">📋 4. Список нужных вещей</div>
+                    <div class="carousel-meta-desc">Список того, что просят привезти или докупить, с удобными отметками «Собрано» и «Выдано».</div>
                   </div>
                 </div>
 
                 <!-- Slide 5 -->
-                <div class="carousel-slide" onclick="openLightbox('real_screen_5.jpg', 'Экран 5: Воинская номенклатура по службам')">
+                <div class="carousel-slide" onclick="openLightbox('real_screen_5.jpg', 'Экран 5: Удобный каталог вещей')">
                   <div class="carousel-img-frame">
                     <span class="carousel-badge-corner">5 / 7</span>
                     <img src="real_screen_5.jpg" alt="5. Справочник номенклатуры" loading="lazy">
                   </div>
                   <div class="carousel-meta">
-                    <div class="carousel-meta-title">📦 5. Номенклатура</div>
-                    <div class="carousel-meta-desc">75 позиций по службам: РАВ, БПЛА, Вещевая (СИБЗ), ГСМ, Медицинская, Инженерная, Связь и РЭБ.</div>
+                    <div class="carousel-meta-title">📦 5. Каталог вещей</div>
+                    <div class="carousel-meta-desc">Всё разложено по полочкам: снаряжение, инструмент, запчасти, связь, медицина или любые свои позиции.</div>
                   </div>
                 </div>
 
                 <!-- Slide 6 -->
-                <div class="carousel-slide" onclick="openLightbox('real_screen_6.jpg', 'Экран 6: Генератор ведомостей Excel')">
+                <div class="carousel-slide" onclick="openLightbox('real_screen_6.jpg', 'Экран 6: Готовый отчет в Excel')">
                   <div class="carousel-img-frame">
                     <span class="carousel-badge-corner">6 / 7</span>
                     <img src="real_screen_6.jpg" alt="6. Печатные формы Excel и бланки" loading="lazy">
                   </div>
                   <div class="carousel-meta">
-                    <div class="carousel-meta-title">📊 6. Отчеты в Excel</div>
-                    <div class="carousel-meta-desc">Строгий белый бланк, экспорт таблиц в один клик без интернета, выгрузка и пересылка в мессенджеры.</div>
+                    <div class="carousel-meta-title">📊 6. Отчёт в Excel за секунду</div>
+                    <div class="carousel-meta-desc">Нажали кнопку — получили аккуратную таблицу Excel. Можно сразу переслать в мессенджер или распечатать.</div>
                   </div>
                 </div>
 
                 <!-- Slide 7 -->
-                <div class="carousel-slide" onclick="openLightbox('real_screen_7.jpg', 'Экран 7: Настройки, лицензирование и Firebase')">
+                <div class="carousel-slide" onclick="openLightbox('real_screen_7.jpg', 'Экран 7: Работа вдвоём и настройки')">
                   <div class="carousel-img-frame">
                     <span class="carousel-badge-corner">7 / 7</span>
                     <img src="real_screen_7.jpg" alt="7. Настройки и синхронизация" loading="lazy">
                   </div>
                   <div class="carousel-meta">
-                    <div class="carousel-meta-title">⚙️ 7. Настройки и PRO</div>
-                    <div class="carousel-meta-desc">Облачная база Firebase, код синхронизации роты, персональная лицензия ЮKassa и армейские ведомости.</div>
+                    <div class="carousel-meta-title">⚙️ 7. Работа вдвоём</div>
+                    <div class="carousel-meta-desc">Подключение напарника по короткому коду, резервная копия и выбор светлой или ночной темы.</div>
                   </div>
                 </div>
               </div>
@@ -846,9 +849,9 @@
     <section class="section">
       <div class="container">
         <div class="section-header">
-          <div class="badge badge-gold">Официальный платежный шлюз</div>
-          <h2>Оплата лицензии «Каптёрка ПРО»</h2>
-          <p>Интеграция с магазином ЮKassa №1450722. Оплата без комиссии по СБП и банковскими картами</p>
+          <div class="badge badge-gold">Безопасная оплата</div>
+          <h2>Полный доступ к приложению</h2>
+          <p>3 дня бесплатно для каждого нового пользователя. Продление без комиссии через СБП или банковской картой</p>
         </div>
 
         <div class="yookassa-checkout-card">
@@ -857,29 +860,29 @@
             <!-- Левая колонка: Форма и Тариф -->
             <div>
               <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
-                <h3 style="font-size:1.35rem; color:var(--text-primary);">Тариф: «30 Дней Полного Доступа»</h3>
+                <h3 style="font-size:1.35rem; color:var(--text-primary);">Тариф: «30 дней доступа»</h3>
                 <span class="badge badge-gold" style="font-size:0.9rem; padding:6px 12px;">490 ₽</span>
               </div>
               <p style="font-size:0.88rem; color:var(--text-secondary); line-height:1.55; margin-bottom:14px;">
-                Официальная лицензия на программный комплекс «Каптёрка Про». Выдается персональный 16-значный военный ключ с автоматическим сохранением в вашем Личном кабинете.
+                Полный доступ ко всем возможностям блокнота на месяц. Ключ активации появляется сразу после оплаты и сохраняется в вашем Личном кабинете.
               </p>
 
               <div class="payment-method-pills">
                 <span class="payment-method-pill active">⚡ СБП (QR-код без комиссии)</span>
-                <span class="payment-method-pill active">💳 МИР / Visa / Mastercard</span>
+                <span class="payment-method-pill active">💳 МИР / Любая карта</span>
                 <span class="payment-method-pill active">🟢 SberPay</span>
-                <span class="payment-method-pill active">📄 Чек 54-ФЗ</span>
+                <span class="payment-method-pill active">📄 Чек на email</span>
               </div>
 
               <div class="form-group">
-                <label class="form-label">Позывной бойца (для регистрации лицензии):</label>
-                <input type="text" id="payCallsignInput" class="form-input" placeholder="Введите свой позывной (например: Сокол, Буран)">
+                <label class="form-label">Ваше имя или позывной (для ключа):</label>
+                <input type="text" id="payCallsignInput" class="form-input" placeholder="Например: Александр, Сокол">
               </div>
 
               <div class="form-group">
-                <label class="form-label">Email (для автоматической отправки чека):</label>
-                <input type="email" id="payEmailInput" class="form-input" placeholder="Введите email для чека (например: name@mail.ru)">
-                <div class="form-helper">Официальный кассовый чек по 54-ФЗ поступит сразу после подтверждения транзакции.</div>
+                <label class="form-label">Email (для отправки чека):</label>
+                <input type="email" id="payEmailInput" class="form-input" placeholder="name@mail.ru">
+                <div class="form-helper">Официальный чек поступит на почту сразу после оплаты.</div>
               </div>
 
               <!-- Шаг 1: Первичная кнопка оплаты -->
