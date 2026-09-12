@@ -20,6 +20,15 @@ const STORAGE_ACTIVE_KEY = 'kapterka_active_key';
 const STORAGE_KEYS_HISTORY = 'kapterka_keys_history';
 
 // Default initial state for clean empty inputs
+const YM_IDS = [112482290, 112255061];
+function trackYm(action, ...args) {
+  if (typeof window.ym === 'function') {
+    YM_IDS.forEach(id => {
+      try { window.ym(id, action, ...args); } catch(e) {}
+    });
+  }
+}
+
 const defaultProfile = {
   callsign: '',
   rank: '',
@@ -269,11 +278,7 @@ function verifyEmailPinCode() {
   currentVerificationPin = null;
 
   // Track Yandex Metrika goal for successful registration
-  if (typeof window.ym === 'function') {
-    try {
-      window.ym(112255061, 'reachGoal', 'registration_complete', { callsign: newUser.callsign });
-    } catch (e) {}
-  }
+  trackYm('reachGoal', 'registration_complete', { callsign: newUser.callsign });
   if (typeof window.gtag === 'function') {
     try {
       window.gtag('event', 'sign_up', { method: 'cabinet_registration' });
@@ -483,9 +488,7 @@ function switchMainTab(tabId) {
         page_path: '/#' + tabId
       });
     }
-    if (typeof window.ym === 'function') {
-      window.ym(112255061, 'hit', '/#' + tabId);
-    }
+    trackYm('hit', '/#' + tabId);
   } catch (e) {}
 }
 
@@ -691,11 +694,7 @@ function copyPaidKeyAction() {
 
 function copyKeyText(text) {
   // Track Yandex Metrika goal for copying license key
-  if (typeof window.ym === 'function') {
-    try {
-      window.ym(112255061, 'reachGoal', 'license_key_copied', { key: text });
-    } catch (e) {}
-  }
+  trackYm('reachGoal', 'license_key_copied', { key: text });
   if (typeof window.gtag === 'function') {
     try {
       window.gtag('event', 'copy_license_key', { key: text });
@@ -715,11 +714,7 @@ function copyKeyText(text) {
 
 // Track APK Download & notify user
 function trackApkDownload(source) {
-  if (typeof window.ym === 'function') {
-    try {
-      window.ym(112255061, 'reachGoal', 'apk_download_started', { source: source || 'direct' });
-    } catch (e) {}
-  }
+  trackYm('reachGoal', 'apk_download_started', { source: source || 'direct' });
   if (typeof window.gtag === 'function') {
     try {
       window.gtag('event', 'download_apk', { event_category: 'APK', event_label: source || 'direct' });
@@ -803,11 +798,7 @@ async function processYooKassaPayment() {
   );
 
   // Track Yandex Metrika goal for payment initiation
-  if (typeof window.ym === 'function') {
-    try {
-      window.ym(112255061, 'reachGoal', 'initiate_yookassa_payment', { callsign, email });
-    } catch (e) {}
-  }
+  trackYm('reachGoal', 'initiate_yookassa_payment', { callsign, email });
   if (typeof window.gtag === 'function') {
     try {
       window.gtag('event', 'begin_checkout', {
@@ -1683,9 +1674,7 @@ function openLightbox(imgSrc, title) {
 // Track APK Downloads & RuStore clicks
 function trackApkDownload(source) {
   try {
-    if (typeof ym === 'function') {
-      ym(112255061, 'reachGoal', 'apk_download', { source: source });
-    }
+    trackYm('reachGoal', 'apk_download', { source: source });
     if (typeof gtag === 'function') {
       gtag('event', 'download_apk', { 'event_category': 'APK', 'event_label': source });
     }
