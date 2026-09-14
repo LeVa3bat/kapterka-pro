@@ -160,7 +160,7 @@
           👤 Личный кабинет
         </button>
         <button class="main-tab-btn gold-tab" id="btnTabPayment" onclick="switchMainTab('tabPayment')">
-          💳 Доступ (3 дня бесплатно)
+          💳 Тарифы и PRO
         </button>
         <button class="main-tab-btn" id="btnTabSync" onclick="switchMainTab('tabSync')">
           🤝 Работа вдвоём
@@ -224,12 +224,15 @@
                     <img src="rustore_badge.svg" alt="Доступно в RuStore" width="160" height="48" style="display:block; height:48px; width:auto; border-radius:8px; box-shadow:0 4px 14px rgba(0,91,255,0.25);">
                   </a>
                 </div>
-                <div style="font-size:0.84rem; color:var(--text-muted); text-align:center;">
-                  ⚡ Ставится за 15 секунд на любой Android • 3 дня полного доступа бесплатно
+                <div style="font-size:0.88rem; color:#00e676; text-align:center; font-weight:600;">
+                  🟢 Бесплатно навсегда для личного учёта • Без рекламы • 100% оффлайн
                 </div>
-                <div style="display:flex; flex-wrap:wrap; gap:14px; justify-content:center;">
-                  <button class="btn btn-gold btn-md" onclick="switchMainTab('tabPayment')">Тарифы и продление ➔</button>
+                <div style="background:rgba(255,179,0,0.08); border:1px solid rgba(255,179,0,0.3); border-radius:8px; padding:10px 14px; max-width:580px; font-size:0.82rem; color:#ffd54f; text-align:center; line-height:1.45;">
+                  🛡️ <strong>Если телефон напишет «Файл может быть опасен»:</strong> не пугайтесь, это стандартное предупреждение Android для всех APK не из Google Play. Файл на 100% безопасен — смело нажимайте <em>«Всё равно скачать»</em>.
+                </div>
+                <div style="display:flex; flex-wrap:wrap; gap:14px; justify-content:center; margin-top:4px;">
                   <button class="btn btn-outline btn-md" onclick="switchMainTab('tabCabinet')">Личный кабинет</button>
+                  <button class="btn btn-gold btn-md" onclick="switchMainTab('tabPayment')">Тарифы и PRO-доступ ➔</button>
                 </div>
               </div>
             </div>
@@ -293,6 +296,78 @@
         </div>
       </div>
     </header>
+
+    <!-- ========================================================================= -->
+    <!-- INTERACTIVE MINI-DEMO: ПОПРОБУЙТЕ ПРЯМО В БРАУЗЕРЕ ЗА 15 СЕКУНД -->
+    <!-- ========================================================================= -->
+    <section class="section" id="interactiveDemo" style="padding-top:20px; padding-bottom:30px;">
+      <div class="container">
+        <div class="section-header" style="margin-bottom:20px;">
+          <div class="badge badge-gold">⚡ Интерактивный тест</div>
+          <h2>Попробуйте прямо сейчас за 15 секунд</h2>
+          <p>Нажмите кнопки ниже — вот так просто и моментально ведётся учёт имущества прямо в телефоне:</p>
+        </div>
+
+        <div style="max-width:640px; margin:0 auto; background:#0e1610; border:1px solid rgba(141,170,89,0.4); border-radius:16px; padding:20px; box-shadow:0 12px 40px rgba(0,0,0,0.6);">
+          <!-- Phone Header Simulation -->
+          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:12px; margin-bottom:16px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:1.3rem;">📦</span>
+              <div>
+                <strong style="color:var(--text-primary); font-size:0.95rem;">Склад: Основной склад</strong>
+                <div style="font-size:0.75rem; color:#00e676; font-family:var(--font-mono);">● Режим: 100% Оффлайн (без связи)</div>
+              </div>
+            </div>
+            <span class="badge" style="background:rgba(141,170,89,0.15); color:var(--primary); font-size:0.75rem;" id="demoTotalItemsCount">3 позиции</span>
+          </div>
+
+          <!-- Items Interactive List -->
+          <div id="demoItemsList" style="display:flex; flex-direction:column; gap:10px; margin-bottom:16px;">
+            <!-- Rendered by JS -->
+          </div>
+
+          <!-- Quick Add Form -->
+          <div style="background:rgba(255,255,255,0.03); border:1px dashed rgba(141,170,89,0.3); border-radius:10px; padding:12px; margin-bottom:16px;">
+            <div style="font-size:0.82rem; color:var(--text-secondary); margin-bottom:8px; font-weight:600;">
+              ➕ Добавить свою вещь для проверки:
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <input type="text" id="demoNewItemName" placeholder="Название (напр.: Спальные мешки)" class="form-input" style="flex:1; min-width:180px; font-size:0.88rem; padding:8px 12px;">
+              <input type="number" id="demoNewItemQty" placeholder="Кол-во" value="10" min="1" class="form-input" style="width:80px; font-size:0.88rem; padding:8px 10px;">
+              <button class="btn btn-primary btn-sm" onclick="demoAddItem()" style="white-space:nowrap; padding:8px 16px;">
+                + Добавить
+              </button>
+            </div>
+          </div>
+
+          <!-- Live Log of Operations -->
+          <div style="background:#070b08; border-radius:8px; padding:10px 14px; margin-bottom:18px; font-size:0.78rem; font-family:var(--font-mono); color:var(--text-muted); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+            <span id="demoLastLogText">💡 Подсказка: нажмите «+ Приход» или «- Выдать», чтобы изменить остаток.</span>
+            <button class="btn btn-outline btn-sm" onclick="demoExportExcel()" style="font-size:0.72rem; padding:3px 8px; color:var(--accent-gold); border-color:rgba(255,179,0,0.4);">
+              📊 Скачать Excel-таблицу
+            </button>
+          </div>
+
+          <!-- Call to Action Banner -->
+          <div style="text-align:center; padding-top:12px; border-top:1px solid rgba(255,255,255,0.08);">
+            <div style="font-size:0.92rem; color:#fff; font-weight:700; margin-bottom:10px;">
+              Понравилось, насколько всё просто? Установите блокнот на свой телефон:
+            </div>
+            <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap; align-items:center;">
+              <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('demo')" class="btn btn-primary btn-md" style="font-size:0.95rem; padding:10px 20px; box-shadow:0 0 16px rgba(141,170,89,0.3);">
+                📥 Скачать бесплатно APK (18 МБ)
+              </a>
+              <a href="javascript:void(0)" onclick="openModal('modalRuStore')" class="btn btn-outline btn-md" style="font-size:0.88rem; padding:9px 16px; border-color:rgba(0,91,255,0.5); color:#6da2ff;">
+                🏪 Доступно в RuStore
+              </a>
+            </div>
+            <div style="font-size:0.78rem; color:#00e676; margin-top:8px;">
+              ✓ Базовый личный учёт бесплатно навсегда • 100% без интернета
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
 
 <!-- Tactical 3D Screenshots Showcase (100% Real Android Screens) -->
     <section class="section carousel-section" id="screens">
@@ -850,9 +925,9 @@
     <section class="section">
       <div class="container">
         <div class="section-header">
-          <div class="badge badge-gold">Безопасная оплата</div>
-          <h2>Полный доступ к приложению</h2>
-          <p>3 дня бесплатно для каждого нового пользователя. Продление без комиссии через СБП или банковской картой</p>
+          <div class="badge badge-gold">Тарифы и возможности</div>
+          <h2>Тарифы и PRO-доступ</h2>
+          <p>Базовый личный учёт на телефоне — бесплатно навсегда. PRO-версия (490 ₽) — для совместной работы вдвоём, экспорта отчётов в Excel и неограниченного списка складов</p>
         </div>
 
         <div class="yookassa-checkout-card">
@@ -1195,6 +1270,9 @@
               <a href="javascript:void(0)" onclick="openModal('modalRuStore')" style="display:inline-block; transition:transform 0.2s ease;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
                 <img src="rustore_badge.svg" alt="Доступно в RuStore" width="180" height="54" style="display:block; height:54px; width:auto; border-radius:8px; box-shadow:0 4px 16px rgba(0,91,255,0.3);">
               </a>
+            </div>
+            <div style="background:rgba(255,179,0,0.08); border:1px solid rgba(255,179,0,0.3); border-radius:8px; padding:10px 16px; max-width:620px; font-size:0.82rem; color:#ffd54f; text-align:center; line-height:1.45; margin-top:4px;">
+              🛡️ <strong>Безопасность загрузки:</strong> Если браузер на телефоне покажет предупреждение <em>«Файл может быть опасен»</em> — нажмите <em>«Всё равно скачать»</em>. Это стандартная системная защита Android для всех приложений, скачиваемых напрямую с официальных сайтов разработчиков.
             </div>
             <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap; justify-content:center;">
               <a href="https://t.me/kapterka_pro" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-lg" style="font-size:0.95rem; border-color:#29b6f6; color:#29b6f6; background:rgba(41,182,246,0.08); display:inline-flex; align-items:center; gap:8px;">

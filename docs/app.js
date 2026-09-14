@@ -1701,3 +1701,106 @@ function toggleFaq(btn) {
   }
 }
 
+// =========================================================================
+// INTERACTIVE MINI-DEMO CONTROLLER
+// =========================================================================
+let demoItems = [
+  { id: 1, name: 'Рации Baofeng UV-5R', qty: 12, unit: 'шт' },
+  { id: 2, name: 'Сухпайки (ИРП-5)', qty: 45, unit: 'компл.' },
+  { id: 3, name: 'Аккумуляторы 18650', qty: 80, unit: 'шт' }
+];
+
+function renderDemoItems() {
+  const container = document.getElementById('demoItemsList');
+  const countBadge = document.getElementById('demoTotalItemsCount');
+  if (!container) return;
+
+  if (countBadge) {
+    countBadge.textContent = `${demoItems.length} позиции`;
+  }
+
+  container.innerHTML = demoItems.map(item => `
+    <div style="display:flex; justify-content:space-between; align-items:center; background:#121b14; border:1px solid rgba(141,170,89,0.25); border-radius:10px; padding:10px 14px; gap:8px; flex-wrap:wrap;">
+      <div style="flex:1; min-width:160px;">
+        <div style="color:var(--text-primary); font-weight:600; font-size:0.92rem;">${escapeHtml(item.name)}</div>
+        <div style="color:#00e676; font-size:0.85rem; font-family:var(--font-mono); font-weight:700;">
+          Остаток: ${item.qty} ${item.unit}
+        </div>
+      </div>
+      <div style="display:flex; gap:6px; align-items:center;">
+        <button class="btn btn-sm" onclick="demoChangeQty(${item.id}, 1)" style="background:#1b2d1f; color:#8daa59; border:1px solid rgba(141,170,89,0.4); padding:6px 12px; font-size:0.82rem; font-weight:700;" title="Записать приход">+ Приход</button>
+        <button class="btn btn-sm" onclick="demoChangeQty(${item.id}, -1)" style="background:#261717; color:#ff8a80; border:1px solid rgba(255,100,100,0.3); padding:6px 12px; font-size:0.82rem; font-weight:700;" title="Записать выдачу">- Выдать</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function demoChangeQty(id, delta) {
+  const item = demoItems.find(i => i.id === id);
+  if (!item) return;
+  if (delta < 0 && item.qty <= 0) {
+    setDemoLog(`⚠️ «${item.name}»: остаток уже 0, выдавать нечего!`);
+    return;
+  }
+  item.qty = Math.max(0, item.qty + delta);
+  renderDemoItems();
+  const act = delta > 0 ? 'Приход (+1)' : 'Выдача (-1)';
+  setDemoLog(`✓ Записано в журнал: ${act} «${item.name}». Новый остаток: ${item.qty} ${item.unit}`);
+}
+
+function demoAddItem() {
+  const nameInput = document.getElementById('demoNewItemName');
+  const qtyInput = document.getElementById('demoNewItemQty');
+  if (!nameInput || !qtyInput) return;
+
+  const name = nameInput.value.trim();
+  const qty = parseInt(qtyInput.value, 10);
+  if (!name) {
+    nameInput.focus();
+    return;
+  }
+  const safeQty = isNaN(qty) || qty < 0 ? 1 : qty;
+
+  const newItem = {
+    id: Date.now(),
+    name: name,
+    qty: safeQty,
+    unit: 'шт'
+  };
+  demoItems.unshift(newItem);
+  nameInput.value = '';
+  qtyInput.value = '10';
+  renderDemoItems();
+  setDemoLog(`✓ Новая вещь «${name}» добавлена на склад! Остаток: ${safeQty} шт.`);
+}
+
+function setDemoLog(msg) {
+  const log = document.getElementById('demoLastLogText');
+  if (log) {
+    log.innerHTML = `<span style="color:#ffd54f;">${msg}</span>`;
+  }
+}
+
+function demoExportExcel() {
+  let csv = 'Название;Остаток;Ед. изм.\r\n';
+  demoItems.forEach(i => {
+    csv += `"${i.name.replace(/"/g, '""')}";"${i.qty}";"${i.unit}"\r\n`;
+  });
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'kapterka_demo_report.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  setDemoLog('📊 Демо-отчёт выгружен в CSV/Excel! В приложении отчёт формируется за 1 секунду.');
+}
+
+// Initial render
+document.addEventListener('DOMContentLoaded', () => {
+  renderDemoItems();
+});
+
+
