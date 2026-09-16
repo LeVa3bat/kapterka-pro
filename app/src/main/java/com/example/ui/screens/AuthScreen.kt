@@ -30,6 +30,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -45,7 +47,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -55,9 +56,12 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.UserProfile
+import com.example.ui.components.LegalDocumentTab
+import com.example.ui.components.LegalDocumentsDialog
 import com.example.ui.theme.SageGreenBright
 import com.example.ui.theme.SageGreenContainer
 import com.example.ui.theme.SageGreenDark
@@ -93,6 +97,9 @@ fun AuthScreen(
     }
     var email by remember { mutableStateOf(currentProfile?.email?.ifBlank { "" } ?: "") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var consentAgreed by remember { mutableStateOf(true) }
+    var showLegalDialog by remember { mutableStateOf(false) }
+    var legalDialogTab by remember { mutableStateOf(LegalDocumentTab.PRIVACY) }
 
     Box(
         modifier = Modifier
@@ -161,6 +168,10 @@ fun AuthScreen(
                     // Quick Google Account Sign-In Button
                     Button(
                         onClick = {
+                            if (!consentAgreed) {
+                                errorMessage = "Пожалуйста, подтвердите согласие с Политикой конфиденциальности и Соглашением!"
+                                return@Button
+                            }
                             val finalCallsign = callsign.trim().ifEmpty { "Командир" }
                             val finalUnit = unitName.trim().ifEmpty { "1-е Подразделение" }
                             val finalKey = unitKey.trim()
@@ -370,11 +381,94 @@ fun AuthScreen(
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // MANDATORY LEGAL CONSENT BLOCK BEFORE REGISTRATION (RuStore & 152-ФЗ Policy)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(TacticalSurfaceLight)
+                            .border(
+                                1.dp,
+                                if (!consentAgreed && errorMessage != null) Color(0xFFEF5350) else TacticalBorder,
+                                RoundedCornerShape(8.dp)
+                            )
+                            .padding(8.dp),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Checkbox(
+                            checked = consentAgreed,
+                            onCheckedChange = { consentAgreed = it },
+                            colors = CheckboxDefaults.colors(
+                                checkedColor = SageGreenPrimary,
+                                uncheckedColor = TacticalTextSecondary,
+                                checkmarkColor = Color.White
+                            ),
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Перед регистрацией ознакомлен и принимаю:",
+                                color = TacticalTextPrimary,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Spacer(modifier = Modifier.height(3.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Политику конфиденциальности",
+                                    color = SageGreenBright,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    textDecoration = TextDecoration.Underline,
+                                    modifier = Modifier.clickable {
+                                        legalDialogTab = LegalDocumentTab.PRIVACY
+                                        showLegalDialog = true
+                                    }
+                                )
+                                Text(text = "•", color = TacticalTextMuted, fontSize = 11.sp)
+                                Text(
+                                    text = "Соглашение",
+                                    color = SageGreenBright,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    textDecoration = TextDecoration.Underline,
+                                    modifier = Modifier.clickable {
+                                        legalDialogTab = LegalDocumentTab.TERMS
+                                        showLegalDialog = true
+                                    }
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Согласие на обработку данных (152-ФЗ)",
+                                color = SageGreenBright,
+                                fontSize = 10.5.sp,
+                                fontWeight = FontWeight.Medium,
+                                textDecoration = TextDecoration.Underline,
+                                modifier = Modifier.clickable {
+                                    legalDialogTab = LegalDocumentTab.CONSENT
+                                    showLegalDialog = true
+                                }
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
 
                     // Primary Submit Button
                     Button(
                         onClick = {
+                            if (!consentAgreed) {
+                                errorMessage = "Для продолжения необходимо подтвердить согласие с Политикой конфиденциальности и Соглашением!"
+                                return@Button
+                            }
                             val cleanCallsign = callsign.trim()
                             if (cleanCallsign.isBlank()) {
                                 errorMessage = "Пожалуйста, введите ваш позывной или имя!"
@@ -416,6 +510,10 @@ fun AuthScreen(
                     // Offline Mode Entry Button
                     Button(
                         onClick = {
+                            if (!consentAgreed) {
+                                errorMessage = "Для входа необходимо подтвердить согласие с условиями!"
+                                return@Button
+                            }
                             val cleanCallsign = callsign.trim().ifEmpty { "Пользователь" }
                             val cleanUnitName = unitName.trim().ifEmpty { "1-е Подразделение" }
                             val cleanKey = unitKey.trim()
@@ -477,6 +575,53 @@ fun AuthScreen(
                     lineHeight = 14.sp
                 )
             }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Footer Legal Document Links
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Политика конфиденциальности",
+                    color = SageGreenBright,
+                    fontSize = 11.sp,
+                    textDecoration = TextDecoration.Underline,
+                    modifier = Modifier.clickable {
+                        legalDialogTab = LegalDocumentTab.PRIVACY
+                        showLegalDialog = true
+                    }
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(text = "•", color = TacticalTextMuted, fontSize = 11.sp)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Пользовательское соглашение",
+                    color = SageGreenBright,
+                    fontSize = 11.sp,
+                    textDecoration = TextDecoration.Underline,
+                    modifier = Modifier.clickable {
+                        legalDialogTab = LegalDocumentTab.TERMS
+                        showLegalDialog = true
+                    }
+                )
+            }
+        }
+
+        // Render In-App Legal Documents Dialog
+        if (showLegalDialog) {
+            LegalDocumentsDialog(
+                initialTab = legalDialogTab,
+                onDismiss = { showLegalDialog = false },
+                onAccept = {
+                    consentAgreed = true
+                    showLegalDialog = false
+                }
+            )
         }
     }
 }

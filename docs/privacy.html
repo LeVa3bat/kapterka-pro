@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Политика конфиденциальности — ПО «Каптёрка Про»</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d140e;
+      --card-bg: #141c16;
+      --card-inner: #19241c;
+      --primary: #8daa59;
+      --primary-bright: #a3c46a;
+      --text: #e8ede6;
+      --text-muted: #8e9b8f;
+      --border: #2c3e2e;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.6;
+      padding: 24px 16px;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px 28px;
+    }
+    .header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 20px;
+      margin-bottom: 24px;
+    }
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--primary-bright);
+      background: rgba(141,170,89,0.15);
+      border: 1px solid var(--primary);
+      padding: 4px 10px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      letter-spacing: 0.5px;
+    }
+    h1 { font-size: 1.6rem; color: #fff; margin-bottom: 8px; font-weight: 800; }
+    .meta { font-size: 0.85rem; color: var(--text-muted); }
+    h2 { font-size: 1.15rem; color: var(--primary-bright); margin-top: 24px; margin-bottom: 10px; }
+    p, ul { font-size: 0.95rem; color: var(--text); margin-bottom: 12px; }
+    ul { padding-left: 20px; }
+    li { margin-bottom: 6px; }
+    .highlight-box {
+      background: var(--card-inner);
+      border: 1px solid var(--primary);
+      border-radius: 8px;
+      padding: 16px;
+      margin: 16px 0;
+      font-size: 0.9rem;
+    }
+    a { color: var(--primary-bright); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .btn-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(141,170,89,0.2);
+      color: #fff;
+      border: 1px solid var(--primary);
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      margin-top: 24px;
+      font-weight: 600;
+    }
+    .btn-back:hover { background: var(--primary); color: #000; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <span class="badge">Правовые документы • 152-ФЗ</span>
+      <h1>Политика конфиденциальности и защиты данных</h1>
+      <div class="meta">
+        Мобильное приложение «Каптёрка Про» и веб-сайт kapterka-pro.ru<br>
+        Редакция от 15 сентября 2026 г. • Оператор: ИНН 250104230398
+      </div>
+    </div>
+
+    <h2>1. Общие положения</h2>
+    <p>Настоящая Политика конфиденциальности (далее — «Политика») определяет порядок обработки и защиты персональной информации пользователей программного обеспечения «Каптёрка Про» (для платформы Android) и веб-сайта https://kapterka-pro.ru в соответствии с Федеральным законом Российской Федерации от 27.07.2006 № 152-ФЗ «О персональных данных».</p>
+    <p>Использование приложения и веб-сайта означает безоговорочное согласие Пользователя с настоящей Политикой и указанными в ней условиями обработки данных.</p>
+
+    <h2>2. Оператор данных и контакты</h2>
+    <p>Оператором обработки данных является разработчик программного обеспечения:</p>
+    <ul>
+      <li><strong>Самозанятый гражданин РФ:</strong> ИНН 250104230398</li>
+      <li><strong>Email для обращений:</strong> alex.666.881@gmail.com</li>
+      <li><strong>Telegram поддержки:</strong> @kapterka_help_bot / @Levaminbat</li>
+    </ul>
+
+    <h2>3. Состав и категории обрабатываемых данных</h2>
+    <p>Для функционирования сервиса обрабатывается исключительно минимально необходимый перечень данных, добровольно предоставляемых пользователем:</p>
+    <ul>
+      <li><strong>Позывной / Имя:</strong> используется исключительно для отображения авторства в приходных/расходных операциях учета.</li>
+      <li><strong>Условное наименование подразделения:</strong> для группировки складских книг.</li>
+      <li><strong>Адрес электронной почты (Email):</strong> при указании используется исключительно для отправки фискальных чеков при оплате лицензий и восстановления доступа.</li>
+      <li><strong>Идентификационный код подразделения (Unit Key):</strong> технический токен для сквозной синхронизации между мобильными устройствами подразделения.</li>
+    </ul>
+
+    <div class="highlight-box">
+      <strong>🛡️ Локальное хранение учетных сведений (Offline-First):</strong><br>
+      Все номенклатурные списки, количества материальных средств, боеприпасов, акты списания (Форма № 8) и ведомости учета (Форма № 18) хранятся в изолированной зашифрованной локальной базе данных SQLite на пользовательском устройстве. Сервер не имеет доступа к вашим складским книгам и не осуществляет их сбор или передачу третьим лицам.
+    </div>
+
+    <h2>4. Цели обработки информации</h2>
+    <ul>
+      <li>Обеспечение функционирования мобильного приложения и многопользовательской синхронизации складов.</li>
+      <li>Предоставление технической поддержки пользователям.</li>
+      <li>Формирование и отправка электронных кассовых чеков в соответствии с законодательством РФ.</li>
+    </ul>
+
+    <h2>5. Права субъекта персональных данных</h2>
+    <p>В соответствии с Федеральным законом № 152-ФЗ Пользователь имеет право:</p>
+    <ul>
+      <li>Получать информацию об обработке своих данных.</li>
+      <li>Требовать уточнения, блокирования или уничтожения своих данных.</li>
+      <li>В любой момент отозвать свое согласие на обработку персональных данных, направив письмо на адрес: <a href="mailto:alex.666.881@gmail.com">alex.666.881@gmail.com</a>.</li>
+    </ul>
+
+    <h2 id="consent">6. Согласие на обработку персональных данных</h2>
+    <p>Нажимая кнопку регистрации/входа в мобильном приложении «Каптёрка Про», пользователь дает согласие Оператору на обработку своих данных в объеме и на условиях, предусмотренных настоящей Политикой. Согласие действует бессрочно до момента его отзыва пользователем.</p>
+
+    <a href="index.html" class="btn-back">← На главную страницу</a>
+  </div>
+</body>
+</html>

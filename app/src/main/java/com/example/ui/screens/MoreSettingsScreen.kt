@@ -42,10 +42,13 @@ import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.MilitaryTech
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Restore
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.TableChart
+import com.example.ui.components.LegalDocumentTab
+import com.example.ui.components.LegalDocumentsDialog
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -137,6 +140,9 @@ fun MoreSettingsScreen(
     var expandedCategories by remember { mutableStateOf(false) }
     var expandedGuide by remember { mutableStateOf(false) }
     var expandedDangerZone by remember { mutableStateOf(false) }
+    var expandedLegal by remember { mutableStateOf(false) }
+    var showLegalDialog by remember { mutableStateOf(false) }
+    var legalDialogTab by remember { mutableStateOf(LegalDocumentTab.PRIVACY) }
 
     // Dialog state for deleting category
     var categoryToDelete by remember { mutableStateOf<String?>(null) }
@@ -1037,6 +1043,84 @@ fun MoreSettingsScreen(
 
         // LOGOUT / SWITCH CALLSIGN BUTTON
         item {
+            CollapsibleCard(
+                title = "Правовые документы и безопасность",
+                subtitle = "Политика конфиденциальности, пользовательское соглашение и 152-ФЗ",
+                icon = Icons.Default.Security,
+                iconColor = SageGreenBright,
+                isExpanded = expandedLegal,
+                onToggle = { expandedLegal = !expandedLegal }
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "В соответствии с законодательством РФ (152-ФЗ) и требованиями каталога RuStore:",
+                        color = TacticalTextMuted,
+                        fontSize = 11.sp
+                    )
+
+                    Button(
+                        onClick = {
+                            legalDialogTab = LegalDocumentTab.PRIVACY
+                            showLegalDialog = true
+                        },
+                        modifier = Modifier.fillMaxWidth().height(42.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = TacticalSurfaceLight,
+                            contentColor = TacticalTextPrimary
+                        ),
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(1.dp, TacticalBorder)
+                    ) {
+                        Icon(Icons.Default.Security, contentDescription = null, tint = SageGreenBright, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Политика конфиденциальности (152-ФЗ)", fontSize = 12.sp)
+                    }
+
+                    Button(
+                        onClick = {
+                            legalDialogTab = LegalDocumentTab.TERMS
+                            showLegalDialog = true
+                        },
+                        modifier = Modifier.fillMaxWidth().height(42.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = TacticalSurfaceLight,
+                            contentColor = TacticalTextPrimary
+                        ),
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(1.dp, TacticalBorder)
+                    ) {
+                        Icon(Icons.Default.Description, contentDescription = null, tint = SageGreenBright, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Пользовательское соглашение (Оферта)", fontSize = 12.sp)
+                    }
+
+                    Button(
+                        onClick = {
+                            legalDialogTab = LegalDocumentTab.CONSENT
+                            showLegalDialog = true
+                        },
+                        modifier = Modifier.fillMaxWidth().height(42.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = TacticalSurfaceLight,
+                            contentColor = TacticalTextPrimary
+                        ),
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(1.dp, TacticalBorder)
+                    ) {
+                        Icon(Icons.Default.CheckCircle, contentDescription = null, tint = SageGreenBright, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Согласие на обработку данных", fontSize = 12.sp)
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(14.dp))
+        }
+
+        // LOGOUT / SWITCH CALLSIGN BUTTON
+        item {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(
                     onClick = onLogoutClick,
@@ -1085,7 +1169,7 @@ fun MoreSettingsScreen(
                 )
                 Spacer(modifier = Modifier.height(3.dp))
                 Text(
-                    text = "Версия программы: v3.4.0 PRO (Tactical Edition)",
+                    text = "Версия программы: v3.4.1 PRO (Tactical Edition)",
                     color = TacticalTextMuted,
                     fontSize = 11.sp,
                     fontFamily = FontFamily.Monospace,
@@ -1094,6 +1178,13 @@ fun MoreSettingsScreen(
                 Spacer(modifier = Modifier.height(12.dp))
             }
         }
+    }
+
+    if (showLegalDialog) {
+        LegalDocumentsDialog(
+            initialTab = legalDialogTab,
+            onDismiss = { showLegalDialog = false }
+        )
     }
 }
 
