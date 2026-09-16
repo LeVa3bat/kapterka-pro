@@ -1169,7 +1169,7 @@ fun MoreSettingsScreen(
                 )
                 Spacer(modifier = Modifier.height(3.dp))
                 Text(
-                    text = "Версия программы: v3.4.1 PRO (Tactical Edition)",
+                    text = "Версия программы: v${com.example.BuildConfig.VERSION_NAME} PRO (Tactical Edition)",
                     color = TacticalTextMuted,
                     fontSize = 11.sp,
                     fontFamily = FontFamily.Monospace,

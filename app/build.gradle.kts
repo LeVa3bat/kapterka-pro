@@ -17,7 +17,7 @@ android {
     applicationId = "com.aistudio.kapterka.jmwqve"
     minSdk = 24
     targetSdk = 34
-    versionCode = 18
+    versionCode = 19
     versionName = "3.4.3"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
