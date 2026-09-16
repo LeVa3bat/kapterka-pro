@@ -151,7 +151,7 @@ fun AuthScreen(
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "v${com.example.BuildConfig.VERSION_NAME} PRO (Сборка 20)",
+                        text = "v${com.example.BuildConfig.VERSION_NAME} PRO (Сборка ${com.example.BuildConfig.VERSION_CODE})",
                         color = SageGreenBright,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,

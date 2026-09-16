@@ -128,6 +128,12 @@ class KapterkaRepository(
         syncManager?.clearCloudDataAsync(getCurrentUnitKey())
     }
 
+    suspend fun clearLocalUnitData() {
+        dao.clearAllStockRecords()
+        dao.clearAllOperations()
+        dao.clearAllRequisitions()
+    }
+
     suspend fun saveUserProfile(profile: UserProfile) {
         dao.saveUserProfile(profile)
         if (profile.unitKey.isNotBlank()) {
@@ -205,6 +211,7 @@ class KapterkaRepository(
 
     suspend fun deleteWarehousePoint(id: String) {
         dao.deletePoint(id)
+        dao.deleteStockForPoint(id)
         syncManager?.deleteWarehousePointAsync(getCurrentUnitKey(), id)
     }
 

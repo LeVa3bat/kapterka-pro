@@ -154,7 +154,9 @@ class FirebaseSyncManager(
                         expenseTotal = dc.document.getLong("expenseTotal")?.toInt() ?: 0,
                         lastUpdated = dc.document.getLong("lastUpdated") ?: 0L
                     )
-                    if (dc.type != DocumentChange.Type.REMOVED) {
+                    if (dc.type == DocumentChange.Type.REMOVED) {
+                        dao.deleteStockRecord(s.pointId, s.itemId)
+                    } else {
                         dao.insertOrUpdateStock(s)
                     }
                 }
@@ -284,60 +286,135 @@ class FirebaseSyncManager(
             val db = firestore
             val unitRef = db.collection("units").document(cleanKey)
 
-            // 1. Reconcile Warehouse Points
+            // 1. Fetch Cloud Stock Records first to know which points have inventory
+            val cloudStocksSnap = unitRef.collection("stock_records").get().await()
+            val stockPointIds = cloudStocksSnap.documents.mapNotNull { it.getString("pointId") }.filter { it.isNotBlank() }.toSet()
+
+            // 2. Reconcile Warehouse Points
+            val defaultPointsMap = com.example.data.local.InitialData.getDefaultPoints().associateBy { it.id }
             val cloudPointsSnap = unitRef.collection("warehouse_points").get().await()
-            if (!cloudPointsSnap.isEmpty) {
-                val cloudPoints = cloudPointsSnap.documents.mapNotNull { doc ->
-                    WarehousePoint(
-                        id = doc.id,
-                        name = doc.getString("name") ?: "",
-                        description = doc.getString("description") ?: "",
-                        isBase = doc.getBoolean("isBase") ?: false,
-                        orderIndex = doc.getLong("orderIndex")?.toInt() ?: 0,
-                        createdAt = doc.getLong("createdAt") ?: 0L
+            val existingPointsMap = mutableMapOf<String, WarehousePoint>()
+
+            for (doc in cloudPointsSnap.documents) {
+                val p = WarehousePoint(
+                    id = doc.id,
+                    name = doc.getString("name") ?: "",
+                    description = doc.getString("description") ?: "",
+                    isBase = doc.getBoolean("isBase") ?: false,
+                    orderIndex = doc.getLong("orderIndex")?.toInt() ?: 0,
+                    createdAt = doc.getLong("createdAt") ?: 0L
+                )
+                if (p.name.isNotBlank()) {
+                    existingPointsMap[p.id] = p
+                }
+            }
+
+            // Restore any points referenced by active cloud stocks if missing from cloud points
+            for (ptId in stockPointIds) {
+                if (!existingPointsMap.containsKey(ptId)) {
+                    val fallbackPt = defaultPointsMap[ptId] ?: WarehousePoint(
+                        id = ptId,
+                        name = when (ptId) {
+                            "med_sklad" -> "Медпункт"
+                            "point_1" -> "Передовая точка (ЛБС)"
+                            "base_sklad" -> "Базовый склад (КЗ)"
+                            else -> "Склад $ptId"
+                        },
+                        description = if (ptId == "med_sklad") "Медицинское обеспечение" else "Точка учета",
+                        isBase = (ptId == "base_sklad")
                     )
+                    existingPointsMap[ptId] = fallbackPt
+                    pushWarehousePointAsync(cleanKey, fallbackPt)
                 }
-                val cloudPointIds = cloudPoints.map { it.id }.toSet()
-                val localPoints = dao.getAllPoints().first()
-                for (lp in localPoints) {
-                    if (!cloudPointIds.contains(lp.id)) {
-                        dao.deletePoint(lp.id)
-                    }
-                }
-                dao.insertPoints(cloudPoints)
-            } else {
-                // Cloud is empty -> primary device pushes initial local points
-                val localPoints = dao.getAllPoints().first()
-                for (p in localPoints) {
+            }
+
+            // If unit has no points at all in cloud, seed defaults
+            if (existingPointsMap.isEmpty()) {
+                val defaults = com.example.data.local.InitialData.getDefaultPoints()
+                for (p in defaults) {
+                    existingPointsMap[p.id] = p
                     pushWarehousePointAsync(cleanKey, p)
                 }
             }
 
-            // 2. Reconcile Stock Records
-            val cloudStocksSnap = unitRef.collection("stock_records").get().await()
-            if (!cloudStocksSnap.isEmpty) {
-                for (doc in cloudStocksSnap.documents) {
-                    val s = StockRecord(
-                        pointId = doc.getString("pointId") ?: "",
-                        itemId = doc.getString("itemId") ?: "",
-                        quantity = doc.getLong("quantity")?.toInt() ?: 0,
-                        incomeTotal = doc.getLong("incomeTotal")?.toInt() ?: 0,
-                        expenseTotal = doc.getLong("expenseTotal")?.toInt() ?: 0,
-                        lastUpdated = doc.getLong("lastUpdated") ?: 0L
-                    )
-                    if (s.pointId.isNotBlank() && s.itemId.isNotBlank()) {
-                        dao.insertOrUpdateStock(s)
-                    }
-                }
-            } else {
-                val localStocks = dao.getAllStockRecords().first()
-                for (s in localStocks) {
-                    pushStockRecordAsync(cleanKey, s)
-                }
+            // Always ensure base warehouse exists
+            if (!existingPointsMap.containsKey("base_sklad")) {
+                val base = defaultPointsMap["base_sklad"] ?: WarehousePoint(
+                    id = "base_sklad",
+                    name = "Базовый склад (КЗ)",
+                    description = "Основной склад подразделения",
+                    isBase = true
+                )
+                existingPointsMap["base_sklad"] = base
+                pushWarehousePointAsync(cleanKey, base)
             }
 
-            // 3. Reconcile Operation Records
+            // Reconcile local points with resolved points
+            val targetPointIds = existingPointsMap.keys
+            val localPoints = dao.getAllPoints().first()
+            for (lp in localPoints) {
+                if (!targetPointIds.contains(lp.id)) {
+                    dao.deletePoint(lp.id)
+                }
+            }
+            dao.insertPoints(existingPointsMap.values.toList())
+
+            // 3. Reconcile Stock Records
+            // Authoritative: If cloud has stock records, local must match cloud exactly.
+            if (!cloudStocksSnap.isEmpty) {
+                val cloudStockKeys = mutableSetOf<String>()
+                val recordsToInsert = mutableListOf<StockRecord>()
+
+                for (doc in cloudStocksSnap.documents) {
+                    val ptId = doc.getString("pointId") ?: ""
+                    val itemId = doc.getString("itemId") ?: ""
+                    val qty = doc.getLong("quantity")?.toInt() ?: 0
+                    val inc = doc.getLong("incomeTotal")?.toInt() ?: 0
+                    val exp = doc.getLong("expenseTotal")?.toInt() ?: 0
+                    val updated = doc.getLong("lastUpdated") ?: 0L
+
+                    if (ptId.isNotBlank() && itemId.isNotBlank()) {
+                        cloudStockKeys.add("${ptId}:::${itemId}")
+                        recordsToInsert.add(
+                            StockRecord(
+                                pointId = ptId,
+                                itemId = itemId,
+                                quantity = qty,
+                                incomeTotal = inc,
+                                expenseTotal = exp,
+                                lastUpdated = updated
+                            )
+                        )
+                    }
+                }
+
+                // Delete any local stock records that are NOT present in the cloud for this unit
+                val localStocks = dao.getAllStockRecords().first()
+                for (ls in localStocks) {
+                    if (!cloudStockKeys.contains("${ls.pointId}:::${ls.itemId}")) {
+                        dao.deleteStockRecord(ls.pointId, ls.itemId)
+                    }
+                }
+
+                // Upsert all authoritative cloud stock records
+                for (s in recordsToInsert) {
+                    dao.insertOrUpdateStock(s)
+                }
+            } else {
+                // Cloud has no stock records for this unit.
+                // Clear any local stock records so empty unit doesn't inherit leftover records from other units.
+                dao.clearAllStockRecords()
+            }
+
+            // 4. Reconcile Operation Records
             val cloudOpsSnap = unitRef.collection("operation_records").get().await()
+            val cloudOpIds = cloudOpsSnap.documents.map { it.id }.toSet()
+            val localOps = dao.getAllOperations().first()
+            for (lo in localOps) {
+                if (!cloudOpIds.contains(lo.id)) {
+                    dao.deleteOperation(lo.id)
+                }
+            }
             for (doc in cloudOpsSnap.documents) {
                 val opTypeStr = doc.getString("type") ?: "INCOME"
                 val type = try { OperationType.valueOf(opTypeStr) } catch (ex: Exception) { OperationType.INCOME }
@@ -356,7 +433,32 @@ class FirebaseSyncManager(
                 dao.insertOperation(op)
             }
 
-            // 4. Reconcile Custom Items
+            // 5. Reconcile Requisitions
+            val cloudReqSnap = unitRef.collection("requisitions").get().await()
+            val cloudReqIds = cloudReqSnap.documents.map { it.id }.toSet()
+            val localReqs = dao.getAllRequisitions().first()
+            for (lr in localReqs) {
+                if (!cloudReqIds.contains(lr.id)) {
+                    dao.deleteRequisition(lr.id)
+                }
+            }
+            for (doc in cloudReqSnap.documents) {
+                val statusStr = doc.getString("status") ?: "PENDING"
+                val status = try { RequestStatus.valueOf(statusStr) } catch (ex: Exception) { RequestStatus.PENDING }
+                val req = RequisitionRequest(
+                    id = doc.id,
+                    pointName = doc.getString("pointName") ?: "",
+                    applicantName = doc.getString("applicantName") ?: "",
+                    status = status,
+                    comment = doc.getString("comment") ?: "",
+                    timestamp = doc.getLong("timestamp") ?: 0L,
+                    itemsSummary = doc.getString("itemsSummary") ?: "",
+                    itemsJson = doc.getString("itemsJson") ?: ""
+                )
+                dao.insertRequisition(req)
+            }
+
+            // 6. Reconcile Custom Items
             val cloudItemsSnap = unitRef.collection("inventory_items").get().await()
             for (doc in cloudItemsSnap.documents) {
                 val item = InventoryItem(
@@ -372,14 +474,14 @@ class FirebaseSyncManager(
                 dao.insertItem(item)
             }
 
-            // 5. Connect and register realtime snapshot listeners
+            // 7. Connect and register realtime snapshot listeners
             startSyncForUnit(cleanKey, callsign, unitName)
 
             _syncState.value = _syncState.value.copy(
                 isSyncing = false,
                 isOnline = true,
                 lastSyncTime = System.currentTimeMillis(),
-                syncMessage = "Синхронизировано с облаком"
+                syncMessage = "Синхронизировано с подразделением [$cleanKey]"
             )
             Pair(true, "База синхронизирована с каналом [$cleanKey]")
         } catch (e: Exception) {

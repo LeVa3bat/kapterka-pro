@@ -491,6 +491,12 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             // Сохраняем в постоянный сейф, чтобы никогда не потерять при миграциях
             licenseManager.saveUnitKeyToVault(resolvedKey)
 
+            val current = userProfile.value ?: UserProfile()
+            val oldKey = current.unitKey.trim()
+            if (oldKey.isNotBlank() && !oldKey.equals(resolvedKey, ignoreCase = true)) {
+                repository.clearLocalUnitData()
+            }
+
             val updatedProfile = profile.copy(
                 unitKey = resolvedKey,
                 unitName = resolvedUnitName,
@@ -541,6 +547,10 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         licenseManager.saveUnitKeyToVault(clean)
         viewModelScope.launch {
             val current = userProfile.value ?: UserProfile()
+            val oldKey = current.unitKey.trim()
+            if (oldKey.isNotBlank() && !oldKey.equals(clean, ignoreCase = true)) {
+                repository.clearLocalUnitData()
+            }
             val updated = current.copy(unitKey = clean)
             repository.saveUserProfile(updated)
             
