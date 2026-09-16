@@ -128,7 +128,7 @@ fun TacticalHeader(
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
                 Text(
-                    text = " • ${profile?.unitName ?: "1-я Рота"}",
+                    text = " • ${profile?.unitName ?: "1-я Рота"} [v${com.example.BuildConfig.VERSION_NAME} PRO]",
                     color = TacticalTextSecondary,
                     fontSize = 11.sp,
                     maxLines = 1,

@@ -149,6 +149,14 @@ fun AuthScreen(
                         color = TacticalTextSecondary,
                         fontSize = 11.sp
                     )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "v${com.example.BuildConfig.VERSION_NAME} PRO (Сборка 20)",
+                        color = SageGreenBright,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.Monospace
+                    )
                 }
             }
 
