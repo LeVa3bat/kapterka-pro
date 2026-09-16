@@ -83,18 +83,21 @@ class KapterkaRepository(
 
         // Launch online synchronization for this unit if unitKey is configured
         if (activeProfile.unitKey.isNotBlank()) {
-            syncManager?.startSyncForUnit(activeProfile.unitKey, activeProfile.callsign, activeProfile.unitName)
+            syncManager?.syncAndReconcileAll(activeProfile.unitKey, activeProfile.callsign, activeProfile.unitName)
         }
 
-        
         // Always try to insert default items to ensure updates like new ammo are present (ConflictStrategy is REPLACE/IGNORE)
         dao.insertItems(InitialData.getDefaultItems())
 
         val currentPoints = dao.getAllPoints().first()
 
         if (currentPoints.isEmpty()) {
-            dao.insertPoints(InitialData.getDefaultPoints())
+            val defaults = InitialData.getDefaultPoints()
+            dao.insertPoints(defaults)
             dao.insertItems(InitialData.getDefaultItems())
+            if (activeProfile.unitKey.isNotBlank()) {
+                defaults.forEach { p -> syncManager?.pushWarehousePointAsync(activeProfile.unitKey, p) }
+            }
         }
     }
     
@@ -113,9 +116,9 @@ class KapterkaRepository(
 
     val syncState: kotlinx.coroutines.flow.StateFlow<com.example.data.sync.SyncState> = syncManager?.syncState ?: kotlinx.coroutines.flow.MutableStateFlow(com.example.data.sync.SyncState())
 
-    suspend fun triggerCloudSync() {
-        val p = dao.getUserProfile().first() ?: return
-        syncManager?.startSyncForUnit(p.unitKey, p.callsign, p.unitName)
+    suspend fun triggerCloudSync(): Pair<Boolean, String> {
+        val p = dao.getUserProfile().first() ?: return Pair(false, "Профиль не найден")
+        return syncManager?.syncAndReconcileAll(p.unitKey, p.callsign, p.unitName) ?: Pair(false, "Синхронизация отключена")
     }
 
     suspend fun clearAllData() {
@@ -128,7 +131,7 @@ class KapterkaRepository(
     suspend fun saveUserProfile(profile: UserProfile) {
         dao.saveUserProfile(profile)
         if (profile.unitKey.isNotBlank()) {
-            syncManager?.startSyncForUnit(profile.unitKey, profile.callsign, profile.unitName)
+            syncManager?.syncAndReconcileAll(profile.unitKey, profile.callsign, profile.unitName)
         }
     }
 

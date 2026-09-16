@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 import java.util.UUID
 
 data class SyncState(
@@ -271,6 +272,123 @@ class FirebaseSyncManager(
             _syncState.value = _syncState.value.copy(isSyncing = false, syncMessage = "Синхронизация завершена")
         } catch (e: Exception) {
             _syncState.value = _syncState.value.copy(isSyncing = false, syncMessage = "Ошибка синхронизации")
+        }
+    }
+
+    suspend fun syncAndReconcileAll(unitKey: String, callsign: String, unitName: String): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val cleanKey = unitKey.trim()
+        if (cleanKey.isEmpty()) return@withContext Pair(false, "Не указан код подразделения")
+
+        _syncState.value = _syncState.value.copy(isSyncing = true, syncMessage = "Синхронизация базы [$cleanKey]...")
+        try {
+            val db = firestore
+            val unitRef = db.collection("units").document(cleanKey)
+
+            // 1. Reconcile Warehouse Points
+            val cloudPointsSnap = unitRef.collection("warehouse_points").get().await()
+            if (!cloudPointsSnap.isEmpty) {
+                val cloudPoints = cloudPointsSnap.documents.mapNotNull { doc ->
+                    WarehousePoint(
+                        id = doc.id,
+                        name = doc.getString("name") ?: "",
+                        description = doc.getString("description") ?: "",
+                        isBase = doc.getBoolean("isBase") ?: false,
+                        orderIndex = doc.getLong("orderIndex")?.toInt() ?: 0,
+                        createdAt = doc.getLong("createdAt") ?: 0L
+                    )
+                }
+                val cloudPointIds = cloudPoints.map { it.id }.toSet()
+                val localPoints = dao.getAllPoints().first()
+                for (lp in localPoints) {
+                    if (!cloudPointIds.contains(lp.id)) {
+                        dao.deletePoint(lp.id)
+                    }
+                }
+                dao.insertPoints(cloudPoints)
+            } else {
+                // Cloud is empty -> primary device pushes initial local points
+                val localPoints = dao.getAllPoints().first()
+                for (p in localPoints) {
+                    pushWarehousePointAsync(cleanKey, p)
+                }
+            }
+
+            // 2. Reconcile Stock Records
+            val cloudStocksSnap = unitRef.collection("stock_records").get().await()
+            if (!cloudStocksSnap.isEmpty) {
+                for (doc in cloudStocksSnap.documents) {
+                    val s = StockRecord(
+                        pointId = doc.getString("pointId") ?: "",
+                        itemId = doc.getString("itemId") ?: "",
+                        quantity = doc.getLong("quantity")?.toInt() ?: 0,
+                        incomeTotal = doc.getLong("incomeTotal")?.toInt() ?: 0,
+                        expenseTotal = doc.getLong("expenseTotal")?.toInt() ?: 0,
+                        lastUpdated = doc.getLong("lastUpdated") ?: 0L
+                    )
+                    if (s.pointId.isNotBlank() && s.itemId.isNotBlank()) {
+                        dao.insertOrUpdateStock(s)
+                    }
+                }
+            } else {
+                val localStocks = dao.getAllStockRecords().first()
+                for (s in localStocks) {
+                    pushStockRecordAsync(cleanKey, s)
+                }
+            }
+
+            // 3. Reconcile Operation Records
+            val cloudOpsSnap = unitRef.collection("operation_records").get().await()
+            for (doc in cloudOpsSnap.documents) {
+                val opTypeStr = doc.getString("type") ?: "INCOME"
+                val type = try { OperationType.valueOf(opTypeStr) } catch (ex: Exception) { OperationType.INCOME }
+                val op = OperationRecord(
+                    id = doc.id,
+                    type = type,
+                    fromPointName = doc.getString("fromPointName") ?: "",
+                    toPointName = doc.getString("toPointName") ?: "",
+                    docNumber = doc.getString("docNumber") ?: "",
+                    responsiblePerson = doc.getString("responsiblePerson") ?: "",
+                    comment = doc.getString("comment") ?: "",
+                    timestamp = doc.getLong("timestamp") ?: 0L,
+                    itemsSummary = doc.getString("itemsSummary") ?: "",
+                    itemsJson = doc.getString("itemsJson") ?: ""
+                )
+                dao.insertOperation(op)
+            }
+
+            // 4. Reconcile Custom Items
+            val cloudItemsSnap = unitRef.collection("inventory_items").get().await()
+            for (doc in cloudItemsSnap.documents) {
+                val item = InventoryItem(
+                    id = doc.id,
+                    name = doc.getString("name") ?: "",
+                    serviceCategory = doc.getString("serviceCategory") ?: "",
+                    subType = doc.getString("subType") ?: "",
+                    unit = doc.getString("unit") ?: "шт.",
+                    categoryClass = doc.getString("categoryClass") ?: "Кат. 1",
+                    standardCode = doc.getString("standardCode") ?: "",
+                    isCustom = doc.getBoolean("isCustom") ?: false
+                )
+                dao.insertItem(item)
+            }
+
+            // 5. Connect and register realtime snapshot listeners
+            startSyncForUnit(cleanKey, callsign, unitName)
+
+            _syncState.value = _syncState.value.copy(
+                isSyncing = false,
+                isOnline = true,
+                lastSyncTime = System.currentTimeMillis(),
+                syncMessage = "Синхронизировано с облаком"
+            )
+            Pair(true, "База синхронизирована с каналом [$cleanKey]")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in syncAndReconcileAll", e)
+            _syncState.value = _syncState.value.copy(
+                isSyncing = false,
+                syncMessage = "Ошибка синхронизации: ${e.message}"
+            )
+            Pair(false, "Сбой связи: ${e.localizedMessage}")
         }
     }
 

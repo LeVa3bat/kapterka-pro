@@ -544,8 +544,8 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                 role = "Старшина подразделения"
             )
             
-            repository.triggerCloudSync()
-            _toastEvent.emit("Подключено к подразделению [$clean]")
+            val (_, msg) = repository.triggerCloudSync()
+            _toastEvent.emit(msg)
         }
     }
 
@@ -604,8 +604,8 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
     fun simulateCloudSync() {
         viewModelScope.launch {
             _toastEvent.emit("Запуск онлайн-синхронизации базы...")
-            repository.triggerCloudSync()
-            _toastEvent.emit("База подразделения успешно синхронизирована!")
+            val (_, msg) = repository.triggerCloudSync()
+            _toastEvent.emit(msg)
         }
     }
 
