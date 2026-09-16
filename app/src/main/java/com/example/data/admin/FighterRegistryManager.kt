@@ -359,13 +359,22 @@ class FighterRegistryManager(
         return newKey
     }
 
-    suspend fun lookupFighter(query: String): FighterAdminRecord? {
-        val q = query.trim().lowercase(Locale.ROOT)
-        if (q.isBlank()) return null
+    suspend fun lookupFighter(
+        email: String = "",
+        callsign: String = "",
+        fighterId: String = ""
+    ): FighterAdminRecord? {
+        val cleanEmail = email.trim().lowercase(Locale.ROOT)
+        val cleanCallsign = callsign.trim().lowercase(Locale.ROOT)
+        val cleanId = fighterId.trim()
+
+        if (cleanEmail.isBlank() && cleanCallsign.isBlank() && cleanId.isBlank()) return null
 
         // 1. Поиск в локальном кэше
         val localMatch = _fighters.value.find {
-            (it.email.isNotBlank() && it.email.lowercase(Locale.ROOT) == q)
+            (cleanEmail.isNotBlank() && it.email.isNotBlank() && it.email.lowercase(Locale.ROOT) == cleanEmail) ||
+            (cleanCallsign.isNotBlank() && it.callsign.isNotBlank() && it.callsign.lowercase(Locale.ROOT) == cleanCallsign) ||
+            (cleanId.isNotBlank() && it.id == cleanId)
         }
         if (localMatch != null) return localMatch
 
@@ -376,13 +385,20 @@ class FighterRegistryManager(
                 val snap = db.collection("fighters").get().await()
                 for (doc in snap.documents) {
                     val em = doc.getString("email")?.lowercase(Locale.ROOT) ?: ""
-                    if (em.isNotBlank() && em == q) {
+                    val cs = doc.getString("callsign")?.lowercase(Locale.ROOT) ?: ""
+                    val fid = doc.getString("fighterId") ?: doc.id
+
+                    val matches = (cleanEmail.isNotBlank() && em.isNotBlank() && em == cleanEmail) ||
+                            (cleanCallsign.isNotBlank() && cs.isNotBlank() && cs == cleanCallsign) ||
+                            (cleanId.isNotBlank() && fid == cleanId)
+
+                    if (matches) {
                         val exp = doc.getLong("expiresAt") ?: 0L
                         val daysLeft = if (exp > System.currentTimeMillis()) {
                             ((exp - System.currentTimeMillis()) / 86400000L).toInt()
                         } else 0
                         return@withContext FighterAdminRecord(
-                            id = doc.getString("fighterId") ?: doc.id,
+                            id = fid,
                             callsign = doc.getString("callsign") ?: "",
                             unitName = doc.getString("unitName") ?: "",
                             unitKey = doc.getString("unitKey") ?: "",

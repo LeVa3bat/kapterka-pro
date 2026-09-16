@@ -16,9 +16,9 @@ android {
   defaultConfig {
     applicationId = "com.aistudio.kapterka.jmwqve"
     minSdk = 24
-    targetSdk = 36
-    versionCode = 15
-    versionName = "3.4.1"
+    targetSdk = 34
+    versionCode = 17
+    versionName = "3.4.2"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }

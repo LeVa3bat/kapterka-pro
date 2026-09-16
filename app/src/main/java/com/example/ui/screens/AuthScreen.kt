@@ -34,6 +34,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Tab
@@ -347,6 +348,41 @@ fun AuthScreen(
                             fontSize = 11.sp,
                             lineHeight = 14.sp
                         )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Quick known units recovery
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                unitKey = "kapt_rr_d1v1"
+                                unitName = "РР"
+                                if (callsign.isBlank()) callsign = "Бурый"
+                            },
+                            modifier = Modifier.weight(1f).height(34.dp),
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp, vertical = 2.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, SageGreenBright),
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
+                            Text("Восстановить РР (kapt_rr_d1v1)", fontSize = 10.sp, color = SageGreenBright, maxLines = 1)
+                        }
+                        OutlinedButton(
+                            onClick = {
+                                unitKey = "kapt_1111"
+                                unitName = "111"
+                                if (callsign.isBlank()) callsign = "Лёва"
+                            },
+                            modifier = Modifier.weight(1f).height(34.dp),
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp, vertical = 2.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, androidx.compose.ui.graphics.Color(0xFFE5C468)),
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
+                            Text("Подр. 111 (kapt_1111)", fontSize = 10.sp, color = androidx.compose.ui.graphics.Color(0xFFE5C468), maxLines = 1)
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(10.dp))

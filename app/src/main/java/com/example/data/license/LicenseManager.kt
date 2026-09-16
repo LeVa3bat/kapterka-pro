@@ -79,6 +79,19 @@ class LicenseManager(
             .apply()
     }
 
+    fun saveUnitKeyToVault(unitKey: String) {
+        if (unitKey.isNotBlank()) {
+            val vault = context.getSharedPreferences(PERMANENT_VAULT, Context.MODE_PRIVATE)
+            vault.edit().putString("vault_unit_key", unitKey.trim()).apply()
+        }
+    }
+
+    fun getSavedUnitKeyFromVault(): String? {
+        val vault = context.getSharedPreferences(PERMANENT_VAULT, Context.MODE_PRIVATE)
+        val key = vault.getString("vault_unit_key", null)
+        return if (!key.isNullOrBlank()) key else null
+    }
+
     fun getAllSavedKeys(): List<String> {
         val vault = context.getSharedPreferences(PERMANENT_VAULT, Context.MODE_PRIVATE)
         val historySet = vault.getStringSet("vault_keys_history", emptySet()) ?: emptySet()

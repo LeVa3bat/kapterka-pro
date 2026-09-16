@@ -160,9 +160,9 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                     try {
                         val ringtoneUri = android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION)
                         val ringtone = android.media.RingtoneManager.getRingtone(application.applicationContext, ringtoneUri)
-                        ringtone.play()
-                    } catch (e: Exception) {
-                        android.util.Log.e("KapterkaViewModel", "Failed to play notification sound", e)
+                        ringtone?.play()
+                    } catch (e: Throwable) {
+                        android.util.Log.w("KapterkaViewModel", "Ringtone play ignored: ${e.message}")
                     }
                 }
             }
@@ -463,8 +463,12 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             var resolvedKey = profile.unitKey.trim()
             var resolvedUnitName = profile.unitName.trim()
 
-            // 1. Проверяем облачный реестр бойцов по email, чтобы не потерять ключ подразделения
-            val cloudRecord = if (profile.email.isNotBlank()) fighterRegistryManager.lookupFighter(profile.email) else null
+            // 1. Проверяем облачный реестр бойцов по email, позывному или id устройства, чтобы не потерять ключ подразделения
+            val cloudRecord = fighterRegistryManager.lookupFighter(
+                email = profile.email,
+                callsign = profile.callsign,
+                fighterId = licenseManager.getFighterPersonalId()
+            )
 
             if (cloudRecord != null) {
                 if (resolvedKey.isBlank() && cloudRecord.unitKey.isNotBlank()) {
@@ -475,9 +479,17 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                 }
             }
 
+            // Если ключ всё ещё пустой, пробуем достать ранее сохраненный из перманентного хранилища
+            if (resolvedKey.isBlank()) {
+                resolvedKey = licenseManager.getSavedUnitKeyFromVault() ?: ""
+            }
+
             if (resolvedUnitName.isBlank()) {
                 resolvedUnitName = "1-е Подразделение"
             }
+
+            // Сохраняем в постоянный сейф, чтобы никогда не потерять при миграциях
+            licenseManager.saveUnitKeyToVault(resolvedKey)
 
             val updatedProfile = profile.copy(
                 unitKey = resolvedKey,
@@ -526,6 +538,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
     fun updateUnitKey(newKey: String) {
         val clean = newKey.trim()
         if (clean.isBlank()) return
+        licenseManager.saveUnitKeyToVault(clean)
         viewModelScope.launch {
             val current = userProfile.value ?: UserProfile()
             val updated = current.copy(unitKey = clean)

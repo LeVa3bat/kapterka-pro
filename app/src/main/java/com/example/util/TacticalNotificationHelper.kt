@@ -32,19 +32,23 @@ object TacticalNotificationHelper {
 
     fun createNotificationChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = CHANNEL_DESC
-                setShowBadge(true)
-                enableLights(true)
-                enableVibration(true)
-                vibrationPattern = longArrayOf(0, 250, 150, 250)
+            try {
+                val channel = NotificationChannel(
+                    CHANNEL_ID,
+                    CHANNEL_NAME,
+                    NotificationManager.IMPORTANCE_HIGH
+                ).apply {
+                    description = CHANNEL_DESC
+                    setShowBadge(true)
+                    enableLights(true)
+                    enableVibration(true)
+                    vibrationPattern = longArrayOf(0, 250, 150, 250)
+                }
+                val notificationManager = ContextCompat.getSystemService(context, NotificationManager::class.java)
+                notificationManager?.createNotificationChannel(channel)
+            } catch (e: Throwable) {
+                Log.w(TAG, "Notification channel creation ignored on this device: ${e.message}")
             }
-            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(channel)
         }
     }
 

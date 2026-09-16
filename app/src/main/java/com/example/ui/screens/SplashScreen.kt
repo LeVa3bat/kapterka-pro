@@ -223,8 +223,7 @@ fun SplashScreen(
                         .size(210.dp)
                         .clip(CircleShape)
                         .background(Color(0xFF0B140F))
-                        .border(2.5.dp, SageGreenPrimary, CircleShape)
-                        .shadow(elevation = 12.dp, shape = CircleShape, spotColor = SageGreenBright),
+                        .border(2.5.dp, SageGreenPrimary, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     RadarSweepCanvas(sweepAngle = sweepAngle)
@@ -472,25 +471,28 @@ private fun RadarSweepCanvas(sweepAngle: Float) {
             center = Offset(center.x + radius * 0.25f, center.y + radius * 0.6f)
         )
 
-        // Radar Sweep Beam
-        rotate(degrees = sweepAngle, pivot = center) {
-            val sweepBrush = Brush.sweepGradient(
-                0.0f to Color(0x00A2CEB5),
-                0.8f to Color(0x15A2CEB5),
-                1.0f to Color(0x95A2CEB5),
-                center = center
-            )
-            drawCircle(
-                brush = sweepBrush,
-                radius = radius
-            )
-            drawLine(
-                color = Color(0xFFA2CEB5),
-                start = center,
-                end = Offset(size.width, center.y),
-                strokeWidth = 2.5.dp.toPx(),
-                cap = StrokeCap.Round
-            )
-        }
+        // Safe Radar Sector Beam using drawArc
+        val startAngle = sweepAngle - 45f
+        drawArc(
+            color = Color(0x33A2CEB5),
+            startAngle = startAngle,
+            sweepAngle = 45f,
+            useCenter = true,
+            size = androidx.compose.ui.geometry.Size(radius * 2, radius * 2),
+            topLeft = Offset(center.x - radius, center.y - radius)
+        )
+        // Radar Sweep Leading Line
+        val rad = Math.toRadians(sweepAngle.toDouble())
+        val lineEnd = Offset(
+            (center.x + radius * Math.cos(rad)).toFloat(),
+            (center.y + radius * Math.sin(rad)).toFloat()
+        )
+        drawLine(
+            color = Color(0xFFA2CEB5),
+            start = center,
+            end = lineEnd,
+            strokeWidth = 2.dp.toPx(),
+            cap = StrokeCap.Round
+        )
     }
 }

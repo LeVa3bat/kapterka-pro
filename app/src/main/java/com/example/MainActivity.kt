@@ -127,14 +127,23 @@ class MainActivity : ComponentActivity() {
 
     private val viewModel: KapterkaViewModel by viewModels()
 
-        override fun onCreate(savedInstanceState: Bundle?) {
+    override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        val insetsController = WindowCompat.getInsetsController(window, window.decorView)
-        insetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        insetsController.hide(WindowInsetsCompat.Type.systemBars())
-                try {
+        
+        // Catch any unhandled thread errors for emulator diagnostic logging
+        val prevHandler = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            android.util.Log.e("KapterkaApp", "FATAL CRASH on thread ${thread.name}: ${throwable.message}", throwable)
+            prevHandler?.uncaughtException(thread, throwable)
+        }
+
+        try {
+            enableEdgeToEdge()
+        } catch (e: Throwable) {
+            android.util.Log.w("MainActivity", "enableEdgeToEdge skipped: ${e.message}")
+        }
+
+        try {
             if (com.google.firebase.FirebaseApp.getApps(this).isEmpty()) {
                 val options = com.google.firebase.FirebaseOptions.Builder()
                     .setApplicationId("1:946233715306:android:d2502913c49c0b985c7813")
@@ -146,10 +155,15 @@ class MainActivity : ComponentActivity() {
                     .build()
                 com.google.firebase.FirebaseApp.initializeApp(this, options)
             }
-        } catch (e: Exception) {
-            android.util.Log.e("MainActivity", "Firebase init error", e)
+        } catch (e: Throwable) {
+            android.util.Log.e("MainActivity", "Firebase init error: ${e.message}", e)
         }
-        TacticalNotificationHelper.createNotificationChannel(this)
+
+        try {
+            TacticalNotificationHelper.createNotificationChannel(this)
+        } catch (e: Throwable) {
+            android.util.Log.w("MainActivity", "Notification channel skipped: ${e.message}")
+        }
 
         setContent {
             val isDarkTheme by viewModel.isDarkTheme.collectAsState()
@@ -173,7 +187,11 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
         ) { _ -> }
 
         LaunchedEffect(Unit) {
-            permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+            try {
+                permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+            } catch (e: Throwable) {
+                android.util.Log.w("MainActivity", "Notification permission request skipped on emulator: ${e.message}")
+            }
         }
     }
 
