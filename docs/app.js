@@ -720,7 +720,7 @@ function trackApkDownload(source) {
       window.gtag('event', 'download_apk', { event_category: 'APK', event_label: source || 'direct' });
     } catch (e) {}
   }
-  showToast('📥 Скачивание APK-файла «Каптёрка Про v3.4.2» началось...');
+  showToast('📥 Скачивание APK-файла «Каптёрка Про v3.4.3» началось...');
 }
 
 function fallbackCopy(text) {

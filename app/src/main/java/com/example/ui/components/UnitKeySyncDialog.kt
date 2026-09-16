@@ -316,45 +316,6 @@ fun UnitKeySyncDialog(
                             Icon(imageVector = Icons.Default.ArrowForward, contentDescription = "Подключиться", modifier = Modifier.size(16.dp))
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Text(
-                        text = "БЫСТРОЕ ПЕРЕКЛЮЧЕНИЕ / ВОССТАНОВЛЕНИЕ:",
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TacticalTextMuted,
-                        fontFamily = FontFamily.Monospace
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = {
-                                onUpdateUnitKey("kapt_rr_d1v1")
-                                onDismiss()
-                            },
-                            modifier = Modifier.weight(1f).height(34.dp),
-                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp, vertical = 2.dp),
-                            border = BorderStroke(1.dp, SageGreenBright),
-                            shape = RoundedCornerShape(6.dp)
-                        ) {
-                            Text("База «РР» (kapt_rr_d1v1)", fontSize = 10.sp, color = SageGreenBright, maxLines = 1)
-                        }
-                        OutlinedButton(
-                            onClick = {
-                                onUpdateUnitKey("kapt_1111")
-                                onDismiss()
-                            },
-                            modifier = Modifier.weight(1f).height(34.dp),
-                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp, vertical = 2.dp),
-                            border = BorderStroke(1.dp, androidx.compose.ui.graphics.Color(0xFFE5C468)),
-                            shape = RoundedCornerShape(6.dp)
-                        ) {
-                            Text("Подр. «111» (kapt_1111)", fontSize = 10.sp, color = androidx.compose.ui.graphics.Color(0xFFE5C468), maxLines = 1)
-                        }
-                    }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
