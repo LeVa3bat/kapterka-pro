@@ -1,0 +1,17 @@
+# Temporary scripts
+*.py
+*.class
+*.txt
+*.dex
+classes*.dex
+
+# Build artifacts
+.gradle/
+build/
+app/build/
+*.apk
+
+# Environment & Keystores
+.env
+local.properties
+*.jks
