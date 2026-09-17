@@ -110,6 +110,7 @@ class FirebaseSyncManager(
                     )
                     if (dc.type == DocumentChange.Type.REMOVED) {
                         dao.deletePoint(p.id)
+                        dao.deleteStockForPoint(p.id)
                     } else {
                         dao.insertPoint(p)
                     }
@@ -146,24 +147,33 @@ class FirebaseSyncManager(
             if (e != null || snap == null) return@addSnapshotListener
             scope.launch(Dispatchers.IO) {
                 for (dc in snap.documentChanges) {
-                    val s = StockRecord(
-                        pointId = dc.document.getString("pointId") ?: "",
-                        itemId = dc.document.getString("itemId") ?: "",
-                        quantity = dc.document.getLong("quantity")?.toInt() ?: 0,
-                        incomeTotal = dc.document.getLong("incomeTotal")?.toInt() ?: 0,
-                        expenseTotal = dc.document.getLong("expenseTotal")?.toInt() ?: 0,
-                        lastUpdated = dc.document.getLong("lastUpdated") ?: 0L
-                    )
+                    val docId = dc.document.id
+                    val parts = if (docId.contains("___")) docId.split("___") else emptyList()
+                    val pId = dc.document.getString("pointId") ?: if (parts.size >= 2) parts[0] else ""
+                    val iId = dc.document.getString("itemId") ?: if (parts.size >= 2) parts[1] else ""
+
                     if (dc.type == DocumentChange.Type.REMOVED) {
-                        dao.deleteStockRecord(s.pointId, s.itemId)
+                        if (pId.isNotBlank() && iId.isNotBlank()) {
+                            dao.deleteStockRecord(pId, iId)
+                        }
                     } else {
-                        dao.insertOrUpdateStock(s)
+                        val s = StockRecord(
+                            pointId = pId,
+                            itemId = iId,
+                            quantity = dc.document.getLong("quantity")?.toInt() ?: 0,
+                            incomeTotal = dc.document.getLong("incomeTotal")?.toInt() ?: 0,
+                            expenseTotal = dc.document.getLong("expenseTotal")?.toInt() ?: 0,
+                            lastUpdated = dc.document.getLong("lastUpdated") ?: 0L
+                        )
+                        if (s.pointId.isNotBlank() && s.itemId.isNotBlank()) {
+                            dao.insertOrUpdateStock(s)
+                            ensureItemExists(unitKey, s.itemId)
+                        }
                     }
                 }
             }
         }
         listeners.add(stockReg)
-
         
         var isFirstOpLoad = true
         val opReg = unitRef.collection("operation_records").addSnapshotListener { snap, e ->
@@ -188,6 +198,7 @@ class FirebaseSyncManager(
                         dao.deleteOperation(op.id)
                     } else {
                         dao.insertOperation(op)
+                        extractAndRegisterItemsFromOperation(unitKey, op)
                         if (!isFirstOpLoad && dc.type == DocumentChange.Type.ADDED) {
                             val typeName = when (op.type) {
                                 OperationType.INCOME -> "📥 Поставка на «${op.toPointName.ifBlank { "склад" }}»"
@@ -309,35 +320,25 @@ class FirebaseSyncManager(
                 }
             }
 
-            // Restore any points referenced by active cloud stocks if missing from cloud points
-            for (ptId in stockPointIds) {
-                if (!existingPointsMap.containsKey(ptId)) {
-                    val fallbackPt = defaultPointsMap[ptId] ?: WarehousePoint(
-                        id = ptId,
-                        name = when (ptId) {
-                            "med_sklad" -> "Медпункт"
-                            "point_1" -> "Передовая точка (ЛБС)"
-                            "base_sklad" -> "Базовый склад (КЗ)"
-                            else -> "Склад $ptId"
-                        },
-                        description = if (ptId == "med_sklad") "Медицинское обеспечение" else "Точка учета",
-                        isBase = (ptId == "base_sklad")
-                    )
-                    existingPointsMap[ptId] = fallbackPt
-                    pushWarehousePointAsync(cleanKey, fallbackPt)
+            // If a warehouse point was deleted from cloud, also clean up any orphaned stock records for it
+            val orphanedPointIds = stockPointIds.filter { !existingPointsMap.containsKey(it) && it != "base_sklad" }
+            if (orphanedPointIds.isNotEmpty()) {
+                for (orphanId in orphanedPointIds) {
+                    dao.deleteStockForPoint(orphanId)
+                    try {
+                        val orphanDocs = unitRef.collection("stock_records")
+                            .whereEqualTo("pointId", orphanId)
+                            .get().await()
+                        for (doc in orphanDocs.documents) {
+                            doc.reference.delete().await()
+                        }
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Failed deleting orphaned cloud stock records for $orphanId", e)
+                    }
                 }
             }
 
-            // If unit has no points at all in cloud, seed defaults
-            if (existingPointsMap.isEmpty()) {
-                val defaults = com.example.data.local.InitialData.getDefaultPoints()
-                for (p in defaults) {
-                    existingPointsMap[p.id] = p
-                    pushWarehousePointAsync(cleanKey, p)
-                }
-            }
-
-            // Always ensure base warehouse exists
+            // Always ensure the root base warehouse exists (only base_sklad is protected)
             if (!existingPointsMap.containsKey("base_sklad")) {
                 val base = defaultPointsMap["base_sklad"] ?: WarehousePoint(
                     id = "base_sklad",
@@ -374,17 +375,20 @@ class FirebaseSyncManager(
                     val updated = doc.getLong("lastUpdated") ?: 0L
 
                     if (ptId.isNotBlank() && itemId.isNotBlank()) {
-                        cloudStockKeys.add("${ptId}:::${itemId}")
-                        recordsToInsert.add(
-                            StockRecord(
-                                pointId = ptId,
-                                itemId = itemId,
-                                quantity = qty,
-                                incomeTotal = inc,
-                                expenseTotal = exp,
-                                lastUpdated = updated
+                        // Do not re-insert stocks belonging to points that no longer exist in cloud
+                        if (existingPointsMap.containsKey(ptId) || ptId == "base_sklad") {
+                            cloudStockKeys.add("${ptId}:::${itemId}")
+                            recordsToInsert.add(
+                                StockRecord(
+                                    pointId = ptId,
+                                    itemId = itemId,
+                                    quantity = qty,
+                                    incomeTotal = inc,
+                                    expenseTotal = exp,
+                                    lastUpdated = updated
+                                )
                             )
-                        )
+                        }
                     }
                 }
 
@@ -399,6 +403,7 @@ class FirebaseSyncManager(
                 // Upsert all authoritative cloud stock records
                 for (s in recordsToInsert) {
                     dao.insertOrUpdateStock(s)
+                    ensureItemExists(cleanKey, s.itemId)
                 }
             } else {
                 // Cloud has no stock records for this unit.
@@ -431,6 +436,7 @@ class FirebaseSyncManager(
                     itemsJson = doc.getString("itemsJson") ?: ""
                 )
                 dao.insertOperation(op)
+                extractAndRegisterItemsFromOperation(cleanKey, op)
             }
 
             // 5. Reconcile Requisitions
@@ -529,6 +535,46 @@ class FirebaseSyncManager(
                         ),
                         SetOptions.merge()
                     )
+                }
+
+                if (op.itemsJson.isNotBlank()) {
+                    try {
+                        val entries = parseOperationItems(op.itemsJson)
+                        for (entry in entries) {
+                            if (entry.itemId.isNotBlank()) {
+                                val localItem = dao.getItemById(entry.itemId)
+                                val defaultMatch = com.example.data.local.InitialData.getDefaultItems().find { it.id == entry.itemId }
+                                val fallbackName = formatFallbackItemName(entry.itemId)
+                                val resolvedName = if (entry.itemName.isNotBlank()) entry.itemName else fallbackName
+                                val resolvedUnit = if (entry.unit.isNotBlank()) entry.unit else "шт."
+                                val resolvedCatClass = if (entry.categoryClass.isNotBlank()) entry.categoryClass else "Кат. 1"
+                                val itemToPush = localItem ?: defaultMatch ?: InventoryItem(
+                                    id = entry.itemId,
+                                    name = resolvedName,
+                                    serviceCategory = resolveServiceCategory(entry.itemId, resolvedName),
+                                    subType = "Снабжение",
+                                    unit = resolvedUnit,
+                                    categoryClass = resolvedCatClass,
+                                    isCustom = true
+                                )
+                                unitRef.collection("inventory_items").document(itemToPush.id).set(
+                                    hashMapOf(
+                                        "id" to itemToPush.id,
+                                        "name" to itemToPush.name,
+                                        "serviceCategory" to itemToPush.serviceCategory,
+                                        "subType" to itemToPush.subType,
+                                        "unit" to itemToPush.unit,
+                                        "categoryClass" to itemToPush.categoryClass,
+                                        "standardCode" to itemToPush.standardCode,
+                                        "isCustom" to itemToPush.isCustom
+                                    ),
+                                    SetOptions.merge()
+                                )
+                            }
+                        }
+                    } catch (ie: Exception) {
+                        Log.w(TAG, "Failed pushing op items to cloud inventory_items", ie)
+                    }
                 }
 
                 _syncState.value = _syncState.value.copy(
@@ -645,8 +691,21 @@ class FirebaseSyncManager(
         scope.launch(Dispatchers.IO) {
             try {
                 val db = firestore
-                db.collection("units").document(unitKey)
-                    .collection("warehouse_points").document(pointId).delete()
+                val unitRef = db.collection("units").document(unitKey)
+                // Delete warehouse point document in cloud with await
+                unitRef.collection("warehouse_points").document(pointId).delete().await()
+
+                // Delete all stock_records for this point in cloud with await
+                val stocksSnap = unitRef.collection("stock_records")
+                    .whereEqualTo("pointId", pointId)
+                    .get().await()
+                for (doc in stocksSnap.documents) {
+                    try {
+                        doc.reference.delete().await()
+                    } catch (de: Exception) {
+                        Log.w(TAG, "Error deleting stock doc ${doc.id}", de)
+                    }
+                }
             } catch (e: Exception) {
                 Log.w(TAG, "Failed deleting point live", e)
             }
@@ -688,6 +747,117 @@ class FirebaseSyncManager(
             } catch (e: Exception) {
                 Log.w(TAG, "Failed deleting item live", e)
             }
+        }
+    }
+
+    fun resolveServiceCategory(itemId: String, nameHint: String = ""): String {
+        val lowerName = nameHint.lowercase()
+        return when {
+            itemId.startsWith("rav_") || lowerName.contains("мина") || lowerName.contains("снаряд") || lowerName.contains("выстрел") || lowerName.contains("взрыватель") || lowerName.contains("патрон") -> "Служба РАВ"
+            itemId.startsWith("auto_") || lowerName.contains("уаз") || lowerName.contains("фильтр") || lowerName.contains("масло") || lowerName.contains("ремень") || lowerName.contains("колодк") -> "Автомобильная и БТ служба"
+            itemId.startsWith("gsm_") || lowerName.contains("дизель") || lowerName.contains("бензин") || lowerName.contains("топливо") -> "Служба ГСМ"
+            itemId.startsWith("rhbz_") || lowerName.contains("противогаз") || lowerName.contains("впхр") || lowerName.contains("л-1") -> "Служба РХБЗ"
+            itemId.startsWith("med_") || lowerName.contains("жгут") || lowerName.contains("бинт") || lowerName.contains("аптечк") || lowerName.contains("промедол") || lowerName.contains("нефопам") -> "Медицинская служба"
+            itemId.startsWith("vesh_") || lowerName.contains("бронежилет") || lowerName.contains("шлем") || lowerName.contains("маскхалат") || lowerName.contains("форма") -> "Вещевая служба и СИБЗ"
+            itemId.startsWith("ing_") || lowerName.contains("мон-") || lowerName.contains("пмн-") || lowerName.contains("тротил") -> "Инженерная служба"
+            itemId.startsWith("prod_") || lowerName.contains("ирп") || lowerName.contains("вода") || lowerName.contains("тушенк") -> "Продовольственная служба"
+            itemId.startsWith("bpla_") || lowerName.contains("мавик") || lowerName.contains("fpv") || lowerName.contains("дрон") -> "Служба БПЛА и робототехники"
+            itemId.startsWith("svyaz_") || lowerName.contains("радио") || lowerName.contains("антенн") || lowerName.contains("рэб") -> "Служба связи и РЭБ"
+            else -> "Служба РАВ"
+        }
+    }
+
+    fun formatFallbackItemName(itemId: String): String {
+        return when (itemId) {
+            "auto_01" -> "Комплект фильтров УАЗ Патриот Пикап"
+            "auto_02" -> "Масло моторное 10W-40 (Канистра 5л)"
+            "auto_03" -> "Антифриз G12 (Канистра 5л)"
+            "auto_04" -> "Ремень генератора УАЗ Патриот"
+            "auto_05" -> "Колодки тормозные передние УАЗ"
+            "auto_06" -> "Свечи зажигания ЗМЗ-409 (комплект 4 шт.)"
+            "auto_07" -> "Трос буксировочный динамический 12т"
+            "auto_08" -> "Домкрат реечный (Хайджек)"
+            "auto_09" -> "Набор автоинструмента (82 предм.)"
+            "auto_10" -> "Канистра металлическая 20л"
+            "auto_11" -> "Аккумулятор автомобильный 6СТ-75"
+            "auto_12" -> "Шина повышенной проходимости УАЗ"
+            "rav_27" -> "Мина 120-мм дымовая Д-843А"
+            "rav_28" -> "Мина 120-мм осветительная С-843"
+            "rav_29" -> "Мина 82-мм дымовая Д-832ДУ"
+            "rav_30" -> "Мина 82-мм осветительная С-832С"
+            "rav_31" -> "Порох минометный (метательный заряд) НБЛ-35"
+            "rav_32" -> "Заряд дальнобойный минометный"
+            else -> "Имущество ($itemId)"
+        }
+    }
+
+    private suspend fun ensureItemExists(unitKey: String, itemId: String, nameHint: String? = null, unitHint: String? = null, catClassHint: String? = null) {
+        if (itemId.isBlank()) return
+        val existing = dao.getItemById(itemId)
+        if (existing != null) return
+
+        val defaultMatch = com.example.data.local.InitialData.getDefaultItems().find { it.id == itemId }
+        val itemToInsert = defaultMatch ?: InventoryItem(
+            id = itemId,
+            name = nameHint?.ifBlank { null } ?: formatFallbackItemName(itemId),
+            serviceCategory = resolveServiceCategory(itemId, nameHint ?: ""),
+            subType = "Снабжение",
+            unit = unitHint?.ifBlank { null } ?: (if (itemId.startsWith("vesh_") || itemId.startsWith("auto_")) "компл." else if (itemId.startsWith("gsm_")) "л." else if (itemId.startsWith("prod_")) "кг." else "шт."),
+            categoryClass = catClassHint?.ifBlank { null } ?: "Кат. 1",
+            isCustom = true
+        )
+        dao.insertItem(itemToInsert)
+        if (unitKey.isNotBlank()) {
+            pushInventoryItemAsync(unitKey, itemToInsert)
+        }
+    }
+
+    data class ParsedItemEntry(
+        val itemId: String,
+        val itemName: String,
+        val unit: String,
+        val categoryClass: String
+    )
+
+    private fun parseOperationItems(json: String): List<ParsedItemEntry> {
+        if (json.isBlank()) return emptyList()
+        return try {
+            val list = mutableListOf<ParsedItemEntry>()
+            val arr = org.json.JSONArray(json)
+            for (i in 0 until arr.length()) {
+                val obj = arr.getJSONObject(i)
+                list.add(
+                    ParsedItemEntry(
+                        itemId = obj.optString("itemId", ""),
+                        itemName = obj.optString("itemName", ""),
+                        unit = obj.optString("unit", "шт."),
+                        categoryClass = obj.optString("categoryClass", "Кат. 1")
+                    )
+                )
+            }
+            list
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    private suspend fun extractAndRegisterItemsFromOperation(unitKey: String, op: OperationRecord) {
+        if (op.itemsJson.isBlank()) return
+        try {
+            val entries = parseOperationItems(op.itemsJson)
+            for (entry in entries) {
+                if (entry.itemId.isNotBlank()) {
+                    ensureItemExists(
+                        unitKey = unitKey,
+                        itemId = entry.itemId,
+                        nameHint = entry.itemName,
+                        unitHint = entry.unit,
+                        catClassHint = entry.categoryClass
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Error extracting items from op.itemsJson", e)
         }
     }
 

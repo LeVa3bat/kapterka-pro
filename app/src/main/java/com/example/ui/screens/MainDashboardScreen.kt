@@ -180,7 +180,54 @@ fun MainDashboardScreen(
         val stocksForPoint = (stockMap[pointId] ?: emptyList()).associateBy { it.itemId }
         val pt = points.firstOrNull { it.id == pointId } ?: return emptyList()
 
-        return catalogItems.mapNotNull { item ->
+        // Build a complete catalog map ensuring every item with stock or history is represented
+        val catalogMap = catalogItems.associateBy { it.id }.toMutableMap()
+        for (st in stocksForPoint.values) {
+            if (st.itemId !in catalogMap) {
+                val defaultItem = com.example.data.local.InitialData.getDefaultItems().find { it.id == st.itemId }
+                if (defaultItem != null) {
+                    catalogMap[st.itemId] = defaultItem
+                } else {
+                    val resolvedCat = when {
+                        st.itemId.startsWith("rav_") -> "Служба РАВ"
+                        st.itemId.startsWith("auto_") -> "Автомобильная и БТ служба"
+                        st.itemId.startsWith("med_") -> "Медицинская служба"
+                        st.itemId.startsWith("vesh_") -> "Вещевая служба и СИБЗ"
+                        st.itemId.startsWith("ing_") -> "Инженерная служба"
+                        st.itemId.startsWith("prod_") -> "Продовольственная служба"
+                        st.itemId.startsWith("gsm_") -> "Служба ГСМ"
+                        st.itemId.startsWith("rhbz_") -> "Служба РХБЗ"
+                        st.itemId.startsWith("svyaz_") || st.itemId.startsWith("bpla_") -> "Служба связи и РЭБ"
+                        else -> "Служба РАВ"
+                    }
+                    val friendlyName = when (st.itemId) {
+                        "auto_01" -> "Комплект фильтров УАЗ Патриот Пикап"
+                        "auto_02" -> "Масло моторное 10W-40 (Канистра 5л)"
+                        "auto_03" -> "Антифриз G12 (Канистра 5л)"
+                        "rav_27" -> "Мина 120-мм дымовая Д-843А"
+                        "rav_28" -> "Мина 120-мм осветительная С-843"
+                        "rav_29" -> "Мина 82-мм дымовая Д-832ДУ"
+                        "rav_30" -> "Мина 82-мм осветительная С-832С"
+                        else -> "Имущество (${st.itemId})"
+                    }
+                    val unit = if (st.itemId.startsWith("vesh_") || st.itemId.startsWith("auto_")) "компл." else if (st.itemId.startsWith("gsm_")) "л." else if (st.itemId.startsWith("prod_")) "кг." else "шт."
+                    catalogMap[st.itemId] = InventoryItem(
+                        id = st.itemId,
+                        name = friendlyName,
+                        serviceCategory = resolvedCat,
+                        subType = "Снабжение",
+                        unit = unit,
+                        categoryClass = "Кат. 1",
+                        isCustom = true
+                    )
+                }
+            }
+        }
+
+        // Distinct list of all known catalog items plus items currently on this point
+        val allRelevantItems = (catalogItems + stocksForPoint.values.mapNotNull { catalogMap[it.itemId] }).distinctBy { it.id }
+
+        return allRelevantItems.mapNotNull { item ->
             val st = stocksForPoint[item.id]
             val qty = st?.quantity ?: 0
             val inc = st?.incomeTotal ?: 0

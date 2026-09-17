@@ -45,6 +45,9 @@ interface KapterkaDao {
     @Query("SELECT * FROM inventory_items WHERE serviceCategory = :category ORDER BY name ASC")
     fun getItemsByCategory(category: String): Flow<List<InventoryItem>>
 
+    @Query("SELECT * FROM inventory_items WHERE id = :itemId LIMIT 1")
+    suspend fun getItemById(itemId: String): InventoryItem?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertItem(item: InventoryItem)
 
