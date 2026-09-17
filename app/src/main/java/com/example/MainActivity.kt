@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -704,6 +705,7 @@ private fun TacticalBottomNavigationBar(
         tonalElevation = 2.dp,
         modifier = Modifier
             .border(androidx.compose.foundation.BorderStroke(1.dp, TacticalBorderSubtle))
+            .navigationBarsPadding()
             .height(64.dp)
     ) {
         AppDestination.values().forEach { destination ->
