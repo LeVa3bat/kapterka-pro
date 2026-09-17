@@ -145,4 +145,31 @@ class KapterkaDatabaseTest {
         assertTrue("Must have at least one base warehouse", InitialData.getDefaultPoints().any { it.isBase })
         assertTrue("Must have RAV category items", InitialData.getDefaultItems().any { it.serviceCategory == "Служба РАВ" })
     }
+
+    @Test
+    fun testReorderWarehousePoints() = runBlocking {
+        val p1 = WarehousePoint("p1", "Точка А", "Склад А", false, 0)
+        val p2 = WarehousePoint("p2", "Точка Б", "Склад Б", false, 1)
+        val p3 = WarehousePoint("p3", "Точка В", "Склад В", false, 2)
+
+        dao.insertPoints(listOf(p1, p2, p3))
+
+        val initial = dao.getAllPoints().first()
+        assertEquals("p1", initial[0].id)
+        assertEquals("p2", initial[1].id)
+        assertEquals("p3", initial[2].id)
+
+        // Reorder: p3 first, then p1, then p2
+        val reordered = listOf(
+            p3.copy(orderIndex = 0),
+            p1.copy(orderIndex = 1),
+            p2.copy(orderIndex = 2)
+        )
+        dao.insertPoints(reordered)
+
+        val updated = dao.getAllPoints().first()
+        assertEquals("p3", updated[0].id)
+        assertEquals("p1", updated[1].id)
+        assertEquals("p2", updated[2].id)
+    }
 }

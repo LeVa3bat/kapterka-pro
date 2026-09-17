@@ -10,16 +10,24 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.SortByAlpha
+import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.filled.Warehouse
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -40,6 +48,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -49,6 +58,9 @@ import com.example.ui.theme.SageGreenBright
 import com.example.ui.theme.SageGreenDark
 import com.example.ui.theme.SageGreenPrimary
 import com.example.ui.theme.TacticalBorder
+import com.example.ui.theme.TacticalGold
+import com.example.ui.theme.TacticalGoldDark
+import com.example.ui.theme.TacticalGoldText
 import com.example.ui.theme.TacticalRed
 import com.example.ui.theme.TacticalSurface
 import com.example.ui.theme.TacticalSurfaceLight
@@ -272,6 +284,392 @@ fun EditPointDialog(
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Text("Сохранить", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ReorderPointsDialog(
+    points: List<WarehousePoint>,
+    onDismiss: () -> Unit,
+    onSaveOrder: (List<WarehousePoint>) -> Unit
+) {
+    var workingList by remember(points) { mutableStateOf(points) }
+    var selectedPointId by remember { mutableStateOf<String?>(null) }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth(0.96f)
+                .padding(vertical = 12.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = TacticalSurface),
+            border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorder)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(14.dp)
+            ) {
+                // Header
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.SwapVert,
+                            contentDescription = null,
+                            tint = SageGreenBright,
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                text = "ПОРЯДОК И СОРТИРОВКА ТОЧЕК",
+                                color = SageGreenBright,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Нажмите на точку для перемещения стрелками",
+                                color = TacticalTextMuted,
+                                fontSize = 10.5.sp
+                            )
+                        }
+                    }
+
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Закрыть",
+                            tint = TacticalTextMuted
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Quick sort buttons row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    // Sort A-Z button
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(TacticalSurfaceLight)
+                            .border(1.dp, TacticalBorder, RoundedCornerShape(6.dp))
+                            .clickable {
+                                val base = workingList.filter { it.isBase }
+                                val others = workingList.filter { !it.isBase }.sortedBy { it.name.lowercase() }
+                                workingList = base + others
+                            }
+                            .padding(vertical = 6.dp, horizontal = 6.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.SortByAlpha, contentDescription = null, tint = SageGreenBright, modifier = Modifier.size(13.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("По алфавиту (А–Я)", fontSize = 10.5.sp, color = TacticalTextPrimary, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+
+                    // Reset / Default order button
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(TacticalSurfaceLight)
+                            .border(1.dp, TacticalBorder, RoundedCornerShape(6.dp))
+                            .clickable {
+                                val base = workingList.filter { it.isBase }
+                                val others = workingList.filter { !it.isBase }.sortedBy { it.createdAt }
+                                workingList = base + others
+                            }
+                            .padding(vertical = 6.dp, horizontal = 8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("По умолчанию", fontSize = 10.5.sp, color = TacticalTextSecondary)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Control panel for active selected point
+                val selectedIndex = workingList.indexOfFirst { it.id == selectedPointId }
+                if (selectedIndex != -1) {
+                    val selPoint = workingList[selectedIndex]
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(TacticalGoldDark.copy(alpha = 0.35f))
+                            .border(1.dp, TacticalGold.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
+                            .padding(horizontal = 8.dp, vertical = 6.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Выбрана: «${selPoint.name}» (№${selectedIndex + 1})",
+                                color = TacticalGoldText,
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1
+                            )
+                            Text(
+                                text = "Перемещение точки в списке:",
+                                color = TacticalTextMuted,
+                                fontSize = 10.sp
+                            )
+                        }
+
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            // Move Up
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(if (selectedIndex > 0) SageGreenPrimary else TacticalSurfaceLight)
+                                    .clickable(enabled = selectedIndex > 0) {
+                                        val list = workingList.toMutableList()
+                                        val item = list.removeAt(selectedIndex)
+                                        list.add(selectedIndex - 1, item)
+                                        workingList = list
+                                    }
+                                    .padding(horizontal = 8.dp, vertical = 5.dp)
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.ArrowUpward,
+                                        contentDescription = "Выше",
+                                        tint = if (selectedIndex > 0) Color.White else TacticalTextMuted,
+                                        modifier = Modifier.size(13.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(2.dp))
+                                    Text(
+                                        text = "Выше",
+                                        fontSize = 10.5.sp,
+                                        color = if (selectedIndex > 0) Color.White else TacticalTextMuted,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+
+                            // Move Down
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(if (selectedIndex < workingList.size - 1) SageGreenPrimary else TacticalSurfaceLight)
+                                    .clickable(enabled = selectedIndex < workingList.size - 1) {
+                                        val list = workingList.toMutableList()
+                                        val item = list.removeAt(selectedIndex)
+                                        list.add(selectedIndex + 1, item)
+                                        workingList = list
+                                    }
+                                    .padding(horizontal = 8.dp, vertical = 5.dp)
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.ArrowDownward,
+                                        contentDescription = "Ниже",
+                                        tint = if (selectedIndex < workingList.size - 1) Color.White else TacticalTextMuted,
+                                        modifier = Modifier.size(13.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(2.dp))
+                                    Text(
+                                        text = "Ниже",
+                                        fontSize = 10.5.sp,
+                                        color = if (selectedIndex < workingList.size - 1) Color.White else TacticalTextMuted,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                }
+
+                // Interactive Points List (with scroll)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f, fill = false)
+                        .heightIn(max = 320.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(5.dp)
+                ) {
+                    workingList.forEachIndexed { idx, pt ->
+                        val isSelected = pt.id == selectedPointId
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (isSelected) TacticalGoldDark.copy(alpha = 0.25f) else TacticalSurfaceLight)
+                                .border(
+                                    width = if (isSelected) 1.5.dp else 1.dp,
+                                    color = if (isSelected) TacticalGold else TacticalBorder,
+                                    shape = RoundedCornerShape(8.dp)
+                                )
+                                .clickable {
+                                    selectedPointId = if (isSelected) null else pt.id
+                                }
+                                .padding(horizontal = 10.dp, vertical = 7.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                // Order number
+                                Box(
+                                    modifier = Modifier
+                                        .size(24.dp)
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(if (pt.isBase) TacticalGoldDark else TacticalSurface),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "${idx + 1}",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (pt.isBase) TacticalGoldText else SageGreenBright,
+                                        fontFamily = FontFamily.Monospace
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = pt.name,
+                                            fontSize = 12.5.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = TacticalTextPrimary
+                                        )
+                                        if (pt.isBase) {
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                text = "★ Базовый",
+                                                color = TacticalGoldText,
+                                                fontSize = 9.5.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
+                                    if (pt.description.isNotBlank()) {
+                                        Text(
+                                            text = pt.description,
+                                            fontSize = 10.sp,
+                                            color = TacticalTextMuted,
+                                            maxLines = 1
+                                        )
+                                    }
+                                }
+                            }
+
+                            // Quick individual arrow controls per row
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(3.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(28.dp)
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(TacticalSurface)
+                                        .clickable(enabled = idx > 0) {
+                                            val list = workingList.toMutableList()
+                                            val item = list.removeAt(idx)
+                                            list.add(idx - 1, item)
+                                            workingList = list
+                                            selectedPointId = pt.id
+                                        },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.ArrowUpward,
+                                        contentDescription = "Вверх",
+                                        tint = if (idx > 0) SageGreenBright else TacticalTextMuted.copy(alpha = 0.4f),
+                                        modifier = Modifier.size(15.dp)
+                                    )
+                                }
+
+                                Box(
+                                    modifier = Modifier
+                                        .size(28.dp)
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(TacticalSurface)
+                                        .clickable(enabled = idx < workingList.size - 1) {
+                                            val list = workingList.toMutableList()
+                                            val item = list.removeAt(idx)
+                                            list.add(idx + 1, item)
+                                            workingList = list
+                                            selectedPointId = pt.id
+                                        },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.ArrowDownward,
+                                        contentDescription = "Вниз",
+                                        tint = if (idx < workingList.size - 1) SageGreenBright else TacticalTextMuted.copy(alpha = 0.4f),
+                                        modifier = Modifier.size(15.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Actions
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = TacticalSurfaceLight,
+                            contentColor = TacticalTextSecondary
+                        ),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("Отмена", fontSize = 12.5.sp)
+                    }
+
+                    Button(
+                        onClick = {
+                            onSaveOrder(workingList)
+                            onDismiss()
+                        },
+                        modifier = Modifier.weight(1.4f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = SageGreenPrimary,
+                            contentColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Применить", fontWeight = FontWeight.Bold, fontSize = 12.5.sp)
                     }
                 }
             }

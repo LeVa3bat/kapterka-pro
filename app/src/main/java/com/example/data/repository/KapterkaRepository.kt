@@ -215,6 +215,19 @@ class KapterkaRepository(
         syncManager?.deleteWarehousePointAsync(getCurrentUnitKey(), id)
     }
 
+    suspend fun reorderWarehousePoints(orderedPoints: List<WarehousePoint>) {
+        val updated = orderedPoints.mapIndexed { index, p ->
+            p.copy(orderIndex = index)
+        }
+        dao.insertPoints(updated)
+        val unitKey = getCurrentUnitKey()
+        if (unitKey.isNotBlank()) {
+            updated.forEach { p ->
+                syncManager?.pushWarehousePointAsync(unitKey, p)
+            }
+        }
+    }
+
     suspend fun addCustomInventoryItem(name: String, category: String, subCategory: String, unit: String) {
         val i = InventoryItem(java.util.UUID.randomUUID().toString(), name, category, subCategory, unit, "Кат. 1")
         dao.insertItem(i)

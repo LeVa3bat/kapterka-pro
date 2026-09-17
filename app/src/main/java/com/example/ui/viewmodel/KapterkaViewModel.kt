@@ -381,6 +381,13 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun reorderWarehousePoints(orderedPoints: List<WarehousePoint>) {
+        viewModelScope.launch {
+            repository.reorderWarehousePoints(orderedPoints)
+            _toastEvent.emit("Порядок складов и точек сохранён")
+        }
+    }
+
     // Custom Nomenclature Item
     fun addCustomItem(name: String, serviceCategory: String, subType: String, unit: String) {
         viewModelScope.launch {

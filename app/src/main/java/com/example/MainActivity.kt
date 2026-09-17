@@ -412,7 +412,8 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                             onProfileClick = { currentDestination = AppDestination.MORE },
                             onHelpClick = { showUserManualDialog = true },
                             isDarkTheme = isDarkTheme,
-                            onToggleTheme = { viewModel.toggleTheme() }
+                            onToggleTheme = { viewModel.toggleTheme() },
+                            onReorderPoints = { viewModel.reorderWarehousePoints(it) }
                         )
                     }
 

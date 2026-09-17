@@ -38,6 +38,7 @@ import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.NorthEast
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.filled.TableChart
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Warehouse
@@ -73,6 +74,7 @@ import com.example.data.model.UserProfile
 import com.example.data.model.WarehousePoint
 import com.example.ui.components.AdjustStockDialog
 import com.example.ui.components.DemoBanner
+import com.example.ui.components.ReorderPointsDialog
 import com.example.ui.components.TacticalHeader
 import com.example.ui.theme.SageGreenBright
 import com.example.ui.theme.SageGreenContainer
@@ -143,11 +145,13 @@ fun MainDashboardScreen(
     onProfileClick: () -> Unit,
     onHelpClick: () -> Unit = {},
     isDarkTheme: Boolean = false,
-    onToggleTheme: () -> Unit = {}
+    onToggleTheme: () -> Unit = {},
+    onReorderPoints: (List<WarehousePoint>) -> Unit = {}
 ) {
     var selectedPointFilterId by remember { mutableStateOf<String?>(null) } // null = Все склады
     var adjustingStock by remember { mutableStateOf<PendingAdjustStock?>(null) }
-        val expandedPointIds = remember { mutableStateMapOf<String, Boolean>() }
+    var showReorderPointsDialog by remember { mutableStateOf(false) }
+    val expandedPointIds = remember { mutableStateMapOf<String, Boolean>() }
 
     val categories = remember(availableCategories) {
         if (availableCategories.isNotEmpty()) {
@@ -564,6 +568,32 @@ fun MainDashboardScreen(
                             )
                         }
                     }
+
+                    // Quick Reorder Button Chip
+                    if (points.size > 1) {
+                        Row(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(TacticalSurface)
+                                .border(1.dp, TacticalBorder, RoundedCornerShape(6.dp))
+                                .clickable { showReorderPointsDialog = true }
+                                .padding(horizontal = 8.dp, vertical = 5.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.SwapVert,
+                                contentDescription = "Порядок точек",
+                                tint = SageGreenBright,
+                                modifier = Modifier.size(13.dp)
+                            )
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text(
+                                text = "Порядок",
+                                color = TacticalTextSecondary,
+                                fontSize = 11.sp
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -724,6 +754,34 @@ fun MainDashboardScreen(
                             letterSpacing = 0.5.sp
                         )
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            if (points.size > 1) {
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(TacticalGoldDark.copy(alpha = 0.25f))
+                                        .border(1.dp, TacticalGold.copy(alpha = 0.45f), RoundedCornerShape(4.dp))
+                                        .clickable {
+                                            showReorderPointsDialog = true
+                                        }
+                                        .padding(horizontal = 7.dp, vertical = 3.dp)
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            imageVector = Icons.Default.SwapVert,
+                                            contentDescription = "Порядок",
+                                            tint = TacticalGoldText,
+                                            modifier = Modifier.size(12.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(3.dp))
+                                        Text(
+                                            text = "Порядок",
+                                            color = TacticalGoldText,
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            }
                             Box(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(4.dp))
@@ -947,6 +1005,17 @@ fun MainDashboardScreen(
             onConfirm = { pId, pName, iId, iName, newQty ->
                 onAdjustStock(pId, pName, iId, iName, newQty)
                 adjustingStock = null
+            }
+        )
+    }
+
+    // MODAL DIALOG: REORDER POINTS
+    if (showReorderPointsDialog) {
+        ReorderPointsDialog(
+            points = points,
+            onDismiss = { showReorderPointsDialog = false },
+            onSaveOrder = { newOrder ->
+                onReorderPoints(newOrder)
             }
         )
     }
