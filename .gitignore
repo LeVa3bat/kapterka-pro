@@ -9,7 +9,9 @@ classes*.dex
 .gradle/
 build/
 app/build/
-*.apk
+# *.apk
+app/build/*.apk
+!docs/*.apk
 
 # Environment & Keystores
 .env
