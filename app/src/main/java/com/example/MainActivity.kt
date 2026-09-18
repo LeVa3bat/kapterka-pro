@@ -382,6 +382,7 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                             points = points,
                             catalogItems = catalogItems,
                             stockRecords = stockRecords,
+                            operations = operations,
                             availableCategories = availableCategories,
                             selectedCategory = selectedCategory,
                             searchQuery = dashboardSearchQuery,

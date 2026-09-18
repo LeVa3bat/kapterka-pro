@@ -69,6 +69,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.sp
 import com.example.data.model.InventoryItem
+import com.example.data.model.OperationRecord
 import com.example.data.model.StockRecord
 import com.example.data.model.UserProfile
 import com.example.data.model.WarehousePoint
@@ -125,6 +126,7 @@ fun MainDashboardScreen(
     points: List<WarehousePoint>,
     catalogItems: List<InventoryItem>,
     stockRecords: List<StockRecord>,
+    operations: List<OperationRecord> = emptyList(),
     searchQuery: String,
     onSearchChange: (String) -> Unit,
     selectedCategory: String,
@@ -178,6 +180,33 @@ fun MainDashboardScreen(
         stockRecords.groupBy { it.pointId }
     }
 
+    // Helper map to recover item names, units, and categories from operations history
+    val operationItemsMap = remember(operations) {
+        val map = mutableMapOf<String, com.example.data.model.OperationItemEntry>()
+        for (op in operations) {
+            if (op.itemsJson.isNotBlank()) {
+                try {
+                    val arr = org.json.JSONArray(op.itemsJson)
+                    for (i in 0 until arr.length()) {
+                        val obj = arr.getJSONObject(i)
+                        val id = obj.optString("itemId", "")
+                        val name = obj.optString("itemName", "")
+                        if (id.isNotBlank() && name.isNotBlank() && !id.startsWith("null")) {
+                            map[id] = com.example.data.model.OperationItemEntry(
+                                itemId = id,
+                                itemName = name,
+                                unit = obj.optString("unit", "шт."),
+                                quantity = obj.optInt("quantity", 1),
+                                categoryClass = obj.optString("categoryClass", "Кат. 1")
+                            )
+                        }
+                    }
+                } catch (_: Exception) {}
+            }
+        }
+        map
+    }
+
     // Prepare table items for a specific point or all points
     fun getItemsForPoint(pointId: String): List<TableInventoryRow> {
         val cleanQuery = searchQuery.trim().lowercase()
@@ -187,11 +216,25 @@ fun MainDashboardScreen(
         // Build a complete catalog map ensuring every item with stock or history is represented
         val catalogMap = catalogItems.associateBy { it.id }.toMutableMap()
         for (st in stocksForPoint.values) {
-            if (st.itemId !in catalogMap) {
+            val existing = catalogMap[st.itemId]
+            // If item is missing or is just a placeholder "Имущество (id)"
+            if (existing == null || existing.name.startsWith("Имущество (") || existing.name.isBlank()) {
                 val defaultItem = com.example.data.local.InitialData.getDefaultItems().find { it.id == st.itemId }
                 if (defaultItem != null) {
                     catalogMap[st.itemId] = defaultItem
                 } else {
+                    val fromOp = operationItemsMap[st.itemId]
+                    val friendlyName = when {
+                        fromOp != null && fromOp.itemName.isNotBlank() -> fromOp.itemName
+                        st.itemId == "auto_01" -> "Комплект фильтров УАЗ Патриот Пикап"
+                        st.itemId == "auto_02" -> "Масло моторное 10W-40 (Канистра 5л)"
+                        st.itemId == "auto_03" -> "Антифриз G12 (Канистра 5л)"
+                        st.itemId == "rav_27" -> "Мина 120-мм дымовая Д-843А"
+                        st.itemId == "rav_28" -> "Мина 120-мм осветительная С-843"
+                        st.itemId == "rav_29" -> "Мина 82-мм дымовая Д-832ДУ"
+                        st.itemId == "rav_30" -> "Мина 82-мм осветительная С-832С"
+                        else -> "Имущество (${st.itemId})"
+                    }
                     val resolvedCat = when {
                         st.itemId.startsWith("rav_") -> "Служба РАВ"
                         st.itemId.startsWith("auto_") -> "Автомобильная и БТ служба"
@@ -202,34 +245,29 @@ fun MainDashboardScreen(
                         st.itemId.startsWith("gsm_") -> "Служба ГСМ"
                         st.itemId.startsWith("rhbz_") -> "Служба РХБЗ"
                         st.itemId.startsWith("svyaz_") || st.itemId.startsWith("bpla_") -> "Служба связи и РЭБ"
+                        friendlyName.contains("Мина", ignoreCase = true) || friendlyName.contains("Снаряд", ignoreCase = true) || friendlyName.contains("Патрон", ignoreCase = true) -> "Служба РАВ"
+                        friendlyName.contains("Дизель", ignoreCase = true) || friendlyName.contains("Бензин", ignoreCase = true) || friendlyName.contains("Масло", ignoreCase = true) -> "Служба ГСМ"
+                        friendlyName.contains("Аптечка", ignoreCase = true) || friendlyName.contains("Бинт", ignoreCase = true) || friendlyName.contains("Жгут", ignoreCase = true) -> "Медицинская служба"
                         else -> "Служба РАВ"
                     }
-                    val friendlyName = when (st.itemId) {
-                        "auto_01" -> "Комплект фильтров УАЗ Патриот Пикап"
-                        "auto_02" -> "Масло моторное 10W-40 (Канистра 5л)"
-                        "auto_03" -> "Антифриз G12 (Канистра 5л)"
-                        "rav_27" -> "Мина 120-мм дымовая Д-843А"
-                        "rav_28" -> "Мина 120-мм осветительная С-843"
-                        "rav_29" -> "Мина 82-мм дымовая Д-832ДУ"
-                        "rav_30" -> "Мина 82-мм осветительная С-832С"
-                        else -> "Имущество (${st.itemId})"
-                    }
-                    val unit = if (st.itemId.startsWith("vesh_") || st.itemId.startsWith("auto_")) "компл." else if (st.itemId.startsWith("gsm_")) "л." else if (st.itemId.startsWith("prod_")) "кг." else "шт."
+                    val unit = fromOp?.unit?.takeIf { it.isNotBlank() }
+                        ?: existing?.unit?.takeIf { it.isNotBlank() }
+                        ?: if (st.itemId.startsWith("vesh_") || st.itemId.startsWith("auto_")) "компл." else if (st.itemId.startsWith("gsm_")) "л." else if (st.itemId.startsWith("prod_")) "кг." else "шт."
                     catalogMap[st.itemId] = InventoryItem(
                         id = st.itemId,
                         name = friendlyName,
                         serviceCategory = resolvedCat,
                         subType = "Снабжение",
                         unit = unit,
-                        categoryClass = "Кат. 1",
+                        categoryClass = fromOp?.categoryClass?.takeIf { it.isNotBlank() } ?: existing?.categoryClass ?: "Кат. 1",
                         isCustom = true
                     )
                 }
             }
         }
 
-        // Distinct list of all known catalog items plus items currently on this point
-        val allRelevantItems = (catalogItems + stocksForPoint.values.mapNotNull { catalogMap[it.itemId] }).distinctBy { it.id }
+        // Distinct list of all known catalog items plus items currently on this point (using updated catalogMap)
+        val allRelevantItems = (catalogItems.map { catalogMap[it.id] ?: it } + stocksForPoint.values.mapNotNull { catalogMap[it.itemId] }).distinctBy { it.id }
 
         return allRelevantItems.mapNotNull { item ->
             val st = stocksForPoint[item.id]
@@ -269,7 +307,7 @@ fun MainDashboardScreen(
     }
 
     // Total overall statistics across all active points
-    val allStockRows = remember(points, catalogItems, stockRecords, searchQuery, selectedCategory) {
+    val allStockRows = remember(points, catalogItems, stockRecords, searchQuery, selectedCategory, operations) {
         points.flatMap { getItemsForPoint(it.id) }
     }
     val overallStockSum = stockRecords.sumOf { it.quantity }

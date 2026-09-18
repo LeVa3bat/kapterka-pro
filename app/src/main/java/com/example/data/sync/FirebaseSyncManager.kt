@@ -167,7 +167,9 @@ class FirebaseSyncManager(
                         )
                         if (s.pointId.isNotBlank() && s.itemId.isNotBlank()) {
                             dao.insertOrUpdateStock(s)
-                            ensureItemExists(unitKey, s.itemId)
+                            // Do not create generic placeholder from stock record if nameHint is missing;
+                            // operations listener will register it with exact name from itemsJson.
+                            // ensureItemExists(unitKey, s.itemId)
                         }
                     }
                 }
@@ -403,7 +405,7 @@ class FirebaseSyncManager(
                 // Upsert all authoritative cloud stock records
                 for (s in recordsToInsert) {
                     dao.insertOrUpdateStock(s)
-                    ensureItemExists(cleanKey, s.itemId)
+                    // ensureItemExists will be handled with real names during operation reconciliation below
                 }
             } else {
                 // Cloud has no stock records for this unit.
@@ -794,7 +796,23 @@ class FirebaseSyncManager(
     private suspend fun ensureItemExists(unitKey: String, itemId: String, nameHint: String? = null, unitHint: String? = null, catClassHint: String? = null) {
         if (itemId.isBlank()) return
         val existing = dao.getItemById(itemId)
-        if (existing != null) return
+        if (existing != null) {
+            // If existing item has a generic fallback name and we now have a real nameHint, update it!
+            if (!nameHint.isNullOrBlank() && (existing.name.startsWith("Имущество (") || existing.name.isBlank())) {
+                val nonNullName: String = nameHint
+                val updated = existing.copy(
+                    name = nonNullName,
+                    serviceCategory = resolveServiceCategory(itemId, nonNullName),
+                    unit = if (!unitHint.isNullOrBlank()) unitHint else existing.unit,
+                    categoryClass = if (!catClassHint.isNullOrBlank()) catClassHint else existing.categoryClass
+                )
+                dao.insertItem(updated)
+                if (unitKey.isNotBlank()) {
+                    pushInventoryItemAsync(unitKey, updated)
+                }
+            }
+            return
+        }
 
         val defaultMatch = com.example.data.local.InitialData.getDefaultItems().find { it.id == itemId }
         val itemToInsert = defaultMatch ?: InventoryItem(
