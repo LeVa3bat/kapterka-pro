@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Каптёрка Про — Простой карманный блокнот учёта складов и вещей без интернета</title>
-  <meta name="description" content="Удобный карманный блокнот на Android для учёта любого имущества и вещей на складе, в мастерской или на опорнике. Работает без интернета, синхронизируется с напарником по коду и заменяет тетрадки.">
+  <title>Каптёрка PRO — учёт имущества, складов и остатков на Android</title>
+  <meta name="description" content="Каптёрка PRO — Android-приложение для прихода, выдачи, перемещений, остатков, заявок и Excel-отчётов. Основной учёт работает без интернета, синхронизация — при появлении связи.">
   <meta name="keywords" content="блокнот складского учета, учет имущества андроид, каптерка про, учет остатков без интернета, простой склад на телефоне, учет вещей на складе, программа для склада">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
@@ -16,8 +16,8 @@
   <!-- Open Graph & Social Media SEO (Telegram, VK, WhatsApp) -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://kapterka-pro.ru/">
-  <meta property="og:title" content="Каптёрка Про — Простой карманный блокнот учёта вещей без интернета">
-  <meta property="og:description" content="Забудьте про исчирканные тетрадки. Удобный блокнот на телефон: считает остатки, работает без связи в подвале и передает список напарнику по коду.">
+  <meta property="og:title" content="Каптёрка PRO — учёт имущества и складов на Android">
+  <meta property="og:description" content="Приход, выдача, перемещения, остатки, заявки и Excel. 3 дня полного демо-доступа.">
   <meta property="og:image" content="https://kapterka-pro.ru/favicon.svg">
   <meta property="og:site_name" content="Каптёрка Про">
   <meta property="og:locale" content="ru_RU">
@@ -30,85 +30,29 @@
     "name": "Каптёрка Про",
     "operatingSystem": "Android",
     "applicationCategory": "BusinessApplication",
+    "softwareVersion": "3.4.9",
+    "dateModified": "2026-09-20",
     "offers": {
       "@type": "Offer",
       "price": "490.00",
       "priceCurrency": "RUB"
     },
-    "description": "Простой карманный блокнот на Android для учёта складов, вещей и остатков без интернета. Заменяет тетрадки и формирует отчёты в Excel.",
+    "description": "Android-приложение для учёта имущества, складов и остатков: приход, выдача, перемещения, заявки и Excel-отчёты. Основной учёт доступен без интернета.",
     "url": "https://kapterka-pro.ru/"
-  }
-  </script>
-
-  <!-- Schema.org FAQPage (Rich Snippets for Yandex & Google) -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    "mainEntity": [
-      {
-        "@type": "Question",
-        "name": "Работает ли приложение «Каптёрка Про» полностью без интернета?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Да, на 100%. Приложение создавалось специально для работы в блиндажах, подвалах и на удаленных позициях в зоне СВО при полном отсутствии мобильной связи и Wi-Fi. Вся база данных хранится локально на вашем смартфоне в защищенном хранилище SQLite (Room DB) с шифрованием AES-256."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Как происходит списание боеприпасов и выстрелов по Форме № 8?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "В меню быстрых действий на главном экране нажимается кнопка «Расход ф. 8». Вы выбираете позицию (например, патроны 5.45 мм 7Н10 или выстрелы ПГ-7В), указываете количество и повод списания (боевое применение, учебные стрельбы, пристрелка). Программа мгновенно уменьшает остаток на складе и формирует официальный Акт списания по установленной форме МО РФ."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Соответствуют ли отчеты Приказам МО РФ (Форма 18, Форма 8, Форма 26)?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Да. Все выгрузки строго структурированы по требованиям руководящих документов тыла и служб вооружения (Приказ МО РФ № 300ДСП). Экспорт в формате Excel (.xlsx) формирует белые официальные бланки с шапками, графами прихода/расхода и местами для подписей членов комиссии, готовые к печати на принтере штаба."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Можно ли установить «Каптёрка Про» на защищенный планшет без сервисов Google?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Да. «Каптёрка Про» не требует сервисов Google Play. APK-файл устанавливается на любые устройства под управлением Android 8.0 и выше — гражданские смартфоны, армейские защищенные планшеты (Blackview, Oukitel, Torex, Ulefone), а также доступен в отечественном магазине RuStore."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Как синхронизировать склад роты между несколькими бойцами?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Старшина или командир подразделения создает общий склад и генерирует уникальный 6-значный ключ роты (например, kapt_59e13b). Остальные бойцы (взводные, каптерщики) вводят этот ключ в настройках приложения. При появлении интернета изменения по остаткам синхронизируются автоматически, объединяя данные подразделения без задвоения."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Что произойдет с данными и лицензией при поломке или утере телефона?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Ваша персональная лицензия навсегда привязана к номеру телефона или позывному в вашем личном кабинете на сайте kapterka-pro.ru. При замене устройства достаточно установить APK на новый телефон и активировать свой ключ заново. База данных подразделения восстанавливается из зашифрованной резервной копии по ключу роты."
-        }
-      }
-    ]
   }
   </script>
 
   <!-- Twitter Cards -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Каптёрка Про — Карманный блокнот учёта вещей без интернета">
-  <meta name="twitter:description" content="Простой складской блокнот на Android. Учёт остатков, работа без интернета и передача списка напарнику по коду.">
+  <meta name="twitter:title" content="Каптёрка PRO — учёт имущества и складов на Android">
+  <meta name="twitter:description" content="Приход, выдача, перемещения, остатки, заявки и Excel. Основной учёт работает офлайн.">
   <meta name="twitter:image" content="https://kapterka-pro.ru/favicon.svg">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=3.4.8.26">
-  <link rel="stylesheet" href="tabs_and_cabinet.css?v=3.4.8.26">
+  <link rel="stylesheet" href="style.css?v=3.4.9.31c">
+  <link rel="stylesheet" href="tabs_and_cabinet.css?v=3.4.9.31">
 
   <!-- Favicon & Mobile Icons (Тактическая светящаяся иконка Каптёрка Про) -->
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
@@ -189,397 +133,145 @@
   <!-- TAB 1: ОБЗОР, ВОЗМОЖНОСТИ И СКЛАДЫ (TAB OVERVIEW) -->
   <!-- ========================================================================= -->
   <div id="tabOverview" class="app-view-tab active">
-    <!-- Hero Section -->
-    <header class="hero" id="home">
+    <header class="hero compact-hero" id="home">
       <div class="container">
-        <div class="hero-grid">
-          
-          <div class="hero-content">
-            <div class="badge">
-              <span class="badge-dot"></span>
-              Карманный блокнот учёта • 100% без интернета
-            </div>
-            <h1>
-              Простой блокнот, который <span>заменяет тетрадку</span> и считает остатки
-            </h1>
-            <p class="hero-subtitle">
-              Забудьте про исчирканные блокноты и путаницу в записях. Считайте любые вещи на складе, в гараже, мастерской или на опорнике. Быстрый приход и выдача в два клика, работа без связи в подвале и передача списка напарнику по короткому коду.
+        <div class="compact-hero-grid">
+          <div class="compact-hero-copy">
+            <div class="badge"><span class="badge-dot"></span> Android • версия 3.4.9 • сборка 31</div>
+            <h1>Учёт имущества и склада <span>прямо в телефоне</span></h1>
+            <p class="compact-lead">
+              Приход, выдача, перемещения, остатки, заявки и готовые Excel-отчёты в одном приложении.
+              Основной учёт работает без интернета; когда связь появляется, данные можно синхронизировать между устройствами подразделения.
             </p>
 
-            <div class="update-banner">
-              <div class="update-banner-icon">⚡</div>
-              <div class="update-banner-text">
-                <strong>МЫ В RUSTORE! ОФИЦИАЛЬНАЯ ВЕРСИЯ 3.4.8 (СБОРКА 26) ДОСТУПНА В КАТАЛОГЕ</strong>
-                <p>Полностью устранена проблема появления заглушек <strong>«Имущество (id)»</strong> при массовом приходе 30–40+ позиций. Реальные наименования, единицы измерения и службы автоматически восстанавливаются из проводок и синхронизируются в базе. Чистый релизный APK (17.9 МБ).</p>
-              </div>
+            <div class="compact-trust-row">
+              <span>✓ 3 дня полного демо</span>
+              <span>✓ Без рекламы</span>
+              <span>✓ Обновление поверх старой версии</span>
             </div>
 
-            <div class="hero-actions">
-              <div style="display:flex; flex-direction:column; gap:16px; align-items:center;">
-                <div style="display:flex; flex-wrap:wrap; gap:16px; justify-content:center; align-items:center;">
-                  <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('hero')" class="btn btn-primary btn-lg" style="box-shadow:0 0 16px rgba(141,170,89,0.3); font-size:1.05rem; padding:15px 26px;">
-                    📥 Скачать бесплатно APK (18 МБ)
-                  </a>
-                  <a href="https://apps.rustore.ru/app/com.aistudio.kapterka.jmwqve" target="_blank" rel="noopener noreferrer" style="display:inline-block; transition:transform 0.2s ease;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'" title="Скачать «Каптёрка Про» в официальном магазине RuStore">
-                    <img src="rustore_badge.svg" alt="Доступно в RuStore" width="160" height="48" style="display:block; height:48px; width:auto; border-radius:8px; box-shadow:0 4px 14px rgba(0,91,255,0.25);">
-                  </a>
-                </div>
-                <div style="font-size:0.88rem; color:#00e676; text-align:center; font-weight:600;">
-                  🟢 Бесплатно навсегда для личного учёта • Без рекламы • 100% оффлайн
-                </div>
-                <div style="background:rgba(255,179,0,0.08); border:1px solid rgba(255,179,0,0.3); border-radius:8px; padding:10px 14px; max-width:580px; font-size:0.82rem; color:#ffd54f; text-align:center; line-height:1.45;">
-                  🛡️ <strong>Если телефон напишет «Файл может быть опасен»:</strong> не пугайтесь, это стандартное предупреждение Android для всех APK не из Google Play. Файл на 100% безопасен — смело нажимайте <em>«Всё равно скачать»</em>.
-                </div>
-                <div style="display:flex; flex-wrap:wrap; gap:14px; justify-content:center; margin-top:4px;">
-                  <button class="btn btn-outline btn-md" onclick="switchMainTab('tabCabinet')">Личный кабинет</button>
-                  <button class="btn btn-gold btn-md" onclick="switchMainTab('tabPayment')">Тарифы и PRO-доступ ➔</button>
-                </div>
-              </div>
+            <div class="compact-hero-actions">
+              <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('hero_compact')" class="btn btn-primary btn-lg">📥 Скачать APK</a>
+              <a href="javascript:void(0)" onclick="openModal('modalRuStore')" class="compact-rustore-link">
+                <img src="rustore_badge.svg" alt="Каптёрка PRO в RuStore" width="160" height="48">
+              </a>
+              <button class="btn btn-gold btn-lg" onclick="switchMainTab('tabPayment')">PRO — 490 ₽</button>
             </div>
 
-            <div class="hero-features-chips">
-              <a href="javascript:void(0)" onclick="openModal('modalFeatures')" class="chip chip-clickable" title="Нажмите, чтобы узнать, что умеет блокнот">
-                <span class="chip-icon">📴</span>
-                <span>Работает без интернета</span>
-              </a>
-              <a href="javascript:void(0)" onclick="switchMainTab('tabSync')" class="chip chip-clickable" title="Нажмите, чтобы узнать, как вести склад вдвоём">
-                <span class="chip-icon">🤝</span>
-                <span>Синхронизация с напарником</span>
-              </a>
-              <a href="javascript:void(0)" onclick="openModal('modalFeatures')" class="chip chip-clickable" title="Нажмите, чтобы посмотреть примеры отчетов">
-                <span class="chip-icon">📊</span>
-                <span>Отчёт в Excel за секунду</span>
-              </a>
-              <a href="javascript:void(0)" onclick="openModal('modalOpsec')" class="chip chip-clickable" title="Нажмите, чтобы узнать о защите записей">
-                <span class="chip-icon">🔒</span>
-                <span>Данные только в телефоне</span>
-              </a>
-            </div>
-            <div style="margin-top: 14px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-              <button class="btn btn-outline btn-sm" onclick="openModal('modalFeatures')" style="font-size: 0.82rem; padding: 7px 14px; display: inline-flex; align-items: center; gap: 6px; border-color: rgba(141,170,89,0.4); color: var(--primary);">
-                <span>💡</span> Что умеет блокнот
-              </button>
-              <button class="btn btn-outline btn-sm" onclick="openModal('modalSyncMech')" style="font-size: 0.82rem; padding: 7px 14px; display: inline-flex; align-items: center; gap: 6px; border-color: rgba(91,192,190,0.4); color: #5bc0be;">
-                <span>🤝</span> Как работать вдвоём
-              </button>
-              <button class="btn btn-outline btn-sm" onclick="openModal('modalOpsec')" style="font-size: 0.82rem; padding: 7px 14px; display: inline-flex; align-items: center; gap: 6px; border-color: rgba(255,85,85,0.4); color: #ff7777;">
-                <span>🔒</span> Защита и оффлайн
-              </button>
-            </div>
-            <div style="margin-top: 12px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-              <a href="https://t.me/kapterka_pro" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" style="font-size: 0.82rem; padding: 6px 14px; display: inline-flex; align-items: center; gap: 6px; border-color: rgba(41,182,246,0.5); color: #29b6f6; background: rgba(41,182,246,0.07); text-decoration: none;">
-                <span>📢</span> TG-канал @kapterka_pro
-              </a>
-              <a href="https://t.me/kapterka_help_bot" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" style="font-size: 0.82rem; padding: 6px 14px; display: inline-flex; align-items: center; gap: 6px; border-color: rgba(91,192,190,0.5); color: #5bc0be; background: rgba(91,192,190,0.07); text-decoration: none;">
-                <span>🤖</span> Бот поддержки @kapterka_help_bot
-              </a>
+            <div class="compact-note">
+              <strong>3.4.9:</strong> исправлено разделение данных между подразделениями, улучшены лицензия, вход, ключ <code>kapt_...</code> и учёт активных устройств.
             </div>
           </div>
 
-          <!-- Smartphone Frame with Real Screenshot -->
-          <div class="mockup-container">
-            <div class="phone-frame" style="box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 30px rgba(141,170,89,0.25);">
-              <div class="phone-notch"></div>
-              <div class="phone-screen" style="padding:0; overflow:hidden; background:#000;">
-                <img src="real_screen_2.jpg" alt="Каптёрка ПРО — Реальный интерфейс" style="width:100%; height:100%; object-fit:cover; display:block;">
-              </div>
-            </div>
-
-            <div class="floating-stats">
-              <div>
-                <div class="stat-val">100%</div>
-                <div class="stat-label">Автономность</div>
-              </div>
+          <div class="compact-phone-wrap">
+            <div class="compact-phone-card" onclick="openLightbox('screen_main_349.jpg', 'Главный экран Каптёрка PRO 3.4.9')">
+              <img src="screen_main_349.jpg" alt="Каптёрка PRO 3.4.9 — главный экран" loading="eager">
             </div>
           </div>
-
         </div>
       </div>
     </header>
 
-    <!-- ========================================================================= -->
-    <!-- INTERACTIVE MINI-DEMO: ПОПРОБУЙТЕ ПРЯМО В БРАУЗЕРЕ ЗА 15 СЕКУНД -->
-    <!-- ========================================================================= -->
-    <section class="section" id="interactiveDemo" style="padding-top:20px; padding-bottom:30px;">
+    <section class="section compact-benefits-section">
       <div class="container">
-        <div class="section-header" style="margin-bottom:20px;">
-          <div class="badge badge-gold">⚡ Интерактивный тест</div>
-          <h2>Попробуйте прямо сейчас за 15 секунд</h2>
-          <p>Нажмите кнопки ниже — вот так просто и моментально ведётся учёт имущества прямо в телефоне:</p>
+        <div class="compact-benefits-grid">
+          <button class="compact-benefit" onclick="openModal('modalFeatures')">
+            <span class="compact-benefit-icon">📦</span>
+            <strong>Остатки без путаницы</strong>
+            <small>Приход, выдача и перемещения сразу пересчитывают склад.</small>
+          </button>
+          <button class="compact-benefit" onclick="switchMainTab('tabSync')">
+            <span class="compact-benefit-icon">🔄</span>
+            <strong>Синхронизация</strong>
+            <small>Работайте локально, синхронизируйтесь, когда появилась связь.</small>
+          </button>
+          <button class="compact-benefit" onclick="openModal('modalFeatures')">
+            <span class="compact-benefit-icon">📊</span>
+            <strong>Excel и печатные формы</strong>
+            <small>Сводки и ведомости формируются из уже введённых данных.</small>
+          </button>
+          <button class="compact-benefit" onclick="switchMainTab('tabCabinet')">
+            <span class="compact-benefit-icon">🔑</span>
+            <strong>Ключ подразделения</strong>
+            <small>Данные разделяются по коду <code>kapt_...</code> и не смешиваются между подразделениями.</small>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="section compact-showcase" id="screens">
+      <div class="container">
+        <div class="compact-section-heading">
+          <div>
+            <span class="badge badge-gold">Актуальный интерфейс</span>
+            <h2>Так выглядит версия 3.4.9</h2>
+            <p>Свежие скриншоты с реального телефона, а не макеты старой версии.</p>
+          </div>
+          <button class="btn btn-outline" onclick="switchMainTab('tabDownload')">Как установить</button>
         </div>
 
-        <div style="max-width:640px; margin:0 auto; background:#0e1610; border:1px solid rgba(141,170,89,0.4); border-radius:16px; padding:20px; box-shadow:0 12px 40px rgba(0,0,0,0.6);">
-          <!-- Phone Header Simulation -->
-          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:12px; margin-bottom:16px;">
-            <div style="display:flex; align-items:center; gap:8px;">
-              <span style="font-size:1.3rem;">📦</span>
-              <div>
-                <strong style="color:var(--text-primary); font-size:0.95rem;">Склад: Основной склад</strong>
-                <div style="font-size:0.75rem; color:#00e676; font-family:var(--font-mono);">● Режим: 100% Оффлайн (без связи)</div>
-              </div>
-            </div>
-            <span class="badge" style="background:rgba(141,170,89,0.15); color:var(--primary); font-size:0.75rem;" id="demoTotalItemsCount">3 позиции</span>
-          </div>
+        <div class="compact-screens-grid">
+          <button class="compact-screen-card" onclick="openLightbox('screen_main_349.jpg', 'Главный экран: склады, остатки и быстрые операции')">
+            <img src="screen_main_349.jpg" alt="Главный экран Каптёрка PRO 3.4.9" loading="lazy">
+            <span><strong>Главная</strong><small>Склады, остатки, приход, выдача и перемещения.</small></span>
+          </button>
+          <button class="compact-screen-card" onclick="openLightbox('screen_catalog_349.jpg', 'Каталог номенклатуры Каптёрка PRO 3.4.9')">
+            <img src="screen_catalog_349.jpg" alt="Каталог Каптёрка PRO 3.4.9" loading="lazy">
+            <span><strong>Каталог</strong><small>Категории, поиск и собственные позиции.</small></span>
+          </button>
+        </div>
+        <p class="compact-safety-caption">На публичной странице показаны только скриншоты без позывных, координат и других данных подразделения.</p>
+      </div>
+    </section>
 
-          <!-- Items Interactive List -->
-          <div id="demoItemsList" style="display:flex; flex-direction:column; gap:10px; margin-bottom:16px;">
-            <!-- Rendered by JS -->
+    <section class="section compact-update-section">
+      <div class="container">
+        <div class="compact-update-card">
+          <div>
+            <span class="badge">Что нового</span>
+            <h2>Версия 3.4.9</h2>
+            <p>Обновление рассчитано на установку поверх предыдущей версии без очистки приложения.</p>
           </div>
-
-          <!-- Quick Add Form -->
-          <div style="background:rgba(255,255,255,0.03); border:1px dashed rgba(141,170,89,0.3); border-radius:10px; padding:12px; margin-bottom:16px;">
-            <div style="font-size:0.82rem; color:var(--text-secondary); margin-bottom:8px; font-weight:600;">
-              ➕ Добавить свою вещь для проверки:
-            </div>
-            <div style="display:flex; gap:8px; flex-wrap:wrap;">
-              <input type="text" id="demoNewItemName" placeholder="Название (напр.: Спальные мешки)" class="form-input" style="flex:1; min-width:180px; font-size:0.88rem; padding:8px 12px;">
-              <input type="number" id="demoNewItemQty" placeholder="Кол-во" value="10" min="1" class="form-input" style="width:80px; font-size:0.88rem; padding:8px 10px;">
-              <button class="btn btn-primary btn-sm" onclick="demoAddItem()" style="white-space:nowrap; padding:8px 16px;">
-                + Добавить
-              </button>
-            </div>
-          </div>
-
-          <!-- Live Log of Operations -->
-          <div style="background:#070b08; border-radius:8px; padding:10px 14px; margin-bottom:18px; font-size:0.78rem; font-family:var(--font-mono); color:var(--text-muted); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
-            <span id="demoLastLogText">💡 Подсказка: нажмите «+ Приход» или «- Выдать», чтобы изменить остаток.</span>
-            <button class="btn btn-outline btn-sm" onclick="demoExportExcel()" style="font-size:0.72rem; padding:3px 8px; color:var(--accent-gold); border-color:rgba(255,179,0,0.4);">
-              📊 Скачать Excel-таблицу
-            </button>
-          </div>
-
-          <!-- Call to Action Banner -->
-          <div style="text-align:center; padding-top:12px; border-top:1px solid rgba(255,255,255,0.08);">
-            <div style="font-size:0.92rem; color:#fff; font-weight:700; margin-bottom:10px;">
-              Понравилось, насколько всё просто? Установите блокнот на свой телефон:
-            </div>
-            <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap; align-items:center;">
-              <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('demo')" class="btn btn-primary btn-md" style="font-size:0.95rem; padding:10px 20px; box-shadow:0 0 16px rgba(141,170,89,0.3);">
-                📥 Скачать бесплатно APK (18 МБ)
-              </a>
-              <a href="https://apps.rustore.ru/app/com.aistudio.kapterka.jmwqve" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-md" style="font-size:0.88rem; padding:9px 16px; border-color:rgba(0,91,255,0.5); color:#6da2ff;" title="Официальная страница в RuStore">
-                🏪 Доступно в RuStore ➔
-              </a>
-            </div>
-            <div style="font-size:0.78rem; color:#00e676; margin-top:8px;">
-              ✓ Базовый личный учёт бесплатно навсегда • 100% без интернета
-            </div>
+          <div class="compact-update-list">
+            <div>✓ Старые точки не переносятся в новое подразделение</div>
+            <div>✓ Новому пользователю доступно 3 дня демо</div>
+            <div>✓ Улучшено отображение <code>kapt_...</code> и состояния лицензии</div>
+            <div>✓ Исправлен счётчик активных устройств и диагностика</div>
           </div>
         </div>
       </div>
     </section>
 
-<!-- Tactical 3D Screenshots Showcase (100% Real Android Screens) -->
-    <section class="section carousel-section" id="screens">
-      <div class="container">
-        <div class="section-header">
-          <div class="badge badge-gold">Как это выглядит в телефоне</div>
-          <h2>Простые и понятные экраны</h2>
-          <p>Всё сделано крупно и наглядно: чтобы быстро записать приход или выдачу даже на бегу и в темноте</p>
-        </div>
-
-        <div class="carousel-3d-stage">
-          <div class="carousel-wrapper" id="screenshotsCarousel">
-            <button class="carousel-btn prev" id="carouselPrev" aria-label="Предыдущий экран">‹</button>
-            <button class="carousel-btn next" id="carouselNext" aria-label="Следующий экран">›</button>
-
-            <div class="carousel-viewport">
-              <div class="carousel-track" id="carouselTrack">
-                <!-- Slide 1 -->
-                <div class="carousel-slide" onclick="openLightbox('real_screen_1.jpg', 'Экран 1: Быстрый запуск')">
-                  <div class="carousel-img-frame">
-                    <span class="carousel-badge-corner">1 / 7</span>
-                    <img src="real_screen_1.jpg" alt="1. Быстрый запуск" loading="lazy">
-                  </div>
-                  <div class="carousel-meta">
-                    <div class="carousel-meta-title">⚡ 1. Быстрый вход</div>
-                    <div class="carousel-meta-desc">Открывается за 2 секунды без паролей. Все данные хранятся прямо в памяти телефона.</div>
-                  </div>
-                </div>
-
-                <!-- Slide 2 -->
-                <div class="carousel-slide" onclick="openLightbox('real_screen_2.jpg', 'Экран 2: Главный экран и остатки')">
-                  <div class="carousel-img-frame">
-                    <span class="carousel-badge-corner">2 / 7</span>
-                    <img src="real_screen_2.jpg" alt="2. Главный экран: точки и остатки" loading="lazy">
-                  </div>
-                  <div class="carousel-meta">
-                    <div class="carousel-meta-title">🏠 2. Главный экран</div>
-                    <div class="carousel-meta-desc">Крупные кнопки: «Приход», «Перенос», «Выдача». Сразу видно, сколько вещей на каком складе или точке.</div>
-                  </div>
-                </div>
-
-                <!-- Slide 3 -->
-                <div class="carousel-slide" onclick="openLightbox('real_screen_3.jpg', 'Экран 3: История всех записей')">
-                  <div class="carousel-img-frame">
-                    <span class="carousel-badge-corner">3 / 7</span>
-                    <img src="real_screen_3.jpg" alt="3. Журнал операций" loading="lazy">
-                  </div>
-                  <div class="carousel-meta">
-                    <div class="carousel-meta-title">⏱️ 3. История записей</div>
-                    <div class="carousel-meta-desc">Кто, сколько и куда отдал. Ни одна вещь не потеряется, каждую запись можно открыть и проверить.</div>
-                  </div>
-                </div>
-
-                <!-- Slide 4 -->
-                <div class="carousel-slide" onclick="openLightbox('real_screen_4.jpg', 'Экран 4: Список нужных вещей')">
-                  <div class="carousel-img-frame">
-                    <span class="carousel-badge-corner">4 / 7</span>
-                    <img src="real_screen_4.jpg" alt="4. Заявки на снабжение" loading="lazy">
-                  </div>
-                  <div class="carousel-meta">
-                    <div class="carousel-meta-title">📋 4. Список нужных вещей</div>
-                    <div class="carousel-meta-desc">Список того, что просят привезти или докупить, с удобными отметками «Собрано» и «Выдано».</div>
-                  </div>
-                </div>
-
-                <!-- Slide 5 -->
-                <div class="carousel-slide" onclick="openLightbox('real_screen_5.jpg', 'Экран 5: Удобный каталог вещей')">
-                  <div class="carousel-img-frame">
-                    <span class="carousel-badge-corner">5 / 7</span>
-                    <img src="real_screen_5.jpg" alt="5. Справочник номенклатуры" loading="lazy">
-                  </div>
-                  <div class="carousel-meta">
-                    <div class="carousel-meta-title">📦 5. Каталог вещей</div>
-                    <div class="carousel-meta-desc">Всё разложено по полочкам: снаряжение, инструмент, запчасти, связь, медицина или любые свои позиции.</div>
-                  </div>
-                </div>
-
-                <!-- Slide 6 -->
-                <div class="carousel-slide" onclick="openLightbox('real_screen_6.jpg', 'Экран 6: Готовый отчет в Excel')">
-                  <div class="carousel-img-frame">
-                    <span class="carousel-badge-corner">6 / 7</span>
-                    <img src="real_screen_6.jpg" alt="6. Печатные формы Excel и бланки" loading="lazy">
-                  </div>
-                  <div class="carousel-meta">
-                    <div class="carousel-meta-title">📊 6. Отчёт в Excel за секунду</div>
-                    <div class="carousel-meta-desc">Нажали кнопку — получили аккуратную таблицу Excel. Можно сразу переслать в мессенджер или распечатать.</div>
-                  </div>
-                </div>
-
-                <!-- Slide 7 -->
-                <div class="carousel-slide" onclick="openLightbox('real_screen_7.jpg', 'Экран 7: Работа вдвоём и настройки')">
-                  <div class="carousel-img-frame">
-                    <span class="carousel-badge-corner">7 / 7</span>
-                    <img src="real_screen_7.jpg" alt="7. Настройки и синхронизация" loading="lazy">
-                  </div>
-                  <div class="carousel-meta">
-                    <div class="carousel-meta-title">⚙️ 7. Работа вдвоём</div>
-                    <div class="carousel-meta-desc">Подключение напарника по короткому коду, резервная копия и выбор светлой или ночной темы.</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Carousel Pagination Dots -->
-            <div class="carousel-dots" id="carouselDots">
-              <span class="carousel-dot active" data-index="0"></span>
-              <span class="carousel-dot" data-index="1"></span>
-              <span class="carousel-dot" data-index="2"></span>
-              <span class="carousel-dot" data-index="3"></span>
-              <span class="carousel-dot" data-index="4"></span>
-              <span class="carousel-dot" data-index="5"></span>
-              <span class="carousel-dot" data-index="6"></span>
-            </div>
+    <section class="section compact-faq-section">
+      <div class="container compact-narrow">
+        <div class="compact-section-heading compact-section-heading-simple">
+          <div>
+            <span class="badge">Коротко о главном</span>
+            <h2>Перед установкой</h2>
           </div>
         </div>
-
-        <!-- Quick actions row under carousel -->
-        <div style="display:flex; justify-content:center; gap:16px; margin-top:24px; flex-wrap:wrap;">
-          <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('showcase_real')" class="btn btn-primary btn-lg">
-            📥 Скачать приложение APK v3.4.8 (18 МБ)
-          </a>
-          <button class="btn btn-outline" onclick="switchMainTab('tabDownload')">Инструкция по установке</button>
+        <div class="compact-faq-list">
+          <details open>
+            <summary>Работает ли приложение без интернета?</summary>
+            <p>Основные операции учёта и локальная база доступны без сети. Интернет нужен для облачной синхронизации, восстановления облачных данных и отдельных сетевых функций.</p>
+          </details>
+          <details>
+            <summary>Сохранятся ли данные при обновлении?</summary>
+            <p>Версия 3.4.9 предназначена для установки поверх предыдущей версии. При обычном обновлении приложение не требует удаления локальной базы.</p>
+          </details>
+          <details>
+            <summary>Как попробовать перед покупкой?</summary>
+            <p>Новый пользователь получает 3 дня полного демо-доступа. После этого PRO можно оформить во вкладке «Тарифы и PRO».</p>
+          </details>
         </div>
-
-        <!-- ===================================================================== -->
-        <!-- БЛОК FAQ: ВОПРОСЫ И ОТВЕТЫ (SEO & RICH SNIPPETS) -->
-        <!-- ===================================================================== -->
-        <div class="faq-section" style="margin-top: 48px;">
-          <div class="section-title" style="margin-bottom: 24px;">
-            <div class="faq-badge-pill">🛡️ База знаний & Вопросы</div>
-            <h2>Часто задаваемые вопросы</h2>
-            <p>Ответы на главные технические и юридические вопросы об учете материальных средств и списании имущества</p>
+        <div class="compact-bottom-cta">
+          <div>
+            <strong>Готовы попробовать?</strong>
+            <span>Установите APK и проверьте приложение на своих данных в течение 3 дней.</span>
           </div>
-
-          <div class="faq-list">
-            <!-- FAQ 1 -->
-            <div class="faq-item active">
-              <button class="faq-question" onclick="toggleFaq(this)">
-                <span>📡 Работает ли «Каптёрка Про» полностью без интернета?</span>
-                <span class="faq-icon-arrow">▼</span>
-              </button>
-              <div class="faq-answer">
-                <p>
-                  <strong>Да, на 100% автономно.</strong> Приложение разработано для использования в блиндажах, подвалах, защищенных командных пунктах и на удаленных позициях в зоне СВО при полном отсутствии связи или в режиме «Полет». Вся база данных хранится локально на вашем смартфоне в изолированной SQLite (Room DB) с аппаратным шифрованием по стандарту <strong>AES-256</strong>.
-                </p>
-              </div>
-            </div>
-
-            <!-- FAQ 2 -->
-            <div class="faq-item">
-              <button class="faq-question" onclick="toggleFaq(this)">
-                <span>💥 Как происходит списание боеприпасов и выстрелов по Форме № 8?</span>
-                <span class="faq-icon-arrow">▼</span>
-              </button>
-              <div class="faq-answer">
-                <p>
-                  В меню быстрых действий нажимается кнопка <strong>«Расход ф. 8»</strong>. Вы выбираете позицию из номенклатуры (патроны 5.45 мм 7Н10/7Н22, выстрелы ВОГ-17/25, ПГ-7В, мины 82/120 мм), указываете количество и повод расхода (боевое применение, учебные стрельбы, пристрелка). Приложение мгновенно уменьшает складской остаток и автоматически формирует официальный <strong>Акт списания Форма № 8</strong> с комиссией и основаниями.
-                </p>
-              </div>
-            </div>
-
-            <!-- FAQ 3 -->
-            <div class="faq-item">
-              <button class="faq-question" onclick="toggleFaq(this)">
-                <span>📑 Соответствуют ли ведомости Приказам МО РФ (Формы 8, 18, 26)?</span>
-                <span class="faq-icon-arrow">▼</span>
-              </button>
-              <div class="faq-answer">
-                <p>
-                  <strong>Да, строго соответствуют.</strong> Экспорт формирует белые официальные формы по требованиям тыла и служб вооружения (Приказ МО РФ № 300ДСП) в формате Excel (.xlsx). Таблицы содержат утвержденные шапки, графы прихода/расхода, категории качественного состояния и строки для подписей председателя и членов комиссии. Файл готов к немедленной печати в строевой части или штабе.
-                </p>
-              </div>
-            </div>
-
-            <!-- FAQ 4 -->
-            <div class="faq-item">
-              <button class="faq-question" onclick="toggleFaq(this)">
-                <span>📱 Можно ли установить приложение на защищенный планшет без Google?</span>
-                <span class="faq-icon-arrow">▼</span>
-              </button>
-              <div class="faq-answer">
-                <p>
-                  <strong>Да.</strong> «Каптёрка Про» не зависит от Google Play Services и не требует учетной записи Google. Вы можете напрямую скачать официальный APK-файл с нашего сайта и установить его на любые смартфоны и планшеты под управлением Android 8.0 и выше (включая ударопрочные полевые планшеты Blackview, Torex, Oukitel, Ulefone), а также через отечественный каталог <strong>RuStore</strong>.
-                </p>
-              </div>
-            </div>
-
-            <!-- FAQ 5 -->
-            <div class="faq-item">
-              <button class="faq-question" onclick="toggleFaq(this)">
-                <span>🤝 Как организовать синхронизацию склада роты между несколькими бойцами?</span>
-                <span class="faq-icon-arrow">▼</span>
-              </button>
-              <div class="faq-answer">
-                <p>
-                  Старшина создает склад и нажимает <strong>«Сформировать ключ роты»</strong> (например, <code>kapt_59e13b</code>). Остальные бойцы подразделения (командиры взводов, кладовщики, операторы БПЛА) вводят этот ключ в настройках на своих телефонах. При кратковременном появлении интернета изменения объединяются без задвоения и конфликтов.
-                </p>
-              </div>
-            </div>
-
-            <!-- FAQ 6 -->
-            <div class="faq-item">
-              <button class="faq-question" onclick="toggleFaq(this)">
-                <span>🔒 Что будет с лицензией и базой данных при поломке или утере телефона?</span>
-                <span class="faq-icon-arrow">▼</span>
-              </button>
-              <div class="faq-answer">
-                <p>
-                  Ваш персональный лицензионный ключ (формата <code>KAPT-XXXX-XXXX-XXXX</code>) сохраняется в вашем личном кабинете на сайте <strong>kapterka-pro.ru</strong>. Достаточно скачать приложение на новое устройство и ввести свой ключ. База данных роты мгновенно подтягивается из зашифрованной резервной копии склада подразделения.
-                </p>
-              </div>
-            </div>
+          <div class="compact-bottom-actions">
+            <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('overview_bottom')" class="btn btn-primary btn-lg">📥 Скачать APK</a>
+            <button class="btn btn-outline btn-lg" onclick="switchMainTab('tabCabinet')">Личный кабинет</button>
           </div>
         </div>
       </div>
@@ -790,7 +482,7 @@
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
               <strong>Как активировать ключ в мобильном приложении «Каптёрка»:</strong>
               <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('cabinet')" class="btn btn-primary btn-sm">
-                📥 Скачать APK v3.4.8 (18 МБ)
+                📥 Скачать APK v3.4.9 (18 МБ)
               </a>
             </div>
             1. Нажмите кнопку <strong>«Скопировать ключ»</strong> выше.<br>
@@ -927,7 +619,7 @@
         <div class="section-header">
           <div class="badge badge-gold">Тарифы и возможности</div>
           <h2>Тарифы и PRO-доступ</h2>
-          <p>Базовый личный учёт на телефоне — бесплатно навсегда. PRO-версия (490 ₽) — для совместной работы вдвоём, экспорта отчётов в Excel и неограниченного списка складов</p>
+          <p>Новый пользователь получает 3 дня полного демо-доступа. После демо PRO-лицензия (490 ₽ / 30 дней) открывает операции, совместную синхронизацию и экспорт отчётов в Excel</p>
         </div>
 
         <div class="yookassa-checkout-card">
@@ -1265,7 +957,7 @@
           <div class="download-actions" style="display:flex; flex-direction:column; align-items:center; gap:12px;">
             <div style="display:flex; gap:16px; flex-wrap:wrap; justify-content:center; align-items:center; width:100%;">
               <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('direct')" class="btn btn-primary btn-lg" style="font-size:1.1rem; padding:16px 28px; box-shadow:0 0 20px rgba(141,170,89,0.4);">
-                📥 Скачать APK v3.4.8 (Прямая ссылка, 18 МБ)
+                📥 Скачать APK v3.4.9 (Прямая ссылка, 18 МБ)
               </a>
               <a href="javascript:void(0)" onclick="openModal('modalRuStore')" style="display:inline-block; transition:transform 0.2s ease;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
                 <img src="rustore_badge.svg" alt="Доступно в RuStore" width="180" height="54" style="display:block; height:54px; width:auto; border-radius:8px; box-shadow:0 4px 16px rgba(0,91,255,0.3);">
@@ -1291,7 +983,7 @@
           </div>
 
           <div class="download-meta" style="margin-top:20px;">
-            <span>Версия: 3.4.8 PRO</span>
+            <span>Версия: 3.4.9 PRO • сборка 31</span>
             <span>•</span>
             <span>Размер: ~18 МБ</span>
             <span>•</span>
@@ -1301,53 +993,47 @@
           </div>
         </div>
 
-                <!-- Блок "Что нового в версии 3.4.6" -->
+        <!-- Актуальные изменения версии 3.4.9 -->
         <div style="max-width: 780px; margin: 32px auto 0; background: var(--bg-card); border: 1px solid rgba(141,170,89,0.25); border-radius: 12px; padding: 24px; box-shadow: 0 8px 32px rgba(0,0,0,0.35);">
           <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:16px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:12px;">
             <div style="display:flex; align-items:center; gap:10px;">
               <span style="font-size:1.4rem;">⚡</span>
-              <h3 style="font-size:1.25rem; margin:0; color:var(--text-primary); font-weight:700;">Что нового в версии 3.4.8 (Сборка 26)</h3>
+              <h3 style="font-size:1.25rem; margin:0; color:var(--text-primary); font-weight:700;">Что нового в версии 3.4.9 (Сборка 31)</h3>
             </div>
             <span style="background:rgba(141,170,89,0.15); color:var(--primary-bright); font-size:0.8rem; padding:4px 10px; border-radius:6px; font-weight:700; border:1px solid rgba(141,170,89,0.3);">
-              АКТУАЛЬНЫЙ РЕЛИЗ (17 СЕНТЯБРЯ 2026)
+              АКТУАЛЬНЫЙ РЕЛИЗ • 20 СЕНТЯБРЯ 2026
             </span>
           </div>
 
           <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px;">
             <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:14px;">
-              <div style="font-weight:700; color:var(--primary-bright); font-size:0.92rem; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
-                📦 Точный учет позиций при массовом приходе
-              </div>
-              <div style="font-size:0.85rem; color:var(--text-secondary); line-height:1.45;">
-                Устранено появление заглушек «Имущество (id)» при массовом вводе позиций (от 30-40 наименований). Реальные названия, службы и единицы измерения гарантированно восстанавливаются из проводок.
-              </div>
+              <div style="font-weight:700; color:var(--primary-bright); font-size:0.92rem; margin-bottom:6px;">🛡️ Безопасное обновление без потери данных</div>
+              <div style="font-size:0.85rem; color:var(--text-secondary); line-height:1.45;">Версия 3.4.9 устанавливается поверх предыдущей. Существующая база, профиль, лицензия, точки учёта и история операций сохраняются.</div>
             </div>
 
             <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:14px;">
-              <div style="font-weight:700; color:var(--accent-gold); font-size:0.92rem; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
-                ↕️ Ручная сортировка складов и точек
-              </div>
-              <div style="font-size:0.85rem; color:var(--text-secondary); line-height:1.45;">
-                Удобный диалог «Порядок ↕»: перемещение позиций стрелками «Выше» / «Ниже», сортировка по алфавиту (А–Я) и закрепление базового склада на 1-м месте.
-              </div>
+              <div style="font-weight:700; color:var(--accent-gold); font-size:0.92rem; margin-bottom:6px;">🏷️ Корректное разделение подразделений</div>
+              <div style="font-size:0.85rem; color:var(--text-secondary); line-height:1.45;">При переходе на другой ключ <strong>kapt_...</strong> старые точки и остатки больше не должны переноситься в новое подразделение.</div>
             </div>
 
             <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:14px;">
-              <div style="font-weight:700; color:#5bc0be; font-size:0.92rem; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
-                🔄 Автосинхронизация порядка позиций
-              </div>
-              <div style="font-size:0.85rem; color:var(--text-secondary); line-height:1.45;">
-                Порядок точек сохраняется в локальной базе Room и синхронизируется между всеми смартфонами роты через облачный сервис.
-              </div>
+              <div style="font-weight:700; color:#5bc0be; font-size:0.92rem; margin-bottom:6px;">⏱️ 3 дня полного демо-доступа</div>
+              <div style="font-size:0.85rem; color:var(--text-secondary); line-height:1.45;">Новые пользователи получают 3 дня для знакомства со всеми основными функциями. После активации PRO лицензия сохраняется при обычном обновлении приложения.</div>
             </div>
 
             <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:14px;">
-              <div style="font-weight:700; color:#29b6f6; font-size:0.92rem; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
-                🛡️ 100% Offline и защита РЭБ
-              </div>
-              <div style="font-size:0.85rem; color:var(--text-secondary); line-height:1.45;">
-                Полная автономность при подавлении радиосвязи: локальная зашифрованная БД SQLite (AES-256), сохранность персональных ключей и отсутствие рекламы.
-              </div>
+              <div style="font-weight:700; color:#29b6f6; font-size:0.92rem; margin-bottom:6px;">📱 Ключ и активные устройства</div>
+              <div style="font-size:0.85rem; color:var(--text-secondary); line-height:1.45;">Ключ подразделения <strong>kapt_...</strong> отображается понятнее. Счётчик показывает активные устройства и корректно отображается даже при одном подключённом телефоне.</div>
+            </div>
+
+            <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:14px;">
+              <div style="font-weight:700; color:#81c784; font-size:0.92rem; margin-bottom:6px;">🔄 Стабильнее вход и синхронизация</div>
+              <div style="font-size:0.85rem; color:var(--text-secondary); line-height:1.45;">Улучшена стабильность входа, работы лицензии и служебной синхронизации. Telegram-уведомления восстановлены.</div>
+            </div>
+
+            <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:14px;">
+              <div style="font-weight:700; color:#ce93d8; font-size:0.92rem; margin-bottom:6px;">🔧 Улучшена диагностика</div>
+              <div style="font-size:0.85rem; color:var(--text-secondary); line-height:1.45;">Добавлены безопасные инструменты диагностики для поддержки без изменения пользовательской базы и основной бизнес-логики приложения.</div>
             </div>
           </div>
         </div>
@@ -1461,23 +1147,24 @@
 
             <div class="form-group">
               <label class="form-label">Тема письма:</label>
-              <input type="text" id="adminMailSubject" class="form-input" value="[Каптёрка Про] Вышло обновление v3.4.8 (Сборка 26): Полная синхронизация остатков и данных">
+              <input type="text" id="adminMailSubject" class="form-input" value="[Каптёрка Про] Вышло обновление v3.4.9 (Сборка 31): стабильность и безопасное обновление">
             </div>
 
             <div class="form-group">
               <label class="form-label">Текст рассылки:</label>
               <textarea id="adminMailBody" class="form-input" rows="5" style="font-family:inherit; font-size:0.85rem; line-height:1.5;">Здравствуйте, боец!
 
-Вышло важное обновление программы «Каптёрка Про» v3.4.8 (Сборка 26).
+Вышло обновление программы «Каптёрка Про» v3.4.9 (Сборка 31).
 
-Что исправлено:
-1. Мгновенная синхронизация остатков: приход, списание и перемещение имущества теперь синхронно и без задержек отображаются на всех смартфонах подразделения.
-2. Отображение позиций на складах: устранен скрытый рассинхрон — позиции автоматически регистрируются в локальном каталоге при получении из облака и сразу отображаются в карточках складов.
-3. Оптимизация размера APK: вес сборки оптимизирован до 17.9 МБ без отладочных библиотек для быстрой загрузки при слабом фронтовом интернете.
-4. Синхронное удаление точек учёта: передовые точки мгновенно удаляются на всех подключённых телефонах с каскадной зачисткой базы в Room и Firestore.
-5. Оффлайн-сейф: постоянное сохранение ключа роты и защита при сбоях РЭБ.
+Что изменилось:
+1. Обновление устанавливается поверх предыдущей версии без удаления пользовательских данных.
+2. Исправлено разделение данных между подразделениями — старые точки не переносятся в новый kapt_... .
+3. Для новых пользователей действует 3-дневный демо-период.
+4. Улучшены отображение ключа подразделения, вход и работа лицензии.
+5. Исправлен счётчик активных устройств, включая отображение одного подключённого телефона.
+6. Улучшена стабильность синхронизации и восстановлены Telegram-уведомления.
 
-Скачать официальный APK v3.4.8: https://kapterka-pro.ru/kapterka-pro.apk
+Скачать официальный APK v3.4.9: https://kapterka-pro.ru/kapterka-pro.apk
 Ваш персональный лицензионный ключ сохранён в вашем Личном кабинете.</textarea>
             </div>
 
@@ -1898,19 +1585,19 @@
       <div style="width: 56px; height: 56px; margin: 0 auto 16px; border-radius: 14px; background: rgba(0,91,255,0.15); display: flex; align-items: center; justify-content: center; border: 1px solid rgba(0,91,255,0.4);">
         <img src="rustore_badge.svg" alt="RuStore" style="height: 32px; width: auto;">
       </div>
-      <h3 style="font-size: 1.25rem; color: #fff; margin-bottom: 12px; font-weight: 700;">✅ «Каптёрка Про» теперь в RuStore!</h3>
+      <h3 style="font-size: 1.25rem; color: #fff; margin-bottom: 12px; font-weight: 700;">Публикация в RuStore</h3>
       <p style="font-size: 0.95rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 20px;">
-        Приложение «Каптёрка Про» (v3.4.8 PRO) официально опубликовано и доступно для загрузки и автообновлений в государственном российском магазине приложений <strong>RuStore</strong>!
+        Обновление «Каптёрка Про» <strong>v3.4.9 (сборка 31)</strong> подготовлено для публикации в RuStore. Новая версия появится в карточке магазина после прохождения модерации.
       </p>
       <div style="background: rgba(141,170,89,0.08); border: 1px solid rgba(141,170,89,0.25); border-radius: 8px; padding: 12px; margin-bottom: 20px; font-size: 0.88rem; color: var(--text-primary); text-align: left;">
         ⚡ <strong>Не нужно ждать:</strong> Вы можете прямо сейчас установить официальный релизный APK без ограничений напрямую на телефон или планшет.
       </div>
       <div style="display: flex; flex-direction: column; gap: 10px;">
         <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('rustore_modal'); closeModal('modalRuStore');" class="btn btn-primary btn-lg" style="width: 100%; box-shadow: 0 0 16px rgba(141,170,89,0.35);">
-          📥 Скачать официальный APK v3.4.8 (18 МБ)
+          📥 Скачать официальный APK v3.4.9 (18 МБ)
         </a>
         <a href="https://apps.rustore.ru/app/com.aistudio.kapterka.jmwqve" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" style="color: #6da2ff; border-color: rgba(0,91,255,0.4); font-size: 0.82rem;">
-          Перейти на страницу в RuStore (если уже опубликовано) ➔
+          Открыть «Каптёрка Про» в RuStore ➔
         </a>
         <button class="btn btn-secondary btn-sm" onclick="closeModal('modalRuStore')" style="margin-top: 4px;">
           Понятно, закрыть
@@ -1943,6 +1630,6 @@
     </button>
   </nav>
 
-  <script src="app.js?v=6.5"></script>
+  <script src="app.js?v=3.4.9.31"></script>
 </body>
 </html>

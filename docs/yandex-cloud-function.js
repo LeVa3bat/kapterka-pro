@@ -5,8 +5,8 @@ const https = require('https');
 // ==========================================================
 const YOOKASSA_SHOP_ID = '1450722'; // Ваш Shop ID ЮKassa
 const YOOKASSA_SECRET_KEY = 'test_...'; // Ваш Secret Key ЮKassa (начинается на test_ или live_)
-const TG_BOT_TOKEN = '8913866950:AAFSMMAOHyULBE4uhsxdEoYG5fUT0-pSSr8';
-const TG_ADMIN_CHAT_ID = '7426550032';
+const TG_BOT_TOKEN = process.env.TG_BOT_TOKEN || '';
+const TG_ADMIN_CHAT_ID = process.env.TG_ADMIN_CHAT_ID || '';
 
 // Криптографическая подпись ключа
 const CHECKSUM_CHARS = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";

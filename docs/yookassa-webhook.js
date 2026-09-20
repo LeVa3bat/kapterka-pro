@@ -10,8 +10,8 @@
 const https = require('https');
 
 // Конфигурация Telegram-бота разработчика
-const TG_BOT_TOKEN = '8913866950:AAFSMMAOHyULBE4uhsxdEoYG5fUT0-pSSr8';
-const TG_ADMIN_CHAT_ID = '7426550032';
+const TG_BOT_TOKEN = process.env.TG_BOT_TOKEN || '';
+const TG_ADMIN_CHAT_ID = process.env.TG_ADMIN_CHAT_ID || '';
 
 // Символы контрольной суммы для армейского ключа
 const CHECKSUM_CHARS = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
