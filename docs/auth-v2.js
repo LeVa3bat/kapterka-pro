@@ -113,6 +113,30 @@
     }
   }
 
+  function startResendCooldown(button, seconds) {
+    if (!button) return;
+    const total = Number(seconds || 60);
+    if (button._kapterkaCooldownTimer) clearInterval(button._kapterkaCooldownTimer);
+
+    let left = total;
+    const original = button.dataset.cooldownOriginalText || button.textContent || "Отправить ещё раз";
+    button.dataset.cooldownOriginalText = original;
+    button.disabled = true;
+    button.textContent = `Повтор через ${left} сек`;
+
+    button._kapterkaCooldownTimer = setInterval(() => {
+      left -= 1;
+      if (left <= 0) {
+        clearInterval(button._kapterkaCooldownTimer);
+        button._kapterkaCooldownTimer = null;
+        button.disabled = false;
+        button.textContent = original;
+        return;
+      }
+      button.textContent = `Повтор через ${left} сек`;
+    }, 1000);
+  }
+
   function authErrorMessage(code, data) {
     const map = {
       INVALID_EMAIL: "Проверьте адрес электронной почты.",
@@ -166,6 +190,10 @@
       };
       el.onkeydown = (ev) => {
         if (ev.key === "Backspace" && !el.value && pins[idx - 1]) pins[idx - 1].focus();
+        if (ev.key === "Enter") {
+          ev.preventDefault();
+          verifyRegistrationCode();
+        }
       };
       el.onpaste = (ev) => {
         const digits = (ev.clipboardData?.getData("text") || "").replace(/\D/g, "").slice(0, 6);
@@ -173,6 +201,7 @@
           ev.preventDefault();
           digits.split("").forEach((d, i) => { if (pins[i]) pins[i].value = d; });
           pins[Math.min(digits.length, 6) - 1]?.focus();
+          if (digits.length === 6) document.getElementById("regVerifyCodeBtn")?.focus();
         }
       };
     });
@@ -313,12 +342,17 @@
       };
       el.onkeydown = ev => {
         if (ev.key === "Backspace" && !el.value && pins[idx - 1]) pins[idx - 1].focus();
+        if (ev.key === "Enter") {
+          ev.preventDefault();
+          verifyLoginCode();
+        }
       };
       el.onpaste = ev => {
         const digits = (ev.clipboardData?.getData("text") || "").replace(/\D/g, "").slice(0, 6);
         if (digits.length > 1) {
           ev.preventDefault();
           digits.split("").forEach((d, i) => { if (pins[i]) pins[i].value = d; });
+          if (digits.length === 6) document.getElementById("loginVerifyCodeBtn")?.focus();
         }
       };
     });
@@ -365,6 +399,28 @@
 
     ensureSixPins(document.getElementById("regStepVerification"));
     ensureLoginVerifyBox();
+
+    const regEmail = document.getElementById("regEmail");
+    if (regEmail && !regEmail.dataset.kapterkaEnterBound) {
+      regEmail.dataset.kapterkaEnterBound = "1";
+      regEmail.addEventListener("keydown", (ev) => {
+        if (ev.key === "Enter") {
+          ev.preventDefault();
+          requestRegistrationCode();
+        }
+      });
+    }
+
+    const loginEmail = document.getElementById("loginEmail");
+    if (loginEmail && !loginEmail.dataset.kapterkaEnterBound) {
+      loginEmail.dataset.kapterkaEnterBound = "1";
+      loginEmail.addEventListener("keydown", (ev) => {
+        if (ev.key === "Enter") {
+          ev.preventDefault();
+          requestLoginCode();
+        }
+      });
+    }
   }
 
   async function requestRegistrationCode() {
@@ -375,7 +431,7 @@
     const newsletter = document.getElementById("regNewsletterCheck")?.checked !== false;
 
     if (!callsign) return notify("Укажите имя или позывной.");
-    if (!email || !email.includes("@")) return notify("Проверьте Email.");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 160) return notify("Проверьте Email.");
 
     pendingMode = "register";
     pendingEmail = email;
@@ -394,6 +450,7 @@
       });
       if (!data.ok) return notify(authErrorMessage(data.error, data));
       showRegistrationVerify();
+      startResendCooldown(document.getElementById("regResendCodeBtn"), 60);
       notify("Код отправлен на " + (data.maskedEmail || email));
     } catch (err) {
       console.warn(err);
@@ -406,7 +463,7 @@
   async function requestLoginCode() {
     const actionBtn = document.querySelector("#panelLogin button[onclick*='processUserLogin']");
     const email = document.getElementById("loginEmail")?.value.trim().toLowerCase() || pendingEmail || "";
-    if (!email || !email.includes("@")) return notify("Проверьте Email.");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 160) return notify("Проверьте Email.");
 
     pendingMode = "login";
     pendingEmail = email;
@@ -429,6 +486,7 @@
         }
         document.getElementById("loginPin1")?.focus();
       }
+      startResendCooldown(document.getElementById("loginResendCodeBtn"), 60);
       notify("Проверьте почту.");
     } catch (err) {
       console.warn(err);
