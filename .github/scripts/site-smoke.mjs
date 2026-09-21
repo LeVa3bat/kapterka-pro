@@ -28,6 +28,7 @@ const requiredFiles = [
   'docs/uchet-imushchestva-offline.html',
   'docs/skladskoy-uchet-android.html',
   'docs/robots.txt',
+  'docs/google3271685078741b10.html',
   'docs/sitemap.xml',
   'docs/site.webmanifest',
   'docs/version.json',
@@ -234,3 +235,24 @@ if (apkTrackerCount !== 1) fail(`expected one trackApkDownload function, found $
 if (!app.includes('function trackSiteAction') || !app.includes('installSiteFunnelTracking')) fail('privacy-safe site funnel analytics is missing');
 if (/trackSiteAction\([^\n]*(?:email|callsign|licenseKey|unitKey|paymentId)\s*:/i.test(app)) fail('personal/sensitive data must not be sent through site funnel analytics');
 else ok('single APK analytics handler and privacy-safe funnel tracking are present');
+
+const googleVerify = read('docs/google3271685078741b10.html').trim();
+if (googleVerify !== 'google-site-verification: google3271685078741b10.html') fail('Google verification file changed or is invalid');
+else ok('Google verification file is valid');
+
+const robots = read('docs/robots.txt');
+if (!/Sitemap:\s*https:\/\/kapterka-pro\.ru\/sitemap\.xml/i.test(robots)) fail('robots.txt must reference the canonical sitemap');
+else ok('robots.txt points to the canonical sitemap');
+
+const sitemap = read('docs/sitemap.xml');
+const requiredSitemapUrls = [
+  'https://kapterka-pro.ru/',
+  'https://kapterka-pro.ru/privacy.html',
+  'https://kapterka-pro.ru/terms.html',
+  'https://kapterka-pro.ru/skladskoy-uchet-android.html',
+  'https://kapterka-pro.ru/uchet-imushchestva-offline.html',
+  'https://kapterka-pro.ru/uchet-ostatkov-na-telefone.html'
+];
+const missingSitemapUrls = requiredSitemapUrls.filter(url => !sitemap.includes('<loc>' + url + '</loc>'));
+if (missingSitemapUrls.length) fail('sitemap is missing URLs: ' + missingSitemapUrls.join(', '));
+else ok('sitemap contains all public indexable pages');
