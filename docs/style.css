@@ -3802,3 +3802,64 @@ a.neo-trust-item:hover{transform:translateY(-1px);background:#111b15;border-colo
     max-width:1180px;
   }
 }
+
+
+/* FINAL DESKTOP GALLERY AUDIT 2026-09-21 */
+.neo-preview-actions{display:flex;align-items:center;justify-content:flex-end;gap:12px}
+.neo-gallery-nav{display:inline-flex;align-items:center;gap:6px;padding:4px;border:1px solid rgba(255,255,255,.065);border-radius:11px;background:#0b120e}
+.neo-gallery-nav button,.v3-shot-nav button{
+  display:grid;place-items:center;
+  width:30px;height:30px;
+  padding:0;border:1px solid rgba(255,255,255,.07);
+  border-radius:8px;background:#121d16;color:#c9d9d0;
+  font:800 .92rem/1 var(--font-main);
+  cursor:pointer;
+  transition:background .16s ease,border-color .16s ease,transform .16s ease
+}
+.neo-gallery-nav button:hover,.v3-shot-nav button:hover{background:#1a2a20;border-color:rgba(113,215,167,.2);transform:translateY(-1px)}
+.neo-gallery-nav>span{min-width:38px;text-align:center;color:#74867c;font-family:var(--font-mono);font-size:.58rem;font-weight:800}
+.neo-gallery-dots{display:flex;justify-content:center;gap:6px;margin-top:8px}
+.neo-gallery-dots button{width:18px;height:4px;padding:0;border:0;border-radius:999px;background:#26332b;cursor:pointer;transition:width .18s ease,background .18s ease}
+.neo-gallery-dots button.active{width:30px;background:#71d7a7}
+.neo-shot.active{border-color:rgba(113,215,167,.24)!important;box-shadow:0 16px 38px rgba(0,0,0,.24)!important}
+
+.v3-shot-nav{display:flex;align-items:center;justify-content:center;gap:9px;margin-top:9px}
+.v3-shot-nav>span{min-width:52px;text-align:center;color:#819188;font-family:var(--font-mono);font-size:.64rem;font-weight:800}
+.v3-shot-frame{touch-action:pan-y pinch-zoom}
+
+@media(min-width:1280px){
+  .neo-home>.neo-hero .container{max-width:1180px!important}
+  .neo-hero-card{grid-template-columns:minmax(0,1fr) 240px!important;padding:28px 34px!important}
+  .neo-copy{max-width:780px}
+  .neo-copy h1{max-width:760px}
+  .neo-phone{width:218px}
+  .neo-phone img{height:346px}
+  .neo-shot-row{gap:12px}
+  .neo-shot{min-height:174px}
+}
+@media(min-width:1680px){
+  .neo-home>.neo-hero .container,
+  .neo-home>section>.container,
+  .neo-footer>.container{max-width:1240px!important}
+}
+@media(min-width:821px) and (max-width:1180px){
+  .navbar .container{gap:7px!important}
+  .main-tab-nav{gap:3px!important}
+  .main-tab-btn{padding:8px 8px!important;font-size:.67rem!important}
+  .nav-actions{gap:5px!important}
+  .nav-actions>.btn{padding:5px 7px!important;font-size:.65rem!important}
+  .user-quick-pill{max-width:158px!important}
+  #navCallsignDisplay{max-width:82px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+}
+@media(max-width:700px){
+  .neo-preview-head{align-items:flex-start!important}
+  .neo-preview-actions{gap:7px;flex-direction:column;align-items:flex-end}
+  .neo-gallery-nav{padding:3px}
+  .neo-gallery-nav button{width:28px;height:28px}
+  .neo-gallery-nav>span{font-size:.55rem}
+  .neo-gallery-dots{margin-top:5px}
+  .v3-shot-nav{margin-top:7px}
+}
+@media(max-width:380px){
+  .neo-preview-actions>button{display:none}
+}

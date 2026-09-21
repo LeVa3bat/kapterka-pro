@@ -1,0 +1,16 @@
+{
+  "product": "Каптёрка PRO",
+  "status": "stable",
+  "statusLabel": "Стабильный релиз",
+  "versionName": "3.4.9",
+  "versionCode": 31,
+  "packageName": "com.aistudio.kapterka.jmwqve",
+  "minSdk": 24,
+  "minAndroid": "7.0+",
+  "apkFile": "kapterka-pro.apk",
+  "apkSize": 18837402,
+  "apkSha256": "39ffa4cf13a50398235078a49b7dfaa420fdd095d3258bab8336edb79c410250",
+  "signerSha256": "843a7e883914f3a7a5a7665ff07b2e8c43da87a24ee4dc35e1600758aee73cb9",
+  "releaseDate": "2026-09-21",
+  "rustoreUrl": "https://apps.rustore.ru/app/com.aistudio.kapterka.jmwqve"
+}

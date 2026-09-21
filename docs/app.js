@@ -339,6 +339,10 @@ function switchMainTab(tabId) {
   }
 
   if (tabId === 'tabPayment') {
+    if (!window.__kapterkaProViewTracked) {
+      window.__kapterkaProViewTracked = true;
+      if (typeof trackSiteAction === 'function') trackSiteAction('pro_view', { source: 'tab' });
+    }
     const currentUser = getActiveUserSession();
     const callsign = currentUser?.callsign || localStorage.getItem(STORAGE_USER_CALLSIGN) || '';
     const email = currentUser?.email || localStorage.getItem(STORAGE_USER_EMAIL) || '';
@@ -1303,6 +1307,8 @@ function escapeHtml(value) {
 document.addEventListener('DOMContentLoaded', () => {
   // Anonymous funnel analytics; no personal data is included.
   installSiteFunnelTracking();
+  loadReleaseManifest();
+  installPreviewGallery();
 
   // Check user session state and setup auth UI
   updateAuthUI();
@@ -1439,22 +1445,169 @@ window.addEventListener('popstate', restoreTabFromLocation);
 
 // SCREENSHOT LIGHTBOX
 // Lightbox modal opener
+const SCREENSHOT_GALLERY = [
+  { src: 'screen_main_349.jpg', title: 'Главная — склады и быстрые операции', alt: 'Главная Каптёрка PRO' },
+  { src: 'screen_catalog_349.jpg', title: 'Каталог — номенклатура и категории', alt: 'Каталог Каптёрка PRO' }
+];
+let screenshotGalleryIndex = 0;
+let previewGalleryIndex = 0;
+
+function normalizeGalleryIndex(index) {
+  const length = SCREENSHOT_GALLERY.length || 1;
+  return ((Number(index) || 0) % length + length) % length;
+}
+
+function updatePreviewGalleryState(index) {
+  previewGalleryIndex = normalizeGalleryIndex(index);
+  const cards = Array.from(document.querySelectorAll('#previewGalleryTrack [data-gallery-index]'));
+  cards.forEach((card, i) => card.classList.toggle('active', i === previewGalleryIndex));
+
+  const dots = Array.from(document.querySelectorAll('#previewGalleryDots button'));
+  dots.forEach((dot, i) => {
+    dot.classList.toggle('active', i === previewGalleryIndex);
+    if (i === previewGalleryIndex) dot.setAttribute('aria-current', 'true');
+    else dot.removeAttribute('aria-current');
+  });
+
+  const count = document.getElementById('previewGalleryCount');
+  if (count) count.textContent = (previewGalleryIndex + 1) + ' / ' + SCREENSHOT_GALLERY.length;
+}
+
+function movePreviewGalleryTo(index, smooth = true) {
+  updatePreviewGalleryState(index);
+  const card = document.querySelector('#previewGalleryTrack [data-gallery-index="' + previewGalleryIndex + '"]');
+  card?.scrollIntoView({
+    behavior: smooth && !window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ? 'smooth' : 'auto',
+    block: 'nearest',
+    inline: 'center'
+  });
+}
+
+function movePreviewGallery(delta) {
+  movePreviewGalleryTo(previewGalleryIndex + Number(delta || 0));
+}
+
+function renderGalleryModalSlide(index) {
+  screenshotGalleryIndex = normalizeGalleryIndex(index);
+  const item = SCREENSHOT_GALLERY[screenshotGalleryIndex];
+  const img = document.getElementById('modalScreenshotImg');
+  const titleEl = document.getElementById('modalScreenshotTitle');
+  const dl = document.getElementById('modalScreenshotDownload');
+  const counter = document.getElementById('modalScreenshotCounter');
+  if (!item || !img) return;
+
+  img.src = item.src;
+  img.alt = item.alt || item.title;
+  if (titleEl) titleEl.textContent = item.title;
+  if (dl) {
+    dl.href = item.src;
+    dl.setAttribute('download', item.src);
+  }
+  if (counter) counter.textContent = (screenshotGalleryIndex + 1) + ' / ' + SCREENSHOT_GALLERY.length;
+}
+
+function openGallerySlide(index) {
+  renderGalleryModalSlide(index);
+  trackSiteAction('gallery_open', { slide: screenshotGalleryIndex + 1 });
+  openModal('modalScreenshot');
+}
+
+function shiftGallerySlide(delta) {
+  renderGalleryModalSlide(screenshotGalleryIndex + Number(delta || 0));
+  trackSiteAction('gallery_navigate', { slide: screenshotGalleryIndex + 1 });
+}
+
 function openLightbox(imgSrc, title) {
+  const knownIndex = SCREENSHOT_GALLERY.findIndex(item => item.src === imgSrc);
+  if (knownIndex >= 0) {
+    openGallerySlide(knownIndex);
+    return;
+  }
+
   const modal = document.getElementById('modalScreenshot');
   const img = document.getElementById('modalScreenshotImg');
   const titleEl = document.getElementById('modalScreenshotTitle');
   const dl = document.getElementById('modalScreenshotDownload');
-
+  const counter = document.getElementById('modalScreenshotCounter');
   if (!modal || !img) return;
 
   img.src = imgSrc;
+  img.alt = title || 'Скриншот приложения';
   if (titleEl) titleEl.textContent = title || 'Скриншот приложения';
   if (dl) {
     dl.href = imgSrc;
     dl.setAttribute('download', imgSrc);
   }
+  if (counter) counter.textContent = '1 / 1';
   openModal('modalScreenshot');
 }
+
+async function loadReleaseManifest() {
+  try {
+    const response = await fetch('release.json?_=' + Date.now(), { cache: 'no-store' });
+    if (!response.ok) return;
+    const release = await response.json();
+    if (!release || !release.versionName || !release.versionCode) return;
+    window.KAPTERKA_RELEASE = release;
+
+    document.querySelectorAll('[data-release-version]').forEach(el => { el.textContent = release.versionName; });
+    document.querySelectorAll('[data-release-code]').forEach(el => { el.textContent = String(release.versionCode); });
+    document.querySelectorAll('[data-release-status]').forEach(el => { el.textContent = release.statusLabel || 'Стабильный релиз'; });
+  } catch (_) {}
+}
+
+function installPreviewGallery() {
+  updatePreviewGalleryState(0);
+  const track = document.getElementById('previewGalleryTrack');
+  if (track) {
+    let rafId = 0;
+    track.addEventListener('scroll', () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        const cards = Array.from(track.querySelectorAll('[data-gallery-index]'));
+        if (!cards.length) return;
+        const center = track.getBoundingClientRect().left + track.clientWidth / 2;
+        let nearestIndex = 0;
+        let nearestDistance = Infinity;
+        cards.forEach((card, index) => {
+          const rect = card.getBoundingClientRect();
+          const distance = Math.abs((rect.left + rect.width / 2) - center);
+          if (distance < nearestDistance) {
+            nearestDistance = distance;
+            nearestIndex = index;
+          }
+        });
+        updatePreviewGalleryState(nearestIndex);
+      });
+    }, { passive: true });
+  }
+
+  const frame = document.getElementById('modalScreenshotFrame');
+  if (frame) {
+    let touchStartX = null;
+    frame.addEventListener('touchstart', event => {
+      touchStartX = event.changedTouches?.[0]?.clientX ?? null;
+    }, { passive: true });
+    frame.addEventListener('touchend', event => {
+      if (touchStartX === null) return;
+      const endX = event.changedTouches?.[0]?.clientX ?? touchStartX;
+      const delta = endX - touchStartX;
+      touchStartX = null;
+      if (Math.abs(delta) >= 42) shiftGallerySlide(delta < 0 ? 1 : -1);
+    }, { passive: true });
+  }
+}
+
+document.addEventListener('keydown', event => {
+  if (activeModalId !== 'modalScreenshot') return;
+  if (event.key === 'ArrowLeft') {
+    event.preventDefault();
+    shiftGallerySlide(-1);
+  } else if (event.key === 'ArrowRight') {
+    event.preventDefault();
+    shiftGallerySlide(1);
+  }
+});
 
 // Privacy-safe site funnel analytics.
 // Never send Email, callsign, license keys, unit keys or payment identifiers.
@@ -1473,7 +1626,8 @@ function trackSiteAction(eventName, params = {}) {
 function trackApkDownload(source) {
   const placement = String(source || 'direct').slice(0, 40);
   trackSiteAction('apk_download', { source: placement });
-  showToast('📥 Скачивание APK-файла «Каптёрка PRO 3.4.9» началось…');
+  const version = window.KAPTERKA_RELEASE?.versionName || '3.4.9';
+  showToast('📥 Скачивание APK-файла «Каптёрка PRO ' + version + '» началось…');
 }
 
 function installSiteFunnelTracking() {
@@ -1482,7 +1636,9 @@ function installSiteFunnelTracking() {
     if (!link) return;
     const href = String(link.getAttribute('href') || '');
 
-    if (href.includes('apps.rustore.ru/app/com.aistudio.kapterka.jmwqve')) {
+    if (href === 'help.html' || href.endsWith('/help.html')) {
+      trackSiteAction('support_center_open', { source: 'site' });
+    } else if (href.includes('apps.rustore.ru/app/com.aistudio.kapterka.jmwqve')) {
       trackSiteAction('rustore_open', { source: 'site' });
     } else if (href.includes('t.me/kapterka_help_bot')) {
       trackSiteAction('support_open', { channel: 'telegram_bot' });
@@ -1498,4 +1654,17 @@ function installSiteFunnelTracking() {
       if (details.open) trackSiteAction('faq_open', { faq_index: index + 1 });
     });
   });
+
+  const depthSent = new Set();
+  window.addEventListener('scroll', () => {
+    const doc = document.documentElement;
+    const scrollable = Math.max(1, doc.scrollHeight - window.innerHeight);
+    const percent = Math.round((window.scrollY / scrollable) * 100);
+    [50, 90].forEach(mark => {
+      if (percent >= mark && !depthSent.has(mark)) {
+        depthSent.add(mark);
+        trackSiteAction('scroll_depth', { percent: mark });
+      }
+    });
+  }, { passive: true });
 }

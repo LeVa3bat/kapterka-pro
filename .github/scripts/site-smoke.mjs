@@ -35,6 +35,7 @@ const requiredFiles = [
   'docs/sitemap.xml',
   'docs/site.webmanifest',
   'docs/version.json',
+  'docs/release.json',
   'docs/404.html',
   'docs/.well-known/security.txt',
   'docs/903fd952854fcb833f54ad87ef4b033b.txt',
@@ -286,3 +287,19 @@ if ((helpPage.match(/<h1\b/gi) || []).length !== 1 || !/rel="canonical" href="ht
 if (!helpPage.includes('https://t.me/kapterka_help_bot') || !helpPage.includes('index.html#tabDownload')) fail('help page support/install routes are incomplete');
 if (!index.includes('href="help.html"')) fail('homepage does not link to support center');
 else ok('professional support center is present and linked');
+
+const releaseManifest = JSON.parse(read('docs/release.json'));
+if (releaseManifest.versionName !== '3.4.9' || Number(releaseManifest.versionCode) !== 31) fail('release.json current release metadata is wrong');
+if (releaseManifest.packageName !== 'com.aistudio.kapterka.jmwqve' || Number(releaseManifest.minSdk) !== 24) fail('release.json compatibility metadata is wrong');
+if (releaseManifest.apkSha256 !== '39ffa4cf13a50398235078a49b7dfaa420fdd095d3258bab8336edb79c410250') fail('release.json APK hash changed unexpectedly');
+if (releaseManifest.signerSha256 !== '843a7e883914f3a7a5a7665ff07b2e8c43da87a24ee4dc35e1600758aee73cb9') fail('release.json signer fingerprint changed unexpectedly');
+
+for (const [name, source] of [['index', index], ['security', securityPage], ['updates', updatesPage], ['help', read('docs/help.html')]]) {
+  if (!source.includes(releaseManifest.versionName)) fail(`${name} page does not show current release version`);
+}
+
+if (!index.includes('id="previewGalleryTrack"') || !index.includes('id="previewGalleryDots"') || !index.includes('id="modalScreenshotCounter"')) fail('professional screenshot gallery controls are missing');
+if (!app.includes('SCREENSHOT_GALLERY') || !app.includes('openGallerySlide') || !app.includes('shiftGallerySlide') || !app.includes('installPreviewGallery')) fail('screenshot gallery logic is incomplete');
+if (!app.includes('loadReleaseManifest') || !index.includes('data-release-version') || !index.includes('data-release-code')) fail('release manifest is not wired to visible site metadata');
+if (!app.includes("trackSiteAction('pro_view'") || !app.includes("trackSiteAction('scroll_depth'") || !app.includes("support_center_open")) fail('site funnel analytics coverage is incomplete');
+else ok('release manifest and professional gallery are consistent');
