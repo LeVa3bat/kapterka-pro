@@ -131,6 +131,7 @@ fun MoreSettingsScreen(
     val context = LocalContext.current
         val unitKey = profile?.unitKey ?: "kapt_59e13b"
     var devVersionTaps by remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    var devTapWindowStartedAt by remember { androidx.compose.runtime.mutableLongStateOf(0L) }
 
     // Accordions state: all collapsed by default to save space as requested
     var expandedProfile by remember { mutableStateOf(false) }
@@ -148,6 +149,7 @@ fun MoreSettingsScreen(
     var categoryToDelete by remember { mutableStateOf<String?>(null) }
     var showAddCategoryDialog by remember { mutableStateOf(false) }
     var showResetDataConfirmDialog by remember { mutableStateOf(false) }
+    var resetDataConfirmKey by remember { mutableStateOf("") }
     var showEditProfileDialog by remember { mutableStateOf(false) }
     var editCallsign by remember(profile) { mutableStateOf(profile?.callsign ?: "") }
     var editUnitName by remember(profile) { mutableStateOf(profile?.unitName ?: "") }
@@ -261,40 +263,77 @@ fun MoreSettingsScreen(
     }
 
     if (showResetDataConfirmDialog) {
+        val requiredUnitKey = profile?.unitKey?.trim().orEmpty()
+        val isResetConfirmed = requiredUnitKey.isNotBlank() &&
+            resetDataConfirmKey.trim().equals(requiredUnitKey, ignoreCase = true)
+
         AlertDialog(
-            onDismissRequest = { showResetDataConfirmDialog = false },
+            onDismissRequest = {
+                resetDataConfirmKey = ""
+                showResetDataConfirmDialog = false
+            },
             containerColor = TacticalSurface,
             title = {
                 Text(
-                    text = "Сброс всех данных!",
+                    text = "Опасная очистка подразделения",
                     color = TacticalRedText,
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp
                 )
             },
             text = {
-                Text(
-                    text = "ВНИМАНИЕ! Это действие необратимо удалит все операции, перемещения, выдачи и остатки имущества со всех точек на этом устройстве. Имущество в справочнике и склады останутся, но их балансы обнулятся. Вы действительно хотите удалить данные?",
-                    color = TacticalTextSecondary,
-                    fontSize = 13.sp
-                )
+                Column {
+                    Text(
+                        text = "Будут удалены остатки, операции и заявки текущего подразделения локально и из облачной синхронизации. После синхронизации изменения затронут другие подключённые устройства. Точки учёта и каталог останутся.",
+                        color = TacticalTextSecondary,
+                        fontSize = 13.sp
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = "Для подтверждения введите текущий ключ подразделения:",
+                        color = TacticalTextMuted,
+                        fontSize = 11.sp
+                    )
+                    Spacer(modifier = Modifier.height(5.dp))
+                    OutlinedTextField(
+                        value = resetDataConfirmKey,
+                        onValueChange = { resetDataConfirmKey = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text(requiredUnitKey.ifBlank { "kapt_..." }, color = TacticalTextMuted) },
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = TacticalRedText,
+                            unfocusedBorderColor = TacticalBorder,
+                            focusedTextColor = TacticalTextPrimary,
+                            unfocusedTextColor = TacticalTextPrimary,
+                            cursorColor = TacticalRedText
+                        )
+                    )
+                }
             },
             confirmButton = {
                 Button(
                     onClick = {
                         onResetDataClick()
+                        resetDataConfirmKey = ""
                         showResetDataConfirmDialog = false
                     },
+                    enabled = isResetConfirmed,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = TacticalRed,
-                        contentColor = Color.White
+                        contentColor = Color.White,
+                        disabledContainerColor = TacticalSurfaceLight,
+                        disabledContentColor = TacticalTextMuted
                     )
                 ) {
-                    Text("ПОЛНЫЙ СБРОС ДАННЫХ", fontWeight = FontWeight.Bold)
+                    Text("УДАЛИТЬ ДАННЫЕ ПОДРАЗДЕЛЕНИЯ", fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showResetDataConfirmDialog = false }) {
+                TextButton(onClick = {
+                    resetDataConfirmKey = ""
+                    showResetDataConfirmDialog = false
+                }) {
                     Text("Отмена", color = TacticalTextMuted)
                 }
             }
@@ -597,25 +636,30 @@ fun MoreSettingsScreen(
                                     color = SageGreenBright
                                 )
                             }
-                            if (syncState.connectedDevicesCount > 1) {
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "Устройств в сети подразделения:",
-                                        fontSize = 11.sp,
-                                        color = TacticalTextMuted
-                                    )
-                                    Text(
-                                        text = "${syncState.connectedDevicesCount} устройства",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = SageGreenBright
-                                    )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Устройств в сети подразделения:",
+                                    fontSize = 11.sp,
+                                    color = TacticalTextMuted
+                                )
+                                val deviceCount = syncState.connectedDevicesCount
+                                val deviceWord = when {
+                                    deviceCount % 100 in 11..14 -> "устройств"
+                                    deviceCount % 10 == 1 -> "устройство"
+                                    deviceCount % 10 in 2..4 -> "устройства"
+                                    else -> "устройств"
                                 }
+                                Text(
+                                    text = "$deviceCount $deviceWord",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = SageGreenBright
+                                )
                             }
                         }
                     }
@@ -1006,7 +1050,7 @@ fun MoreSettingsScreen(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Text(
-                        text = "Сброс данных удалит историю операций (приходы, расходы, перемещения, выдачи), а также обнулит все остатки на складах и точках. Эта операция локальная и необратимая.",
+                        text = "Очистка удалит операции, заявки и остатки текущего подразделения локально и из облачной синхронизации. Для защиты потребуется ввести ключ подразделения.",
                         color = TacticalRedText,
                         fontSize = 11.sp,
                         lineHeight = 15.sp
@@ -1031,7 +1075,7 @@ fun MoreSettingsScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "СБРОСИТЬ ВСЕ ДАННЫЕ (ОЧИСТКА)",
+                            text = "ОЧИСТИТЬ ДАННЫЕ ПОДРАЗДЕЛЕНИЯ",
                             fontWeight = FontWeight.Bold,
                             fontSize = 12.sp
                         )
@@ -1150,9 +1194,16 @@ fun MoreSettingsScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable {
-                        devVersionTaps++
-                        if (devVersionTaps >= 5) {
+                        val now = android.os.SystemClock.elapsedRealtime()
+                        if (devTapWindowStartedAt == 0L || now - devTapWindowStartedAt > 4_000L) {
+                            devTapWindowStartedAt = now
+                            devVersionTaps = 1
+                        } else {
+                            devVersionTaps++
+                        }
+                        if (devVersionTaps >= 7) {
                             devVersionTaps = 0
+                            devTapWindowStartedAt = 0L
                             onOpenDeveloperBackdoor()
                         }
                     }
