@@ -49,6 +49,47 @@
   }
   </script>
 
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Можно обновить приложение поверх старой версии?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Официальная сборка предназначена для обновления поверх установленной версии с той же подписью. Перед важным обновлением рекомендуется сохранить резервную копию."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Приложению постоянно нужен интернет?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Основной учёт работает локально на телефоне. Интернет нужен для синхронизации между устройствами и сетевых функций."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Как работает вход в личный кабинет?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Пароль не нужен: на указанный Email приходит одноразовый шестизначный код подтверждения."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Как активируется PRO?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "PRO предоставляется на 30 дней. Оплата проводится через ЮKassa, после подтверждения используется лицензионный ключ."
+        }
+      }
+    ]
+  }
+  </script>
+
   <!-- Twitter Cards -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Каптёрка PRO — учёт имущества и складов на Android">
@@ -59,7 +100,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=3.4.9.31o">
+  <link rel="stylesheet" href="style.css?v=3.4.9.31p">
   <link rel="stylesheet" href="tabs_and_cabinet.css?v=3.4.9.31">
 
   <!-- Favicon & Mobile Icons (Тактическая светящаяся иконка Каптёрка Про) -->
@@ -235,6 +276,33 @@
         </div>
       </section>
 
+      <section class="neo-faq">
+        <div class="container">
+          <div class="neo-section-title">
+            <span>КОРОТКО О ГЛАВНОМ</span>
+            <h2>Частые вопросы</h2>
+          </div>
+          <div class="neo-faq-list">
+            <details>
+              <summary>Можно обновить приложение поверх старой версии?</summary>
+              <p>Да, официальная сборка предназначена для обновления поверх установленной версии с той же подписью. Перед важным обновлением всё равно рекомендуется сохранить резервную копию.</p>
+            </details>
+            <details>
+              <summary>Приложению постоянно нужен интернет?</summary>
+              <p>Нет. Основной учёт работает локально на телефоне. Интернет нужен для синхронизации между устройствами и сетевых функций.</p>
+            </details>
+            <details>
+              <summary>Как работает вход в личный кабинет?</summary>
+              <p>Пароль не нужен: на указанный Email приходит одноразовый 6-значный код подтверждения.</p>
+            </details>
+            <details>
+              <summary>Как активируется PRO?</summary>
+              <p>PRO предоставляется на 30 дней. Оплата проводится через ЮKassa, после подтверждения используется лицензионный ключ.</p>
+            </details>
+          </div>
+        </div>
+      </section>
+
       <section class="neo-final">
         <div class="container">
           <div class="neo-final-card">
@@ -245,7 +313,7 @@
             </div>
             <div class="neo-final-actions">
               <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('neo_bottom')" class="neo-btn neo-primary">Скачать APK</a>
-              <button class="neo-btn neo-dark" onclick="switchMainTab('tabPayment')">PRO — 490 ₽</button>
+              <button class="neo-btn neo-dark" onclick="switchMainTab('tabPayment')">PRO — 490 ₽ / 30 дней</button>
             </div>
           </div>
         </div>
@@ -575,7 +643,7 @@
     <section class="section">
       <div class="container">
         <div class="section-header v2-page-head">
-          <div class="badge">Android 8–15</div>
+          <div class="badge">Android 7.0+</div>
           <h2>Установить Каптёрка PRO</h2>
           <p>Официальная версия 3.4.9 • сборка 31.</p>
         </div>
