@@ -104,7 +104,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=3.4.9.33">
+  <link rel="stylesheet" href="style.css?v=3.4.9.34">
   <link rel="stylesheet" href="tabs_and_cabinet.css?v=3.4.9.34">
 
   <!-- Favicon & Mobile Icons (Тактическая светящаяся иконка Каптёрка Про) -->
@@ -144,7 +144,7 @@
   <!-- /Yandex.Metrika counter -->
 
   <script>
-    window.KAPTERKA_WEB_VERSION = "3.4.9-web.38";
+    window.KAPTERKA_WEB_VERSION = "3.4.9-web.39";
     (function () {
       try {
         const key = 'kapterka_web_version_seen';
@@ -242,6 +242,18 @@
         </div>
       </section>
 
+      <section class="neo-trust" aria-label="Доверие и совместимость">
+        <div class="container">
+          <div class="neo-trust-grid">
+            <a class="neo-trust-item" href="updates.html"><span class="neo-trust-mark">✓</span><div><strong>3.4.9 • build 31</strong><small>текущий стабильный релиз</small></div></a>
+            <div class="neo-trust-item"><span class="neo-trust-mark">A</span><div><strong>Android 7.0+</strong><small>телефон и планшет</small></div></div>
+            <div class="neo-trust-item"><span class="neo-trust-mark">↯</span><div><strong>Основной учёт офлайн</strong><small>сеть нужна для облачных функций</small></div></div>
+            <div class="neo-trust-item"><span class="neo-trust-mark">₽</span><div><strong>ЮKassa</strong><small>оплата на стороне платёжного сервиса</small></div></div>
+            <a class="neo-trust-item" href="security.html"><span class="neo-trust-mark">◆</span><div><strong>Проверяемый APK</strong><small>SHA-256 и цифровая подпись</small></div></a>
+          </div>
+        </div>
+      </section>
+
       <section class="neo-features">
         <div class="container">
           <div class="neo-section-title">
@@ -286,6 +298,21 @@
         </div>
       </section>
 
+      <section class="neo-why" id="why-kapterka">
+        <div class="container">
+          <div class="neo-section-title neo-section-title-split">
+            <div><span>ПОЧЕМУ КАПТЁРКА PRO</span><h2>Рабочий инструмент, а не перегруженная система</h2></div>
+            <a href="security.html">Как устроена безопасность →</a>
+          </div>
+          <div class="neo-why-grid">
+            <article class="neo-why-card"><b>01</b><div><strong>Данные под рукой</strong><p>Основная база приложения хранится локально в Room/SQLite и остаётся доступной без постоянного интернета.</p></div></article>
+            <article class="neo-why-card"><b>02</b><div><strong>Синхронизация по необходимости</strong><p>Общий ключ подразделения объединяет нужные устройства, а обмен выполняется при появлении связи.</p></div></article>
+            <article class="neo-why-card"><b>03</b><div><strong>Контролируемые обновления</strong><p>Официальный APK автоматически сверяется по package, версии, SHA-256 и цифровой подписи перед релизом.</p></div></article>
+            <article class="neo-why-card"><b>04</b><div><strong>Понятная лицензия</strong><p>PRO оформляется на 30 дней, а срок действующей лицензии отображается в личном кабинете.</p></div></article>
+          </div>
+        </div>
+      </section>
+
       <section class="neo-preview">
         <div class="container">
           <div class="neo-preview-head">
@@ -296,6 +323,7 @@
             <button onclick="switchMainTab('tabDownload')">Как установить →</button>
           </div>
 
+          <div class="neo-preview-meta"><span>Версия 3.4.9</span><span>Скриншоты интерфейса</span><span>Нажмите для увеличения</span></div>
           <div class="neo-shot-row">
             <button class="neo-shot" onclick="openLightbox('screen_main_349.jpg','Главная — склады и быстрые операции')">
               <img src="screen_main_349.jpg" alt="Главная" loading="lazy" decoding="async">
@@ -337,6 +365,14 @@
               <span>✓ лицензия сохраняется при обычном обновлении</span>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section class="neo-resource-strip" aria-label="Информация о продукте">
+        <div class="container">
+          <a class="neo-resource-card" href="security.html"><span>◆</span><div><strong>Безопасность и данные</strong><small>Хранение, синхронизация, APK и оплата — без маркетинговых обещаний.</small></div><b>→</b></a>
+          <a class="neo-resource-card" href="updates.html"><span>↻</span><div><strong>История обновлений</strong><small>Версии, сборки, совместимость и изменения текущего релиза.</small></div><b>→</b></a>
+          <a class="neo-resource-card" href="https://t.me/kapterka_help_bot" target="_blank" rel="noopener noreferrer"><span>?</span><div><strong>Поддержка</strong><small>Помощь с установкой, лицензией, обновлением и синхронизацией.</small></div><b>→</b></a>
         </div>
       </section>
 
@@ -779,6 +815,8 @@
           <a href="skladskoy-uchet-android.html">Складской учёт</a>
           <a href="uchet-imushchestva-offline.html">Офлайн-учёт</a>
           <a href="uchet-ostatkov-na-telefone.html">Учёт остатков</a>
+          <a href="security.html">Безопасность</a>
+          <a href="updates.html">Обновления</a>
           <a href="privacy.html">Конфиденциальность</a>
           <a href="terms.html">Оферта</a>
         </div>
