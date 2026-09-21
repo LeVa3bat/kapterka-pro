@@ -55,6 +55,7 @@
   <meta name="twitter:description" content="Приход, выдача, перемещения, остатки, заявки и Excel. Основной учёт работает офлайн.">
   <meta name="twitter:image" content="https://kapterka-pro.ru/app_icon_512.png">
 
+  <link rel="preload" as="image" href="screen_main_349.jpg" fetchpriority="high">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
@@ -89,10 +90,9 @@
           k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
       })(window, document,'script','https://mc.yandex.ru/metrika/tag.js', 'ym');
 
-      ym(112482290, 'init', {clickmap:true, referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true, webvisor:true});
-      ym(112255061, 'init', {clickmap:true, referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true, webvisor:true});
+      ym(112482290, 'init', {clickmap:true, referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true, webvisor:false});
   </script>
-  <noscript><div><img src="https://mc.yandex.ru/watch/112482290" style="position:absolute; left:-9999px;" alt="" /><img src="https://mc.yandex.ru/watch/112255061" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+  <noscript><div><img src="https://mc.yandex.ru/watch/112482290" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
   <!-- /Yandex.Metrika counter -->
 </head>
 <body>
@@ -165,7 +165,7 @@
             </div>
 
             <button class="neo-phone" onclick="openLightbox('screen_main_349.jpg','Каптёрка PRO 3.4.9 — главный экран')" aria-label="Открыть скриншот">
-              <img src="screen_main_349.jpg" alt="Каптёрка PRO 3.4.9 — главный экран" loading="eager">
+              <img src="screen_main_349.jpg" alt="Каптёрка PRO 3.4.9 — главный экран" loading="eager" decoding="async" fetchpriority="high">
             </button>
           </div>
         </div>
@@ -204,11 +204,11 @@
 
           <div class="neo-shot-row">
             <button class="neo-shot" onclick="openLightbox('screen_main_349.jpg','Главная — склады и быстрые операции')">
-              <img src="screen_main_349.jpg" alt="Главная" loading="lazy">
+              <img src="screen_main_349.jpg" alt="Главная" loading="lazy" decoding="async">
               <span><strong>Главная</strong><small>Склады и операции</small></span>
             </button>
             <button class="neo-shot" onclick="openLightbox('screen_catalog_349.jpg','Каталог — номенклатура')">
-              <img src="screen_catalog_349.jpg" alt="Каталог" loading="lazy">
+              <img src="screen_catalog_349.jpg" alt="Каталог" loading="lazy" decoding="async">
               <span><strong>Каталог</strong><small>Поиск и категории</small></span>
             </button>
           </div>
@@ -716,7 +716,7 @@
       </div>
       <div class="modal-body">
         <div class="v3-shot-frame">
-          <img id="modalScreenshotImg" src="" alt="Скриншот приложения">
+          <img id="modalScreenshotImg" src="" alt="Скриншот приложения" decoding="async">
         </div>
         <div class="v3-shot-actions">
           <a id="modalScreenshotDownload" href="" download class="btn btn-outline btn-sm">Сохранить JPG</a>
@@ -788,7 +788,7 @@
       </div>
       <div class="modal-body">
         <div class="v3-store-head">
-          <img src="rustore_badge.svg" alt="RuStore">
+          <img src="rustore_badge.svg" alt="RuStore" loading="lazy" decoding="async">
           <div><strong>Версия 3.4.9 • сборка 31</strong><small>Можно установить через RuStore или скачать официальный APK.</small></div>
         </div>
         <div class="v3-store-actions">
