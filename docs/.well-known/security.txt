@@ -1,0 +1,5 @@
+Contact: mailto:alex.666.881@gmail.com
+Contact: https://t.me/kapterka_help_bot
+Preferred-Languages: ru, en
+Canonical: https://kapterka-pro.ru/.well-known/security.txt
+Expires: 2027-09-21T00:00:00.000Z
