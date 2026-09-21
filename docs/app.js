@@ -51,22 +51,30 @@ let currentVerificationPin = null;
 // Все запросы теперь должны идти через ваш Google Apps Script (KAPTERKA_API_URL)
 const TG_ADMIN_CHAT_ID = '7426550032';
 
+function escapeTelegramHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 async function sendTelegramNotification(text) {
   try {
     const API_URL = window.KAPTERKA_API_URL || '';
     if (!API_URL) {
-      console.warn('API URL не настроен. Сообщение не отправлено:', text);
-      return;
+      console.warn('API URL не настроен. Сообщение не отправлено.');
+      return false;
     }
-    // Отправляем запрос на наш Google Apps Script. 
-    // Используем text/plain, чтобы избежать ошибки CORS Preflight (OPTIONS)
-    await fetch(API_URL, {
+    // Используем text/plain, чтобы избежать CORS preflight.
+    const response = await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ action: 'send_telegram', text: text, chat_id: TG_ADMIN_CHAT_ID })
     });
+    return response.ok;
   } catch (err) {
     console.warn('Telegram notification failed:', err);
+    return false;
   }
 }
 
@@ -817,7 +825,7 @@ async function processYooKassaPayment() {
     liveDisplay.style.color = 'var(--accent-gold)';
   }
   if (liveStatus) {
-    liveStatus.innerHTML = `Счёт 490 ₽ выставлен. Чек 54-ФЗ и ключ направляются на <b>${email}</b> после поступления средств.`;
+    liveStatus.innerHTML = `Счёт 490 ₽ выставлен. Чек 54-ФЗ и ключ направляются на <b>${escapeHtml(email)}</b> после поступления средств.`;
   }
   if (btnCopy) btnCopy.setAttribute('disabled', 'true');
 
@@ -826,8 +834,8 @@ async function processYooKassaPayment() {
   // Telegram Alert: боец перешел к оплате
   sendTelegramNotification(
     `💳 <b>Новый переход к оплате (490 ₽)</b>\n\n` +
-    `👤 <b>Позывной:</b> ${callsign}\n` +
-    `📧 <b>Email:</b> ${email}\n` +
+    `👤 <b>Позывной:</b> ${escapeTelegramHtml(callsign)}\n` +
+    `📧 <b>Email:</b> ${escapeTelegramHtml(email)}\n` +
     `🆔 <b>Номер заказа:</b> <code>${paymentSessionId}</code>\n` +
     `🏦 <b>Магазин:</b> ЮKassa ID 1450722\n` +
     `📅 <b>Время:</b> ${new Date().toLocaleString('ru-RU')}`
@@ -909,8 +917,8 @@ async function claimPaidLicenseKey() {
   // Отправляем оповещение в Telegram бот
   await sendTelegramNotification(
     `🎖️ <b>ОЖИДАЕТСЯ ПОДТВЕРЖДЕНИЕ ПЛАТЕЖА (490 ₽)</b>\n\n` +
-    `👤 <b>Боец:</b> ${callsign}\n` +
-    `📧 <b>Email:</b> ${email || 'Не указан'}\n\n` +
+    `👤 <b>Боец:</b> ${escapeTelegramHtml(callsign)}\n` +
+    `📧 <b>Email:</b> ${escapeTelegramHtml(email || 'Не указан')}\n\n` +
     `⚠️ <b>ВНИМАНИЕ:</b> Боец нажал кнопку "Я оплатил". Если ЮКасса не прислала уведомление вебхуком, проверьте оплату вручную и передайте ключ.`
   );
 
@@ -931,7 +939,7 @@ async function claimPaidLicenseKey() {
   }
   
   if (liveStatus) {
-    liveStatus.innerHTML = `⏳ <b>Система ожидает подтверждения от банка.</b><br>Сразу после зачисления средств, готовый ключ придет на вашу электронную почту <b>${email || 'указанную при оплате'}</b>.<br><br>Если письмо не придет в течение 5 минут — напишите разработчику в Telegram.`;
+    liveStatus.innerHTML = `⏳ <b>Система ожидает подтверждения от банка.</b><br>После подтверждения платежа ключ будет направлен на <b>${escapeHtml(email || 'указанную при оплате')}</b>.<br><br>Если письмо не придёт, обратитесь в поддержку.`;
   }
 
   if (btnCopy) {
@@ -1586,22 +1594,26 @@ document.addEventListener('DOMContentLoaded', () => {
         btnSubmit.textContent = 'Отправка...';
       }
 
-      await sendTelegramNotification(
-        `✉️ <b>Новое обращение с сайта «Каптёрка ПРО»!</b>\n\n` +
-        `👤 <b>От кого:</b> ${name}\n` +
-        `📞 <b>Связь:</b> ${info}\n` +
-        `💬 <b>Вопрос:</b>\n${msg}\n\n` +
-        `📅 <b>Дата:</b> ${new Date().toLocaleString('ru-RU')}`
+      const delivered = await sendTelegramNotification(
+        `✉️ <b>Новое обращение с сайта «Каптёрка PRO»</b>\n\n` +
+        `👤 <b>От кого:</b> ${escapeTelegramHtml(name)}\n` +
+        `📞 <b>Связь:</b> ${escapeTelegramHtml(info)}\n` +
+        `💬 <b>Вопрос:</b>\n${escapeTelegramHtml(msg)}\n\n` +
+        `📅 <b>Дата:</b> ${escapeTelegramHtml(new Date().toLocaleString('ru-RU'))}`
       );
 
       if (btnSubmit) {
         btnSubmit.removeAttribute('disabled');
-        btnSubmit.textContent = 'Отправить сообщение разработчику';
+        btnSubmit.textContent = 'Отправить сообщение';
       }
 
-      contactForm.reset();
-      showToast('✓ Сообщение успешно доставлено разработчику в Telegram!');
-      closeModal('modalContact');
+      if (delivered) {
+        contactForm.reset();
+        showToast('✓ Сообщение отправлено в поддержку.');
+        closeModal('modalContact');
+      } else {
+        showToast('Не удалось отправить сообщение. Используйте Telegram или Email.');
+      }
     });
   }
 
