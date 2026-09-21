@@ -17,3 +17,7 @@ app/build/*.apk
 .env
 local.properties
 *.jks
+*.keystore
+
+# Local developer access credential
+DEV_ACCESS_KEY.txt
