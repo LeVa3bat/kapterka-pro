@@ -51,7 +51,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=3.4.9.31i">
+  <link rel="stylesheet" href="style.css?v=3.4.9.31j">
   <link rel="stylesheet" href="tabs_and_cabinet.css?v=3.4.9.31">
 
   <!-- Favicon & Mobile Icons (Тактическая светящаяся иконка Каптёрка Про) -->
@@ -772,52 +772,32 @@
     </div>
   </footer>
 
-  <!-- Modal: Public Offer (Публичная оферта) -->
-  <div class="modal-overlay" id="modalOffer">
-    <div class="modal-content">
+  <!-- Modal: Public Offer -->
+  <div class="modal-overlay" id="modalOffer" onclick="if(event.target===this) closeModal('modalOffer')">
+    <div class="modal-content v3-modal v3-legal-modal">
       <div class="modal-header">
-        <h3>Публичная оферта (Лицензионный договор)</h3>
+        <div><span class="v3-modal-kicker">Документы</span><h3>Условия использования</h3></div>
         <button class="modal-close" onclick="closeModal('modalOffer')">×</button>
       </div>
       <div class="modal-body">
-        <h4>1. Общие положения</h4>
-        <p>Настоящий документ является официальным предложением (публичной офертой) Исполнителя (ИНН 250104230398) о предоставлении неисключительной простой лицензии на использование ПО «Каптёрка Про».</p>
-        
-        <h4>2. Предмет договора и Стоимость</h4>
-        <p>2.1. Исполнитель предоставляет Пользователю право использования ПО «Каптёрка Про» на срок 30 календарных дней путем генерации уникального 16-значного персонального военного ключа формата KAPT-XXXX-XXXX-XXXX.</p>
-        <p>2.2. Стоимость неисключительной лицензии на 30 дней составляет 490 (четыреста девяносто) рублей. Оплата производится через платежный сервис ЮKassa (ООО НКО «ЮМани», магазин №1450722).</p>
-
-        <h4>3. Порядок выдачи ключа</h4>
-        <p>3.1. После подтверждения транзакции ключ формируется автоматически, отображается в Личном кабинете на сайте с возможностью копирования и отправляется на email.</p>
-
-        <h4>4. Конфиденциальность</h4>
-        <p>4.1. ПО функционирует полностью автономно на смартфонах без передачи складских баз, наименований боеприпасов и позиций подразделений на сторонние сервера.</p>
-
-        <h4>5. Реквизиты Исполнителя</h4>
-        <p>Самозанятый гражданин РФ / ИП<br>ИНН: 250104230398<br>Telegram: @Levaminbat<br>Email: alex.666.881@gmail.com</p>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-primary" onclick="closeModal('modalOffer')">Понятно и согласен</button>
+        <p>Для новых пользователей действует 3-дневный демо-период. PRO-доступ предоставляется на 30 дней по текущей цене 490 ₽. Оплата проводится через ЮKassa.</p>
+        <p>Синхронизация является дополнительной сетевой функцией. Приложение не заменяет обязательные документы и внутренние регламенты пользователя.</p>
+        <a href="terms.html" class="btn btn-outline btn-sm">Открыть полное соглашение</a>
       </div>
     </div>
   </div>
 
-  <!-- Modal: Privacy Policy (Политика конфиденциальности) -->
-  <div class="modal-overlay" id="modalPrivacy">
-    <div class="modal-content">
+  <!-- Modal: Privacy Policy -->
+  <div class="modal-overlay" id="modalPrivacy" onclick="if(event.target===this) closeModal('modalPrivacy')">
+    <div class="modal-content v3-modal v3-legal-modal">
       <div class="modal-header">
-        <h3>Политика конфиденциальности</h3>
+        <div><span class="v3-modal-kicker">Данные</span><h3>Конфиденциальность</h3></div>
         <button class="modal-close" onclick="closeModal('modalPrivacy')">×</button>
       </div>
       <div class="modal-body">
-        <h4>1. Защита информации</h4>
-        <p>Приложение «Каптёрка Про» создано специально для работы в полевых условиях передовой с соблюдением требований безопасности.</p>
-        
-        <h4>2. Локальное хранение данных</h4>
-        <p>Все списки материальных средств, боеприпасов, Форма № 8 (Акты списания) и Форма № 18 (Книга учета) хранятся исключительно в зашифрованной локальной базе данных устройства. Сервер не имеет доступа к вашим складским книгам.</p>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-primary" onclick="closeModal('modalPrivacy')">Закрыть</button>
+        <p>Основная база приложения хранится локально в Room/SQLite. При включённой синхронизации выбранные данные передаются через Firebase по ключу подразделения.</p>
+        <p>Сайт использует Email для входа по одноразовому коду, ЮKassa для оплаты, а также Google Analytics и Яндекс Метрику для технической аналитики.</p>
+        <a href="privacy.html" class="btn btn-outline btn-sm">Открыть политику полностью</a>
       </div>
     </div>
   </div>
@@ -886,189 +866,55 @@
     </div>
   </div>
 
-  <!-- Modal: Полный функционал МТО -->
+  <!-- Modal: Полный функционал -->
   <div class="modal-overlay" id="modalFeatures" onclick="if(event.target===this) closeModal('modalFeatures')">
-    <div class="modal-content" style="max-width: 820px; max-height: 88vh; display: flex; flex-direction: column;">
+    <div class="modal-content v3-modal">
       <div class="modal-header">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <span style="font-size: 1.4rem;">⚙️</span>
-          <div>
-            <h3 style="margin: 0; font-size: 1.15rem; color: #fff;">Функционал МТО «Каптёрка Про»</h3>
-            <div style="font-size: 0.75rem; color: var(--primary);">Все инструменты воинского материального учета</div>
-          </div>
+        <div>
+          <span class="v3-modal-kicker">Возможности</span>
+          <h3>Что умеет Каптёрка PRO</h3>
         </div>
         <button class="modal-close" onclick="closeModal('modalFeatures')">×</button>
       </div>
-      <div class="modal-body" style="padding: 20px; overflow-y: auto;">
-        <div class="features-grid" style="margin-bottom: 20px;">
-          <div class="feature-card">
-            <div class="feature-icon-box">📦</div>
-            <h3>Многоскладской учет и точки</h3>
-            <p>Неограниченное число точек хранения: Базовый склад, Рота, ВОП «Север», СП «Высота», Автопарк, склад РАВ и Вещевой службы.</p>
-            <span class="feature-tag">Батальон / Рота / Взвод</span>
-          </div>
-
-          <div class="feature-card">
-            <div class="feature-icon-box">📴</div>
-            <h3>100% Офлайн и защита от РЭБ</h3>
-            <p>База данных SQLite (Room) работает локально на телефоне. Программа не требует интернета или сотовой связи при ведении учета.</p>
-            <span class="feature-tag">Полная автономность</span>
-          </div>
-
-          <div class="feature-card">
-            <div class="feature-icon-box">📜</div>
-            <h3>Форма № 8 и Форма № 18</h3>
-            <p>Оформление официальных воинских актов расхода (ф. 8) и ведение сквозной книги учета наличия и движения мат. средств (ф. 18).</p>
-            <span class="feature-tag">Уставные нормативы</span>
-          </div>
-
-          <div class="feature-card">
-            <div class="feature-icon-box">📊</div>
-            <h3>Экспорт в Excel и CSV</h3>
-            <p>Мгновенная выгрузка оборотных ведомостей и журналов операций в таблицы с разделителем «;» для открытия на компьютерах штаба.</p>
-            <span class="feature-tag">Готово для штаба</span>
-          </div>
-
-          <div class="feature-card">
-            <div class="feature-icon-box">🔑</div>
-            <h3>Персональный ключ бойца</h3>
-            <p>16-значный персональный ключ <code>KAPT-XXXX-XXXX-XXXX</code>. Боец может свободно менять подразделения — его лицензия сохраняется.</p>
-            <span class="feature-tag">Свобода ротации</span>
-          </div>
-
-          <div class="feature-card">
-            <div class="feature-icon-box">📡</div>
-            <h3>Синхронизация складов роты</h3>
-            <p>Связывание телефонов бойцов роты по общему ключу <code>kapt_xxxxxx</code>. Общий баланс БК и имущества при появлении связи.</p>
-            <span class="feature-tag">Командная работа</span>
-          </div>
+      <div class="modal-body">
+        <div class="v3-modal-grid">
+          <div><span>📦</span><strong>Склад и точки</strong><small>Остатки, приход, выдача и перемещения между точками хранения.</small></div>
+          <div><span>🧾</span><strong>Журнал операций</strong><small>История движений и быстрый поиск по операциям.</small></div>
+          <div><span>📊</span><strong>Excel и формы</strong><small>Выгрузки и печатные формы на основе введённых данных.</small></div>
+          <div><span>🔄</span><strong>Синхронизация</strong><small>Обмен данными между устройствами одного подразделения при наличии связи.</small></div>
+          <div><span>📴</span><strong>Локальная работа</strong><small>Основной учёт доступен на устройстве и без постоянного подключения к сети.</small></div>
+          <div><span>🔑</span><strong>PRO-лицензия</strong><small>Персональный ключ доступа формата KAPT-XXXX-XXXX-XXXX.</small></div>
         </div>
-
-        <div style="background: rgba(141,170,89,0.08); border: 1px solid rgba(141,170,89,0.25); border-radius: 8px; padding: 14px; font-size: 0.88rem; color: var(--text-primary); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-          <div>
-            <strong>Нужна помощь или консультация по функционалу?</strong>
-            <div style="color: var(--text-secondary); font-size: 0.82rem;">Свяжитесь с разработчиком или оформите лицензию для роты.</div>
-          </div>
-          <button class="btn btn-gold btn-sm" onclick="closeModal('modalFeatures'); switchMainTab('tabPayment');">Оформить лицензию 490 ₽</button>
+        <div class="v3-modal-cta">
+          <span>Новый пользователь получает 3 дня полного демо-доступа.</span>
+          <button class="btn btn-gold btn-sm" onclick="closeModal('modalFeatures'); switchMainTab('tabPayment');">PRO — 490 ₽ / 30 дней</button>
         </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary btn-sm" onclick="closeModal('modalFeatures')">Закрыть</button>
       </div>
     </div>
   </div>
 
-  <!-- Modal: Механизм синхронизации подразделения -->
+  <!-- Modal: Механизм синхронизации -->
   <div class="modal-overlay" id="modalSyncMech" onclick="if(event.target===this) closeModal('modalSyncMech')">
-    <div class="modal-content" style="max-width: 820px; max-height: 88vh; display: flex; flex-direction: column;">
+    <div class="modal-content v3-modal">
       <div class="modal-header">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <span style="font-size: 1.4rem;">🔗</span>
-          <div>
-            <h3 style="margin: 0; font-size: 1.15rem; color: #fff;">Механизм облачной синхронизации</h3>
-            <div style="font-size: 0.75rem; color: #5bc0be;">Единая сеть роты и ключ подразделения (kapt_xxxxxx)</div>
-          </div>
+        <div>
+          <span class="v3-modal-kicker">Синхронизация</span>
+          <h3>Как устройства работают вместе</h3>
         </div>
         <button class="modal-close" onclick="closeModal('modalSyncMech')">×</button>
       </div>
-      <div class="modal-body" style="padding: 20px; overflow-y: auto;">
-        <p style="color: var(--text-secondary); font-size: 0.92rem; line-height: 1.6; margin-bottom: 20px;">
-          Ядро системы — это уникальный <strong>Ключ подразделения</strong>. Он работает как пароль от изолированного защищенного контейнера данных, в котором хранятся остатки имущества только вашей роты, взвода или батальона.
-        </p>
-
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; margin-bottom: 20px;">
-          <div class="feature-card" style="background: var(--bg-card); padding: 20px; border: 1px solid var(--border-color); border-top: 3px solid var(--primary); border-radius: 10px;">
-            <div style="font-weight: 700; margin-bottom: 8px; color: #fff; font-size: 1rem;">1. Создание ключа (Командир)</div>
-            <p style="color: var(--text-secondary); font-size: 0.86rem; line-height: 1.55; margin: 0;">При первой регистрации программа автоматически генерирует уникальный 6-значный код (например, <code>kapt_b5e9f1</code>). Командир может заменить его на свой (например, <code>ROTA_1_VKS</code>). Этот ключ навсегда привязывается к профилю в настройках.</p>
-          </div>
-
-          <div class="feature-card" style="background: var(--bg-card); padding: 20px; border: 1px solid var(--border-color); border-top: 3px solid var(--primary); border-radius: 10px;">
-            <div style="font-weight: 700; margin-bottom: 8px; color: #fff; font-size: 1rem;">2. Подключение бойцов</div>
-            <p style="color: var(--text-secondary); font-size: 0.86rem; line-height: 1.55; margin: 0;">Второй боец при установке приложения выбирает вкладку «Войти в подразделение» и вписывает <strong>точно такой же ключ</strong>. Программа валидирует ключ и связывает устройства в единую защищенную сеть.</p>
-          </div>
-
-          <div class="feature-card" style="background: var(--bg-card); padding: 20px; border: 1px solid var(--border-color); border-top: 3px solid var(--primary); border-radius: 10px;">
-            <div style="font-weight: 700; margin-bottom: 8px; color: #fff; font-size: 1rem;">3. Облачный хаб (Firebase)</div>
-            <p style="color: var(--text-secondary); font-size: 0.86rem; line-height: 1.55; margin: 0;">При наличии связи приложение обращается к базе данных Google Firebase по вашему ключу. Оно скачивает измененные остатки/заявки от других бойцов и загружает ваши проведенные операции. Вся группа видит общую картину.</p>
-          </div>
-
-          <div class="feature-card" style="background: var(--bg-card); padding: 20px; border: 1px solid var(--border-color); border-top: 3px solid var(--primary); border-radius: 10px;">
-            <div style="font-weight: 700; margin-bottom: 8px; color: #fff; font-size: 1rem;">4. Локальный Offline-режим</div>
-            <p style="color: var(--text-secondary); font-size: 0.86rem; line-height: 1.55; margin: 0;">Если интернета нет из-за работы РЭБ или нахождения в бункере, система переключается на внутреннюю базу SQLite (Room DB). Вы продолжаете выдавать имущество, а программа выгрузит данные в облако, как только появится сеть.</p>
-          </div>
+      <div class="modal-body">
+        <div class="v3-sync-flow">
+          <div><b>1</b><span><strong>Создайте ключ подразделения</strong><small>Например: <code>kapt_a1b2c3</code>.</small></span></div>
+          <div><b>2</b><span><strong>Введите его на нужных устройствах</strong><small>Одинаковый ключ объединяет только выбранную группу устройств.</small></span></div>
+          <div><b>3</b><span><strong>Работайте локально</strong><small>Операции продолжают записываться на телефоне.</small></span></div>
+          <div><b>4</b><span><strong>Синхронизируйте при наличии сети</strong><small>Изменения передаются через Firebase в общий набор данных подразделения.</small></span></div>
         </div>
-
-        <div style="background: rgba(91,192,190,0.08); border: 1px solid rgba(91,192,190,0.25); border-radius: 8px; padding: 14px; font-size: 0.88rem; color: var(--text-primary); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-          <div>
-            <strong>Хотите настроить склад прямо сейчас?</strong>
-            <div style="color: var(--text-secondary); font-size: 0.82rem;">Сформируйте персональную лицензию и управляйте ротой в Личном кабинете.</div>
-          </div>
-          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <button class="btn btn-primary btn-sm" onclick="closeModal('modalSyncMech'); switchMainTab('tabCabinet');">Открыть кабинет ➔</button>
-            <button class="btn btn-gold btn-sm" onclick="closeModal('modalSyncMech'); switchMainTab('tabPayment');">Купить ключ 490 ₽</button>
-          </div>
+        <div class="v3-modal-note">Не передавайте ключ подразделения посторонним. При необходимости его можно заменить.</div>
+        <div class="v3-modal-cta">
+          <span>Управление ключом доступно в личном кабинете.</span>
+          <button class="btn btn-primary btn-sm" onclick="closeModal('modalSyncMech'); switchMainTab('tabCabinet');">Открыть кабинет</button>
         </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary btn-sm" onclick="closeModal('modalSyncMech')">Закрыть</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal: Архитектура безопасности (OPSEC) -->
-  <div class="modal-overlay" id="modalOpsec" onclick="if(event.target===this) closeModal('modalOpsec')">
-    <div class="modal-content" style="max-width: 820px; max-height: 88vh; display: flex; flex-direction: column;">
-      <div class="modal-header">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <span style="font-size: 1.4rem;">🛡️</span>
-          <div>
-            <h3 style="margin: 0; font-size: 1.15rem; color: #fff; font-family: monospace;">Архитектура безопасности (OPSEC)</h3>
-            <div style="font-size: 0.75rem; color: #ff6666;">Безопасность фронтового уровня в условиях РЭБ/РЭР</div>
-          </div>
-        </div>
-        <button class="modal-close" onclick="closeModal('modalOpsec')">×</button>
-      </div>
-      <div class="modal-body" style="padding: 20px; overflow-y: auto;">
-        <p style="color: var(--text-secondary); font-size: 0.92rem; line-height: 1.6; margin-bottom: 20px; font-family: monospace;">
-          Техническое обоснование безопасности использования программного комплекса «Каптёрка ПРО» в условиях активного радиоэлектронного подавления и перехвата (РЭБ / РЭР). Продукт спроектирован с учетом требований информационной безопасности (ИБ) для работы на линии боевого соприкосновения.
-        </p>
-
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; margin-bottom: 20px;">
-          <div class="security-card" style="background: var(--bg-card); padding: 22px; border-radius: 12px; border: 1px solid var(--border-color); border-left: 4px solid #ff5555;">
-            <div style="font-weight: 700; font-size: 1.05rem; margin-bottom: 10px; color: #fff; display: flex; align-items: center; gap: 8px;">
-              <span>🚫</span> 1. Нулевая телеметрия и геолокация
-            </div>
-            <p style="color: var(--text-secondary); font-size: 0.88rem; line-height: 1.6; margin: 0;">Приложение не запрашивает и не использует API геолокации Android (GPS/ГЛОНАСС/Network). В манифесте полностью отсутствуют разрешения ACCESS_FINE_LOCATION и ACCESS_COARSE_LOCATION. Сторонние аналитические трекеры исключены из сборки.</p>
-          </div>
-
-          <div class="security-card" style="background: var(--bg-card); padding: 22px; border-radius: 12px; border: 1px solid var(--border-color); border-left: 4px solid var(--primary);">
-            <div style="font-weight: 700; font-size: 1.05rem; margin-bottom: 10px; color: #fff; display: flex; align-items: center; gap: 8px;">
-              <span>🔒</span> 2. Изолированная локальная БД
-            </div>
-            <p style="color: var(--text-secondary); font-size: 0.88rem; line-height: 1.6; margin: 0;">Весь массив учетных данных (остатки БК, экипировка, списки бойцов) сохраняется исключительно в изолированном хранилище устройства (App-Specific Storage) в формате SQLite (Jetpack Room). Файлы недоступны другим приложениям без Root-прав.</p>
-          </div>
-
-          <div class="security-card" style="background: var(--bg-card); padding: 22px; border-radius: 12px; border: 1px solid var(--border-color); border-left: 4px solid var(--accent-gold);">
-            <div style="font-weight: 700; font-size: 1.05rem; margin-bottom: 10px; color: #fff; display: flex; align-items: center; gap: 8px;">
-              <span>📴</span> 3. Режим радиотишины (No Push)
-            </div>
-            <p style="color: var(--text-secondary); font-size: 0.88rem; line-height: 1.6; margin: 0;">Синхронизация складов роты происходит исключительно по ручной инициативе пользователя. В приложении нет фоновых сервисов и push-уведомлений, излучающих в радиоэфир.</p>
-          </div>
-
-          <div class="security-card" style="background: var(--bg-card); padding: 22px; border-radius: 12px; border: 1px solid var(--border-color); border-left: 4px solid #4a90e2;">
-            <div style="font-weight: 700; font-size: 1.05rem; margin-bottom: 10px; color: #fff; display: flex; align-items: center; gap: 8px;">
-              <span>🔑</span> 4. Оффлайн-Активация (Air-Gapped)
-            </div>
-            <p style="color: var(--text-secondary); font-size: 0.88rem; line-height: 1.6; margin: 0;">Активация военного ключа (KAPT / KPT) производится через криптографическую проверку контрольной суммы непосредственно на устройстве без обязательного соединения с серверами.</p>
-          </div>
-        </div>
-
-        <div style="background: rgba(255,85,85,0.08); border: 1px solid rgba(255,85,85,0.25); border-radius: 8px; padding: 14px; font-size: 0.88rem; color: #ffcccc;">
-          🛡️ <strong>Соответствие уставным нормам:</strong> База данных роты никогда не покидает смартфон бойца без прямого ручного подтверждения командира.
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary btn-sm" onclick="closeModal('modalOpsec')">Закрыть</button>
       </div>
     </div>
   </div>
@@ -1126,6 +972,6 @@
 
   <script src="app.js?v=3.4.9.31c"></script>
   <script src="auth-config.js?v=3.4.9.31a"></script>
-  <script src="auth-v2.js?v=3.4.9.31c"></script>
+  <script src="auth-v2.js?v=3.4.9.31d"></script>
 </body>
 </html>
