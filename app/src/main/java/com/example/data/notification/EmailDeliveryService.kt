@@ -101,7 +101,7 @@ object EmailDeliveryService {
             ✓ Полная автономная работа при активном РЭБ и синхронизация подразделений.
 
             Служба поддержки: alex.666.881@gmail.com
-            Telegram разработчика: @Levaminbat
+            Telegram разработчика: @kapterka_help_bot
             Официальный сайт: https://kapterka-pro.ru/
         """.trimIndent()
 
@@ -199,7 +199,7 @@ object EmailDeliveryService {
                         </div>
                         <p style="font-size:13px; color:#9ab0a0; line-height:1.5;">Срок действия: 30 суток. В приложении разблокированы все функции: экспорт в Excel Формы № 8 и Формы № 18, неограниченный склад и автономная работа.</p>
                         <hr style="border:0; border-top:1px solid #233829; margin:20px 0;">
-                        <p style="font-size:12px; color:#6b8271;">Поддержка: alex.666.881@gmail.com | Telegram: @Levaminbat</p>
+                        <p style="font-size:12px; color:#6b8271;">Поддержка: alex.666.881@gmail.com | Telegram: @kapterka_help_bot</p>
                     </div>
                 """.trimIndent())
             }
