@@ -9,6 +9,7 @@ on:
       - 'app/build.gradle.kts'
       - 'app/src/main/AndroidManifest.xml'
       - '.github/scripts/release-artifact-audit.mjs'
+      - '.github/release-apk-baseline.json'
       - '.github/workflows/release-apk-audit.yml'
   pull_request:
     paths:

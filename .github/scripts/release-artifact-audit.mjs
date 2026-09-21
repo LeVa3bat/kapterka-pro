@@ -11,6 +11,7 @@ const gradle = read('app/build.gradle.kts');
 const index = read('docs/index.html');
 const badging = read(process.argv[2] || '/tmp/apk-badging.txt');
 const signer = read(process.argv[3] || '/tmp/apk-signature.txt');
+const baseline = JSON.parse(read('.github/release-apk-baseline.json'));
 
 const appId = (gradle.match(/applicationId\s*=\s*"([^"]+)"/) || [])[1] || '';
 const versionCode = String((gradle.match(/versionCode\s*=\s*(\d+)/) || [])[1] || '');
@@ -65,6 +66,15 @@ else {
   const normalized = certSha.replace(/:/g, '').toLowerCase();
   ok(`APK signature verified; signer SHA-256: ${normalized}`);
   console.log(`SIGNER_SHA256=${normalized}`);
+
+  const expectedSigner = String(baseline.signerSha256 || '').replace(/:/g, '').toLowerCase();
+  if (!expectedSigner) fail('release signer baseline is missing');
+  else if (normalized !== expectedSigner) fail(`APK signer changed: ${normalized} != baseline ${expectedSigner}`);
+  else ok('APK signer matches the published-update baseline');
+
+  if (baseline.packageName && apkPackage !== baseline.packageName) {
+    fail(`APK package ${apkPackage} != baseline package ${baseline.packageName}`);
+  }
 }
 
 if (process.exitCode) {
