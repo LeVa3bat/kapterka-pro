@@ -309,17 +309,21 @@ fun DeveloperAccessPromptDialog(
 @Composable
 fun DeveloperAdminDialog(
     fightersList: List<FighterAdminRecord>,
+    diagnostics: DeveloperDiagnosticsSnapshot,
     onDeleteFighter: (String) -> Unit,
     onGrantLicense: (String, Int) -> Unit,
     onRefreshList: () -> Unit,
+    onForceSync: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
     val clipboard = LocalClipboardManager.current
     var searchQuery by remember { mutableStateOf("") }
     var fighterToDelete by remember { mutableStateOf<FighterAdminRecord?>(null) }
+    var fighterToGrant by remember { mutableStateOf<FighterAdminRecord?>(null) }
 
     // Состояния сворачивания (по умолчанию ВСЁ СКРЫТО)
+    var expandDiagnostics by remember { mutableStateOf(true) }
     var expandStats by remember { mutableStateOf(false) }
     var expandSearch by remember { mutableStateOf(false) }
     var expandRegistry by remember { mutableStateOf(false) }
@@ -347,7 +351,7 @@ fun DeveloperAdminDialog(
     val totalCount = fightersList.size
     val onlineCount = fightersList.count { it.isOnline }
     val proCount = fightersList.count { it.isProActive }
-    val isAnyExpanded = expandStats || expandSearch || expandRegistry
+    val isAnyExpanded = expandDiagnostics || expandStats || expandSearch || expandRegistry
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -409,6 +413,7 @@ fun DeveloperAdminDialog(
                                 .clip(RoundedCornerShape(4.dp))
                                 .clickable {
                                     val targetState = !isAnyExpanded
+                                    expandDiagnostics = targetState
                                     expandStats = targetState
                                     expandSearch = targetState
                                     expandRegistry = targetState
