@@ -3893,3 +3893,102 @@ a.neo-trust-item:hover{transform:translateY(-1px);background:#111b15;border-colo
     scroll-snap-align:none!important;
   }
 }
+
+
+/* FINAL MOBILE VISUAL FIX FROM REAL SCREENSHOTS 2026-09-21
+   Real-device polish: important content cards fit fully on narrow screens.
+   Screenshot gallery remains the only intentional horizontal carousel. */
+@media(max-width:560px){
+  .neo-trust-grid{
+    display:grid!important;
+    grid-template-columns:1fr 1fr!important;
+    overflow:visible!important;
+    gap:5px!important;
+    padding:5px!important;
+  }
+  .neo-trust-item{
+    min-width:0!important;
+    width:auto!important;
+    flex:none!important;
+    padding:7px!important;
+  }
+  .neo-trust-item:last-child:nth-child(odd){
+    grid-column:1 / -1!important;
+  }
+
+  .neo-fit-grid,
+  .neo-start-grid,
+  .neo-why-grid,
+  .neo-plan-grid,
+  .neo-resource-strip .container{
+    display:grid!important;
+    grid-template-columns:1fr!important;
+    overflow:visible!important;
+    gap:6px!important;
+    padding-bottom:0!important;
+  }
+
+  .neo-fit-card,
+  .neo-start-grid>div,
+  .neo-why-card,
+  .neo-plan-card,
+  .neo-resource-card{
+    width:auto!important;
+    max-width:none!important;
+    flex:none!important;
+    scroll-snap-align:none!important;
+  }
+
+  .neo-fit-card,
+  .neo-start-grid>div{
+    padding:9px!important;
+    border-radius:11px!important;
+  }
+
+  .neo-why-card{
+    min-height:auto!important;
+    padding:10px!important;
+  }
+  .neo-why-card strong{
+    margin-top:7px!important;
+  }
+
+  .neo-plan-card{
+    padding:10px!important;
+  }
+  .neo-plan-points{
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    gap:4px!important;
+  }
+  .neo-plan-points span{
+    padding:5px 6px!important;
+    font-size:.54rem!important;
+  }
+
+  .neo-resource-card{
+    grid-template-columns:30px minmax(0,1fr) auto!important;
+    padding:9px!important;
+  }
+
+  .neo-section-title-split{
+    align-items:flex-end!important;
+  }
+
+  /* Keep a visible swipe affordance only where swiping is intentional. */
+  .neo-shot-row{
+    padding-right:18%!important;
+    scroll-padding-inline:0!important;
+  }
+}
+
+@media(max-width:380px){
+  .neo-trust-grid{
+    grid-template-columns:1fr!important;
+  }
+  .neo-trust-item:last-child:nth-child(odd){
+    grid-column:auto!important;
+  }
+  .neo-plan-points{
+    grid-template-columns:1fr!important;
+  }
+}
