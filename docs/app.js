@@ -519,25 +519,33 @@ function renderKeysHistory() {
   const keys = getKeysHistory();
   tableBody.innerHTML = keys.map((item, index) => {
     const isPrimary = index === 0;
+    const rawKey = String(item?.key || '');
+    // License keys are limited to their expected character set before being used in an inline handler.
+    const copySafeKey = rawKey.toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+    const safeKey = escapeHtml(rawKey || '—');
+    const safeCallsign = escapeHtml(item?.callsign || 'Пользователь');
+    const safeUnit = escapeHtml(item?.unit || 'Подразделение');
+    const safeStatus = escapeHtml(item?.status || '—');
+    const safeDate = escapeHtml(item?.date || '—');
     return `
       <tr>
         <td>
-          <span class="table-key-tag">${item.key}</span>
+          <span class="table-key-tag">${safeKey}</span>
         </td>
         <td>
-          <strong style="color:var(--text-primary);">${item.callsign}</strong>
-          <div style="font-size:0.75rem; color:var(--text-muted);">${item.unit || 'Подразделение'}</div>
+          <strong style="color:var(--text-primary);">${safeCallsign}</strong>
+          <div style="font-size:0.75rem; color:var(--text-muted);">${safeUnit}</div>
         </td>
         <td>
           <span class="badge ${isPrimary ? 'badge-gold' : ''}" style="font-size:0.72rem; padding:2px 8px;">
-            ${item.status}
+            ${safeStatus}
           </span>
         </td>
         <td style="font-family:var(--font-mono); font-size:0.8rem; color:var(--text-secondary);">
-          ${item.date}
+          ${safeDate}
         </td>
         <td>
-          <button class="btn btn-primary btn-sm" onclick="copyKeyText('${item.key}')" title="Скопировать">
+          <button class="btn btn-primary btn-sm" onclick="copyKeyText('${copySafeKey}')" title="Скопировать">
             Скопировать
           </button>
         </td>
