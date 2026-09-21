@@ -272,7 +272,7 @@
             <div id="panelRegister" class="auth-form-panel active">
               <div>
                 <h3>Регистрация</h3>
-                <p>Создайте аккаунт для доступа к профилю и лицензионным ключам.</p>
+                <p>Введите Email — мы пришлём одноразовый 6-значный код. Пароль не нужен.</p>
               </div>
               <div id="regStepInputs">
                 <div class="v2-form-grid">
@@ -288,16 +288,12 @@
                     <label class="form-label">Должность / звание</label>
                     <input type="text" id="regRank" class="form-input" placeholder="По желанию">
                   </div>
-                  <div class="form-group">
-                    <label class="form-label">Пароль *</label>
-                    <input type="password" id="regPassword" class="form-input" placeholder="Минимум 4 символа">
-                  </div>
                 </div>
                 <label class="auth-newsletter-check">
                   <input type="checkbox" id="regNewsletterCheck" checked>
                   <span>Получать уведомления о важных обновлениях Каптёрка PRO.</span>
                 </label>
-                <button class="btn btn-primary btn-lg v2-full-btn" onclick="startRegistrationProcess()">Продолжить</button>
+                <button class="btn btn-primary btn-lg v2-full-btn" onclick="startRegistrationProcess()">Получить код на Email</button>
               </div>
 
               <div id="regStepVerification" style="display:none;">
@@ -305,10 +301,12 @@
                   <h4>Подтверждение Email</h4>
                   <p>Код отправлен на <strong id="verifyEmailDisplay">user@mail.ru</strong></p>
                   <div class="pin-inputs">
-                    <input type="text" maxlength="1" class="pin-digit" id="pin1" oninput="focusNextPin(this,'pin2')">
-                    <input type="text" maxlength="1" class="pin-digit" id="pin2" oninput="focusNextPin(this,'pin3')">
-                    <input type="text" maxlength="1" class="pin-digit" id="pin3" oninput="focusNextPin(this,'pin4')">
-                    <input type="text" maxlength="1" class="pin-digit" id="pin4" oninput="focusNextPin(this,null)">
+                    <input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="1" class="pin-digit" id="pin1">
+                    <input type="text" inputmode="numeric" maxlength="1" class="pin-digit" id="pin2">
+                    <input type="text" inputmode="numeric" maxlength="1" class="pin-digit" id="pin3">
+                    <input type="text" inputmode="numeric" maxlength="1" class="pin-digit" id="pin4">
+                    <input type="text" inputmode="numeric" maxlength="1" class="pin-digit" id="pin5">
+                    <input type="text" inputmode="numeric" maxlength="1" class="pin-digit" id="pin6">
                   </div>
                   <div id="verificationHint" class="form-helper">Введите код из письма.</div>
                   <div class="v2-inline-actions">
@@ -322,20 +320,13 @@
             <div id="panelLogin" class="auth-form-panel">
               <div>
                 <h3>Вход</h3>
-                <p>Введите данные аккаунта, чтобы открыть кабинет.</p>
+                <p>Введите Email — мы отправим одноразовый код для входа.</p>
               </div>
               <div class="form-group">
                 <label class="form-label">Email</label>
                 <input type="email" id="loginEmail" class="form-input" placeholder="name@domain.ru">
               </div>
-              <div class="form-group">
-                <label class="form-label">Пароль</label>
-                <input type="password" id="loginPassword" class="form-input" placeholder="Ваш пароль">
-              </div>
-              <button class="btn btn-primary btn-lg v2-full-btn" onclick="processUserLogin()">Войти</button>
-              <div class="v2-sub-action">
-                <a href="javascript:void(0)" onclick="quickDemoLogin()">Открыть демонстрационный кабинет</a>
-              </div>
+              <button class="btn btn-primary btn-lg v2-full-btn" onclick="processUserLogin()">Получить код для входа</button>
             </div>
           </div>
         </div>
@@ -349,7 +340,6 @@
                 <small id="sessionEmailText">user@domain.ru</small>
               </div>
               <span class="subscriber-badge-chip" id="sessionNewsletterChip">Обновления включены</span>
-              <button id="adminQuickBadge" class="btn btn-gold btn-sm" onclick="openAdminPanel()" style="display:none;">Админ</button>
             </div>
             <button class="btn btn-outline btn-sm" onclick="logoutUserSession()">Выйти</button>
           </div>
