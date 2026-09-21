@@ -79,8 +79,9 @@ fun UnitKeySyncDialog(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
-    val unitKey = profile?.unitKey ?: "kapt_59e13b"
-    val unitName = profile?.unitName ?: "1-е Подразделение"
+    val unitKey = profile?.unitKey?.trim().orEmpty()
+    val unitKeyDisplay = unitKey.ifBlank { "Код не настроен" }
+    val unitName = profile?.unitName?.takeIf { it.isNotBlank() } ?: "Подразделение не настроено"
     var manualKeyInput by remember { mutableStateOf("") }
 
     Dialog(onDismissRequest = onDismiss) {
@@ -158,7 +159,7 @@ fun UnitKeySyncDialog(
                         .clip(RoundedCornerShape(10.dp))
                         .background(Color(0xFF0D1711))
                         .border(1.5.dp, SageGreenBright, RoundedCornerShape(10.dp))
-                        .clickable {
+                        .clickable(enabled = unitKey.isNotBlank()) {
                             copyToClipboard(context, unitKey)
                         }
                         .padding(vertical = 18.dp, horizontal = 16.dp),
@@ -175,7 +176,7 @@ fun UnitKeySyncDialog(
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = unitKey,
+                            text = unitKeyDisplay,
                             color = SageGreenBright,
                             fontSize = 26.sp,
                             fontWeight = FontWeight.Black,
@@ -198,6 +199,7 @@ fun UnitKeySyncDialog(
                     onClick = {
                         copyToClipboard(context, unitKey)
                     },
+                    enabled = unitKey.isNotBlank(),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(44.dp)
