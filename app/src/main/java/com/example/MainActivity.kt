@@ -75,6 +75,7 @@ import com.example.ui.components.AddCustomItemDialog
 import com.example.ui.components.AddPointDialog
 import com.example.ui.components.DeveloperAccessPromptDialog
 import com.example.ui.components.DeveloperAdminDialog
+import com.example.ui.components.DeveloperDiagnosticsSnapshot
 import com.example.ui.components.EditPointDialog
 import com.example.ui.components.ExcelReportPreviewDialog
 import com.example.ui.components.ExpenditureOperationDialog
@@ -633,10 +634,6 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
             onTestPaymentConfirm = { viewModel.confirmPaymentAndActivateLicense() },
             onRestoreSavedLicense = { viewModel.restoreSavedLicenseOnDevice() },
             onRestoreFromCloud = { email, callsign -> viewModel.restoreLicenseFromCloud(email, callsign) },
-            onOpenDeveloperBackdoor = {
-                showPaymentProDialog = false
-                showDevAdminDialog = true
-            },
             onSaveYooKassaSettings = { shopId, secretKey, isTest, price ->
                 viewModel.saveYooKassaSettings(shopId, secretKey, isTest, price)
             },
@@ -664,11 +661,53 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
     }
 
     if (showDevAdminDialog) {
+        val syncDeviceId = context
+            .getSharedPreferences("kapterka_sync_prefs", android.content.Context.MODE_PRIVATE)
+            .getString("device_uuid", "")
+            .orEmpty()
+        val lastSyncText = if (syncState.lastSyncTime > 0L) {
+            java.text.SimpleDateFormat("dd.MM.yyyy HH:mm:ss", java.util.Locale.getDefault())
+                .format(java.util.Date(syncState.lastSyncTime))
+        } else {
+            "ещё не было"
+        }
+        val licenseStateText = when {
+            licenseStatus.isProActive -> "PRO • ${licenseStatus.daysRemaining} дн."
+            licenseStatus.isDemoActive -> "ДЕМО • ${licenseStatus.demoDaysLeft} дн."
+            else -> "Не активна"
+        }
+
         DeveloperAdminDialog(
             fightersList = allFighters,
+            diagnostics = DeveloperDiagnosticsSnapshot(
+                appVersion = BuildConfig.VERSION_NAME,
+                versionCode = BuildConfig.VERSION_CODE,
+                applicationId = BuildConfig.APPLICATION_ID,
+                databaseVersion = 2,
+                androidVersion = "${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})",
+                deviceModel = "${Build.MANUFACTURER} ${Build.MODEL}".trim(),
+                fighterId = licenseStatus.fighterId,
+                syncDeviceId = syncDeviceId,
+                callsign = profile?.callsign.orEmpty(),
+                unitName = profile?.unitName.orEmpty(),
+                unitKey = profile?.unitKey.orEmpty(),
+                isLoggedIn = profile?.isLoggedIn == true,
+                licenseState = licenseStateText,
+                licenseExpires = licenseStatus.expiresAtDateFormatted,
+                syncState = syncState.syncMessage,
+                isOnline = syncState.isOnline,
+                connectedDevices = syncState.connectedDevicesCount,
+                lastSync = lastSyncText,
+                pointsCount = points.size,
+                catalogItemsCount = catalogItems.size,
+                stockRecordsCount = stockRecords.size,
+                operationsCount = operations.size,
+                requisitionsCount = requisitions.size
+            ),
             onDeleteFighter = { viewModel.deleteFighterFromRegistry(it) },
             onGrantLicense = { id, days -> viewModel.grantLicenseFromDevMenu(id, days) },
             onRefreshList = { viewModel.refreshFightersRegistry() },
+            onForceSync = { viewModel.simulateCloudSync() },
             onDismiss = { showDevAdminDialog = false }
         )
     }
