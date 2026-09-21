@@ -563,6 +563,23 @@ function saveCabinetProfile() {
   localStorage.setItem(STORAGE_USER_EMAIL, email);
   localStorage.setItem(STORAGE_USER_PHONE, phone);
 
+  // Keep current authenticated session profile in sync with edited cabinet fields.
+  try {
+    const currentSession = getActiveUserSession();
+    if (currentSession) {
+      const updatedSession = {
+        ...currentSession,
+        callsign,
+        rank,
+        unitName,
+        unitKey,
+        email,
+        phone
+      };
+      localStorage.setItem(STORAGE_AUTH_USER, JSON.stringify(updatedSession));
+    }
+  } catch (e) {}
+
   const navCallsignDisplay = document.getElementById('navCallsignDisplay');
   if (navCallsignDisplay) navCallsignDisplay.textContent = callsign;
 
@@ -975,7 +992,22 @@ function applyNewPaidKey(newKey, callsign) {
   });
 
   localStorage.setItem(STORAGE_KEYS_HISTORY, JSON.stringify(history));
+
+  // Keep authenticated cabinet session aware of the newly linked license.
+  try {
+    const currentSession = getActiveUserSession();
+    if (currentSession) {
+      const updatedSession = {
+        ...currentSession,
+        activeKey: newKey,
+        keys: history
+      };
+      localStorage.setItem(STORAGE_AUTH_USER, JSON.stringify(updatedSession));
+    }
+  } catch (e) {}
+
   renderKeysHistory();
+  updateAuthUI();
 
   showToast(`Лицензия активирована! Ключ: ${newKey}`);
 }
