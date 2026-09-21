@@ -24,6 +24,8 @@ const requiredFiles = [
   'docs/auth-v2.js',
   'docs/privacy.html',
   'docs/terms.html',
+  'docs/updates.html',
+  'docs/security.html',
   'docs/uchet-ostatkov-na-telefone.html',
   'docs/uchet-imushchestva-offline.html',
   'docs/skladskoy-uchet-android.html',
@@ -47,7 +49,9 @@ if (!process.exitCode) ok('required public files are present');
 const guideFiles = [
   'docs/skladskoy-uchet-android.html',
   'docs/uchet-imushchestva-offline.html',
-  'docs/uchet-ostatkov-na-telefone.html'
+  'docs/uchet-ostatkov-na-telefone.html',
+  'docs/security.html',
+  'docs/updates.html'
 ];
 for (const file of guideFiles) {
   const source = read(file);
@@ -157,7 +161,7 @@ if (!index.includes('v3.4.9') && !index.includes('3.4.9')) fail('site version 3.
 if (!index.includes('сборка 31') && !index.includes('Сборка 31')) fail('site build 31 marker is missing');
 
 
-const htmlFiles = ['docs/index.html', 'docs/privacy.html', 'docs/terms.html', 'docs/skladskoy-uchet-android.html', 'docs/uchet-imushchestva-offline.html', 'docs/uchet-ostatkov-na-telefone.html', 'docs/404.html'];
+const htmlFiles = ['docs/index.html', 'docs/privacy.html', 'docs/terms.html', 'docs/security.html', 'docs/updates.html', 'docs/skladskoy-uchet-android.html', 'docs/uchet-imushchestva-offline.html', 'docs/uchet-ostatkov-na-telefone.html', 'docs/404.html'];
 const missingLocalTargets = [];
 for (const htmlFile of htmlFiles) {
   const source = read(htmlFile);
@@ -249,6 +253,8 @@ const requiredSitemapUrls = [
   'https://kapterka-pro.ru/',
   'https://kapterka-pro.ru/privacy.html',
   'https://kapterka-pro.ru/terms.html',
+  'https://kapterka-pro.ru/security.html',
+  'https://kapterka-pro.ru/updates.html',
   'https://kapterka-pro.ru/skladskoy-uchet-android.html',
   'https://kapterka-pro.ru/uchet-imushchestva-offline.html',
   'https://kapterka-pro.ru/uchet-ostatkov-na-telefone.html'
@@ -256,3 +262,14 @@ const requiredSitemapUrls = [
 const missingSitemapUrls = requiredSitemapUrls.filter(url => !sitemap.includes('<loc>' + url + '</loc>'));
 if (missingSitemapUrls.length) fail('sitemap is missing URLs: ' + missingSitemapUrls.join(', '));
 else ok('sitemap contains all public indexable pages');
+
+if (!index.includes('class="neo-trust"') || !index.includes('id="why-kapterka"') || !index.includes('class="neo-resource-strip"')) {
+  fail('professional trust/security/update surfaces are missing from homepage');
+}
+const securityPage = read('docs/security.html');
+const updatesPage = read('docs/updates.html');
+if ((securityPage.match(/<h1\b/gi) || []).length !== 1 || !/rel="canonical"/.test(securityPage)) fail('security page SEO structure is invalid');
+if ((updatesPage.match(/<h1\b/gi) || []).length !== 1 || !/rel="canonical"/.test(updatesPage)) fail('updates page SEO structure is invalid');
+if (!securityPage.includes('39ffa4cf13a50398235078a49b7dfaa420fdd095d3258bab8336edb79c410250')) fail('security page APK hash is missing');
+if (!securityPage.includes('843a7e883914f3a7a5a7665ff07b2e8c43da87a24ee4dc35e1600758aee73cb9')) fail('security page signer fingerprint is missing');
+else ok('professional trust/security/update surfaces are present');
