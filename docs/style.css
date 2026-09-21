@@ -2361,3 +2361,426 @@ box-shadow:0 18px 60px rgba(0,0,0,.28);}
   .neo-footer-bottom{display:block;margin-top:10px;padding-top:8px;font-size:.62rem;line-height:1.6}
   .neo-footer-bottom>span{display:block}
 }
+
+
+/* COMPLETE SITE V2 — ALL PUBLIC TABS */
+:root{
+  --v2-bg:#09100c;
+  --v2-panel:#0f1712;
+  --v2-panel-2:#131d17;
+  --v2-line:rgba(255,255,255,.075);
+  --v2-text:#edf4ef;
+  --v2-muted:#8fa097;
+  --v2-green:#71d7a7;
+  --v2-blue:#65b9d6;
+  --v2-gold:#e7aa3c;
+  --v2-red:#e57575;
+}
+.app-view-tab:not(#tabOverview){
+  background:
+    radial-gradient(circle at 5% 0%,rgba(70,190,130,.08),transparent 22%),
+    var(--v2-bg);
+  min-height:calc(100vh - 60px);
+}
+.app-view-tab:not(#tabOverview)>.section{
+  padding:84px 0 34px!important;
+}
+.app-view-tab:not(#tabOverview) .container{
+  max-width:1080px;
+}
+.app-view-tab:not(#tabOverview) .section-header{
+  text-align:left!important;
+  margin:0 0 18px!important;
+  padding:0!important;
+}
+.app-view-tab:not(#tabOverview) .section-header .badge{
+  border-radius:999px!important;
+  padding:6px 10px!important;
+  font-size:.67rem!important;
+  letter-spacing:.08em!important;
+  text-transform:uppercase;
+}
+.app-view-tab:not(#tabOverview) .section-header h2{
+  margin:8px 0 6px!important;
+  font-size:clamp(1.55rem,4vw,2.25rem)!important;
+  line-height:1.08!important;
+  letter-spacing:-.035em!important;
+  color:var(--v2-text)!important;
+}
+.app-view-tab:not(#tabOverview) .section-header p{
+  margin:0!important;
+  max-width:720px;
+  color:var(--v2-muted)!important;
+  font-size:.88rem!important;
+  line-height:1.5!important;
+}
+
+/* Forms */
+#tabCabinet .auth-wrapper{
+  max-width:860px!important;
+  margin:0 auto 22px!important;
+}
+#tabCabinet .auth-card,
+#tabCabinet .cabinet-card,
+#tabCabinet .vault-key-card,
+#tabPayment .yookassa-checkout-card,
+#tabDownload .download-box{
+  border:1px solid var(--v2-line)!important;
+  background:linear-gradient(180deg,rgba(18,28,22,.98),rgba(11,18,14,.98))!important;
+  border-radius:22px!important;
+  box-shadow:0 18px 50px rgba(0,0,0,.22)!important;
+}
+#tabCabinet .auth-card{padding:0!important;overflow:hidden;}
+#tabCabinet .auth-switch-header{
+  display:grid!important;
+  grid-template-columns:1fr 1fr!important;
+  gap:0!important;
+  padding:6px!important;
+  background:#0a100c!important;
+  border-bottom:1px solid var(--v2-line)!important;
+}
+#tabCabinet .auth-switch-btn{
+  min-height:46px!important;
+  border:0!important;
+  border-radius:12px!important;
+  background:transparent!important;
+  color:#7e9086!important;
+  font-size:.86rem!important;
+  font-weight:800!important;
+}
+#tabCabinet .auth-switch-btn.active{
+  background:#17241c!important;
+  color:#ecf5ef!important;
+  box-shadow:inset 0 0 0 1px rgba(113,215,167,.18)!important;
+}
+#tabCabinet .auth-form-panel{padding:22px!important;}
+#tabCabinet .auth-form-panel>div:first-child{
+  text-align:left!important;
+  margin-bottom:16px!important;
+}
+#tabCabinet .auth-form-panel h3{
+  font-size:1.35rem!important;
+  letter-spacing:-.025em;
+}
+#tabCabinet .auth-form-panel p{font-size:.8rem!important;line-height:1.5!important;}
+.form-group{margin-bottom:12px!important;}
+.form-label{
+  display:block!important;
+  margin-bottom:6px!important;
+  color:#cbd7d0!important;
+  font-size:.76rem!important;
+  font-weight:700!important;
+}
+.form-input{
+  min-height:46px!important;
+  padding:11px 12px!important;
+  border:1px solid rgba(255,255,255,.085)!important;
+  border-radius:12px!important;
+  background:#0a110d!important;
+  color:#eef4f0!important;
+  box-shadow:none!important;
+  font-size:.9rem!important;
+}
+.form-input:focus{
+  border-color:rgba(113,215,167,.55)!important;
+  box-shadow:0 0 0 3px rgba(113,215,167,.08)!important;
+  outline:none!important;
+}
+.form-helper{margin-top:5px!important;font-size:.68rem!important;color:#687a70!important;}
+#tabCabinet .auth-newsletter-check{
+  padding:11px 12px!important;
+  border:1px solid var(--v2-line)!important;
+  border-radius:12px!important;
+  background:rgba(255,255,255,.02)!important;
+}
+#tabCabinet .pin-verify-box{
+  padding:18px!important;
+  border:1px solid rgba(101,185,214,.22)!important;
+  border-radius:16px!important;
+  background:rgba(101,185,214,.045)!important;
+}
+#tabCabinet .pin-inputs{gap:8px!important;justify-content:center!important;}
+#tabCabinet .pin-digit{
+  width:48px!important;height:52px!important;
+  border-radius:12px!important;
+  background:#0b120e!important;
+  border:1px solid rgba(101,185,214,.28)!important;
+  color:#fff!important;
+  font-size:1.3rem!important;
+}
+
+/* Cabinet logged-in */
+#tabCabinet .user-session-bar{
+  margin-bottom:14px!important;
+  padding:11px 13px!important;
+  border:1px solid var(--v2-line)!important;
+  border-radius:14px!important;
+  background:#0d1510!important;
+}
+#tabCabinet .subscriber-badge-chip{
+  border-radius:999px!important;
+  padding:5px 8px!important;
+  font-size:.67rem!important;
+}
+#tabCabinet .vault-key-card,
+#tabCabinet .cabinet-card{
+  padding:18px!important;
+  margin-bottom:14px!important;
+}
+#tabCabinet .vault-key-display{
+  margin:12px 0!important;
+  padding:13px!important;
+  border-radius:14px!important;
+  background:#0a110d!important;
+  border:1px solid rgba(231,170,60,.18)!important;
+}
+#tabCabinet .vault-key-text{font-size:1rem!important;letter-spacing:.04em!important;}
+#tabCabinet .vault-instruction-box{
+  padding:12px!important;
+  border-radius:12px!important;
+  background:rgba(255,255,255,.025)!important;
+  border:1px solid var(--v2-line)!important;
+  color:#91a198!important;
+  font-size:.75rem!important;
+  line-height:1.55!important;
+}
+#tabCabinet .keys-table-container{
+  border-radius:14px!important;
+  border:1px solid var(--v2-line)!important;
+  overflow:auto!important;
+}
+#tabCabinet .keys-vault-table{font-size:.76rem!important;}
+
+/* Payment */
+#tabPayment .yookassa-checkout-card{padding:18px!important;}
+#tabPayment .checkout-grid{
+  display:grid!important;
+  grid-template-columns:minmax(0,1.08fr) minmax(290px,.72fr)!important;
+  gap:14px!important;
+}
+#tabPayment .checkout-grid>div{
+  border-radius:16px!important;
+}
+#tabPayment .checkout-grid>div:first-child{
+  padding:4px 2px!important;
+}
+#tabPayment .checkout-grid>div:last-child{
+  background:#0a110d!important;
+  border:1px solid var(--v2-line)!important;
+  padding:16px!important;
+}
+#tabPayment .payment-method-pills{
+  display:flex!important;
+  gap:6px!important;
+  overflow-x:auto!important;
+  flex-wrap:nowrap!important;
+  padding-bottom:3px!important;
+  margin-bottom:14px!important;
+  scrollbar-width:none!important;
+}
+#tabPayment .payment-method-pills::-webkit-scrollbar{display:none!important;}
+#tabPayment .payment-method-pill{
+  flex:0 0 auto!important;
+  padding:6px 9px!important;
+  border-radius:999px!important;
+  font-size:.68rem!important;
+  background:#101914!important;
+  border:1px solid var(--v2-line)!important;
+}
+#tabPayment #boxPaymentInitial>div:first-child{
+  background:rgba(229,117,117,.07)!important;
+  border:1px solid rgba(229,117,117,.22)!important;
+  color:#dca2a2!important;
+  border-radius:12px!important;
+  font-size:.74rem!important;
+}
+#tabPayment #btnPayYooKassaMain{
+  min-height:52px!important;
+  border-radius:13px!important;
+  box-shadow:0 12px 28px rgba(231,170,60,.14)!important;
+}
+#tabPayment #boxPaymentPending{
+  background:#0b1510!important;
+  border:1px solid rgba(113,215,167,.22)!important;
+  border-radius:15px!important;
+  padding:14px!important;
+}
+#tabPayment .live-key-generation-box{
+  padding:14px!important;
+  border-radius:14px!important;
+  background:linear-gradient(145deg,rgba(231,170,60,.06),rgba(255,255,255,.015))!important;
+  border:1px solid rgba(231,170,60,.18)!important;
+}
+#tabPayment .live-key-result{margin-top:8px!important;}
+
+/* Sync — compact rather than endless vertical cards */
+#tabSync>.section>.container>div[style*="display:grid"]{
+  gap:10px!important;
+  margin-bottom:14px!important;
+}
+#tabSync .feature-card,
+#tabSync .security-card,
+#tabSync .vault-key-card{
+  border-radius:16px!important;
+  background:#0f1813!important;
+  border:1px solid var(--v2-line)!important;
+  box-shadow:none!important;
+  padding:15px!important;
+}
+#tabSync .feature-card h3{font-size:.92rem!important;margin:8px 0 6px!important;}
+#tabSync .feature-card p,
+#tabSync .security-card p,
+#tabSync .vault-key-card li{
+  font-size:.75rem!important;
+  line-height:1.48!important;
+  color:#91a097!important;
+}
+#tabSync .feature-icon-box{
+  width:38px!important;height:38px!important;
+  border-radius:11px!important;
+  font-size:1rem!important;
+}
+#tabSyncMechanism,#tabSyncFeatures,#tabSyncOpsec{
+  margin-top:18px!important;
+  padding-top:16px!important;
+}
+#tabSyncMechanism .section-header,
+#tabSyncFeatures .section-header,
+#tabSyncOpsec .section-header{margin-bottom:12px!important;}
+
+/* Download */
+#tabDownload .download-box{
+  max-width:860px!important;
+  margin:0 auto!important;
+  padding:24px!important;
+  text-align:left!important;
+}
+#tabDownload .download-box h2{
+  font-size:clamp(1.55rem,4vw,2.1rem)!important;
+  margin:7px 0 8px!important;
+}
+#tabDownload .download-box>p{
+  color:var(--v2-muted)!important;
+  font-size:.86rem!important;
+  line-height:1.5!important;
+  max-width:680px!important;
+}
+#tabDownload .download-actions{
+  align-items:stretch!important;
+  margin-top:16px!important;
+}
+#tabDownload .download-actions>div:first-child{
+  justify-content:flex-start!important;
+}
+#tabDownload .download-meta{
+  display:flex!important;
+  flex-wrap:wrap!important;
+  gap:6px 10px!important;
+  color:#708078!important;
+  font-size:.69rem!important;
+}
+
+/* Shared button language */
+.app-view-tab:not(#tabOverview) .btn{
+  border-radius:11px!important;
+  font-weight:800!important;
+}
+.app-view-tab:not(#tabOverview) .btn-lg{
+  min-height:46px!important;
+  padding:10px 15px!important;
+}
+.app-view-tab:not(#tabOverview) .btn-sm{
+  min-height:34px!important;
+  padding:6px 10px!important;
+}
+.app-view-tab:not(#tabOverview) .btn-primary{
+  background:#74ad43!important;
+  border-color:#82bb50!important;
+  color:#071009!important;
+}
+.app-view-tab:not(#tabOverview) .btn-gold{
+  background:#d99a2b!important;
+  border-color:#e8aa3c!important;
+  color:#140e06!important;
+}
+.app-view-tab:not(#tabOverview) .btn-outline{
+  background:#111913!important;
+  border-color:rgba(255,255,255,.10)!important;
+  color:#d8e2dc!important;
+}
+
+/* Make tab pages feel different instead of one green wall */
+#tabCabinet{--tab-accent:#65b9d6;}
+#tabPayment{--tab-accent:#e7aa3c;}
+#tabSync{--tab-accent:#71d7a7;}
+#tabDownload{--tab-accent:#8cafdf;}
+#tabCabinet .section-header .badge,
+#tabPayment .section-header .badge,
+#tabSync .section-header .badge,
+#tabDownload .badge{
+  color:var(--tab-accent)!important;
+  border-color:color-mix(in srgb,var(--tab-accent) 28%,transparent)!important;
+  background:color-mix(in srgb,var(--tab-accent) 7%,transparent)!important;
+}
+
+/* mobile */
+@media(max-width:700px){
+  .app-view-tab:not(#tabOverview)>.section{padding:76px 0 20px!important;}
+  .app-view-tab:not(#tabOverview) .container{padding-left:11px!important;padding-right:11px!important;}
+  .app-view-tab:not(#tabOverview) .section-header{margin-bottom:12px!important;}
+  .app-view-tab:not(#tabOverview) .section-header h2{font-size:1.42rem!important;}
+  .app-view-tab:not(#tabOverview) .section-header p{font-size:.76rem!important;}
+  #tabCabinet .auth-wrapper{margin-bottom:12px!important;}
+  #tabCabinet .auth-form-panel{padding:15px!important;}
+  #tabCabinet .auth-form-panel h3{font-size:1.12rem!important;}
+  #tabCabinet .auth-switch-btn{min-height:42px!important;font-size:.76rem!important;}
+  #tabCabinet .auth-newsletter-check span{font-size:.72rem!important;}
+  #tabCabinet .vault-key-card,#tabCabinet .cabinet-card{padding:13px!important;}
+  #tabCabinet .vault-key-display{display:block!important;}
+  #tabCabinet .vault-key-display .btn{width:100%!important;margin-top:9px!important;}
+  #tabCabinet .cabinet-card>div[style*="grid-template-columns"]{
+    grid-template-columns:1fr!important;
+    gap:8px!important;
+  }
+  #tabPayment .yookassa-checkout-card{padding:13px!important;}
+  #tabPayment .checkout-grid{grid-template-columns:1fr!important;gap:10px!important;}
+  #tabPayment .checkout-grid>div:last-child{padding:13px!important;}
+  #tabPayment .payment-method-pill{font-size:.64rem!important;}
+  #tabSync>.section>.container>div[style*="display:grid"]{
+    grid-template-columns:1fr!important;
+  }
+  #tabSyncMechanism>div[style*="display: grid"],
+  #tabSyncOpsec>div[style*="display: grid"]{
+    display:flex!important;
+    overflow-x:auto!important;
+    gap:8px!important;
+    scroll-snap-type:x mandatory;
+    padding-bottom:3px!important;
+  }
+  #tabSyncMechanism>div[style*="display: grid"]>*,
+  #tabSyncOpsec>div[style*="display: grid"]>*{
+    flex:0 0 84%!important;
+    scroll-snap-align:start;
+  }
+  #tabSyncFeatures .features-grid{
+    display:flex!important;
+    overflow-x:auto!important;
+    gap:8px!important;
+    scroll-snap-type:x mandatory;
+    padding-bottom:3px!important;
+  }
+  #tabSyncFeatures .features-grid>.feature-card{
+    flex:0 0 82%!important;
+    scroll-snap-align:start;
+  }
+  #tabDownload .download-box{padding:15px!important;}
+  #tabDownload .download-actions>div:first-child{
+    display:grid!important;
+    grid-template-columns:1fr!important;
+    gap:8px!important;
+  }
+  #tabDownload .download-actions a,
+  #tabDownload .download-actions button{width:100%!important;}
+  #tabDownload .download-actions img{margin:0 auto!important;}
+  #tabDownload .download-meta{justify-content:flex-start!important;}
+}
