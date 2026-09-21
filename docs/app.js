@@ -253,17 +253,20 @@ function switchMainTab(tabId) {
   // Hide all tabs
   document.querySelectorAll('.app-view-tab').forEach(tab => {
     tab.classList.remove('active');
+    tab.setAttribute('aria-hidden', 'true');
   });
 
   // Remove active state from tab navigation buttons
   document.querySelectorAll('.main-tab-btn').forEach(btn => {
     btn.classList.remove('active');
+    btn.setAttribute('aria-selected', 'false');
   });
 
   // Activate selected tab
   const targetTab = document.getElementById(tabId);
   if (targetTab) {
     targetTab.classList.add('active');
+    targetTab.setAttribute('aria-hidden', 'false');
   }
 
   // Update navbar button highlight
@@ -279,12 +282,16 @@ function switchMainTab(tabId) {
   const activeBtnId = btnMap[tabId];
   if (activeBtnId) {
     const activeBtn = document.getElementById(activeBtnId);
-    if (activeBtn) activeBtn.classList.add('active');
+    if (activeBtn) {
+      activeBtn.classList.add('active');
+      activeBtn.setAttribute('aria-selected', 'true');
+    }
   }
 
   // Update mobile bottom nav highlight
   document.querySelectorAll('.mobile-bottom-tab-btn').forEach(btn => {
     btn.classList.remove('active');
+    btn.setAttribute('aria-selected', 'false');
   });
   const mobileBtnMap = {
     'tabOverview': 'mobileTabOverview',
@@ -296,8 +303,17 @@ function switchMainTab(tabId) {
   const activeMobileBtnId = mobileBtnMap[tabId];
   if (activeMobileBtnId) {
     const mobileBtn = document.getElementById(activeMobileBtnId);
-    if (mobileBtn) mobileBtn.classList.add('active');
+    if (mobileBtn) {
+      mobileBtn.classList.add('active');
+      mobileBtn.setAttribute('aria-selected', 'true');
+    }
   }
+
+  // Close the compact mobile menu after a selection.
+  const mobileNav = document.getElementById('mainTabNav');
+  const mobileToggle = document.getElementById('mobileToggle');
+  if (mobileNav) mobileNav.classList.remove('open');
+  if (mobileToggle) mobileToggle.setAttribute('aria-expanded', 'false');
 
   // Keep a shareable/restorable URL without reloading the page.
   try {
@@ -610,20 +626,60 @@ function fallbackCopy(text) {
 }
 
 const YOOKASSA_PAYMENT_URL = 'https://yookassa.ru/my/i/apiQMG65ZHIE/l';
+let paymentRequestInFlight = false;
 
 // 7. YooKassa Real Payment & Automated Verification Flow
 let paymentPollingTimer = null;
 let paymentPollingSeconds = 0;
 
 async function processYooKassaPayment() {
-  const callsign = document.getElementById('payCallsignInput')?.value.trim() || 'Боец';
-  const email = document.getElementById('payEmailInput')?.value.trim() || '';
+  if (paymentRequestInFlight) {
+    showToast('Платёж уже создаётся. Подождите несколько секунд.');
+    return;
+  }
 
-  if (!email || !email.includes('@')) {
-    showToast('⚠️ Укажите ваш Email для получения чека 54-ФЗ и ключа!');
+  const callsign = document.getElementById('payCallsignInput')?.value.trim() || 'Боец';
+  const email = document.getElementById('payEmailInput')?.value.trim().toLowerCase() || '';
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 160) {
+    showToast('⚠️ Проверьте Email для получения чека и ключа.');
     document.getElementById('payEmailInput')?.focus();
     return;
   }
+
+  const payButton = document.getElementById('btnPayYooKassaMain');
+  paymentRequestInFlight = true;
+  if (payButton) {
+    payButton.disabled = true;
+    payButton.dataset.originalText = payButton.textContent || 'Оплатить 490 ₽ через ЮKassa';
+    payButton.textContent = 'Создание платежа…';
+  }
+
+  // Открываем вкладку в момент нажатия пользователя, чтобы браузер не заблокировал ЮKassa как pop-up.
+  let paymentWindow = null;
+  try {
+    paymentWindow = window.open('about:blank', '_blank');
+    if (paymentWindow) paymentWindow.opener = null;
+  } catch (_) {}
+
+  const finishPaymentRequest = (url) => {
+    paymentRequestInFlight = false;
+    if (payButton) {
+      payButton.disabled = false;
+      payButton.textContent = payButton.dataset.originalText || 'Оплатить 490 ₽ через ЮKassa';
+      delete payButton.dataset.originalText;
+    }
+    if (!url) return;
+    try {
+      if (paymentWindow && !paymentWindow.closed) {
+        paymentWindow.location.replace(url);
+      } else {
+        window.location.href = url;
+      }
+    } catch (_) {
+      window.location.href = url;
+    }
+  };
 
   // Фиксируем уникальный номер заказа
   const paymentSessionId = 'yk_' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
@@ -687,43 +743,52 @@ async function processYooKassaPayment() {
     // Генерируем уникальное имя функции для JSONP
     const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
     
+    const cleanupJsonp = () => {
+      document.getElementById(callbackName)?.remove();
+      try { delete window[callbackName]; } catch (_) { window[callbackName] = undefined; }
+    };
+
+    const requestTimeout = setTimeout(() => {
+      cleanupJsonp();
+      showToast('Сервер оплаты отвечает слишком долго. Открываю резервную страницу ЮKassa.');
+      finishPaymentRequest(YOOKASSA_PAYMENT_URL);
+    }, 15000);
+
     // Создаем функцию глобально
     window[callbackName] = function(data) {
-      // Удаляем скрипт
-      document.getElementById(callbackName)?.remove();
-      delete window[callbackName];
-      
-      if (data.confirmation_url) {
-        window.open(data.confirmation_url, '_blank');
-        localStorage.setItem('kapterka_pending_payment_id', data.payment_id);
+      clearTimeout(requestTimeout);
+      cleanupJsonp();
+
+      if (data && data.confirmation_url) {
+        if (data.payment_id) localStorage.setItem('kapterka_pending_payment_id', data.payment_id);
+        finishPaymentRequest(data.confirmation_url);
       } else {
-        showToast('Ошибка при соединении с сервером. Перенаправление на резервную ссылку...');
-        console.error(data.error);
-        setTimeout(() => window.open(YOOKASSA_PAYMENT_URL, '_blank'), 1000);
+        showToast('Не удалось создать индивидуальный платёж. Открываю резервную страницу ЮKassa.');
+        console.warn('Payment API response without confirmation URL');
+        finishPaymentRequest(YOOKASSA_PAYMENT_URL);
       }
     };
-    
+
     // Формируем URL с параметрами GET (JSONP)
     const scriptUrl = `${API_URL}?action=pay&email=${encodeURIComponent(email)}&callsign=${encodeURIComponent(callsign)}&callback=${callbackName}`;
-    
+
     // Создаем тег script и добавляем на страницу
     const script = document.createElement('script');
     script.id = callbackName;
     script.src = scriptUrl;
-    
-    // Обработка ошибки загрузки
+
     script.onerror = function() {
-      document.getElementById(callbackName)?.remove();
-      delete window[callbackName];
-      showToast('Сбой соединения. Перенаправление на базовую кассу...');
-      setTimeout(() => window.open(YOOKASSA_PAYMENT_URL, '_blank'), 1000);
+      clearTimeout(requestTimeout);
+      cleanupJsonp();
+      showToast('Сбой соединения. Открываю резервную страницу ЮKassa.');
+      finishPaymentRequest(YOOKASSA_PAYMENT_URL);
     };
-    
+
     document.body.appendChild(script);
-    
+
   } else {
     // Резервный режим
-    window.open(YOOKASSA_PAYMENT_URL, '_blank');
+    finishPaymentRequest(YOOKASSA_PAYMENT_URL);
   }
 }
 
@@ -892,15 +957,82 @@ function linkLicenseKeyInCabinet() {
 }
 
 // 9. Modals Controller
+let activeModalId = null;
+let lastModalTrigger = null;
+
+function getModalFocusable(modal) {
+  if (!modal) return [];
+  return Array.from(modal.querySelectorAll(
+    'button:not([disabled]), a[href], input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+  )).filter(el => el.offsetParent !== null);
+}
+
 window.openModal = function(id) {
   const modal = document.getElementById(id);
-  if (modal) modal.classList.add('open');
+  if (!modal) return;
+
+  lastModalTrigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  activeModalId = id;
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('modal-open');
+
+  const content = modal.querySelector('.modal-content');
+  const title = modal.querySelector('h3');
+  if (content) content.setAttribute('tabindex', '-1');
+  if (title && !modal.hasAttribute('aria-label') && !modal.hasAttribute('aria-labelledby')) {
+    modal.setAttribute('aria-label', title.textContent.trim());
+  }
+
+  requestAnimationFrame(() => {
+    const focusable = getModalFocusable(modal);
+    (focusable[0] || content || modal).focus?.();
+  });
 };
 
 window.closeModal = function(id) {
   const modal = document.getElementById(id);
-  if (modal) modal.classList.remove('open');
+  if (!modal) return;
+
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden', 'true');
+  if (activeModalId === id) activeModalId = null;
+  if (!document.querySelector('.modal-overlay.open')) document.body.classList.remove('modal-open');
+
+  const trigger = lastModalTrigger;
+  lastModalTrigger = null;
+  if (trigger && document.contains(trigger)) requestAnimationFrame(() => trigger.focus?.());
 };
+
+document.addEventListener('keydown', (event) => {
+  if (!activeModalId) return;
+  const modal = document.getElementById(activeModalId);
+  if (!modal || !modal.classList.contains('open')) return;
+
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    closeModal(activeModalId);
+    return;
+  }
+
+  if (event.key === 'Tab') {
+    const focusable = getModalFocusable(modal);
+    if (!focusable.length) {
+      event.preventDefault();
+      modal.querySelector('.modal-content')?.focus();
+      return;
+    }
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
+});
 
 // Shared HTML escaping helper
 function escapeHtml(value) {
@@ -924,16 +1056,22 @@ document.addEventListener('DOMContentLoaded', () => {
   const mobileToggle = document.getElementById('mobileToggle');
   const mainTabNav = document.getElementById('mainTabNav');
   if (mobileToggle && mainTabNav) {
+    mobileToggle.setAttribute('aria-expanded', 'false');
+    mobileToggle.setAttribute('aria-controls', 'mainTabNav');
     mobileToggle.addEventListener('click', () => {
-      mainTabNav.classList.toggle('open');
+      const opened = mainTabNav.classList.toggle('open');
+      mobileToggle.setAttribute('aria-expanded', opened ? 'true' : 'false');
     });
   }
+
+  // Initialize modal accessibility state.
+  document.querySelectorAll('.modal-overlay').forEach(modal => modal.setAttribute('aria-hidden', 'true'));
 
   // Close modals when clicking outside
   document.querySelectorAll('.modal-overlay').forEach(overlay => {
     overlay.addEventListener('click', (e) => {
       if (e.target === overlay) {
-        overlay.classList.remove('open');
+        closeModal(overlay.id);
       }
     });
   });
