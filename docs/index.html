@@ -51,7 +51,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=3.4.9.31e">
+  <link rel="stylesheet" href="style.css?v=3.4.9.31f">
   <link rel="stylesheet" href="tabs_and_cabinet.css?v=3.4.9.31">
 
   <!-- Favicon & Mobile Icons (Тактическая светящаяся иконка Каптёрка Про) -->
@@ -133,149 +133,149 @@
   <!-- TAB 1: ОБЗОР, ВОЗМОЖНОСТИ И СКЛАДЫ (TAB OVERVIEW) -->
   <!-- ========================================================================= -->
   <div id="tabOverview" class="app-view-tab active">
-    <header class="hero compact-hero" id="home">
+    <header class="hero compact-hero sleek-hero" id="home">
       <div class="container">
-        <div class="compact-hero-grid">
-          <div class="compact-hero-copy">
+        <div class="sleek-hero-grid">
+          <div class="sleek-hero-copy">
             <div class="badge"><span class="badge-dot"></span> Android • версия 3.4.9 • сборка 31</div>
-            <h1>Учёт имущества и склада <span>прямо в телефоне</span></h1>
-            <p class="compact-lead">
-              Приход, выдача, перемещения, остатки, заявки и готовые Excel-отчёты в одном приложении.
-              Основной учёт работает без интернета; когда связь появляется, данные можно синхронизировать между устройствами подразделения.
+            <h1>Учёт имущества, склада и заявок <span>без перегруза и лишних действий</span></h1>
+            <p class="sleek-lead">
+              Каптёрка PRO помогает вести приход, выдачу, перемещения, остатки и заявки на одном телефоне.
+              Основной учёт работает локально, а синхронизация и Excel доступны, когда нужна связь и выгрузка.
             </p>
 
-            <div class="compact-trust-row">
-              <span>✓ 3 дня полного демо</span>
-              <span>✓ Без рекламы</span>
-              <span>✓ Обновление поверх старой версии</span>
+            <div class="sleek-chip-row">
+              <span>3 дня полного демо</span>
+              <span>Обновление поверх старой версии</span>
+              <span>Без рекламы</span>
+              <span>Android 8–15</span>
             </div>
 
-            <div class="compact-hero-actions">
-              <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('hero_compact')" class="btn btn-primary btn-lg">📥 Скачать APK</a>
-              <a href="javascript:void(0)" onclick="openModal('modalRuStore')" class="compact-rustore-link">
-                <img src="rustore_badge.svg" alt="Каптёрка PRO в RuStore" width="160" height="48">
-              </a>
+            <div class="sleek-hero-actions">
+              <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('hero_sleek')" class="btn btn-primary btn-lg">📥 Скачать APK</a>
+              <a href="javascript:void(0)" onclick="openModal('modalRuStore')" class="btn btn-outline btn-lg">🛍️ Открыть RuStore</a>
               <button class="btn btn-gold btn-lg" onclick="switchMainTab('tabPayment')">PRO — 490 ₽</button>
             </div>
 
-            <div class="compact-note">
-              <strong>3.4.9:</strong> исправлено разделение данных между подразделениями, улучшены лицензия, вход, ключ <code>kapt_...</code> и учёт активных устройств.
+            <div class="sleek-mini-proof">
+              <div><strong>Что внутри:</strong> склад, журнал, заявки, каталог, Excel-формы.</div>
+              <div><strong>Обновление 3.4.9:</strong> исправлено разделение подразделений, ключ <code>kapt_...</code>, лицензия и счётчик устройств.</div>
             </div>
           </div>
 
-          <div class="compact-phone-wrap">
-            <div class="compact-phone-card" onclick="openLightbox('screen_main_349.jpg', 'Главный экран Каптёрка PRO 3.4.9')">
-              <img src="screen_main_349.jpg" alt="Каптёрка PRO 3.4.9 — главный экран" loading="eager">
-            </div>
+          <div class="sleek-preview-stack">
+            <button class="sleek-phone-main" onclick="openLightbox('screen_main_349.jpg', 'Главный экран Каптёрка PRO 3.4.9')">
+              <img src="screen_main_349.jpg" alt="Главный экран Каптёрка PRO 3.4.9" loading="eager">
+            </button>
+            <button class="sleek-mini-screen" onclick="openLightbox('screen_catalog_349.jpg', 'Каталог Каптёрка PRO 3.4.9')">
+              <img src="screen_catalog_349.jpg" alt="Каталог Каптёрка PRO 3.4.9" loading="lazy">
+              <span>Каталог</span>
+            </button>
           </div>
         </div>
       </div>
     </header>
 
-    <section class="section compact-benefits-section">
+    <section class="section sleek-proof-section">
       <div class="container">
-        <div class="compact-benefits-grid">
-          <button class="compact-benefit" onclick="openModal('modalFeatures')">
-            <span class="compact-benefit-icon">📦</span>
-            <strong>Остатки без путаницы</strong>
-            <small>Приход, выдача и перемещения сразу пересчитывают склад.</small>
-          </button>
-          <button class="compact-benefit" onclick="switchMainTab('tabSync')">
-            <span class="compact-benefit-icon">🔄</span>
-            <strong>Синхронизация</strong>
-            <small>Работайте локально, синхронизируйтесь, когда появилась связь.</small>
-          </button>
-          <button class="compact-benefit" onclick="openModal('modalFeatures')">
-            <span class="compact-benefit-icon">📊</span>
-            <strong>Excel и печатные формы</strong>
-            <small>Сводки и ведомости формируются из уже введённых данных.</small>
-          </button>
-          <button class="compact-benefit" onclick="switchMainTab('tabCabinet')">
-            <span class="compact-benefit-icon">🔑</span>
-            <strong>Ключ подразделения</strong>
-            <small>Данные разделяются по коду <code>kapt_...</code> и не смешиваются между подразделениями.</small>
-          </button>
+        <div class="sleek-proof-grid">
+          <article class="sleek-proof-card">
+            <span class="sleek-proof-icon">📦</span>
+            <div><strong>Остатки без путаницы</strong><p>Любое поступление, выдача или перемещение сразу отражаются в точках и остатках.</p></div>
+          </article>
+          <article class="sleek-proof-card">
+            <span class="sleek-proof-icon">🧾</span>
+            <div><strong>Журнал и история</strong><p>Все движения хранятся в журнале, чтобы быстро проверить, что и когда изменилось.</p></div>
+          </article>
+          <article class="sleek-proof-card">
+            <span class="sleek-proof-icon">📊</span>
+            <div><strong>Excel и печатные формы</strong><p>Сводки, ведомости и выгрузки формируются на основе уже введённых данных.</p></div>
+          </article>
+          <article class="sleek-proof-card">
+            <span class="sleek-proof-icon">🔐</span>
+            <div><strong>Разделение подразделений</strong><p>Код <code>kapt_...</code> отделяет ваши данные от других подразделений и складов.</p></div>
+          </article>
         </div>
       </div>
     </section>
 
-    <section class="section compact-showcase" id="screens">
+    <section class="section sleek-story-section">
       <div class="container">
-        <div class="compact-section-heading">
-          <div>
-            <span class="badge badge-gold">Актуальный интерфейс</span>
-            <h2>Так выглядит версия 3.4.9</h2>
-            <p>Свежие скриншоты с реального телефона, а не макеты старой версии.</p>
+        <div class="sleek-story-grid">
+          <div class="sleek-story-copy">
+            <span class="badge badge-gold">Почему удобно на телефоне</span>
+            <h2>Сначала главное, потом детали</h2>
+            <p>На сайте оставлено только то, что помогает быстро принять решение: скачать, посмотреть интерфейс, понять обновления и условия установки.</p>
+            <ul class="sleek-bullet-list">
+              <li><strong>Главная:</strong> остатки, быстрые операции и переключение по точкам.</li>
+              <li><strong>Каталог:</strong> поиск по номенклатуре и категориям снабжения.</li>
+              <li><strong>Заявки:</strong> формирование потребностей и передача на склад.</li>
+              <li><strong>Синхронизация:</strong> обмен между устройствами при появлении связи.</li>
+            </ul>
           </div>
-          <button class="btn btn-outline" onclick="switchMainTab('tabDownload')">Как установить</button>
-        </div>
 
-        <div class="compact-screens-grid">
-          <button class="compact-screen-card" onclick="openLightbox('screen_main_349.jpg', 'Главный экран: склады, остатки и быстрые операции')">
-            <img src="screen_main_349.jpg" alt="Главный экран Каптёрка PRO 3.4.9" loading="lazy">
-            <span><strong>Главная</strong><small>Склады, остатки, приход, выдача и перемещения.</small></span>
-          </button>
-          <button class="compact-screen-card" onclick="openLightbox('screen_catalog_349.jpg', 'Каталог номенклатуры Каптёрка PRO 3.4.9')">
-            <img src="screen_catalog_349.jpg" alt="Каталог Каптёрка PRO 3.4.9" loading="lazy">
-            <span><strong>Каталог</strong><small>Категории, поиск и собственные позиции.</small></span>
-          </button>
+          <div class="sleek-feature-rail">
+            <button class="sleek-feature-card" onclick="openLightbox('screen_main_349.jpg', 'Главная — остатки и операции')">
+              <img src="screen_main_349.jpg" alt="Главная" loading="lazy">
+              <div><strong>Главная</strong><span>Склады, остатки, приход, выдача и перемещения.</span></div>
+            </button>
+            <button class="sleek-feature-card" onclick="openLightbox('screen_catalog_349.jpg', 'Каталог — номенклатура')">
+              <img src="screen_catalog_349.jpg" alt="Каталог" loading="lazy">
+              <div><strong>Каталог</strong><span>Категории, поиск и собственные позиции в одном справочнике.</span></div>
+            </button>
+          </div>
         </div>
-        <p class="compact-safety-caption">На публичной странице показаны только скриншоты без позывных, координат и других данных подразделения.</p>
       </div>
     </section>
 
-    <section class="section compact-update-section">
+    <section class="section sleek-update-section">
       <div class="container">
-        <div class="compact-update-card">
-          <div>
-            <span class="badge">Что нового</span>
-            <h2>Версия 3.4.9</h2>
-            <p>Обновление рассчитано на установку поверх предыдущей версии без очистки приложения.</p>
+        <div class="sleek-update-box">
+          <div class="sleek-update-head">
+            <div>
+              <span class="badge">Что нового</span>
+              <h2>Версия 3.4.9</h2>
+              <p>Подготовлена для безопасного обновления поверх прошлой версии без удаления данных.</p>
+            </div>
+            <div class="sleek-release-pill">Актуальный релиз</div>
           </div>
-          <div class="compact-update-list">
-            <div>✓ Старые точки не переносятся в новое подразделение</div>
-            <div>✓ Новому пользователю доступно 3 дня демо</div>
-            <div>✓ Улучшено отображение <code>kapt_...</code> и состояния лицензии</div>
-            <div>✓ Исправлен счётчик активных устройств и диагностика</div>
+          <div class="sleek-update-grid">
+            <div>✓ Старые точки больше не переходят в новое подразделение</div>
+            <div>✓ Новому пользователю доступно 3 дня полного демо</div>
+            <div>✓ Ключ <code>kapt_...</code> отображается понятнее</div>
+            <div>✓ Счётчик устройств показывает корректное значение</div>
+            <div>✓ Вход, лицензия и служебная синхронизация стали стабильнее</div>
+            <div>✓ Приложение устанавливается поверх прежней версии без потери локальной базы</div>
           </div>
         </div>
       </div>
     </section>
 
-    <section class="section compact-faq-section">
-      <div class="container compact-narrow">
-        <div class="compact-section-heading compact-section-heading-simple">
-          <div>
-            <span class="badge">Коротко о главном</span>
-            <h2>Перед установкой</h2>
+    <section class="section sleek-install-section">
+      <div class="container">
+        <div class="sleek-install-card">
+          <div class="sleek-install-copy">
+            <span class="badge">Перед установкой</span>
+            <h2>Попробовать можно за пару минут</h2>
+            <div class="sleek-install-steps">
+              <div><strong>1.</strong><span>Скачайте APK или откройте страницу приложения в RuStore.</span></div>
+              <div><strong>2.</strong><span>Установите приложение поверх старой версии или как новую установку.</span></div>
+              <div><strong>3.</strong><span>Новый пользователь получает 3 дня полного демо-доступа.</span></div>
+            </div>
           </div>
-        </div>
-        <div class="compact-faq-list">
-          <details open>
-            <summary>Работает ли приложение без интернета?</summary>
-            <p>Основные операции учёта и локальная база доступны без сети. Интернет нужен для облачной синхронизации, восстановления облачных данных и отдельных сетевых функций.</p>
-          </details>
-          <details>
-            <summary>Сохранятся ли данные при обновлении?</summary>
-            <p>Версия 3.4.9 предназначена для установки поверх предыдущей версии. При обычном обновлении приложение не требует удаления локальной базы.</p>
-          </details>
-          <details>
-            <summary>Как попробовать перед покупкой?</summary>
-            <p>Новый пользователь получает 3 дня полного демо-доступа. После этого PRO можно оформить во вкладке «Тарифы и PRO».</p>
-          </details>
-        </div>
-        <div class="compact-bottom-cta">
-          <div>
-            <strong>Готовы попробовать?</strong>
-            <span>Установите APK и проверьте приложение на своих данных в течение 3 дней.</span>
-          </div>
-          <div class="compact-bottom-actions">
-            <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('overview_bottom')" class="btn btn-primary btn-lg">📥 Скачать APK</a>
-            <button class="btn btn-outline btn-lg" onclick="switchMainTab('tabCabinet')">Личный кабинет</button>
+          <div class="sleek-install-actions">
+            <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('overview_bottom_sleek')" class="btn btn-primary btn-lg">📥 Скачать APK</a>
+            <button class="btn btn-outline btn-lg" onclick="switchMainTab('tabCabinet')">👤 Личный кабинет</button>
+            <button class="btn btn-gold btn-lg" onclick="switchMainTab('tabDownload')">ℹ️ Как установить</button>
           </div>
         </div>
       </div>
     </section>
+
+    <div class="mobile-cta-bar">
+      <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('mobile_cta')">Скачать APK</a>
+      <button onclick="openModal('modalRuStore')">RuStore</button>
+    </div>
   </div>
 
   <!-- ========================================================================= -->
