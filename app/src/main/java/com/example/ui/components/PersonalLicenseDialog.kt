@@ -515,7 +515,7 @@ fun PersonalLicenseDialog(
                     Spacer(modifier = Modifier.height(6.dp))
 
                     Text(
-                        text = "Потеряли ключ? Все ваши лицензии также хранятся в Личном кабинете на сайте https://kapterka-pro.ru/",
+                        text = "Потеряли ключ? Сначала попробуйте восстановление из облака по Email. Для поддержки откройте Личный кабинет на сайте https://kapterka-pro.ru/",
                         color = TacticalTextMuted,
                         fontSize = 10.sp,
                         textAlign = TextAlign.Center,
@@ -523,7 +523,7 @@ fun PersonalLicenseDialog(
                             .fillMaxWidth()
                             .clickable {
                                 try {
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://kapterka-pro.ru/#cabinet"))
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://kapterka-pro.ru/#tabCabinet"))
                                     context.startActivity(intent)
                                 } catch (e: Exception) {}
                             }
@@ -977,8 +977,8 @@ fun PersonalLicenseDialog(
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
                                     text = "1. Если вы уже активировали ключ на этом телефоне ранее, нажмите кнопку «Восстановить из сейфа» ниже.\n\n" +
-                                           "2. Все оплаченные лицензии сохраняются в вашем Личном кабинете на сайте https://kapterka-pro.ru/ под вашим email.\n\n" +
-                                           "3. Если ключ утерян — напишите в поддержку в Telegram @Levaminbat с указанием позывного или времени оплаты.",
+                                           "2. Для оплаченной лицензии используйте «Восстановить из базы (по Email)» — приложение проверит облачный реестр лицензий.\n\n" +
+                                           "3. Если восстановление не помогло — напишите в поддержку Telegram @kapterka_help_bot и укажите Email и примерное время оплаты.",
                                     fontSize = 10.sp,
                                     color = TacticalTextPrimary,
                                     lineHeight = 14.sp
@@ -1020,7 +1020,7 @@ fun PersonalLicenseDialog(
                                     Button(
                                         onClick = {
                                             try {
-                                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://kapterka-pro.ru/#cabinet"))
+                                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://kapterka-pro.ru/#tabCabinet"))
                                                 context.startActivity(intent)
                                             } catch (e: Exception) {
                                                 Toast.makeText(context, "Сайт: https://kapterka-pro.ru/", Toast.LENGTH_LONG).show()
