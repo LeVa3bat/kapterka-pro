@@ -112,28 +112,12 @@ function switchAuthMode(mode) {
 }
 
 function getStoredUsers() {
+  // Legacy local user database is retained only for compatibility with old browser data.
   const raw = localStorage.getItem(STORAGE_USERS_DB);
-  if (!raw) {
-    const initUsers = [
-      {
-        callsign: 'Старшина',
-        email: 'user@kapterka-pro.ru',
-        password: 'demo',
-        rank: 'Старшина роты',
-        unitName: '1-я Мотострелковая рота',
-        unitKey: 'kapt_59e13b',
-        subscribedToNewsletter: true,
-        emailVerified: true,
-        expiresInDays: 0,
-        activeKey: '',
-        keys: []
-      }
-    ];
-    localStorage.setItem(STORAGE_USERS_DB, JSON.stringify(initUsers));
-    return initUsers;
-  }
+  if (!raw) return [];
   try {
-    return JSON.parse(raw);
+    const users = JSON.parse(raw);
+    return Array.isArray(users) ? users : [];
   } catch (e) {
     return [];
   }
@@ -141,13 +125,10 @@ function getStoredUsers() {
 
 function getSubscribersList() {
   const raw = localStorage.getItem(STORAGE_SUBSCRIBERS_LIST);
-  if (!raw) {
-    const list = [defaultProfile.email.toLowerCase()];
-    localStorage.setItem(STORAGE_SUBSCRIBERS_LIST, JSON.stringify(list));
-    return list;
-  }
+  if (!raw) return [];
   try {
-    return JSON.parse(raw);
+    const list = JSON.parse(raw);
+    return Array.isArray(list) ? list : [];
   } catch (e) {
     return [];
   }
@@ -420,7 +401,7 @@ function saveCabinetProfile() {
   const callsign = document.getElementById('cabCallsignInput')?.value.trim() || 'Боец';
   const rank = document.getElementById('cabRankInput')?.value.trim() || '';
   const unitName = document.getElementById('cabUnitNameInput')?.value.trim() || '';
-  const unitKey = document.getElementById('cabUnitKeyInput')?.value.trim() || 'kapt_59e13b';
+  const unitKey = document.getElementById('cabUnitKeyInput')?.value.trim() || localStorage.getItem(STORAGE_UNIT_KEY) || '';
   const email = document.getElementById('cabEmailInput')?.value.trim() || '';
   const phone = document.getElementById('cabPhoneInput')?.value.trim() || '';
 
@@ -851,7 +832,7 @@ function applyNewPaidKey(newKey, callsign) {
   // Add to History
   const history = getKeysHistory();
   const today = new Date().toLocaleDateString('ru-RU');
-  const unitName = localStorage.getItem(STORAGE_UNIT_NAME) || '1-я МСР';
+  const unitName = localStorage.getItem(STORAGE_UNIT_NAME) || '';
 
   history.unshift({
     key: newKey,
