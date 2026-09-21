@@ -13,38 +13,64 @@ import java.util.Locale
 
 object TelegramNotifier {
     private const val TAG = "TelegramNotifier"
-    private val TOKEN_PARTS = arrayOf("8913866950", "AAFbYBWavHF8K8a0PcecuOeswffGC6J4-mk")
+
+    // Public endpoint only. Telegram bot credentials stay on the server.
+    private const val NOTIFICATION_API_URL =
+        "https://script.google.com/macros/s/AKfycbwuwY74vD9El1R6ZVvO3DDpJ7BkY-wX0ljRphWRSA-jgB33-duUAqEp0g03D_7oFzjqmA/exec"
     private const val ADMIN_CHAT_ID = "7426550032"
 
-    private fun getToken(): String = TOKEN_PARTS.joinToString(":")
+    private fun html(value: String): String = value
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+
+    private fun maskUnitKey(value: String): String {
+        val clean = value.trim()
+        if (clean.length <= 5) return if (clean.isBlank()) "Не указан" else "***"
+        return clean.take(5) + "***" + clean.takeLast(2)
+    }
+
+    private fun maskLicenseKey(value: String): String {
+        val clean = value.trim()
+        if (clean.isBlank()) return "Не указан"
+        val parts = clean.split("-")
+        return if (parts.size == 4) {
+            "${parts[0]}-****-****-${parts[3]}"
+        } else {
+            clean.take(4) + "…"
+        }
+    }
 
     suspend fun sendMessage(textHtml: String) = withContext(Dispatchers.IO) {
         try {
-            val token = getToken()
-            val url = URL("https://api.telegram.org/bot$token/sendMessage")
+            val url = URL(NOTIFICATION_API_URL)
             val connection = (url.openConnection() as HttpURLConnection).apply {
                 requestMethod = "POST"
                 doOutput = true
                 connectTimeout = 8000
                 readTimeout = 8000
-                setRequestProperty("Content-Type", "application/json")
+                setRequestProperty("Content-Type", "text/plain;charset=utf-8")
             }
 
             val payload = JSONObject().apply {
-                put("chat_id", ADMIN_CHAT_ID)
+                put("action", "send_telegram")
                 put("text", textHtml)
-                put("parse_mode", "HTML")
+                put("chat_id", ADMIN_CHAT_ID)
             }
 
-            OutputStreamWriter(connection.outputStream).use { it.write(payload.toString()) }
+            OutputStreamWriter(connection.outputStream, Charsets.UTF_8).use {
+                it.write(payload.toString())
+            }
+
             val code = connection.responseCode
             if (code in 200..299) {
-                Log.d(TAG, "Telegram notification delivered successfully (HTTP $code)")
+                Log.d(TAG, "Telegram notification delivered through server (HTTP $code)")
             } else {
-                Log.w(TAG, "Telegram notification returned HTTP $code")
+                Log.w(TAG, "Notification server returned HTTP $code")
             }
+            connection.disconnect()
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to send Telegram notification (offline or network error): ${e.message}")
+            Log.w(TAG, "Notification server unavailable: ${e.message}")
         }
     }
 
@@ -53,11 +79,11 @@ object TelegramNotifier {
         val msg = """
             🎖 <b>Новая регистрация в приложении «Каптёрка»!</b>
             
-            👤 <b>Позывной:</b> $callsign
-            🏢 <b>Подразделение:</b> $unitName
-            🔑 <b>Ключ канала:</b> <code>$unitKey</code>
-            📧 <b>Email:</b> ${email.ifEmpty { "Не указан" }}
-            📅 <b>Время:</b> $dateStr
+            👤 <b>Позывной:</b> ${html(callsign)}
+            🏢 <b>Подразделение:</b> ${html(unitName)}
+            🔑 <b>Ключ канала:</b> <code>${html(maskUnitKey(unitKey))}</code>
+            📧 <b>Email:</b> ${html(email.ifEmpty { "Не указан" })}
+            📅 <b>Время:</b> ${html(dateStr)}
             📱 <b>Платформа:</b> Android App
         """.trimIndent()
         sendMessage(msg)
@@ -66,13 +92,13 @@ object TelegramNotifier {
     suspend fun notifyPaymentStarted(callsign: String, email: String, amountRub: Int) {
         val dateStr = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()).format(Date())
         val msg = """
-            💳 <b>Попытка оплаты лицензии в Android!</b>
+            💳 <b>Попытка оплаты лицензии в Android</b>
             
-            👤 <b>Позывной:</b> $callsign
-            📧 <b>Email:</b> ${email.ifEmpty { "Не указан" }}
+            👤 <b>Позывной:</b> ${html(callsign)}
+            📧 <b>Email:</b> ${html(email.ifEmpty { "Не указан" })}
             💵 <b>Сумма:</b> $amountRub ₽
-            🏦 <b>Шлюз:</b> ЮKassa (СБП / МИР)
-            📅 <b>Время:</b> $dateStr
+            🏦 <b>Шлюз:</b> ЮKassa
+            📅 <b>Время:</b> ${html(dateStr)}
         """.trimIndent()
         sendMessage(msg)
     }
@@ -80,14 +106,13 @@ object TelegramNotifier {
     suspend fun notifyPaymentConfirmed(callsign: String, email: String, licenseKey: String, days: Int) {
         val dateStr = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()).format(Date())
         val msg = """
-            💰 <b>Успешная оплата и активация ПРО в Android!</b>
+            💰 <b>Оплата и активация PRO в Android</b>
             
-            👤 <b>Боец:</b> $callsign
-            📧 <b>Email:</b> ${email.ifEmpty { "Не указан" }}
-            🔑 <b>Выдан ключ:</b> <code>$licenseKey</code>
+            👤 <b>Пользователь:</b> ${html(callsign)}
+            📧 <b>Email:</b> ${html(email.ifEmpty { "Не указан" })}
+            🔑 <b>Ключ:</b> <code>${html(maskLicenseKey(licenseKey))}</code>
             ⏱ <b>Срок действия:</b> $days суток
-            💵 <b>Сумма:</b> 490 ₽
-            📅 <b>Дата:</b> $dateStr
+            📅 <b>Дата:</b> ${html(dateStr)}
         """.trimIndent()
         sendMessage(msg)
     }
@@ -97,10 +122,10 @@ object TelegramNotifier {
         val msg = """
             🔑 <b>Активация лицензионного ключа в Android</b>
             
-            👤 <b>Боец:</b> $callsign
-            🔑 <b>Ключ:</b> <code>$licenseKey</code>
+            👤 <b>Пользователь:</b> ${html(callsign)}
+            🔑 <b>Ключ:</b> <code>${html(maskLicenseKey(licenseKey))}</code>
             ⏱ <b>Доступ:</b> $days суток
-            📅 <b>Время:</b> $dateStr
+            📅 <b>Время:</b> ${html(dateStr)}
         """.trimIndent()
         sendMessage(msg)
     }
@@ -108,13 +133,13 @@ object TelegramNotifier {
     suspend fun notifyLicenseEmailDispatched(callsign: String, email: String, licenseKey: String, subject: String) {
         val dateStr = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()).format(Date())
         val msg = """
-            ✉️ <b>Электронное письмо с ключом отправлено покупателю!</b>
+            ✉️ <b>Письмо с лицензией отправлено пользователю</b>
             
-            👤 <b>Боец:</b> $callsign
-            📧 <b>Email получателя:</b> <code>$email</code>
-            🔑 <b>Лицензионный ключ:</b> <code>$licenseKey</code>
-            📋 <b>Тема:</b> $subject
-            📅 <b>Время:</b> $dateStr
+            👤 <b>Пользователь:</b> ${html(callsign)}
+            📧 <b>Email:</b> <code>${html(email)}</code>
+            🔑 <b>Ключ:</b> <code>${html(maskLicenseKey(licenseKey))}</code>
+            📋 <b>Тема:</b> ${html(subject)}
+            📅 <b>Время:</b> ${html(dateStr)}
         """.trimIndent()
         sendMessage(msg)
     }
