@@ -477,6 +477,35 @@
     return verifyCode(readLoginCode(), "login");
   }
 
+  async function refreshExistingSession() {
+    const token = localStorage.getItem(TOKEN_KEY) || "";
+    const expiresAt = Number(localStorage.getItem(TOKEN_EXP_KEY) || 0);
+    if (!token) return;
+
+    if (expiresAt && Date.now() > expiresAt) {
+      logoutV2();
+      notify("Сессия завершена. Войдите снова по коду из Email.");
+      return;
+    }
+
+    try {
+      const data = await jsonp({ action: "auth_session", token: token }, 12000);
+
+      if (data && data.ok && data.user) {
+        migrateAndSetSession(data.user, token, data.sessionExpiresAt || expiresAt);
+        return;
+      }
+
+      if (data && ["INVALID_SESSION", "SESSION_EXPIRED", "USER_NOT_FOUND"].includes(data.error)) {
+        logoutV2();
+        notify("Сессия завершена. Войдите снова по коду из Email.");
+      }
+    } catch (err) {
+      console.warn("Web Auth session refresh skipped:", err);
+      // При временной ошибке сети локальную сессию не сбрасываем.
+    }
+  }
+
   function logoutV2() {
     const current = typeof window.getActiveUserSession === "function" ? window.getActiveUserSession() : null;
     snapshotAccount(current?.email || localStorage.getItem("kapterka_user_email"));
