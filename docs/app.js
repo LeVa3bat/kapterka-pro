@@ -278,7 +278,7 @@ function verifyEmailPinCode() {
   currentVerificationPin = null;
 
   // Track Yandex Metrika goal for successful registration
-  trackYm('reachGoal', 'registration_complete', { callsign: newUser.callsign });
+  trackYm('reachGoal', 'registration_complete');
   if (typeof window.gtag === 'function') {
     try {
       window.gtag('event', 'sign_up', { method: 'cabinet_registration' });
@@ -729,10 +729,11 @@ function copyPaidKeyAction() {
 
 function copyKeyText(text) {
   // Track Yandex Metrika goal for copying license key
-  trackYm('reachGoal', 'license_key_copied', { key: text });
+  // Never send the license key itself to analytics.
+  trackYm('reachGoal', 'license_key_copied');
   if (typeof window.gtag === 'function') {
     try {
-      window.gtag('event', 'copy_license_key', { key: text });
+      window.gtag('event', 'copy_license_key');
     } catch (e) {}
   }
 
@@ -833,7 +834,8 @@ async function processYooKassaPayment() {
   );
 
   // Track Yandex Metrika goal for payment initiation
-  trackYm('reachGoal', 'initiate_yookassa_payment', { callsign, email });
+  // Do not send Email or callsign to analytics.
+  trackYm('reachGoal', 'initiate_yookassa_payment', { plan: 'PRO_30', amount: 490 });
   if (typeof window.gtag === 'function') {
     try {
       window.gtag('event', 'begin_checkout', {
@@ -1285,19 +1287,11 @@ window.closeModal = function(id) {
 let currentAdminFilter = 'all';
 
 function promptAdminAccess() {
-  const pin = prompt('Введите служебный пароль доступа к скрытому кабинету разработчика:');
-  if (!pin) return;
-  if (pin === 'admin' || pin === '666881' || pin === '250104230398') {
-    openAdminPanel();
-  } else {
-    alert('Ошибка доступа: неверный служебный пароль.');
-  }
+  showToast('Служебная админ-панель отключена на публичном сайте.');
 }
 
 function openAdminPanel() {
-  switchMainTab('tabAdmin');
-  renderAdminUsersTable();
-  showToast('🛡️ Скрытый кабинет администратора открыт.');
+  showToast('Служебная админ-панель отключена на публичном сайте.');
 }
 
 function closeAdminPanel() {
