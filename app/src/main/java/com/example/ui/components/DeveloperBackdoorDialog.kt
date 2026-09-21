@@ -454,7 +454,99 @@ fun DeveloperAdminDialog(
                         .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // 1. АККОРДЕОН: СВОДКА И СТАТИСТИКА (По умолчанию скрыта)
+                    // 1. СОСТОЯНИЕ ТЕКУЩЕГО ПРИЛОЖЕНИЯ — только чтение + безопасная синхронизация
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { expandDiagnostics = !expandDiagnostics },
+                        color = TacticalSurface,
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(1.dp, if (expandDiagnostics) SageGreenPrimary else TacticalBorderSubtle)
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.Security, contentDescription = null, tint = SageGreenBright, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "СОСТОЯНИЕ ПРИЛОЖЕНИЯ",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = SageGreenBright,
+                                        fontFamily = FontFamily.Monospace
+                                    )
+                                }
+                                Icon(
+                                    imageVector = if (expandDiagnostics) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                    contentDescription = null,
+                                    tint = SageGreenBright
+                                )
+                            }
+
+                            AnimatedVisibility(visible = expandDiagnostics) {
+                                Column(
+                                    modifier = Modifier.padding(top = 8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    DeveloperDiagnosticRow("Версия", "${diagnostics.appVersion} (${diagnostics.versionCode})")
+                                    DeveloperDiagnosticRow("Package", diagnostics.applicationId)
+                                    DeveloperDiagnosticRow("Room DB", "v${diagnostics.databaseVersion}")
+                                    DeveloperDiagnosticRow("Пользователь", diagnostics.callsign.ifBlank { "—" })
+                                    DeveloperDiagnosticRow("Подразделение", diagnostics.unitName.ifBlank { "—" })
+                                    DeveloperDiagnosticRow("Ключ подразделения", diagnostics.unitKey.ifBlank { "—" })
+                                    DeveloperDiagnosticRow("Fighter ID", diagnostics.fighterId.ifBlank { "—" })
+                                    DeveloperDiagnosticRow("Device ID", diagnostics.syncDeviceId.ifBlank { "—" })
+                                    DeveloperDiagnosticRow("Лицензия", diagnostics.licenseState)
+                                    DeveloperDiagnosticRow("Срок", diagnostics.licenseExpires.ifBlank { "—" })
+                                    DeveloperDiagnosticRow("Синхронизация", diagnostics.syncState)
+                                    DeveloperDiagnosticRow("Устройства", diagnostics.connectedDevices.toString())
+                                    DeveloperDiagnosticRow("Последняя синхронизация", diagnostics.lastSync)
+                                    DeveloperDiagnosticRow(
+                                        "Локальные данные",
+                                        "точки ${diagnostics.pointsCount} • каталог ${diagnostics.catalogItemsCount} • остатки ${diagnostics.stockRecordsCount} • операции ${diagnostics.operationsCount} • заявки ${diagnostics.requisitionsCount}"
+                                    )
+                                    DeveloperDiagnosticRow("Android", "${diagnostics.androidVersion} • ${diagnostics.deviceModel}")
+
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        OutlinedButton(
+                                            onClick = onForceSync,
+                                            modifier = Modifier.weight(1f),
+                                            border = BorderStroke(1.dp, SageGreenPrimary),
+                                            shape = RoundedCornerShape(6.dp)
+                                        ) {
+                                            Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(14.dp), tint = SageGreenBright)
+                                            Spacer(modifier = Modifier.width(5.dp))
+                                            Text("Синхронизация", fontSize = 10.sp, color = SageGreenBright)
+                                        }
+                                        OutlinedButton(
+                                            onClick = {
+                                                clipboard.setText(AnnotatedString(diagnostics.toSupportReport()))
+                                                Toast.makeText(context, "Диагностический отчёт скопирован", Toast.LENGTH_SHORT).show()
+                                            },
+                                            modifier = Modifier.weight(1f),
+                                            border = BorderStroke(1.dp, TacticalGold),
+                                            shape = RoundedCornerShape(6.dp)
+                                        ) {
+                                            Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(14.dp), tint = TacticalGoldText)
+                                            Spacer(modifier = Modifier.width(5.dp))
+                                            Text("Копировать отчёт", fontSize = 10.sp, color = TacticalGoldText)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // 2. АККОРДЕОН: СВОДКА И СТАТИСТИКА
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
