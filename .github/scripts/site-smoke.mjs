@@ -206,3 +206,9 @@ if (process.exitCode) {
   process.exit(process.exitCode);
 }
 console.log('\nSite smoke check PASSED.');
+
+
+if (!app.includes('function classifyLicenseKey')) fail('legacy license-key classifier is missing');
+if (!/KPT\|KAPT|KAPT\|KPT/.test(app) && !app.includes('(?:KAPT|KPT)')) fail('legacy KPT/KAPT compatibility is missing');
+if (/недействителен или подделан|ключ не прошел проверку подлинности/i.test(app)) fail('legacy keys must not be mislabeled as counterfeit');
+else ok('legacy license-key compatibility is present without counterfeit wording');
