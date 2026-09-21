@@ -1,21 +1,17 @@
 /**
- * KAPTERKA PRO — Web Auth backend (Google Apps Script)
+ * KAPTERKA PRO — Web Auth v2 backend for STANDALONE Google Apps Script
  *
- * Отдельный web-app только для регистрации/входа по одноразовому коду Email.
- * Пароли не хранятся и не передаются.
+ * Не требует Google Таблиц.
+ * Пользователи, одноразовые коды и сессии хранятся в Script Properties.
+ * Пароли не используются и не хранятся.
  *
- * Script Properties:
- *   AUTH_PEPPER        — создаётся автоматически при первом запуске
- *   TG_BOT_TOKEN       — необязательно, только для служебных уведомлений
- *   TG_ADMIN_CHAT_ID   — необязательно
- *
- * Script должен быть привязан к Google Spreadsheet.
+ * Публикация:
+ * Deploy -> New deployment -> Web app
+ * Execute as: Me
+ * Who has access: Anyone
  */
 
-const AUTH_VERSION = "1.0.0";
-const USERS_SHEET = "WebUsers";
-const CODES_SHEET = "WebAuthCodes";
-const SESSIONS_SHEET = "WebSessions";
+const AUTH_VERSION = "2.1.0";
 const CODE_TTL_MS = 10 * 60 * 1000;
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const RESEND_COOLDOWN_SEC = 60;
@@ -26,7 +22,7 @@ function doGet(e) {
   const action = String(p.action || "health").trim();
 
   try {
-    ensureAuthSheets_();
+    ensureAuthPepper_();
 
     let result;
     if (action === "health") {
@@ -40,6 +36,8 @@ function doGet(e) {
     } else {
       result = { ok: false, error: "UNKNOWN_ACTION" };
     }
+
+    cleanupExpiredAuthData_();
     return jsonResponse_(result, p.callback);
   } catch (err) {
     console.error(err && err.stack ? err.stack : err);
@@ -57,15 +55,9 @@ function requestAuthCode_(p) {
   if (!isValidEmail_(email)) return { ok: false, error: "INVALID_EMAIL" };
   if (mode === "register" && !callsign) return { ok: false, error: "CALLSIGN_REQUIRED" };
 
-  const users = getUsersSheet_();
-  const existing = findUserByEmail_(users, email);
-
-  if (mode === "register" && existing) {
-    return { ok: false, error: "ACCOUNT_EXISTS" };
-  }
-  if (mode === "login" && !existing) {
-    return { ok: false, error: "USER_NOT_FOUND" };
-  }
+  const existing = getUser_(email);
+  if (mode === "register" && existing) return { ok: false, error: "ACCOUNT_EXISTS" };
+  if (mode === "login" && !existing) return { ok: false, error: "USER_NOT_FOUND" };
 
   const cache = CacheService.getScriptCache();
   const throttleKey = "auth_code_" + sha256Hex_(email).slice(0, 24);
@@ -75,22 +67,21 @@ function requestAuthCode_(p) {
   cache.put(throttleKey, "1", RESEND_COOLDOWN_SEC);
 
   const code = createSixDigitCode_();
-  const codeHash = hashCode_(email, code);
   const now = Date.now();
 
-  const codes = getCodesSheet_();
-  codes.appendRow([
-    email,
-    codeHash,
-    now + CODE_TTL_MS,
-    0,
-    false,
-    mode,
-    callsign,
-    rank,
-    newsletter ? "1" : "0",
-    new Date(now)
-  ]);
+  const pending = {
+    email: email,
+    codeHash: hashCode_(email, code),
+    expiresAt: now + CODE_TTL_MS,
+    attempts: 0,
+    used: false,
+    mode: mode,
+    callsign: callsign,
+    rank: rank,
+    newsletter: newsletter,
+    createdAt: now
+  };
+  setJsonProperty_(codeKey_(email), pending);
 
   MailApp.sendEmail({
     to: email,
@@ -99,14 +90,14 @@ function requestAuthCode_(p) {
     htmlBody:
       '<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;padding:24px;border:1px solid #dfe7e1;border-radius:14px">' +
       '<h2 style="margin:0 0 12px">Каптёрка PRO</h2>' +
-      '<p style="color:#4d5b52">Код подтверждения:</p>' +
+      '<p style="color:#4d5b52">Ваш одноразовый код:</p>' +
       '<div style="font-size:32px;font-weight:800;letter-spacing:8px;margin:16px 0">' + code + '</div>' +
       '<p style="color:#68756d;font-size:13px">Код действует 10 минут и используется только один раз.</p>' +
       '<p style="color:#8b9690;font-size:12px">Если вы не запрашивали код, просто проигнорируйте письмо.</p>' +
       '</div>'
   });
 
-  notifyAdmin_("🔐 Запрошен код сайта\\nEmail: " + email + "\\nРежим: " + mode);
+  notifyAdmin_("🔐 Запрошен код сайта\nEmail: " + email + "\nРежим: " + mode);
 
   return {
     ok: true,
@@ -123,62 +114,61 @@ function verifyAuthCode_(p) {
   if (!isValidEmail_(email)) return { ok: false, error: "INVALID_EMAIL" };
   if (code.length !== 6) return { ok: false, error: "INVALID_CODE" };
 
-  const codes = getCodesSheet_();
-  const row = findLatestCodeRow_(codes, email);
-  if (!row) return { ok: false, error: "CODE_NOT_FOUND" };
-
-  const [rowIndex, values] = row;
-  const expiresAt = Number(values[2] || 0);
-  const attempts = Number(values[3] || 0);
-  const used = String(values[4]).toLowerCase() === "true";
-
-  if (used) return { ok: false, error: "CODE_USED" };
-  if (Date.now() > expiresAt) return { ok: false, error: "CODE_EXPIRED" };
-  if (attempts >= MAX_CODE_ATTEMPTS) return { ok: false, error: "TOO_MANY_ATTEMPTS" };
-
-  codes.getRange(rowIndex, 4).setValue(attempts + 1);
-
-  if (hashCode_(email, code) !== String(values[1] || "")) {
-    return { ok: false, error: "WRONG_CODE", attemptsLeft: MAX_CODE_ATTEMPTS - attempts - 1 };
+  const key = codeKey_(email);
+  const pending = getJsonProperty_(key);
+  if (!pending) return { ok: false, error: "CODE_NOT_FOUND" };
+  if (pending.used) return { ok: false, error: "CODE_USED" };
+  if (Date.now() > Number(pending.expiresAt || 0)) {
+    deleteProperty_(key);
+    return { ok: false, error: "CODE_EXPIRED" };
+  }
+  if (Number(pending.attempts || 0) >= MAX_CODE_ATTEMPTS) {
+    return { ok: false, error: "TOO_MANY_ATTEMPTS" };
   }
 
-  codes.getRange(rowIndex, 5).setValue(true);
+  pending.attempts = Number(pending.attempts || 0) + 1;
+  setJsonProperty_(key, pending);
 
-  const mode = String(values[5] || "login");
-  const callsign = cleanText_(values[6], 80);
-  const rank = cleanText_(values[7], 100);
-  const newsletter = String(values[8] || "1") === "1";
+  if (hashCode_(email, code) !== String(pending.codeHash || "")) {
+    return {
+      ok: false,
+      error: "WRONG_CODE",
+      attemptsLeft: Math.max(0, MAX_CODE_ATTEMPTS - pending.attempts)
+    };
+  }
 
-  const users = getUsersSheet_();
-  let user = findUserByEmail_(users, email);
+  pending.used = true;
+  setJsonProperty_(key, pending);
+
+  let user = getUser_(email);
 
   if (!user) {
-    if (mode !== "register") return { ok: false, error: "USER_NOT_FOUND" };
-    const now = new Date();
-    const unitKey = "kapt_" + randomHex_(6);
-    users.appendRow([
-      email,
-      callsign || "Пользователь",
-      rank || "",
-      "",
-      unitKey,
-      newsletter ? "1" : "0",
-      "ACTIVE",
-      now,
-      now
-    ]);
-    user = findUserByEmail_(users, email);
+    if (pending.mode !== "register") return { ok: false, error: "USER_NOT_FOUND" };
+
+    const now = Date.now();
+    user = {
+      email: email,
+      callsign: cleanText_(pending.callsign, 80) || "Пользователь",
+      rank: cleanText_(pending.rank, 100),
+      unitName: "",
+      unitKey: "kapt_" + randomHex_(6),
+      subscribedToNewsletter: !!pending.newsletter,
+      status: "ACTIVE",
+      createdAt: now,
+      updatedAt: now
+    };
+    saveUser_(user);
   }
 
   const session = createSession_(email);
-  notifyAdmin_("✅ Вход на сайт\\nEmail: " + email + "\\nПозывной: " + (user.callsign || "-"));
+  notifyAdmin_("✅ Вход на сайт\nEmail: " + email + "\nПозывной: " + (user.callsign || "-"));
 
   return {
     ok: true,
     status: "AUTHENTICATED",
     sessionToken: session.token,
     sessionExpiresAt: session.expiresAt,
-    user: user
+    user: publicUser_(user)
   };
 }
 
@@ -187,104 +177,118 @@ function readSession_(p) {
   if (!rawToken || rawToken.length < 32) return { ok: false, error: "INVALID_SESSION" };
 
   const tokenHash = sha256Hex_(rawToken);
-  const sessions = getSessionsSheet_();
-  const data = sessions.getDataRange().getValues();
+  const session = getJsonProperty_(sessionKey_(tokenHash));
+  if (!session) return { ok: false, error: "INVALID_SESSION" };
 
-  for (let i = data.length - 1; i >= 1; i--) {
-    if (String(data[i][1] || "") !== tokenHash) continue;
-    const expiresAt = Number(data[i][2] || 0);
-    if (Date.now() > expiresAt) return { ok: false, error: "SESSION_EXPIRED" };
-
-    const email = normalizeEmail_(data[i][0]);
-    sessions.getRange(i + 1, 5).setValue(new Date());
-
-    const user = findUserByEmail_(getUsersSheet_(), email);
-    if (!user) return { ok: false, error: "USER_NOT_FOUND" };
-
-    return {
-      ok: true,
-      status: "AUTHENTICATED",
-      sessionExpiresAt: expiresAt,
-      user: user
-    };
+  if (Date.now() > Number(session.expiresAt || 0)) {
+    deleteProperty_(sessionKey_(tokenHash));
+    return { ok: false, error: "SESSION_EXPIRED" };
   }
 
-  return { ok: false, error: "INVALID_SESSION" };
+  session.lastSeen = Date.now();
+  setJsonProperty_(sessionKey_(tokenHash), session);
+
+  const user = getUser_(session.email);
+  if (!user) return { ok: false, error: "USER_NOT_FOUND" };
+
+  return {
+    ok: true,
+    status: "AUTHENTICATED",
+    sessionExpiresAt: session.expiresAt,
+    user: publicUser_(user)
+  };
 }
 
 function createSession_(email) {
-  const token = Utilities.base64EncodeWebSafe(
-    Utilities.computeDigest(
-      Utilities.DigestAlgorithm.SHA_256,
-      Utilities.getUuid() + "|" + Utilities.getUuid() + "|" + Date.now()
-    )
-  ).replace(/=+$/g, "") + "." + Utilities.getUuid().replace(/-/g, "");
+  const token =
+    Utilities.base64EncodeWebSafe(
+      Utilities.computeDigest(
+        Utilities.DigestAlgorithm.SHA_256,
+        Utilities.getUuid() + "|" + Utilities.getUuid() + "|" + Date.now()
+      )
+    ).replace(/=+$/g, "") +
+    "." +
+    Utilities.getUuid().replace(/-/g, "");
 
   const expiresAt = Date.now() + SESSION_TTL_MS;
-  getSessionsSheet_().appendRow([
-    email,
-    sha256Hex_(token),
-    expiresAt,
-    new Date(),
-    new Date()
-  ]);
+  const tokenHash = sha256Hex_(token);
+
+  setJsonProperty_(sessionKey_(tokenHash), {
+    email: email,
+    expiresAt: expiresAt,
+    createdAt: Date.now(),
+    lastSeen: Date.now()
+  });
 
   return { token: token, expiresAt: expiresAt };
 }
 
-function ensureAuthSheets_() {
-  getOrCreateSheet_(USERS_SHEET, [
-    "email","callsign","rank","unitName","unitKey","newsletter","status","createdAt","updatedAt"
-  ]);
-  getOrCreateSheet_(CODES_SHEET, [
-    "email","codeHash","expiresAt","attempts","used","mode","callsign","rank","newsletter","createdAt"
-  ]);
-  getOrCreateSheet_(SESSIONS_SHEET, [
-    "email","tokenHash","expiresAt","createdAt","lastSeen"
-  ]);
-  getPepper_();
+function getUser_(email) {
+  return getJsonProperty_(userKey_(email));
 }
 
-function getUsersSheet_() { return getOrCreateSheet_(USERS_SHEET, []); }
-function getCodesSheet_() { return getOrCreateSheet_(CODES_SHEET, []); }
-function getSessionsSheet_() { return getOrCreateSheet_(SESSIONS_SHEET, []); }
-
-function getOrCreateSheet_(name, headers) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  if (!ss) throw new Error("Script must be bound to a Google Spreadsheet.");
-  let sh = ss.getSheetByName(name);
-  if (!sh) {
-    sh = ss.insertSheet(name);
-    if (headers && headers.length) sh.appendRow(headers);
-  } else if (headers && headers.length && sh.getLastRow() === 0) {
-    sh.appendRow(headers);
-  }
-  return sh;
+function saveUser_(user) {
+  user.updatedAt = Date.now();
+  setJsonProperty_(userKey_(user.email), user);
 }
 
-function findUserByEmail_(sheet, email) {
-  const data = sheet.getDataRange().getValues();
-  for (let i = data.length - 1; i >= 1; i--) {
-    if (normalizeEmail_(data[i][0]) !== email) continue;
-    return {
-      email: email,
-      callsign: cleanText_(data[i][1], 80),
-      rank: cleanText_(data[i][2], 100),
-      unitName: cleanText_(data[i][3], 120),
-      unitKey: cleanText_(data[i][4], 80),
-      subscribedToNewsletter: String(data[i][5] || "0") === "1",
-      status: cleanText_(data[i][6], 30) || "ACTIVE"
-    };
-  }
-  return null;
+function publicUser_(user) {
+  return {
+    email: normalizeEmail_(user.email),
+    callsign: cleanText_(user.callsign, 80),
+    rank: cleanText_(user.rank, 100),
+    unitName: cleanText_(user.unitName, 120),
+    unitKey: cleanText_(user.unitKey, 80),
+    subscribedToNewsletter: !!user.subscribedToNewsletter,
+    status: cleanText_(user.status, 30) || "ACTIVE"
+  };
 }
 
-function findLatestCodeRow_(sheet, email) {
-  const data = sheet.getDataRange().getValues();
-  for (let i = data.length - 1; i >= 1; i--) {
-    if (normalizeEmail_(data[i][0]) === email) return [i + 1, data[i]];
-  }
-  return null;
+function userKey_(email) {
+  return "USR_" + sha256Hex_(normalizeEmail_(email));
+}
+
+function codeKey_(email) {
+  return "CODE_" + sha256Hex_(normalizeEmail_(email));
+}
+
+function sessionKey_(tokenHash) {
+  return "SES_" + tokenHash;
+}
+
+function setJsonProperty_(key, value) {
+  PropertiesService.getScriptProperties().setProperty(key, JSON.stringify(value));
+}
+
+function getJsonProperty_(key) {
+  const raw = PropertiesService.getScriptProperties().getProperty(key);
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch (_) { return null; }
+}
+
+function deleteProperty_(key) {
+  PropertiesService.getScriptProperties().deleteProperty(key);
+}
+
+function cleanupExpiredAuthData_() {
+  const props = PropertiesService.getScriptProperties();
+  const all = props.getProperties();
+  const now = Date.now();
+  const toDelete = [];
+
+  Object.keys(all).forEach(function(key) {
+    if (key.indexOf("CODE_") === 0 || key.indexOf("SES_") === 0) {
+      try {
+        const item = JSON.parse(all[key]);
+        const expiresAt = Number(item.expiresAt || 0);
+        if (expiresAt && now > expiresAt) toDelete.push(key);
+      } catch (_) {
+        toDelete.push(key);
+      }
+    }
+  });
+
+  if (toDelete.length) props.deleteProperties(toDelete);
 }
 
 function createSixDigitCode_() {
@@ -298,10 +302,10 @@ function createSixDigitCode_() {
 }
 
 function hashCode_(email, code) {
-  return sha256Hex_(email + "|" + code + "|" + getPepper_());
+  return sha256Hex_(email + "|" + code + "|" + ensureAuthPepper_());
 }
 
-function getPepper_() {
+function ensureAuthPepper_() {
   const props = PropertiesService.getScriptProperties();
   let value = props.getProperty("AUTH_PEPPER");
   if (!value) {
@@ -313,7 +317,9 @@ function getPepper_() {
 
 function sha256Hex_(value) {
   return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(value))
-    .map(function(b) { return ("0" + ((b < 0 ? b + 256 : b).toString(16))).slice(-2); })
+    .map(function(b) {
+      return ("0" + ((b < 0 ? b + 256 : b).toString(16))).slice(-2);
+    })
     .join("");
 }
 
@@ -330,23 +336,28 @@ function isValidEmail_(email) {
 }
 
 function cleanText_(value, maxLen) {
-  return String(value == null ? "" : value).replace(/[\u0000-\u001f<>]/g, "").trim().slice(0, maxLen || 120);
+  return String(value == null ? "" : value)
+    .replace(/[\u0000-\u001f<>]/g, "")
+    .trim()
+    .slice(0, maxLen || 120);
 }
 
 function maskEmail_(email) {
   const parts = email.split("@");
   if (parts.length !== 2) return email;
   const name = parts[0];
-  const masked = name.length <= 2 ? name[0] + "*" : name.slice(0, 2) + "***";
+  const masked = name.length <= 2 ? (name[0] || "") + "*" : name.slice(0, 2) + "***";
   return masked + "@" + parts[1];
 }
 
 function jsonResponse_(obj, callback) {
   const json = JSON.stringify(obj);
+
   if (callback && /^[A-Za-z_$][0-9A-Za-z_$]{0,64}$/.test(callback)) {
     return ContentService.createTextOutput(callback + "(" + json + ");")
       .setMimeType(ContentService.MimeType.JAVASCRIPT);
   }
+
   return ContentService.createTextOutput(json)
     .setMimeType(ContentService.MimeType.JSON);
 }
