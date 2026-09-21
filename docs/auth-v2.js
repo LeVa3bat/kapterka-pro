@@ -1,0 +1,415 @@
+/**
+ * KAPTERKA PRO — Web Auth v2 client
+ * Passwordless email OTP. Activates only when KAPTERKA_AUTH_API_URL is configured.
+ * Existing local profile/license values are preserved during migration.
+ */
+(function () {
+  const TOKEN_KEY = "kapterka_web_auth_token_v2";
+  const TOKEN_EXP_KEY = "kapterka_web_auth_token_exp_v2";
+  let pendingMode = null;
+  let pendingEmail = null;
+  let pendingRegister = null;
+
+  function enabled() {
+    return typeof window.KAPTERKA_AUTH_API_URL === "string" &&
+      /^https:\/\/script\.google\.com\/macros\/s\/.+\/exec/.test(window.KAPTERKA_AUTH_API_URL);
+  }
+
+  function jsonp(params, timeoutMs) {
+    return new Promise((resolve, reject) => {
+      if (!enabled()) return reject(new Error("AUTH_BACKEND_NOT_CONFIGURED"));
+
+      const cb = "__kaptAuthCb_" + Date.now() + "_" + Math.random().toString(36).slice(2);
+      const script = document.createElement("script");
+      const timer = setTimeout(() => {
+        cleanup();
+        reject(new Error("AUTH_TIMEOUT"));
+      }, timeoutMs || 15000);
+
+      function cleanup() {
+        clearTimeout(timer);
+        try { delete window[cb]; } catch (_) { window[cb] = undefined; }
+        script.remove();
+      }
+
+      window[cb] = (data) => {
+        cleanup();
+        resolve(data || {});
+      };
+
+      const q = new URLSearchParams({ ...params, callback: cb, _ts: String(Date.now()) });
+      script.src = window.KAPTERKA_AUTH_API_URL + "?" + q.toString();
+      script.async = true;
+      script.onerror = () => {
+        cleanup();
+        reject(new Error("AUTH_NETWORK_ERROR"));
+      };
+      document.head.appendChild(script);
+    });
+  }
+
+  function authErrorMessage(code, data) {
+    const map = {
+      INVALID_EMAIL: "Проверьте адрес электронной почты.",
+      CALLSIGN_REQUIRED: "Укажите имя или позывной.",
+      ACCOUNT_EXISTS: "Этот Email уже зарегистрирован. Переключитесь на «Вход».",
+      USER_NOT_FOUND: "Аккаунт с таким Email не найден. Сначала зарегистрируйтесь.",
+      TOO_SOON: "Код уже отправлен. Подождите около минуты и попробуйте снова.",
+      INVALID_CODE: "Введите все 6 цифр кода.",
+      CODE_NOT_FOUND: "Сначала запросите новый код.",
+      CODE_USED: "Этот код уже использован. Запросите новый.",
+      CODE_EXPIRED: "Срок действия кода истёк. Запросите новый.",
+      TOO_MANY_ATTEMPTS: "Слишком много попыток. Запросите новый код.",
+      WRONG_CODE: "Код не подходит. Проверьте письмо и попробуйте ещё раз.",
+      SERVER_ERROR: "Сервер авторизации временно недоступен.",
+      UNKNOWN_ACTION: "Сервис авторизации требует обновления."
+    };
+    if (code === "WRONG_CODE" && data && Number.isFinite(data.attemptsLeft)) {
+      return map[code] + " Осталось попыток: " + data.attemptsLeft + ".";
+    }
+    return map[code] || "Не удалось выполнить вход. Попробуйте ещё раз.";
+  }
+
+  function notify(message) {
+    if (typeof window.showToast === "function") window.showToast(message);
+    else alert(message);
+  }
+
+  function ensureSixPins(container) {
+    if (!container) return;
+    const pinWrap = container.querySelector(".pin-inputs");
+    if (!pinWrap) return;
+    for (let n = 5; n <= 6; n++) {
+      if (document.getElementById("pin" + n)) continue;
+      const input = document.createElement("input");
+      input.type = "text";
+      input.inputMode = "numeric";
+      input.autocomplete = "one-time-code";
+      input.maxLength = 1;
+      input.className = "pin-digit";
+      input.id = "pin" + n;
+      pinWrap.appendChild(input);
+    }
+
+    const pins = [...pinWrap.querySelectorAll(".pin-digit")];
+    pins.forEach((el, idx) => {
+      el.inputMode = "numeric";
+      el.autocomplete = "one-time-code";
+      el.oninput = () => {
+        el.value = el.value.replace(/\D/g, "").slice(-1);
+        if (el.value && pins[idx + 1]) pins[idx + 1].focus();
+      };
+      el.onkeydown = (ev) => {
+        if (ev.key === "Backspace" && !el.value && pins[idx - 1]) pins[idx - 1].focus();
+      };
+      el.onpaste = (ev) => {
+        const digits = (ev.clipboardData?.getData("text") || "").replace(/\D/g, "").slice(0, 6);
+        if (digits.length > 1) {
+          ev.preventDefault();
+          digits.split("").forEach((d, i) => { if (pins[i]) pins[i].value = d; });
+          pins[Math.min(digits.length, 6) - 1]?.focus();
+        }
+      };
+    });
+  }
+
+  function readSixPins(root) {
+    const scope = root || document;
+    let code = "";
+    for (let i = 1; i <= 6; i++) {
+      const el = scope.querySelector("#pin" + i) || document.getElementById("pin" + i);
+      code += (el?.value || "").replace(/\D/g, "");
+    }
+    return code.slice(0, 6);
+  }
+
+  function clearSixPins(root) {
+    const scope = root || document;
+    for (let i = 1; i <= 6; i++) {
+      const el = scope.querySelector("#pin" + i) || document.getElementById("pin" + i);
+      if (el) el.value = "";
+    }
+  }
+
+  function migrateAndSetSession(serverUser, token, expiresAt) {
+    const oldSession = typeof window.getActiveUserSession === "function" ? window.getActiveUserSession() : null;
+    let oldKeys = [];
+    try { oldKeys = JSON.parse(localStorage.getItem("kapterka_keys_history") || "[]"); } catch (_) {}
+
+    const activeKey = localStorage.getItem("kapterka_active_key") || oldSession?.activeKey || "";
+    if ((!oldKeys || !oldKeys.length) && activeKey) {
+      oldKeys = [{ key: activeKey, date: new Date().toLocaleDateString("ru-RU"), plan: "PRO" }];
+    }
+
+    const user = {
+      ...(oldSession || {}),
+      ...(serverUser || {}),
+      email: serverUser?.email || pendingEmail || oldSession?.email || "",
+      callsign: serverUser?.callsign || oldSession?.callsign || localStorage.getItem("kapterka_user_callsign") || "Пользователь",
+      rank: serverUser?.rank || oldSession?.rank || localStorage.getItem("kapterka_user_rank") || "",
+      unitName: serverUser?.unitName || oldSession?.unitName || localStorage.getItem("kapterka_unit_name") || "",
+      unitKey: serverUser?.unitKey || oldSession?.unitKey || localStorage.getItem("kapterka_unit_key") || "",
+      phone: oldSession?.phone || localStorage.getItem("kapterka_user_phone") || "",
+      keys: oldKeys || [],
+      emailVerified: true,
+      authProvider: "email_otp_v2",
+      webAuthV2: true
+    };
+
+    localStorage.setItem(TOKEN_KEY, token || "");
+    localStorage.setItem(TOKEN_EXP_KEY, String(expiresAt || 0));
+
+    if (typeof window.setUserSession === "function") {
+      window.setUserSession(user);
+    } else {
+      localStorage.setItem("kapterka_auth_user", JSON.stringify(user));
+      if (typeof window.updateAuthUI === "function") window.updateAuthUI();
+      if (typeof window.loadCabinetProfile === "function") window.loadCabinetProfile();
+    }
+  }
+
+  function showRegistrationVerify() {
+    const stepInputs = document.getElementById("regStepInputs");
+    const stepVerif = document.getElementById("regStepVerification");
+    if (stepInputs) stepInputs.style.display = "none";
+    if (stepVerif) {
+      stepVerif.style.display = "block";
+      ensureSixPins(stepVerif);
+      const title = stepVerif.querySelector("h4");
+      if (title) title.textContent = "Введите код из Email";
+      const hint = document.getElementById("verificationHint");
+      if (hint) hint.textContent = "Код действует 10 минут и используется только один раз.";
+      const disp = document.getElementById("verifyEmailDisplay");
+      if (disp) disp.textContent = pendingEmail || "";
+      clearSixPins(stepVerif);
+      document.getElementById("pin1")?.focus();
+    }
+  }
+
+  function ensureLoginVerifyBox() {
+    const panel = document.getElementById("panelLogin");
+    if (!panel) return null;
+    let box = document.getElementById("loginOtpVerifyBox");
+    if (box) return box;
+
+    box = document.createElement("div");
+    box.id = "loginOtpVerifyBox";
+    box.className = "pin-verify-box auth-v2-login-verify";
+    box.style.display = "none";
+    box.innerHTML = [
+      '<div class="auth-v2-code-title">Введите код из письма</div>',
+      '<div class="auth-v2-code-email" id="loginVerifyEmail"></div>',
+      '<div class="pin-inputs">',
+      '<input type="text" maxlength="1" class="pin-digit" id="loginPin1">',
+      '<input type="text" maxlength="1" class="pin-digit" id="loginPin2">',
+      '<input type="text" maxlength="1" class="pin-digit" id="loginPin3">',
+      '<input type="text" maxlength="1" class="pin-digit" id="loginPin4">',
+      '<input type="text" maxlength="1" class="pin-digit" id="loginPin5">',
+      '<input type="text" maxlength="1" class="pin-digit" id="loginPin6">',
+      '</div>',
+      '<div class="auth-v2-login-actions">',
+      '<button class="btn btn-primary btn-lg" id="loginVerifyCodeBtn">Войти</button>',
+      '<button class="btn btn-outline btn-sm" id="loginResendCodeBtn">Отправить код ещё раз</button>',
+      '</div>'
+    ].join("");
+
+    panel.appendChild(box);
+
+    const pins = [...box.querySelectorAll(".pin-digit")];
+    pins.forEach((el, idx) => {
+      el.inputMode = "numeric";
+      el.autocomplete = "one-time-code";
+      el.oninput = () => {
+        el.value = el.value.replace(/\D/g, "").slice(-1);
+        if (el.value && pins[idx + 1]) pins[idx + 1].focus();
+      };
+      el.onkeydown = ev => {
+        if (ev.key === "Backspace" && !el.value && pins[idx - 1]) pins[idx - 1].focus();
+      };
+      el.onpaste = ev => {
+        const digits = (ev.clipboardData?.getData("text") || "").replace(/\D/g, "").slice(0, 6);
+        if (digits.length > 1) {
+          ev.preventDefault();
+          digits.split("").forEach((d, i) => { if (pins[i]) pins[i].value = d; });
+        }
+      };
+    });
+
+    document.getElementById("loginVerifyCodeBtn").onclick = verifyLoginCode;
+    document.getElementById("loginResendCodeBtn").onclick = requestLoginCode;
+    return box;
+  }
+
+  function readLoginCode() {
+    let code = "";
+    for (let i = 1; i <= 6; i++) code += document.getElementById("loginPin" + i)?.value || "";
+    return code.replace(/\D/g, "").slice(0, 6);
+  }
+
+  function adaptUi() {
+    if (!enabled()) return;
+
+    const regPassword = document.getElementById("regPassword");
+    if (regPassword) {
+      const group = regPassword.closest(".form-group");
+      if (group) group.style.display = "none";
+    }
+    const loginPassword = document.getElementById("loginPassword");
+    if (loginPassword) {
+      const group = loginPassword.closest(".form-group");
+      if (group) group.style.display = "none";
+    }
+
+    const regBtn = document.querySelector("#regStepInputs button[onclick*='startRegistrationProcess']");
+    if (regBtn) regBtn.textContent = "Получить код на Email";
+
+    const loginBtn = document.querySelector("#panelLogin button[onclick*='processUserLogin']");
+    if (loginBtn) loginBtn.textContent = "Получить код для входа";
+
+    const demoLink = document.querySelector("#panelLogin a[onclick*='quickDemoLogin']");
+    if (demoLink) demoLink.style.display = "none";
+
+    const regText = document.querySelector("#panelRegister > div:first-child p");
+    if (regText) regText.textContent = "Без пароля: подтвердите Email одноразовым кодом и войдите в кабинет.";
+
+    const loginText = document.querySelector("#panelLogin > div:first-child p");
+    if (loginText) loginText.textContent = "Введите Email — мы отправим одноразовый 6-значный код.";
+
+    ensureSixPins(document.getElementById("regStepVerification"));
+    ensureLoginVerifyBox();
+  }
+
+  async function requestRegistrationCode() {
+    const callsign = document.getElementById("regCallsign")?.value.trim() || "";
+    const email = document.getElementById("regEmail")?.value.trim().toLowerCase() || "";
+    const rank = document.getElementById("regRank")?.value.trim() || "";
+    const newsletter = document.getElementById("regNewsletterCheck")?.checked !== false;
+
+    if (!callsign) return notify("Укажите имя или позывной.");
+    if (!email || !email.includes("@")) return notify("Проверьте Email.");
+
+    pendingMode = "register";
+    pendingEmail = email;
+    pendingRegister = { callsign, rank, newsletter };
+
+    try {
+      notify("Отправляю код подтверждения...");
+      const data = await jsonp({
+        action: "auth_request_code",
+        mode: "register",
+        email,
+        callsign,
+        rank,
+        newsletter: newsletter ? "1" : "0"
+      });
+      if (!data.ok) return notify(authErrorMessage(data.error, data));
+      showRegistrationVerify();
+      notify("Код отправлен на " + (data.maskedEmail || email));
+    } catch (err) {
+      console.warn(err);
+      notify("Не удалось связаться с сервером авторизации.");
+    }
+  }
+
+  async function requestLoginCode() {
+    const email = document.getElementById("loginEmail")?.value.trim().toLowerCase() || pendingEmail || "";
+    if (!email || !email.includes("@")) return notify("Проверьте Email.");
+
+    pendingMode = "login";
+    pendingEmail = email;
+    pendingRegister = null;
+
+    try {
+      notify("Отправляю код для входа...");
+      const data = await jsonp({ action: "auth_request_code", mode: "login", email });
+      if (!data.ok) return notify(authErrorMessage(data.error, data));
+
+      const box = ensureLoginVerifyBox();
+      if (box) {
+        box.style.display = "block";
+        const label = document.getElementById("loginVerifyEmail");
+        if (label) label.textContent = "Код отправлен на " + (data.maskedEmail || email);
+        for (let i = 1; i <= 6; i++) {
+          const el = document.getElementById("loginPin" + i);
+          if (el) el.value = "";
+        }
+        document.getElementById("loginPin1")?.focus();
+      }
+      notify("Проверьте почту.");
+    } catch (err) {
+      console.warn(err);
+      notify("Не удалось связаться с сервером авторизации.");
+    }
+  }
+
+  async function verifyCode(code, mode) {
+    if (!pendingEmail) return notify("Сначала запросите код.");
+    if (!code || code.length !== 6) return notify("Введите все 6 цифр.");
+
+    try {
+      notify("Проверяю код...");
+      const data = await jsonp({
+        action: "auth_verify_code",
+        email: pendingEmail,
+        code
+      });
+      if (!data.ok) return notify(authErrorMessage(data.error, data));
+
+      migrateAndSetSession(data.user || {}, data.sessionToken || "", data.sessionExpiresAt || 0);
+      pendingMode = null;
+      pendingEmail = null;
+      pendingRegister = null;
+
+      document.getElementById("regStepInputs")?.style && (document.getElementById("regStepInputs").style.display = "block");
+      document.getElementById("regStepVerification")?.style && (document.getElementById("regStepVerification").style.display = "none");
+      const loginBox = document.getElementById("loginOtpVerifyBox");
+      if (loginBox) loginBox.style.display = "none";
+
+      notify(mode === "register" ? "Аккаунт создан. Добро пожаловать!" : "Вход выполнен.");
+    } catch (err) {
+      console.warn(err);
+      notify("Не удалось проверить код. Попробуйте ещё раз.");
+    }
+  }
+
+  async function verifyRegistrationCode() {
+    const code = readSixPins(document.getElementById("regStepVerification"));
+    return verifyCode(code, "register");
+  }
+
+  async function verifyLoginCode() {
+    return verifyCode(readLoginCode(), "login");
+  }
+
+  function logoutV2() {
+    localStorage.removeItem("kapterka_auth_user");
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(TOKEN_EXP_KEY);
+
+    // Profile, unit key and license are intentionally preserved.
+    if (typeof window.updateAuthUI === "function") window.updateAuthUI();
+    if (typeof window.loadCabinetProfile === "function") window.loadCabinetProfile();
+    notify("Вы вышли из личного кабинета.");
+  }
+
+  function activate() {
+    if (!enabled()) return;
+    adaptUi();
+
+    window.startRegistrationProcess = requestRegistrationCode;
+    window.processUserLogin = requestLoginCode;
+    window.verifyEmailPinCode = verifyRegistrationCode;
+    window.resendPinCode = function () {
+      return pendingMode === "login" ? requestLoginCode() : requestRegistrationCode();
+    };
+    window.logoutUserSession = logoutV2;
+
+    document.documentElement.classList.add("auth-v2-enabled");
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", activate);
+  } else {
+    activate();
+  }
+})();
