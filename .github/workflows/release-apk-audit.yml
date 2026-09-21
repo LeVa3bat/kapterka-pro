@@ -6,6 +6,7 @@ on:
     paths:
       - 'docs/kapterka-pro.apk'
       - 'docs/index.html'
+      - 'docs/release.json'
       - 'app/build.gradle.kts'
       - 'app/src/main/AndroidManifest.xml'
       - '.github/scripts/release-artifact-audit.mjs'
@@ -15,6 +16,7 @@ on:
     paths:
       - 'docs/kapterka-pro.apk'
       - 'docs/index.html'
+      - 'docs/release.json'
       - 'app/build.gradle.kts'
       - 'app/src/main/AndroidManifest.xml'
       - '.github/scripts/release-artifact-audit.mjs'
