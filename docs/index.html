@@ -51,7 +51,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=3.4.9.31h">
+  <link rel="stylesheet" href="style.css?v=3.4.9.31i">
   <link rel="stylesheet" href="tabs_and_cabinet.css?v=3.4.9.31">
 
   <!-- Favicon & Mobile Icons (Тактическая светящаяся иконка Каптёрка Про) -->
@@ -251,766 +251,365 @@
   <div id="tabCabinet" class="app-view-tab">
     <section class="section">
       <div class="container">
-        
-        <!-- БЛОК 1: ФОРМА ВХОДА И РЕГИСТРАЦИИ (ОТОБРАЖАЕТСЯ, ЕСЛИ НЕ АВТОРИЗОВАН) -->
-        <div id="authContainer" class="auth-wrapper" style="margin-bottom:30px;">
+        <div class="section-header v2-page-head">
+          <div class="badge">Аккаунт</div>
+          <h2>Личный кабинет</h2>
+          <p>Профиль, лицензия и ключ подразделения — в одном месте.</p>
+        </div>
+
+        <div id="authContainer" class="auth-wrapper">
           <div class="auth-card">
-            
             <div class="auth-switch-header">
-              <button class="auth-switch-btn active" id="btnSwitchRegister" onclick="switchAuthMode('register')">
-                📝 Регистрация
-              </button>
-              <button class="auth-switch-btn" id="btnSwitchLogin" onclick="switchAuthMode('login')">
-                🔑 Вход в кабинет
-              </button>
+              <button class="auth-switch-btn active" id="btnSwitchRegister" onclick="switchAuthMode('register')">Создать аккаунт</button>
+              <button class="auth-switch-btn" id="btnSwitchLogin" onclick="switchAuthMode('login')">Войти</button>
             </div>
 
-            <!-- Форма Регистрации нового бойца -->
             <div id="panelRegister" class="auth-form-panel active">
-              <div style="text-align:center; margin-bottom:18px;">
-                <h3 style="font-size:1.3rem; margin-bottom:6px;">Создание учетной записи бойца</h3>
-                <p style="font-size:0.85rem; color:var(--text-secondary);">
-                  Зарегистрируйтесь для сохранения лицензионных ключей и получения обновлений ПО.
-                </p>
+              <div>
+                <h3>Регистрация</h3>
+                <p>Создайте аккаунт для доступа к профилю и лицензионным ключам.</p>
               </div>
-
-              <!-- Шаг 1: Ввод данных -->
               <div id="regStepInputs">
-                <div class="form-group">
-                  <label class="form-label">Ваш позывной *</label>
-                  <input type="text" id="regCallsign" class="form-input" placeholder="Например: Сокол, Буран, Ворон">
+                <div class="v2-form-grid">
+                  <div class="form-group">
+                    <label class="form-label">Имя или позывной *</label>
+                    <input type="text" id="regCallsign" class="form-input" placeholder="Например: Сокол">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Email *</label>
+                    <input type="email" id="regEmail" class="form-input" placeholder="name@domain.ru">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Должность / звание</label>
+                    <input type="text" id="regRank" class="form-input" placeholder="По желанию">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Пароль *</label>
+                    <input type="password" id="regPassword" class="form-input" placeholder="Минимум 4 символа">
+                  </div>
                 </div>
-
-                <div class="form-group">
-                  <label class="form-label">Электронная почта (Email) *</label>
-                  <input type="email" id="regEmail" class="form-input" placeholder="name@domain.ru">
-                  <div class="form-helper">На этот адрес придет код подтверждения и уведомления о выходе обновлений.</div>
-                </div>
-
-                <div class="form-group">
-                  <label class="form-label">Воинское звание / должность (по желанию)</label>
-                  <input type="text" id="regRank" class="form-input" placeholder="Старшина роты, командир расчета">
-                </div>
-
-                <div class="form-group">
-                  <label class="form-label">Пароль для входа *</label>
-                  <input type="password" id="regPassword" class="form-input" placeholder="Придумайте надежный пароль">
-                </div>
-
-                <!-- Чекбокс согласия на рассылку обновлений ПО -->
                 <label class="auth-newsletter-check">
                   <input type="checkbox" id="regNewsletterCheck" checked>
-                  <span style="font-size:0.82rem; color:var(--text-primary); line-height:1.4;">
-                    🔔 <strong>Получать уведомления о выходе новых версий</strong> «Каптёрка Про», обновлениях номенклатуры и регламентов списания.
-                  </span>
+                  <span>Получать уведомления о важных обновлениях Каптёрка PRO.</span>
                 </label>
-
-                <button class="btn btn-primary btn-lg" style="width:100%; margin-top:10px;" onclick="startRegistrationProcess()">
-                  Отправить код подтверждения на Email ➔
-                </button>
+                <button class="btn btn-primary btn-lg v2-full-btn" onclick="startRegistrationProcess()">Продолжить</button>
               </div>
 
-              <!-- Шаг 2: Проверка и ввод PIN-кода подтверждения почты -->
               <div id="regStepVerification" style="display:none;">
                 <div class="pin-verify-box">
-                  <div style="font-size:1.8rem; margin-bottom:8px;">📬</div>
-                  <h4 style="font-size:1.1rem; color:var(--accent-gold); margin-bottom:6px;">Подтверждение почты</h4>
-                  <p style="font-size:0.82rem; color:var(--text-secondary); line-height:1.4;">
-                    Мы сформировали 4-значный код безопасности для адреса: <br>
-                    <strong style="color:var(--text-primary);" id="verifyEmailDisplay">user@mail.ru</strong>
-                  </p>
-
+                  <h4>Подтверждение Email</h4>
+                  <p>Код отправлен на <strong id="verifyEmailDisplay">user@mail.ru</strong></p>
                   <div class="pin-inputs">
-                    <input type="text" maxlength="1" class="pin-digit" id="pin1" oninput="focusNextPin(this, 'pin2')">
-                    <input type="text" maxlength="1" class="pin-digit" id="pin2" oninput="focusNextPin(this, 'pin3')">
-                    <input type="text" maxlength="1" class="pin-digit" id="pin3" oninput="focusNextPin(this, 'pin4')">
-                    <input type="text" maxlength="1" class="pin-digit" id="pin4" oninput="focusNextPin(this, null)">
+                    <input type="text" maxlength="1" class="pin-digit" id="pin1" oninput="focusNextPin(this,'pin2')">
+                    <input type="text" maxlength="1" class="pin-digit" id="pin2" oninput="focusNextPin(this,'pin3')">
+                    <input type="text" maxlength="1" class="pin-digit" id="pin3" oninput="focusNextPin(this,'pin4')">
+                    <input type="text" maxlength="1" class="pin-digit" id="pin4" oninput="focusNextPin(this,null)">
                   </div>
-
-                  <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:14px;" id="verificationHint">
-                    (Для теста и проверки системы код отображается в уведомлении)
-                  </div>
-
-                  <div style="display:flex; gap:10px; justify-content:center;">
-                    <button class="btn btn-gold" onclick="verifyEmailPinCode()">
-                      ✓ Подтвердить Email и войти
-                    </button>
-                    <button class="btn btn-outline btn-sm" onclick="resendPinCode()">
-                      🔄 Выслать повторно
-                    </button>
+                  <div id="verificationHint" class="form-helper">Введите код из письма.</div>
+                  <div class="v2-inline-actions">
+                    <button class="btn btn-primary" onclick="verifyEmailPinCode()">Подтвердить</button>
+                    <button class="btn btn-outline btn-sm" onclick="resendPinCode()">Отправить ещё раз</button>
                   </div>
                 </div>
               </div>
-
             </div>
 
-            <!-- Форма Входа для уже зарегистрированных бойцов -->
             <div id="panelLogin" class="auth-form-panel">
-              <div style="text-align:center; margin-bottom:18px;">
-                <h3 style="font-size:1.3rem; margin-bottom:6px;">Вход в Личный кабинет</h3>
-                <p style="font-size:0.85rem; color:var(--text-secondary);">
-                  Введите ваш Email и пароль для доступа к ключам и профилю.
-                </p>
+              <div>
+                <h3>Вход</h3>
+                <p>Введите данные аккаунта, чтобы открыть кабинет.</p>
               </div>
-
               <div class="form-group">
-                <label class="form-label">Email адрес</label>
+                <label class="form-label">Email</label>
                 <input type="email" id="loginEmail" class="form-input" placeholder="name@domain.ru">
               </div>
-
               <div class="form-group">
                 <label class="form-label">Пароль</label>
-                <input type="password" id="loginPassword" class="form-input" placeholder="Введите пароль">
+                <input type="password" id="loginPassword" class="form-input" placeholder="Ваш пароль">
               </div>
-
-              <button class="btn btn-primary btn-lg" style="width:100%; margin-top:14px;" onclick="processUserLogin()">
-                Войти в кабинет ➔
-              </button>
-
-              <div style="text-align:center; margin-top:16px;">
-                <a href="javascript:void(0)" onclick="quickDemoLogin()" style="font-size:0.82rem; color:var(--accent-gold);">
-                  ⚡ Быстрый гостевой вход (Демо)
-                </a>
+              <button class="btn btn-primary btn-lg v2-full-btn" onclick="processUserLogin()">Войти</button>
+              <div class="v2-sub-action">
+                <a href="javascript:void(0)" onclick="quickDemoLogin()">Открыть демонстрационный кабинет</a>
               </div>
             </div>
-
           </div>
         </div>
 
-        <!-- БЛОК 2: АВТОРИЗОВАННЫЙ ЛИЧНЫЙ КАБИНЕТ (СКРЫТ ДО АВТОРИЗАЦИИ) -->
         <div id="cabinetContent" style="display:none;">
-
-          <!-- Верхняя панель авторизованного бойца с кнопкой Выхода -->
           <div class="user-session-bar">
-            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-              <span style="font-size:1.2rem;">👤</span>
+            <div class="v2-session-main">
+              <span class="v2-avatar">👤</span>
               <div>
-                <strong style="color:var(--text-primary);" id="sessionCallsignText">Пользователь</strong>
-                <span style="font-size:0.8rem; color:var(--text-muted); margin-left:8px;" id="sessionEmailText">user@domain.ru</span>
+                <strong id="sessionCallsignText">Пользователь</strong>
+                <small id="sessionEmailText">user@domain.ru</small>
               </div>
-              <span class="subscriber-badge-chip" id="sessionNewsletterChip">
-                ✓ Подписка на обновления активна
-              </span>
-              <button id="adminQuickBadge" class="btn btn-gold btn-sm" onclick="openAdminPanel()" style="display:none; padding:3px 10px; font-size:0.75rem;">
-                🛡️ Скрытая админка (База бойцов)
-              </button>
+              <span class="subscriber-badge-chip" id="sessionNewsletterChip">Обновления включены</span>
+              <button id="adminQuickBadge" class="btn btn-gold btn-sm" onclick="openAdminPanel()" style="display:none;">Админ</button>
             </div>
-            <button class="btn btn-outline btn-sm" onclick="logoutUserSession()" style="color:#e57373; border-color:rgba(229,115,115,0.4);">
-              🚪 Выйти
-            </button>
+            <button class="btn btn-outline btn-sm" onclick="logoutUserSession()">Выйти</button>
           </div>
 
-          <div class="section-header">
-            <div class="badge badge-gold">Личный кабинет бойца</div>
-            <h2>Управление профилем и ключами лицензий</h2>
-            <p>Здесь сохранены ваши персональные ключи, привязка подразделений и история оплат</p>
-          </div>
-
-          <!-- Информационный блок Telegram сообщества и бота -->
-          <div style="background:rgba(41,182,246,0.07); border:1px solid rgba(41,182,246,0.25); border-radius:var(--radius-sm); padding:12px 16px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
-            <div style="font-size:0.85rem; color:var(--text-primary); line-height:1.4;">
-              📢 <strong>Официальный Telegram-канал «Каптёрка Про»:</strong> свежие сборки APK, шаблоны бланков и инструкции.
-            </div>
-            <div style="display:flex; gap:8px; flex-wrap:wrap;">
-              <a href="https://t.me/kapterka_pro" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" style="font-size:0.8rem; color:#29b6f6; border-color:rgba(41,182,246,0.5); text-decoration:none;">
-                📢 Подписаться (@kapterka_pro)
-              </a>
-              <a href="https://t.me/kapterka_help_bot" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" style="font-size:0.8rem; color:#5bc0be; border-color:rgba(91,192,190,0.5); text-decoration:none;">
-                🤖 Бот поддержки
-              </a>
-            </div>
-          </div>
-
-        <!-- Карточка 1: Когда лицензия активна и оплачена -->
-        <div class="vault-key-card" id="cabActiveKeyCard" style="display:none;">
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <div class="v2-cabinet-grid">
             <div>
-              <span class="badge badge-gold" id="cabStatusBadge">АКТИВЕН 30 ДНЕЙ</span>
-              <span style="font-size:0.85rem; color:var(--text-secondary); margin-left:8px;">Тариф: «Каптёрка ПРО»</span>
-            </div>
-            <div style="font-family:var(--font-mono); font-size:0.85rem; color:var(--primary);" id="cabExpiryText">
-              Срок действия: 30 дней
-            </div>
-          </div>
-
-          <div class="vault-key-display">
-            <div>
-              <div style="font-size:0.75rem; color:var(--text-muted); font-family:var(--font-mono); margin-bottom:4px;">
-                ВАШ ПЕРСОНАЛЬНЫЙ ВОЕННЫЙ КЛЮЧ:
+              <div class="vault-key-card" id="cabActiveKeyCard" style="display:none;">
+                <div class="v2-card-topline">
+                  <div>
+                    <span class="badge badge-gold" id="cabStatusBadge">PRO АКТИВЕН</span>
+                    <small id="cabExpiryText">30 дней</small>
+                  </div>
+                  <button class="btn btn-gold btn-sm" onclick="copyCabinetKey()">Скопировать</button>
+                </div>
+                <div class="v2-license-key" id="cabActiveKeyDisp">—</div>
+                <div class="v2-note">В приложении откройте раздел лицензии и вставьте этот ключ.</div>
               </div>
-              <div class="vault-key-text" id="cabActiveKeyDisp" style="color:var(--accent-gold); font-size:1.3rem; font-weight:bold;">—</div>
-            </div>
-            <button class="btn btn-gold btn-lg" onclick="copyCabinetKey()">
-              📋 Скопировать ключ
-            </button>
-          </div>
 
-          <div class="vault-instruction-box">
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
-              <strong>Как активировать ключ в мобильном приложении «Каптёрка»:</strong>
-              <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('cabinet')" class="btn btn-primary btn-sm">
-                📥 Скачать APK v3.4.9 (18 МБ)
-              </a>
-            </div>
-            1. Нажмите кнопку <strong>«Скопировать ключ»</strong> выше.<br>
-            2. Откройте приложение на телефоне ➔ нажмите на верхний золотой баннер лицензии.<br>
-            3. Перейдите во вкладку <strong>«Оплата и СБП»</strong> ➔ вставьте скопированный ключ в поле <em>KAPT-XXXX-XXXX-XXXX</em>.<br>
-            4. Нажмите <strong>«Ввести»</strong> — приложение офлайн активирует 30 дней ПРО-доступа!
-          </div>
-        </div>
-
-        <!-- Карточка 2: Когда лицензия еще НЕ оплачена / не активирована -->
-        <div class="vault-key-card" id="cabNoKeyCard" style="display:block; border-color:var(--border-color); background:#0c120e;">
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-            <div>
-              <span class="badge" style="background:#222; color:#888;">БАЗОВЫЙ ДОСТУП</span>
-              <span style="font-size:0.85rem; color:var(--text-secondary); margin-left:8px;">Лицензия не активирована</span>
-            </div>
-          </div>
-
-          <div style="margin:16px 0;">
-            <p style="font-size:0.9rem; color:var(--text-secondary); margin-bottom:12px; line-height:1.45;">
-              Для разблокировки неограниченного учета имущества, складов и синхронизации без интернета оформите подписку на 30 дней.
-            </p>
-            <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:16px;">
-              <button class="btn btn-gold btn-lg" onclick="switchMainTab('tabPayment')">
-                💳 Приобрести ключ ПРО на 30 дней (490 ₽)
-              </button>
-            </div>
-
-            <!-- Блок привязки ключа, полученного в Android-приложении -->
-            <div style="background:rgba(255,179,0,0.05); border:1px dashed rgba(255,179,0,0.3); border-radius:var(--radius-sm); padding:12px 14px;">
-              <div style="font-size:0.82rem; color:var(--accent-gold); font-weight:bold; margin-bottom:6px;">
-                Уже оплатили в приложении на телефоне или получили военный ключ?
+              <div class="vault-key-card" id="cabNoKeyCard" style="display:block;">
+                <div class="v2-card-topline">
+                  <div>
+                    <span class="badge">БАЗОВЫЙ ДОСТУП</span>
+                    <small>PRO не активирован</small>
+                  </div>
+                  <button class="btn btn-gold btn-sm" onclick="switchMainTab('tabPayment')">Оформить PRO</button>
+                </div>
+                <div class="v2-note">Уже получили лицензионный ключ?</div>
+                <div class="v2-key-link-row">
+                  <input type="text" id="cabManualKeyInput" class="form-input mono" placeholder="KAPT-XXXX-XXXX-XXXX">
+                  <button class="btn btn-outline btn-sm" onclick="linkLicenseKeyInCabinet()">Привязать</button>
+                </div>
               </div>
-              <p style="font-size:0.78rem; color:var(--text-muted); margin-bottom:8px; line-height:1.4;">
-                Введите ключ из приложения (KAPT-XXXX-XXXX-XXXX), чтобы синхронизировать ваш сайт и личный кабинет:
-              </p>
-              <div style="display:flex; gap:8px; max-width:480px;">
-                <input type="text" id="cabManualKeyInput" class="form-input mono" placeholder="KAPT-XXXX-XXXX-XXXX" style="font-size:0.9rem; color:var(--accent-gold); font-weight:700;">
-                <button class="btn btn-outline btn-sm" onclick="linkLicenseKeyInCabinet()" style="white-space:nowrap;">
-                  🔗 Привязать
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        <!-- Сетка: Профиль бойца + Ключ подразделения -->
-        <div class="cabinet-card" style="max-width:100%; margin-bottom:24px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:18px; border-bottom:1px solid var(--border-color); padding-bottom:12px;">
-            <h3 style="font-size:1.1rem; color:var(--text-primary);">Данные бойца и Подразделения</h3>
-            <div style="display:flex; gap:8px;">
-              <button class="btn btn-outline btn-sm" onclick="logoutUserSession()" title="Выйти из учетной записи и очистить сессию браузера">🚪 Выйти</button>
-              <button class="btn btn-primary btn-sm" onclick="saveCabinetProfile()">💾 Сохранить</button>
-            </div>
-          </div>
-
-          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:18px;">
-            <div class="form-group">
-              <label class="form-label">Позывной бойца:</label>
-              <input type="text" id="cabCallsignInput" class="form-input" value="" placeholder="Например: Сокол, Буран">
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Воинское звание / Должность:</label>
-              <input type="text" id="cabRankInput" class="form-input" value="" placeholder="Старшина, Командир взвода">
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Наименование подразделения:</label>
-              <input type="text" id="cabUnitNameInput" class="form-input" value="" placeholder="Введите наименование (например: 1-я рота, Взвод БПЛА)">
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Ключ роты для синхронизации (не привязан к лицензии):</label>
-              <div style="display:flex; gap:8px;">
-                <input type="text" id="cabUnitKeyInput" class="form-input mono" value="" placeholder="Введите ключ или нажмите Новый" style="color:var(--accent-gold); font-weight:700;">
-                <button class="btn btn-outline btn-sm" onclick="generateNewUnitKey()" title="Сформировать новый ключ роты">🔄 Новый</button>
+              <div class="cabinet-card">
+                <div class="v2-card-heading">
+                  <div><span>Профиль</span><h3>Ваши данные</h3></div>
+                  <button class="btn btn-primary btn-sm" onclick="saveCabinetProfile()">Сохранить</button>
+                </div>
+                <div class="v2-form-grid">
+                  <div class="form-group">
+                    <label class="form-label">Имя / позывной</label>
+                    <input type="text" id="cabCallsignInput" class="form-input" placeholder="Сокол">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Должность / звание</label>
+                    <input type="text" id="cabRankInput" class="form-input" placeholder="По желанию">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Подразделение</label>
+                    <input type="text" id="cabUnitNameInput" class="form-input" placeholder="Название подразделения">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Ключ подразделения</label>
+                    <div class="v2-input-action">
+                      <input type="text" id="cabUnitKeyInput" class="form-input mono" placeholder="kapt_xxxxxx">
+                      <button class="btn btn-outline btn-sm" onclick="generateNewUnitKey()">Новый</button>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" id="cabEmailInput" class="form-input" placeholder="name@domain.ru">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Телефон / Telegram</label>
+                    <input type="text" id="cabPhoneInput" class="form-input" placeholder="Контакт">
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div class="form-group">
-              <label class="form-label">Email для получения чеков (54-ФЗ):</label>
-              <input type="email" id="cabEmailInput" class="form-input" value="" placeholder="Введите ваш email (например: name@domain.ru)">
+            <div class="cabinet-card v2-history-card">
+              <div class="v2-card-heading">
+                <div><span>Лицензии</span><h3>История ключей</h3></div>
+                <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('cabinet')" class="btn btn-outline btn-sm">Скачать APK</a>
+              </div>
+              <div class="keys-table-container">
+                <table class="keys-vault-table">
+                  <thead><tr><th>Ключ</th><th>Пользователь</th><th>Статус</th><th>Дата</th><th></th></tr></thead>
+                  <tbody id="keysHistoryTableBody"></tbody>
+                </table>
+              </div>
+              <div class="v2-support-strip">
+                <span>Нужна помощь?</span>
+                <a href="https://t.me/kapterka_help_bot" target="_blank" rel="noopener noreferrer">Telegram-бот</a>
+              </div>
             </div>
-
-            <div class="form-group">
-              <label class="form-label">Телефон / Telegram для связи:</label>
-              <input type="text" id="cabPhoneInput" class="form-input" value="" placeholder="Введите контакт (например: +7 999 000-00-00)">
-            </div>
-          </div>
-
-          <div style="background:rgba(255,179,0,0.08); border-left:3px solid var(--accent-gold); padding:12px 14px; border-radius:0 var(--radius-sm) var(--radius-sm) 0; font-size:0.82rem; color:var(--text-primary); margin-top:10px;">
-            <strong>Архитектурное обновление:</strong> Ограничение <em>«1 ключ на одно подразделение»</em> полностью снято. Лицензия принадлежит лично бойцу (30 дней), а склад синхронизируется между десятками бойцов роты по общему коду подразделения.
           </div>
         </div>
-
-        <!-- Таблица: История выданных ключей -->
-        <div class="cabinet-card" style="max-width:100%;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
-            <h3 style="font-size:1.05rem;">История ваших ключей и лицензий</h3>
-            <button class="btn btn-outline btn-sm" onclick="switchMainTab('tabPayment')">+ Оплатить новый ключ (490 ₽)</button>
-          </div>
-
-          <div class="keys-table-container">
-            <table class="keys-vault-table">
-              <thead>
-                <tr>
-                  <th>КЛЮЧ ЛИЦЕНЗИИ</th>
-                  <th>ПОЗЫВНОЙ / ПОДРАЗДЕЛЕНИЕ</th>
-                  <th>СТАТУС</th>
-                  <th>ДАТА ВЫДАЧИ</th>
-                  <th>ДЕЙСТВИЕ</th>
-                </tr>
-              </thead>
-              <tbody id="keysHistoryTableBody">
-                <!-- Динамически заполняется через JS -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        </div> <!-- Закрытие cabinetContent -->
-
       </div>
     </section>
   </div>
 
-  <!-- ========================================================================= -->
-  <!-- TAB 3: ОПЛАТА ЮKASSA И СБП (TAB PAYMENT, 1 В 1 КАК В ПРИЛОЖЕНИИ) -->
-  <!-- ========================================================================= -->
   <div id="tabPayment" class="app-view-tab">
     <section class="section">
       <div class="container">
-        <div class="section-header">
-          <div class="badge badge-gold">Тарифы и возможности</div>
-          <h2>Тарифы и PRO-доступ</h2>
-          <p>Новый пользователь получает 3 дня полного демо-доступа. После демо PRO-лицензия (490 ₽ / 30 дней) открывает операции, совместную синхронизацию и экспорт отчётов в Excel</p>
+        <div class="section-header v2-page-head">
+          <div class="badge badge-gold">Каптёрка PRO</div>
+          <h2>30 дней полного доступа</h2>
+          <p>Один тариф. Оплата через ЮKassa, СБП или банковскую карту.</p>
         </div>
 
         <div class="yookassa-checkout-card">
           <div class="checkout-grid">
-            
-            <!-- Левая колонка: Форма и Тариф -->
-            <div>
-              <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
-                <h3 style="font-size:1.35rem; color:var(--text-primary);">Тариф: «30 дней доступа»</h3>
-                <span class="badge badge-gold" style="font-size:0.9rem; padding:6px 12px;">490 ₽</span>
+            <div class="v2-checkout-main">
+              <div class="v2-price-row">
+                <div><span>PRO • 30 дней</span><strong>490 ₽</strong></div>
+                <small>3 дня демо для новых пользователей</small>
               </div>
-              <p style="font-size:0.88rem; color:var(--text-secondary); line-height:1.55; margin-bottom:14px;">
-                Полный доступ ко всем возможностям блокнота на месяц. Ключ активации появляется сразу после оплаты и сохраняется в вашем Личном кабинете.
-              </p>
 
               <div class="payment-method-pills">
-                <span class="payment-method-pill active">⚡ СБП (QR-код без комиссии)</span>
-                <span class="payment-method-pill active">💳 МИР / Любая карта</span>
-                <span class="payment-method-pill active">🟢 SberPay</span>
-                <span class="payment-method-pill active">📄 Чек на email</span>
+                <span class="payment-method-pill active">СБП</span>
+                <span class="payment-method-pill active">МИР / карта</span>
+                <span class="payment-method-pill active">SberPay</span>
+                <span class="payment-method-pill active">Чек на Email</span>
               </div>
 
-              <div class="form-group">
-                <label class="form-label">Ваше имя или позывной (для ключа):</label>
-                <input type="text" id="payCallsignInput" class="form-input" placeholder="Например: Александр, Сокол">
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Email (для отправки чека):</label>
-                <input type="email" id="payEmailInput" class="form-input" placeholder="name@mail.ru">
-                <div class="form-helper">Официальный чек поступит на почту сразу после оплаты.</div>
-              </div>
-
-              <!-- Шаг 1: Первичная кнопка оплаты -->
-              <div id="boxPaymentInitial" style="margin-top:20px;">
-                <div style="background: rgba(255, 60, 60, 0.1); border: 1px solid rgba(255, 60, 60, 0.4); border-radius: 6px; padding: 10px; margin-bottom: 12px; font-size: 0.85rem; color: #ff6b6b; text-align: center;">
-                  <b>⚠️ Внимание:</b> Для успешной оплаты отключите VPN (банки блокируют платежи с иностранных серверов).
+              <div class="v2-form-grid">
+                <div class="form-group">
+                  <label class="form-label">Имя или позывной</label>
+                  <input type="text" id="payCallsignInput" class="form-input" placeholder="Например: Сокол">
                 </div>
-                <button id="btnPayYooKassaMain" class="btn btn-gold btn-lg" style="width:100%; font-size:1.05rem;" onclick="processYooKassaPayment()">
-                  💳 Оплатить 490 ₽ через ЮKassa / СБП
-                </button>
-                <div style="font-size:0.75rem; color:var(--text-muted); margin-top:8px; text-align:center;">
-                  Безопасное SSL-соединение • Магазин ЮKassa ID: 1450722
+                <div class="form-group">
+                  <label class="form-label">Email для чека и ключа</label>
+                  <input type="email" id="payEmailInput" class="form-input" placeholder="name@mail.ru">
                 </div>
               </div>
 
-              <!-- Шаг 2: Блок ожидания подтверждения оплаты -->
-              <div id="boxPaymentPending" style="display:none; margin-top:16px; background:#0e1c12; border:1px solid var(--primary); border-radius:var(--radius-md); padding:16px;">
-                <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-                  <span style="color:var(--primary); font-size:1.1rem;">⏳</span>
-                  <strong style="color:var(--primary); font-size:0.95rem;">Ожидание подтверждения оплаты от банка</strong>
-                </div>
-                <p style="font-size:0.84rem; color:var(--text-secondary); line-height:1.45; margin-bottom:12px;">
-                  Завершите перевод 490 ₽ в открывшемся окне ЮKassa (через СБП или банковской картой).
-                </p>
+              <div id="boxPaymentInitial">
+                <div class="v2-payment-warning">Если банк отклоняет переход к оплате, временно отключите VPN.</div>
+                <button id="btnPayYooKassaMain" class="btn btn-gold btn-lg v2-full-btn" onclick="processYooKassaPayment()">Оплатить 490 ₽ через ЮKassa</button>
+                <div class="v2-payment-footnote">Платёж проводится на стороне ЮKassa • магазин №1450722</div>
+              </div>
 
-                <!-- Информационная плашка безопасности и выдачи -->
-                <div style="background:rgba(255,179,0,0.08); border-left:3px solid var(--accent-gold); padding:12px; border-radius:0 var(--radius-sm) var(--radius-sm) 0; font-size:0.82rem; color:var(--text-primary); margin-bottom:14px; line-height:1.5;">
-                  🛡️ <strong>Порядок выдачи ключа:</strong> Нажмите кнопку ниже после оплаты, чтобы запросить ключ у дежурного.
-                </div>
-
-                <!-- Кнопка проверки оплаты -->
-                <button id="btnManualVerify" class="btn btn-gold btn-lg" style="width:100%; font-size:1.02rem; font-weight:bold; box-shadow:0 0 16px rgba(255,179,0,0.35); margin-bottom:14px;" onclick="claimPaidLicenseKey()">
-                  ⚡ Я оплатил — Запросить ключ
-                </button>
-
-                <div style="background:#0c160e; border:1px solid rgba(141,170,89,0.35); border-radius:var(--radius-sm); padding:10px 12px; margin-bottom:14px; font-size:0.8rem; color:var(--text-secondary); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
-                  <span>💬 Нужен ключ прямо сейчас или есть вопрос?</span>
-                  <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                    <a href="https://t.me/kapterka_help_bot" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" style="font-size:0.75rem; color:#5bc0be; border-color:#5bc0be; padding:4px 8px; text-decoration:none;">
-                      🤖 Бот поддержки @kapterka_help_bot
-                    </a>
-                    <a href="https://t.me/Levaminbat" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" style="font-size:0.75rem; color:#29b6f6; border-color:rgba(41,182,246,0.5); padding:4px 8px; text-decoration:none;">
-                      ✈️ @Levaminbat
-                    </a>
-                  </div>
-                </div>
-
-                <div style="margin-top:10px; text-align:center; margin-bottom:14px;">
-                  <a href="https://yookassa.ru/my/i/apiQMG65ZHIE/l" target="_blank" class="btn btn-outline btn-sm" style="display:inline-block; font-size:0.82rem; color:var(--accent-gold); border-color:var(--accent-gold);">
-                    🔗 Окно оплаты закрылось? Открыть ЮKassa снова ➔
-                  </a>
-                </div>
-
-                <!-- Поле активации ключа из чека/письма -->
-                <div style="background:#141b16; border:1px solid rgba(141,170,89,0.3); border-radius:var(--radius-sm); padding:14px;">
-                  <label class="form-label" style="font-size:0.8rem; color:var(--text-primary); font-weight:bold;">
-                    Уже получили ключ в письме? Введите его для активации:
-                  </label>
-                  <div style="display:flex; gap:8px; margin-top:6px;">
-                    <input type="text" id="payOrderIdInput" class="form-input mono" placeholder="KAPT-XXXX-XXXX-XXXX" style="font-size:0.85rem; padding:8px 10px; color:var(--accent-gold); font-weight:bold;">
-                    <button class="btn btn-primary btn-sm" onclick="verifyWithManualOrderId()" style="white-space:nowrap;">Активировать</button>
-                  </div>
-                  <div style="font-size:0.72rem; color:var(--text-muted); margin-top:6px;">
-                    💡 Введите ключ из официального письма в формате KAPT-XXXX-XXXX-XXXX.
+              <div id="boxPaymentPending" style="display:none;">
+                <div class="v2-pending-head"><span>⏳</span><div><strong>Ожидаем подтверждение</strong><small>Завершите оплату в открывшемся окне ЮKassa.</small></div></div>
+                <button id="btnManualVerify" class="btn btn-gold btn-lg v2-full-btn" onclick="claimPaidLicenseKey()">Я оплатил — проверить</button>
+                <div class="v2-key-activate">
+                  <label class="form-label">Уже получили ключ?</label>
+                  <div class="v2-input-action">
+                    <input type="text" id="payOrderIdInput" class="form-input mono" placeholder="KAPT-XXXX-XXXX-XXXX">
+                    <button class="btn btn-primary btn-sm" onclick="verifyWithManualOrderId()">Активировать</button>
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- Правая колонка: Информация о лицензии -->
-            <div style="background:#0a0e0b; border:1px solid var(--border-color); border-radius:var(--radius-lg); padding:22px; display:flex; flex-direction:column; justify-content:space-between;">
-              <div>
-                <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
-                  <span style="color:var(--primary); font-size:1.2rem;">🛡️</span>
-                  <h4 style="color:var(--text-primary); font-size:0.95rem;">ИНФОРМАЦИЯ О ЛИЦЕНЗИИ</h4>
-                </div>
-                <p style="font-size:0.82rem; color:var(--text-secondary); line-height:1.5; margin-bottom:14px;">
-                  Персональный лицензионный ключ бойца выдается <strong>строго после фактического зачисления оплаты</strong> через банковский шлюз ЮKassa.
-                </p>
-
-                <div class="live-key-generation-box">
-                  <div style="font-size:0.72rem; color:var(--text-muted); font-family:var(--font-mono); text-transform:uppercase;">
-                    СТАТУС ЛИЦЕНЗИИ:
-                  </div>
-                  <div class="live-key-result" id="liveGeneratedKeyDisplay" style="font-size:1.02rem; word-break:break-all; font-weight:bold; color:var(--accent-gold);">
-                    Ожидание оплаты 490 ₽
-                  </div>
-                  <div style="font-size:0.78rem; color:var(--text-muted); font-family:var(--font-mono); margin-top:6px;" id="liveKeyStatusDisplay">
-                    Нажмите «Оплатить 490 ₽», чтобы перейти в защищенный шлюз ЮKassa
-                  </div>
-                </div>
+            <aside class="v2-checkout-status">
+              <div class="v2-status-icon">✓</div>
+              <span>Статус лицензии</span>
+              <div class="live-key-generation-box">
+                <div class="live-key-result" id="liveGeneratedKeyDisplay">Ожидание оплаты 490 ₽</div>
+                <div id="liveKeyStatusDisplay">После подтверждения оплаты лицензионный ключ можно активировать в приложении.</div>
               </div>
-
-              <div style="margin-top:16px; display:flex; flex-direction:column; gap:10px;">
-                <button class="btn btn-primary btn-lg" id="btnCopyPaidKey" onclick="copyPaidKeyAction()" style="display:none;">
-                  📋 Скопировать полученный ключ
-                </button>
-                <button class="btn btn-outline btn-sm" id="btnSendKeyToEmail" onclick="openLicenseMailClient()" style="display:none; text-align:center; color:var(--accent-gold); border-color:var(--accent-gold);">
-                  ✉️ Открыть письмо с ключом
-                </button>
-                <button class="btn btn-outline btn-sm" id="btnGoToCabinetAfterPay" onclick="switchMainTab('tabCabinet')" style="display:none; text-align:center;">
-                  👤 Открыть в Личном кабинете
-                </button>
-                <div style="font-size:0.76rem; color:var(--text-muted); line-height:1.45;">
-                  🔒 <em>Защита транзакций: автоматическая выдача без подтвержденной оплаты в банке заблокирована.</em>
-                </div>
+              <button class="btn btn-primary btn-lg" id="btnCopyPaidKey" onclick="copyPaidKeyAction()" style="display:none;">Скопировать ключ</button>
+              <button class="btn btn-outline btn-sm" id="btnGoToCabinetAfterPay" onclick="switchMainTab('tabCabinet')" style="display:none;">Открыть кабинет</button>
+              <div class="v2-trust-list">
+                <span>✓ Чек на Email</span>
+                <span>✓ Ключ формата KAPT-…</span>
+                <span>✓ Лицензия сохраняется при обновлении приложения</span>
               </div>
-            </div>
-
+            </aside>
           </div>
         </div>
       </div>
     </section>
   </div>
 
-  <!-- ========================================================================= -->
-  <!-- TAB 4: ПОДРАЗДЕЛЕНИЯ И СИНХРОНИЗАЦИЯ (TAB SYNC) -->
-  <!-- ========================================================================= -->
   <div id="tabSync" class="app-view-tab">
     <section class="section">
       <div class="container">
-        <div class="section-header">
-          <div class="badge">Мультипользовательская архитектура</div>
-          <h2>Синхронизация подразделения без ограничений</h2>
-          <p>Разделение персональной лицензии бойца и общего ключа ротного склада</p>
+        <div class="section-header v2-page-head">
+          <div class="badge">Совместная работа</div>
+          <h2>Синхронизация подразделения</h2>
+          <p>Персональная лицензия отвечает за доступ, а общий ключ <code>kapt_...</code> объединяет устройства одного подразделения.</p>
         </div>
 
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:24px; margin-bottom:28px;">
-          <div class="feature-card" style="border-color:var(--accent-gold);">
-            <div class="feature-icon-box" style="color:var(--accent-gold); border-color:var(--accent-gold);">🔑</div>
-            <h3 style="color:var(--accent-gold);">1. Персональная лицензия бойца</h3>
-            <p>
-              Формат: <code>KAPT-XXXX-XXXX-XXXX</code><br>
-              Привязывается к бойцу на 30 суток. Боец может быть переведен в другую роту, взвод или на другой склад — его оплаченная лицензия остается с ним на его устройстве.
-            </p>
-            <span class="feature-tag" style="color:var(--accent-gold);">Индивидуальный доступ</span>
+        <div class="v2-sync-hero">
+          <div class="v2-sync-side">
+            <span class="v2-sync-number">01</span>
+            <h3>Персональная лицензия</h3>
+            <code>KAPT-XXXX-XXXX-XXXX</code>
+            <p>Принадлежит пользователю и не меняется при переходе в другое подразделение.</p>
           </div>
-
-          <div class="feature-card" style="border-color:var(--primary);">
-            <div class="feature-icon-box">🛡️</div>
-            <h3 style="color:var(--primary);">2. Ключ склада подразделения</h3>
-            <p>
-              Формат: <code>kapt_xxxxxx</code><br>
-              Общий код синхронизации имущества роты. Все бойцы одного подразделения (командир, старшина, начсклада, пулеметчики) вводят этот код для работы с единым общим складом.
-            </p>
-            <span class="feature-tag">Командный склад</span>
+          <div class="v2-sync-divider">+</div>
+          <div class="v2-sync-side">
+            <span class="v2-sync-number">02</span>
+            <h3>Ключ подразделения</h3>
+            <code>kapt_xxxxxx</code>
+            <p>Одинаковый код на устройствах, которые должны видеть общий склад.</p>
           </div>
         </div>
 
-        <div class="vault-key-card" style="background:#101712;">
-          <h3 style="font-size:1.15rem; color:var(--text-primary); margin-bottom:10px;">Как организовать работу роты:</h3>
-          <ol style="padding-left:20px; color:var(--text-secondary); font-size:0.9rem; line-height:1.7;">
-            <li>Старшина или командир роты создает склад и нажимает <strong>«Сформировать ключ роты»</strong> (например, <code>kapt_59e13b</code>).</li>
-            <li>Каждый боец подразделения оплачивает или получает свой персональный ключ (<code>KAPT-XXXX-XXXX-XXXX</code>) на сайте или в приложении.</li>
-            <li>Бойцы вводят общий ключ роты в разделе <em>«Синхронизация подразделения»</em> на своих смартфонах.</li>
-            <li><strong>Результат:</strong> Вся рота видит единые актуальные остатки боеприпасов, бронежилетов, аптечек и заявок без взаимных блокировок!</li>
-          </ol>
-          <div style="margin-top:16px;">
-            <button class="btn btn-gold" onclick="switchMainTab('tabCabinet')">Управлять подразделением в кабинете ➔</button>
+        <div class="v2-steps-card" id="tabSyncMechanism">
+          <div class="v2-card-heading"><div><span>Как подключиться</span><h3>Три шага</h3></div><button class="btn btn-primary btn-sm" onclick="switchMainTab('tabCabinet')">Открыть кабинет</button></div>
+          <div class="v2-step-row">
+            <div><b>1</b><span><strong>Создайте ключ</strong><small>Старшина или ответственный создаёт <code>kapt_...</code>.</small></span></div>
+            <div><b>2</b><span><strong>Передайте участникам</strong><small>На нужных устройствах вводится тот же ключ.</small></span></div>
+            <div><b>3</b><span><strong>Синхронизируйте</strong><small>При наличии связи устройства обмениваются изменениями.</small></span></div>
           </div>
         </div>
 
-        <!-- Section: Механизм облачной синхронизации и Ключ подразделения -->
-        <div id="tabSyncMechanism" style="margin-top: 36px; border-top: 1px solid var(--border-color); padding-top: 32px;">
-          <div class="section-header" style="text-align: left; margin-bottom: 24px;">
-            <div class="badge" style="background: rgba(91,192,190,0.15); color: #5bc0be; border: 1px solid rgba(91,192,190,0.3);">Архитектура связи</div>
-            <h2 style="font-size: 1.65rem; margin: 10px 0;">Механизм облачной синхронизации и Ключ подразделения</h2>
-            <p style="color: var(--text-secondary); margin: 0; font-size: 0.95rem;">
-              Ядро системы — это уникальный <strong>Ключ подразделения</strong>. Он работает как пароль от изолированного облачного контейнера, в котором хранятся данные только вашей роты, взвода или батальона.
-            </p>
-          </div>
-
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
-            <div class="feature-card" style="border-top: 3px solid var(--primary); background: var(--bg-card); padding: 24px;">
-              <div style="font-weight: 700; margin-bottom: 10px; color: #fff; font-size: 1.05rem;">1. Создание ключа (Командир)</div>
-              <p style="color: var(--text-secondary); font-size: 0.88rem; line-height: 1.6; margin: 0;">При первой регистрации программа автоматически генерирует уникальный 6-значный код (например, <code>kapt_b5e9f1</code>). Командир может заменить его на свой (например, <code>ROTA_1_VKS</code>). Этот ключ навсегда привязывается к профилю в настройках.</p>
-            </div>
-
-            <div class="feature-card" style="border-top: 3px solid var(--primary); background: var(--bg-card); padding: 24px;">
-              <div style="font-weight: 700; margin-bottom: 10px; color: #fff; font-size: 1.05rem;">2. Подключение бойцов</div>
-              <p style="color: var(--text-secondary); font-size: 0.88rem; line-height: 1.6; margin: 0;">Второй боец при установке приложения выбирает вкладку «Войти в подразделение» и вписывает <strong>точно такой же ключ</strong>. Программа валидирует ключ и связывает устройства в единую защищенную сеть.</p>
-            </div>
-
-            <div class="feature-card" style="border-top: 3px solid var(--primary); background: var(--bg-card); padding: 24px;">
-              <div style="font-weight: 700; margin-bottom: 10px; color: #fff; font-size: 1.05rem;">3. Облачный хаб (Firebase)</div>
-              <p style="color: var(--text-secondary); font-size: 0.88rem; line-height: 1.6; margin: 0;">При наличии связи приложение обращается к базе данных Google Firebase по вашему ключу. Оно скачивает измененные остатки/заявки от других бойцов и загружает ваши проведенные операции. Вся группа видит общую картину.</p>
-            </div>
-
-            <div class="feature-card" style="border-top: 3px solid var(--primary); background: var(--bg-card); padding: 24px;">
-              <div style="font-weight: 700; margin-bottom: 10px; color: #fff; font-size: 1.05rem;">4. Локальный Offline-режим</div>
-              <p style="color: var(--text-secondary); font-size: 0.88rem; line-height: 1.6; margin: 0;">Если интернета нет из-за работы РЭБ или нахождения в бункере, система переключается на внутреннюю базу SQLite (Room DB). Вы продолжаете выдавать имущество, а программа выгрузит данные в облако, как только появится сеть.</p>
-            </div>
-          </div>
+        <div class="v2-mini-features" id="tabSyncFeatures">
+          <div><span>📦</span><strong>Общий склад</strong><small>Точки, остатки и операции.</small></div>
+          <div><span>📴</span><strong>Работа без сети</strong><small>Локальная Room-база продолжает работать.</small></div>
+          <div><span>🔄</span><strong>Обмен при связи</strong><small>Изменения отправляются в общий контур синхронизации.</small></div>
+          <div><span>📱</span><strong>Несколько устройств</strong><small>Активные устройства отображаются в приложении.</small></div>
         </div>
 
-        <!-- Section: Полный функционал МТО (Вынесен в отдельный защищенный блок) -->
-        <div id="tabSyncFeatures" style="margin-top: 48px; border-top: 1px solid var(--border-color); padding-top: 36px;">
-          <div class="section-header" style="text-align: left; margin-bottom: 24px;">
-            <div class="badge" style="background: rgba(141,170,89,0.15); color: var(--primary); border: 1px solid rgba(141,170,89,0.3);">Модули и уставной учет</div>
-            <h2 style="font-size: 1.65rem; margin: 10px 0;">Функциональные возможности комплекса «Каптёрка Про»</h2>
-            <p style="color: var(--text-secondary); margin: 0; font-size: 0.95rem;">Все инструменты воинского материального учета сведены в единую автономную систему без зависимости от интернета.</p>
+        <div class="v2-security-note" id="tabSyncOpsec">
+          <div>
+            <span>Безопасность</span>
+            <h3>Не передавайте ключ подразделения посторонним</h3>
+            <p>Ключ <code>kapt_...</code> используется для разделения данных подразделений. При смене состава его можно заменить в кабинете или приложении.</p>
           </div>
-
-          <div class="features-grid">
-            <div class="feature-card">
-              <div class="feature-icon-box">📦</div>
-              <h3>Многоскладской учет и точки</h3>
-              <p>Неограниченное число точек хранения: Базовый склад, Рота, ВОП «Север», СП «Высота», Автопарк, склад РАВ и Вещевой службы.</p>
-              <span class="feature-tag">Батальон / Рота / Взвод</span>
-            </div>
-
-            <div class="feature-card">
-              <div class="feature-icon-box">📴</div>
-              <h3>100% Офлайн и защита от РЭБ</h3>
-              <p>База данных SQLite (Room) работает локально на телефоне. Программа не требует интернета или сотовой связи при ведении учета.</p>
-              <span class="feature-tag">Полная автономность</span>
-            </div>
-
-            <div class="feature-card">
-              <div class="feature-icon-box">📜</div>
-              <h3>Форма № 8 и Форма № 18</h3>
-              <p>Оформление официальных воинских актов расхода (ф. 8) и ведение сквозной книги учета наличия и движения мат. средств (ф. 18).</p>
-              <span class="feature-tag">Уставные нормативы</span>
-            </div>
-
-            <div class="feature-card">
-              <div class="feature-icon-box">📊</div>
-              <h3>Экспорт в Excel и CSV</h3>
-              <p>Мгновенная выгрузка оборотных ведомостей и журналов операций в таблицы с разделителем «;» для открытия на компьютерах штаба.</p>
-              <span class="feature-tag">Готово для штаба</span>
-            </div>
-
-            <div class="feature-card">
-              <div class="feature-icon-box">🔑</div>
-              <h3>Персональный ключ бойца</h3>
-              <p>16-значный персональный ключ <code>KAPT-XXXX-XXXX-XXXX</code>. Боец может свободно менять подразделения — его лицензия сохраняется.</p>
-              <span class="feature-tag">Свобода ротации</span>
-            </div>
-
-            <div class="feature-card">
-              <div class="feature-icon-box">📡</div>
-              <h3>Синхронизация складов роты</h3>
-              <p>Связывание телефонов бойцов роты по общему ключу <code>kapt_xxxxxx</code>. Общий баланс БК и имущества при появлении связи.</p>
-              <span class="feature-tag">Командная работа</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Section: Архитектура безопасности (OPSEC) фронтового уровня -->
-        <div id="tabSyncOpsec" style="margin-top: 48px; border-top: 1px solid var(--border-color); padding-top: 36px;">
-          <div class="section-header" style="text-align: left; margin-bottom: 24px;">
-            <div class="badge" style="background: rgba(255, 60, 60, 0.15); color: #ff5555; border: 1px solid rgba(255, 60, 60, 0.3);">Архитектура безопасности (OPSEC)</div>
-            <h2 style="font-size: 1.65rem; margin: 10px 0; font-family: monospace;">Безопасность фронтового уровня</h2>
-            <p style="color: var(--text-secondary); margin: 0; font-family: monospace; font-size: 0.92rem; line-height: 1.6;">
-              Техническое обоснование безопасности использования программного комплекса «Каптёрка ПРО» в условиях активного радиоэлектронного подавления и перехвата (РЭБ / РЭР). Продукт спроектирован с учетом требований информационной безопасности (ИБ) для работы на линии боевого соприкосновения.
-            </p>
-          </div>
-
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
-            <div class="security-card" style="background: var(--bg-card); padding: 24px; border-radius: 12px; border-left: 4px solid #ff5555; border: 1px solid var(--border-color); border-left: 4px solid #ff5555;">
-              <div style="font-weight: 700; font-size: 1.05rem; margin-bottom: 10px; color: #fff; display: flex; align-items: center; gap: 8px;">
-                <span>🚫</span> 1. Нулевая телеметрия и геолокация
-              </div>
-              <p style="color: var(--text-secondary); font-size: 0.88rem; line-height: 1.6; margin: 0;">Приложение не запрашивает и не использует API геолокации Android (GPS/ГЛОНАСС). В манифесте полностью отсутствуют разрешения на доступ к геолокации. Сторонние аналитические трекеры исключены из сборки.</p>
-            </div>
-
-            <div class="security-card" style="background: var(--bg-card); padding: 24px; border-radius: 12px; border: 1px solid var(--border-color); border-left: 4px solid var(--primary);">
-              <div style="font-weight: 700; font-size: 1.05rem; margin-bottom: 10px; color: #fff; display: flex; align-items: center; gap: 8px;">
-                <span>🔒</span> 2. Изолированная локальная БД
-              </div>
-              <p style="color: var(--text-secondary); font-size: 0.88rem; line-height: 1.6; margin: 0;">Весь массив учетных данных (остатки БК, экипировка, списки бойцов) сохраняется исключительно в изолированном хранилище устройства (App-Specific Storage) в формате SQLite (Room). Архитектура построена на парадигме 100% Offline-First.</p>
-            </div>
-
-            <div class="security-card" style="background: var(--bg-card); padding: 24px; border-radius: 12px; border: 1px solid var(--border-color); border-left: 4px solid var(--accent-gold);">
-              <div style="font-weight: 700; font-size: 1.05rem; margin-bottom: 10px; color: #fff; display: flex; align-items: center; gap: 8px;">
-                <span>📴</span> 3. Режим радиотишины (No Push)
-              </div>
-              <p style="color: var(--text-secondary); font-size: 0.88rem; line-height: 1.6; margin: 0;">Синхронизация складов роты происходит исключительно по ручной команде пользователя. В приложении нет фоновых демонов и push-уведомлений, излучающих в радиоэфир.</p>
-            </div>
-
-            <div class="security-card" style="background: var(--bg-card); padding: 24px; border-radius: 12px; border: 1px solid var(--border-color); border-left: 4px solid #4a90e2;">
-              <div style="font-weight: 700; font-size: 1.05rem; margin-bottom: 10px; color: #fff; display: flex; align-items: center; gap: 8px;">
-                <span>🔑</span> 4. Оффлайн-Активация (Air-Gapped)
-              </div>
-              <p style="color: var(--text-secondary); font-size: 0.88rem; line-height: 1.6; margin: 0;">Активация военного ключа (KAPT) производится через криптографическую проверку контрольной суммы непосредственно на устройстве без обязательного соединения с биллингом.</p>
-            </div>
-          </div>
+          <button class="btn btn-outline btn-sm" onclick="openModal('modalSyncMech')">Подробнее о синхронизации</button>
         </div>
       </div>
     </section>
   </div>
 
-  <!-- ========================================================================= -->
-  <!-- TAB 5: СКАЧАТЬ ПРИЛОЖЕНИЕ (TAB DOWNLOAD) -->
-  <!-- ========================================================================= -->
   <div id="tabDownload" class="app-view-tab">
     <section class="section">
       <div class="container">
-        <div class="download-box">
-          <div class="badge" style="margin-bottom:16px;">Установка на Android</div>
-          <h2>Скачать мобильный комплекс «Каптёрка Про»</h2>
-          <p>Установите официальный APK-файл на смартфон или защищенный полевой планшет (Android 8.0+). Работает без Google Play и сервисов.</p>
-          
-          <div class="download-actions" style="display:flex; flex-direction:column; align-items:center; gap:12px;">
-            <div style="display:flex; gap:16px; flex-wrap:wrap; justify-content:center; align-items:center; width:100%;">
-              <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('direct')" class="btn btn-primary btn-lg" style="font-size:1.1rem; padding:16px 28px; box-shadow:0 0 20px rgba(141,170,89,0.4);">
-                📥 Скачать APK v3.4.9 (Прямая ссылка, 18 МБ)
-              </a>
-              <a href="javascript:void(0)" onclick="openModal('modalRuStore')" style="display:inline-block; transition:transform 0.2s ease;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                <img src="rustore_badge.svg" alt="Доступно в RuStore" width="180" height="54" style="display:block; height:54px; width:auto; border-radius:8px; box-shadow:0 4px 16px rgba(0,91,255,0.3);">
-              </a>
-            </div>
-            <div style="background:rgba(255,179,0,0.08); border:1px solid rgba(255,179,0,0.3); border-radius:8px; padding:10px 16px; max-width:620px; font-size:0.82rem; color:#ffd54f; text-align:center; line-height:1.45; margin-top:4px;">
-              🛡️ <strong>Безопасность загрузки:</strong> Если браузер на телефоне покажет предупреждение <em>«Файл может быть опасен»</em> — нажмите <em>«Всё равно скачать»</em>. Это стандартная системная защита Android для всех приложений, скачиваемых напрямую с официальных сайтов разработчиков.
-            </div>
-            <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap; justify-content:center;">
-              <a href="https://t.me/kapterka_pro" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-lg" style="font-size:0.95rem; border-color:#29b6f6; color:#29b6f6; background:rgba(41,182,246,0.08); display:inline-flex; align-items:center; gap:8px;">
-                <span>📢</span> Канал в Telegram (@kapterka_pro)
-              </a>
-              <a href="https://t.me/kapterka_help_bot" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-lg" style="font-size:0.95rem; border-color:#5bc0be; color:#5bc0be; background:rgba(91,192,190,0.08); display:inline-flex; align-items:center; gap:8px;">
-                <span>🤖</span> Бот поддержки (@kapterka_help_bot)
-              </a>
-              <a href="https://t.me/Levaminbat" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-lg" style="font-size:0.95rem; border-color:var(--accent-gold); color:var(--accent-gold); display:inline-flex; align-items:center; gap:8px;">
-                <span>✈️</span> @Levaminbat
-              </a>
-            </div>
-            <button class="btn btn-outline btn-sm" onclick="openModal('modalContact')" style="color:var(--text-secondary); border-color:rgba(255,255,255,0.15); margin-top:4px;">
-              💬 Нужна помощь с установкой на планшет/телефон?
-            </button>
-          </div>
-
-          <div class="download-meta" style="margin-top:20px;">
-            <span>Версия: 3.4.9 PRO • сборка 31</span>
-            <span>•</span>
-            <span>Размер: ~18 МБ</span>
-            <span>•</span>
-            <span>Android 8.0 - 15.0</span>
-            <span>•</span>
-            <span>100% Offline (РЭБ-защита)</span>
-          </div>
+        <div class="section-header v2-page-head">
+          <div class="badge">Android 8–15</div>
+          <h2>Установить Каптёрка PRO</h2>
+          <p>Официальная версия 3.4.9 • сборка 31.</p>
         </div>
 
-        <!-- Актуальные изменения версии 3.4.9 -->
-        <div style="max-width: 780px; margin: 32px auto 0; background: var(--bg-card); border: 1px solid rgba(141,170,89,0.25); border-radius: 12px; padding: 24px; box-shadow: 0 8px 32px rgba(0,0,0,0.35);">
-          <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:16px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:12px;">
-            <div style="display:flex; align-items:center; gap:10px;">
-              <span style="font-size:1.4rem;">⚡</span>
-              <h3 style="font-size:1.25rem; margin:0; color:var(--text-primary); font-weight:700;">Что нового в версии 3.4.9 (Сборка 31)</h3>
+        <div class="v2-download-card">
+          <div class="v2-download-main">
+            <div class="v2-download-icon">📦</div>
+            <div>
+              <span>Каптёрка PRO</span>
+              <h3>Версия 3.4.9</h3>
+              <p>Устанавливается как новая версия или поверх предыдущей без удаления локальной базы приложения.</p>
             </div>
-            <span style="background:rgba(141,170,89,0.15); color:var(--primary-bright); font-size:0.8rem; padding:4px 10px; border-radius:6px; font-weight:700; border:1px solid rgba(141,170,89,0.3);">
-              АКТУАЛЬНЫЙ РЕЛИЗ • 20 СЕНТЯБРЯ 2026
-            </span>
           </div>
 
-          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px;">
-            <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:14px;">
-              <div style="font-weight:700; color:var(--primary-bright); font-size:0.92rem; margin-bottom:6px;">🛡️ Безопасное обновление без потери данных</div>
-              <div style="font-size:0.85rem; color:var(--text-secondary); line-height:1.45;">Версия 3.4.9 устанавливается поверх предыдущей. Существующая база, профиль, лицензия, точки учёта и история операций сохраняются.</div>
-            </div>
+          <div class="v2-download-actions">
+            <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('direct_v2')" class="btn btn-primary btn-lg">Скачать APK • ~18 МБ</a>
+            <button class="btn btn-outline btn-lg" onclick="openModal('modalRuStore')">Открыть RuStore</button>
+          </div>
 
-            <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:14px;">
-              <div style="font-weight:700; color:var(--accent-gold); font-size:0.92rem; margin-bottom:6px;">🏷️ Корректное разделение подразделений</div>
-              <div style="font-size:0.85rem; color:var(--text-secondary); line-height:1.45;">При переходе на другой ключ <strong>kapt_...</strong> старые точки и остатки больше не должны переноситься в новое подразделение.</div>
-            </div>
+          <div class="v2-install-steps">
+            <div><b>1</b><span>Скачайте APK.</span></div>
+            <div><b>2</b><span>Разрешите установку из браузера, если Android попросит.</span></div>
+            <div><b>3</b><span>Откройте приложение. Новый пользователь получает 3 дня демо.</span></div>
+          </div>
 
-            <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:14px;">
-              <div style="font-weight:700; color:#5bc0be; font-size:0.92rem; margin-bottom:6px;">⏱️ 3 дня полного демо-доступа</div>
-              <div style="font-size:0.85rem; color:var(--text-secondary); line-height:1.45;">Новые пользователи получают 3 дня для знакомства со всеми основными функциями. После активации PRO лицензия сохраняется при обычном обновлении приложения.</div>
-            </div>
+          <div class="v2-release-strip">
+            <span>Что изменилось в 3.4.9</span>
+            <div>Разделение подразделений • лицензия • счётчик устройств • стабильность синхронизации</div>
+          </div>
 
-            <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:14px;">
-              <div style="font-weight:700; color:#29b6f6; font-size:0.92rem; margin-bottom:6px;">📱 Ключ и активные устройства</div>
-              <div style="font-size:0.85rem; color:var(--text-secondary); line-height:1.45;">Ключ подразделения <strong>kapt_...</strong> отображается понятнее. Счётчик показывает активные устройства и корректно отображается даже при одном подключённом телефоне.</div>
-            </div>
-
-            <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:14px;">
-              <div style="font-weight:700; color:#81c784; font-size:0.92rem; margin-bottom:6px;">🔄 Стабильнее вход и синхронизация</div>
-              <div style="font-size:0.85rem; color:var(--text-secondary); line-height:1.45;">Улучшена стабильность входа, работы лицензии и служебной синхронизации. Telegram-уведомления восстановлены.</div>
-            </div>
-
-            <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:14px;">
-              <div style="font-weight:700; color:#ce93d8; font-size:0.92rem; margin-bottom:6px;">🔧 Улучшена диагностика</div>
-              <div style="font-size:0.85rem; color:var(--text-secondary); line-height:1.45;">Добавлены безопасные инструменты диагностики для поддержки без изменения пользовательской базы и основной бизнес-логики приложения.</div>
-            </div>
+          <div class="v2-support-links">
+            <a href="https://t.me/kapterka_pro" target="_blank" rel="noopener noreferrer">Канал Telegram</a>
+            <a href="https://t.me/kapterka_help_bot" target="_blank" rel="noopener noreferrer">Бот поддержки</a>
+            <button onclick="openModal('modalContact')">Связаться с разработчиком</button>
           </div>
         </div>
       </div>
     </section>
   </div>
 
-  <!-- ========================================================================= -->
-  <!-- TAB 6: СКРЫТЫЙ КАБИНЕТ АДМИНИСТРАТОРА (TAB ADMIN) -->
-  <!-- ========================================================================= -->
   <div id="tabAdmin" class="app-view-tab">
     <section class="section">
       <div class="container">
