@@ -3100,3 +3100,51 @@ input,textarea{font-size:16px}
 .v3-integrity[open] summary::after{content:'−'}
 .v3-integrity-body{display:grid;gap:7px;padding:0 13px 12px;color:#73847a;font-size:.67rem;line-height:1.45}
 .v3-integrity-body code{color:#a7b8ae;overflow-wrap:anywhere;word-break:break-all}
+
+
+/* COMPACT FAQ 2026-09-21 */
+.neo-faq{padding:22px 0 10px}
+.neo-faq-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.neo-faq-list details{
+  border:1px solid rgba(255,255,255,.065);
+  border-radius:14px;
+  background:#0d1510;
+  overflow:hidden;
+}
+.neo-faq-list summary{
+  list-style:none;
+  cursor:pointer;
+  padding:13px 14px;
+  color:#e6eee9;
+  font-size:.8rem;
+  font-weight:800;
+  line-height:1.35;
+  position:relative;
+  padding-right:38px;
+}
+.neo-faq-list summary::-webkit-details-marker{display:none}
+.neo-faq-list summary::after{
+  content:'+';
+  position:absolute;
+  right:14px;
+  top:50%;
+  transform:translateY(-50%);
+  width:20px;height:20px;
+  display:grid;place-items:center;
+  border-radius:7px;
+  background:#162119;
+  color:#83b598;
+  font-size:.9rem;
+}
+.neo-faq-list details[open] summary::after{content:'−'}
+.neo-faq-list details p{
+  margin:0;
+  padding:0 14px 13px;
+  color:#819187;
+  font-size:.71rem;
+  line-height:1.5;
+}
+@media(max-width:620px){
+  .neo-faq-list{grid-template-columns:1fr}
+  .neo-faq{padding-top:14px}
+}
