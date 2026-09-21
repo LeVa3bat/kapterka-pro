@@ -3090,3 +3090,13 @@ input,textarea{font-size:16px}
   .form-input,.v3-modal,.neo-card,.feature-card{border-color:rgba(255,255,255,.28)!important}
   .text-muted,.v2-muted,.neo-muted{color:#b7c3bc!important}
 }
+
+
+/* APK integrity details */
+.v3-integrity{margin:12px 0;border:1px solid rgba(255,255,255,.07);border-radius:12px;background:#0b120e;overflow:hidden}
+.v3-integrity summary{cursor:pointer;list-style:none;padding:11px 13px;color:#9fb0a6;font-size:.72rem;font-weight:700;user-select:none}
+.v3-integrity summary::-webkit-details-marker{display:none}
+.v3-integrity summary::after{content:'＋';float:right;color:#71d7a7;font-weight:800}
+.v3-integrity[open] summary::after{content:'−'}
+.v3-integrity-body{display:grid;gap:7px;padding:0 13px 12px;color:#73847a;font-size:.67rem;line-height:1.45}
+.v3-integrity-body code{color:#a7b8ae;overflow-wrap:anywhere;word-break:break-all}
