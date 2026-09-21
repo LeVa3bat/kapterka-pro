@@ -165,68 +165,7 @@ function addSubscriberEmail(email) {
 
 // 3. User Registration Flow with Email Pin Verification
 function startRegistrationProcess() {
-  const callsign = document.getElementById('regCallsign')?.value.trim();
-  const email = document.getElementById('regEmail')?.value.trim().toLowerCase();
-  const rank = document.getElementById('regRank')?.value.trim() || 'Боец';
-  const password = document.getElementById('regPassword')?.value.trim();
-  const newsletter = document.getElementById('regNewsletterCheck')?.checked ?? true;
-
-  if (!callsign) {
-    alert('Пожалуйста, укажите ваш позывной!');
-    return;
-  }
-  if (!email || !email.includes('@') || !email.includes('.')) {
-    alert('Пожалуйста, укажите корректный адрес электронной почты!');
-    return;
-  }
-  if (!password || password.length < 4) {
-    alert('Пароль должен содержать минимум 4 символа!');
-    return;
-  }
-
-  // Check if email already registered
-  const users = getStoredUsers();
-  if (users.some(u => u.email === email)) {
-    alert('Пользователь с таким Email уже зарегистрирован! Перейдите на вкладку «Вход в кабинет».');
-    switchAuthMode('login');
-    const loginEmailInput = document.getElementById('loginEmail');
-    if (loginEmailInput) loginEmailInput.value = email;
-    return;
-  }
-
-  // Generate 4-digit verification code
-  const code = Math.floor(1000 + Math.random() * 9000).toString();
-  currentVerificationPin = code;
-
-  tempPendingReg = {
-    callsign,
-    email,
-    rank,
-    password,
-    subscribedToNewsletter: newsletter,
-    unitName: '1-я Мотострелковая рота',
-    unitKey: 'kapt_' + Math.random().toString(16).substring(2, 8),
-    phone: '',
-    keys: []
-  };
-
-  // Switch to PIN verification step
-  document.getElementById('regStepInputs').style.display = 'none';
-  const stepVerif = document.getElementById('regStepVerification');
-  if (stepVerif) stepVerif.style.display = 'block';
-
-  const disp = document.getElementById('verifyEmailDisplay');
-  if (disp) disp.textContent = email;
-
-  // Clear PIN inputs and focus
-  ['pin1', 'pin2', 'pin3', 'pin4'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
-  });
-  document.getElementById('pin1')?.focus();
-
-  // Show tactical notification with simulated email dispatch and PIN
-  showToast(`📧 Код подтверждения отправлен на ${email}! (Код: ${code})`);
+  showToast('Защищённая регистрация загружается. Обновите страницу и попробуйте ещё раз.');
 }
 
 function focusNextPin(input, nextId) {
@@ -236,125 +175,28 @@ function focusNextPin(input, nextId) {
 }
 
 function resendPinCode() {
-  if (!tempPendingReg) return;
-  const code = Math.floor(1000 + Math.random() * 9000).toString();
-  currentVerificationPin = code;
-  showToast(`🔄 Новый код отправлен на ${tempPendingReg.email}: ${code}`);
+  showToast('Повторная отправка доступна только через защищённую серверную авторизацию.');
 }
 
 function verifyEmailPinCode() {
-  const p1 = document.getElementById('pin1')?.value.trim();
-  const p2 = document.getElementById('pin2')?.value.trim();
-  const p3 = document.getElementById('pin3')?.value.trim();
-  const p4 = document.getElementById('pin4')?.value.trim();
-  const entered = `${p1}${p2}${p3}${p4}`;
-
-  if (entered.length < 4) {
-    alert('Пожалуйста, введите полный 4-значный код подтверждения!');
-    return;
-  }
-
-  if (entered !== currentVerificationPin && entered !== '1111') {
-    alert('Неверный код подтверждения! Проверьте код в уведомлении или запросите повторную отправку.');
-    return;
-  }
-
-  // Verification successful! Save user to database
-  const newUser = {
-    ...tempPendingReg,
-    emailVerified: true,
-    activeKey: '',
-    keys: []
-  };
-
-  const users = getStoredUsers();
-  users.push(newUser);
-  localStorage.setItem(STORAGE_USERS_DB, JSON.stringify(users));
-
-  // Add to newsletter list if subscribed
-  if (newUser.subscribedToNewsletter) {
-    addSubscriberEmail(newUser.email);
-  }
-
-  // Set active session
-  setUserSession(newUser);
-
-  // Reset reg view
-  document.getElementById('regStepInputs').style.display = 'block';
-  document.getElementById('regStepVerification').style.display = 'none';
-  tempPendingReg = null;
-  currentVerificationPin = null;
-
-  // Track Yandex Metrika goal for successful registration
-  trackYm('reachGoal', 'registration_complete');
-  if (typeof window.gtag === 'function') {
-    try {
-      window.gtag('event', 'sign_up', { method: 'cabinet_registration' });
-    } catch (e) {}
-  }
-
-  // Безопасная отправка уведомления через Google Script (без токенов в коде!)
-  try {
-    const API_URL = 'https://script.google.com/macros/s/AKfycbw6aJ02RTG99UrX-5NYn_LwM_S4M1GU-hbON4KVUZpTNcRMgiZycTfeUGYs01MhYI-GGQ/exec';
-    
-    // Используем простой GET-запрос, который 100% не блокируется CORS браузера
-    const regUrl = `${API_URL}?action=register_user&callsign=${encodeURIComponent(newUser.callsign || 'Боец')}&rank=${encodeURIComponent(newUser.rank || '-')}&unitName=${encodeURIComponent(newUser.unitName || '-')}&email=${encodeURIComponent(newUser.email || '-')}`;
-    
-    fetch(regUrl, { mode: 'no-cors' }).catch(err => console.warn(err));
-  } catch (e) { console.warn(e); }
-
-  showToast(`🎉 Почта подтверждена! Добро пожаловать, ${newUser.callsign}! Вы подписаны на обновления ПО.`);
+  showToast('Проверка Email доступна только через защищённую серверную авторизацию.');
 }
 
 // 4. Login and Session Handlers
 function processUserLogin() {
-  const email = document.getElementById('loginEmail')?.value.trim().toLowerCase();
-  const password = document.getElementById('loginPassword')?.value.trim();
-
-  if (!email || !password) {
-    alert('Введите Email и пароль!');
-    return;
-  }
-
-  const users = getStoredUsers();
-  const user = users.find(u => u.email === email && u.password === password);
-
-  if (user) {
-    setUserSession(user);
-    showToast(`Успешный вход! С возвращением, ${user.callsign}.`);
-  } else {
-    // Check if email matches demo
-    if (email === defaultProfile.email.toLowerCase()) {
-      quickDemoLogin();
-    } else {
-      alert('Неверный Email или пароль. Попробуйте снова или зарегистрируйтесь.');
-    }
-  }
+  showToast('Защищённый вход загружается. Обновите страницу и попробуйте ещё раз.');
 }
 
 function quickDemoLogin() {
-  const demoUser = {
-    callsign: defaultProfile.callsign,
-    rank: defaultProfile.rank,
-    unitName: defaultProfile.unitName,
-    unitKey: defaultProfile.unitKey,
-    email: defaultProfile.email,
-    phone: defaultProfile.phone,
-    activeKey: defaultProfile.activeKey,
-    subscribedToNewsletter: true,
-    emailVerified: true,
-    keys: defaultProfile.keys
-  };
-  setUserSession(demoUser);
-  showToast('Выполнен гостевой вход. Личный кабинет открыт!');
+  showToast('Демо-режим доступен после обычной регистрации по Email.');
 }
 
 function setUserSession(user) {
   localStorage.setItem(STORAGE_AUTH_USER, JSON.stringify(user));
   localStorage.setItem(STORAGE_USER_CALLSIGN, user.callsign);
   localStorage.setItem(STORAGE_USER_RANK, user.rank || '');
-  localStorage.setItem(STORAGE_UNIT_NAME, user.unitName || '1-я МСР');
-  localStorage.setItem(STORAGE_UNIT_KEY, user.unitKey || 'kapt_59e13b');
+  localStorage.setItem(STORAGE_UNIT_NAME, user.unitName || '');
+  localStorage.setItem(STORAGE_UNIT_KEY, user.unitKey || '');
   localStorage.setItem(STORAGE_USER_EMAIL, user.email);
   localStorage.setItem(STORAGE_USER_PHONE, user.phone || '');
 
