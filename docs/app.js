@@ -18,6 +18,12 @@ const STORAGE_USER_EMAIL = 'kapterka_user_email';
 const STORAGE_USER_PHONE = 'kapterka_user_phone';
 const STORAGE_ACTIVE_KEY = 'kapterka_active_key';
 const STORAGE_KEYS_HISTORY = 'kapterka_keys_history';
+const STORAGE_LICENSE_META = 'kapterka_license_meta_v2';
+
+// Firebase Web API key is an application identifier, not a server secret.
+// Reads below request only status/timestamps for one exact license document.
+const FIREBASE_LICENSE_API_KEY = 'AIzaSyAYyoG42TuQJFLxN0KnFIePZx-gAtizw0Q';
+const FIRESTORE_LICENSE_DOC_BASE = 'https://firestore.googleapis.com/v1/projects/kapterka-pro/databases/(default)/documents/licenses/';
 
 // Default initial state for clean empty inputs
 const YM_IDS = [112482290];
@@ -327,6 +333,10 @@ function switchMainTab(tabId) {
   } catch (e) {}
 
   // Refresh payment form from the authenticated/local profile when opening payment.
+  if (tabId === 'tabCabinet') {
+    refreshStoredLicenseStatus();
+  }
+
   if (tabId === 'tabPayment') {
     const currentUser = getActiveUserSession();
     const callsign = currentUser?.callsign || localStorage.getItem(STORAGE_USER_CALLSIGN) || '';
@@ -388,25 +398,7 @@ function loadCabinetProfile() {
   if (payCallsignInput && callsign) payCallsignInput.value = callsign;
   if (payEmailInput && email) payEmailInput.value = email;
 
-  // Управление карточками ключа (есть активный ключ vs нет ключа)
-  const cabActiveKeyCard = document.getElementById('cabActiveKeyCard');
-  const cabNoKeyCard = document.getElementById('cabNoKeyCard');
-
-  if (activeKey && activeKey.startsWith('KAPT-')) {
-    if (cabActiveKeyCard) cabActiveKeyCard.style.display = 'block';
-    if (cabNoKeyCard) cabNoKeyCard.style.display = 'none';
-    if (navBadgeStatus) {
-      navBadgeStatus.textContent = 'ПРО';
-      navBadgeStatus.style.display = 'inline-block';
-    }
-  } else {
-    if (cabActiveKeyCard) cabActiveKeyCard.style.display = 'none';
-    if (cabNoKeyCard) cabNoKeyCard.style.display = 'block';
-    if (navBadgeStatus) {
-      navBadgeStatus.style.display = 'none';
-    }
-  }
-
+  updateCabinetLicenseStatus();
   renderKeysHistory();
 }
 
@@ -513,6 +505,218 @@ function classifyLicenseKey(key) {
 
 
 
+function getLicenseMetaMap() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORAGE_LICENSE_META) || '{}');
+    return raw && typeof raw === 'object' ? raw : {};
+  } catch (_) {
+    return {};
+  }
+}
+
+function saveLicenseMeta(key, patch) {
+  const cleanKey = String(key || '').trim().toUpperCase();
+  if (!cleanKey) return;
+  const map = getLicenseMetaMap();
+  map[cleanKey] = {
+    ...(map[cleanKey] || {}),
+    ...(patch || {}),
+    updatedAt: Date.now()
+  };
+  localStorage.setItem(STORAGE_LICENSE_META, JSON.stringify(map));
+}
+
+function getLicenseMeta(key) {
+  const cleanKey = String(key || '').trim().toUpperCase();
+  return getLicenseMetaMap()[cleanKey] || null;
+}
+
+function firestoreFieldValue(field) {
+  if (!field || typeof field !== 'object') return null;
+  if (field.integerValue != null) return Number(field.integerValue);
+  if (field.doubleValue != null) return Number(field.doubleValue);
+  if (field.timestampValue) {
+    const ms = Date.parse(field.timestampValue);
+    return Number.isFinite(ms) ? ms : null;
+  }
+  if (field.stringValue != null) return String(field.stringValue);
+  if (field.booleanValue != null) return !!field.booleanValue;
+  return null;
+}
+
+async function fetchLicenseRegistryMeta(key) {
+  const cleanKey = String(key || '').trim().toUpperCase();
+  if (classifyLicenseKey(cleanKey) !== 'signed') {
+    return { found: false, verified: false, reason: 'UNSUPPORTED_KEY_FORMAT' };
+  }
+
+  const mask = [
+    'mask.fieldPaths=licenseKey',
+    'mask.fieldPaths=activatedAt',
+    'mask.fieldPaths=expiresAt',
+    'mask.fieldPaths=status'
+  ].join('&');
+  const url = FIRESTORE_LICENSE_DOC_BASE + encodeURIComponent(cleanKey) + '?' + mask + '&key=' + encodeURIComponent(FIREBASE_LICENSE_API_KEY);
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timer = controller ? setTimeout(() => controller.abort(), 8000) : null;
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      cache: 'no-store',
+      headers: { 'Accept': 'application/json' },
+      signal: controller?.signal
+    });
+
+    if (response.status === 404) return { found: false, verified: false, reason: 'NOT_FOUND' };
+    if (!response.ok) return { found: false, verified: false, unavailable: true, reason: 'REGISTRY_UNAVAILABLE' };
+
+    const data = await response.json();
+    const fields = data?.fields || {};
+    const registeredKey = String(firestoreFieldValue(fields.licenseKey) || cleanKey).toUpperCase();
+    if (registeredKey !== cleanKey) return { found: false, verified: false, reason: 'KEY_MISMATCH' };
+
+    const activatedAt = Number(firestoreFieldValue(fields.activatedAt) || 0);
+    const expiresAt = Number(firestoreFieldValue(fields.expiresAt) || 0);
+    const status = String(firestoreFieldValue(fields.status) || 'ACTIVE').toUpperCase();
+    const verified = status === 'ACTIVE' && expiresAt > 0;
+
+    return {
+      found: true,
+      verified,
+      registryVerified: verified,
+      status,
+      activatedAt,
+      expiresAt
+    };
+  } catch (_) {
+    return { found: false, verified: false, unavailable: true, reason: 'NETWORK_ERROR' };
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+function licenseDaysRemaining(expiresAt) {
+  const exp = Number(expiresAt || 0);
+  if (!exp) return null;
+  return Math.max(0, Math.ceil((exp - Date.now()) / 86400000));
+}
+
+function formatLicenseDate(value) {
+  const ts = Number(value || 0);
+  if (!ts) return '';
+  try {
+    return new Date(ts).toLocaleDateString('ru-RU');
+  } catch (_) {
+    return '';
+  }
+}
+
+function resolveLicenseMeta(itemOrKey) {
+  const item = typeof itemOrKey === 'object' && itemOrKey ? itemOrKey : {};
+  const key = typeof itemOrKey === 'string' ? itemOrKey : String(item.key || '');
+  const stored = getLicenseMeta(key) || {};
+  return {
+    ...item,
+    ...stored,
+    key
+  };
+}
+
+function updateCabinetLicenseStatus() {
+  const activeKey = localStorage.getItem(STORAGE_ACTIVE_KEY) || '';
+  const card = document.getElementById('cabActiveKeyCard');
+  const noKeyCard = document.getElementById('cabNoKeyCard');
+  const badge = document.getElementById('cabStatusBadge');
+  const expiryText = document.getElementById('cabExpiryText');
+  const daysEl = document.getElementById('cabDaysLeft');
+  const expiryDateEl = document.getElementById('cabExpiryDate');
+  const progressEl = document.getElementById('cabExpiryProgress');
+  const navBadgeStatus = document.getElementById('navBadgeStatus');
+
+  if (!activeKey) {
+    if (card) card.style.display = 'none';
+    if (noKeyCard) noKeyCard.style.display = 'block';
+    if (navBadgeStatus) navBadgeStatus.style.display = 'none';
+    return;
+  }
+
+  if (card) card.style.display = 'block';
+  if (noKeyCard) noKeyCard.style.display = 'none';
+
+  const meta = resolveLicenseMeta(activeKey);
+  const days = licenseDaysRemaining(meta.expiresAt);
+  const expiryDate = formatLicenseDate(meta.expiresAt);
+  const isVerifiedActive = !!meta.registryVerified && Number(meta.expiresAt || 0) > Date.now() && String(meta.status || 'ACTIVE').toUpperCase() === 'ACTIVE';
+  const isVerifiedExpired = !!meta.registryVerified && Number(meta.expiresAt || 0) > 0 && Number(meta.expiresAt) <= Date.now();
+
+  if (isVerifiedActive) {
+    if (badge) {
+      badge.textContent = 'PRO АКТИВЕН';
+      badge.classList.add('badge-gold');
+    }
+    if (expiryText) expiryText.textContent = 'Срок подтверждён реестром';
+    if (daysEl) daysEl.textContent = String(days ?? '—');
+    if (expiryDateEl) expiryDateEl.textContent = expiryDate ? 'до ' + expiryDate : '';
+    if (progressEl) progressEl.style.width = Math.max(0, Math.min(100, ((days || 0) / 30) * 100)) + '%';
+    if (navBadgeStatus) {
+      navBadgeStatus.textContent = 'ПРО';
+      navBadgeStatus.style.display = 'inline-block';
+    }
+  } else if (isVerifiedExpired) {
+    if (badge) {
+      badge.textContent = 'СРОК ИСТЁК';
+      badge.classList.remove('badge-gold');
+    }
+    if (expiryText) expiryText.textContent = expiryDate ? 'Завершилась ' + expiryDate : 'Лицензия завершилась';
+    if (daysEl) daysEl.textContent = '0';
+    if (expiryDateEl) expiryDateEl.textContent = 'нужно продлить';
+    if (progressEl) progressEl.style.width = '0%';
+    if (navBadgeStatus) navBadgeStatus.style.display = 'none';
+  } else {
+    if (badge) {
+      badge.textContent = 'КЛЮЧ СОХРАНЁН';
+      badge.classList.remove('badge-gold');
+    }
+    if (expiryText) expiryText.textContent = 'Проверяем срок в реестре';
+    if (daysEl) daysEl.textContent = '—';
+    if (expiryDateEl) expiryDateEl.textContent = 'срок не подтверждён';
+    if (progressEl) progressEl.style.width = '0%';
+    if (navBadgeStatus) navBadgeStatus.style.display = 'none';
+  }
+}
+
+async function refreshStoredLicenseStatus() {
+  const activeKey = localStorage.getItem(STORAGE_ACTIVE_KEY) || '';
+  if (!activeKey || classifyLicenseKey(activeKey) !== 'signed') {
+    updateCabinetLicenseStatus();
+    renderKeysHistory();
+    return;
+  }
+
+  const result = await fetchLicenseRegistryMeta(activeKey);
+  if (result.found) {
+    saveLicenseMeta(activeKey, result);
+    const history = getKeysHistory();
+    const next = history.map(item => {
+      if (String(item?.key || '').toUpperCase() !== activeKey.toUpperCase()) return item;
+      return {
+        ...item,
+        registryVerified: !!result.registryVerified,
+        activatedAt: result.activatedAt || item.activatedAt || 0,
+        expiresAt: result.expiresAt || item.expiresAt || 0,
+        status: result.status || item.status || ''
+      };
+    });
+    localStorage.setItem(STORAGE_KEYS_HISTORY, JSON.stringify(next));
+  } else if (!result.unavailable) {
+    saveLicenseMeta(activeKey, { registryVerified: false, status: 'NOT_FOUND' });
+  }
+
+  updateCabinetLicenseStatus();
+  renderKeysHistory();
+}
+
 // 5. Render Keys History Table
 function getKeysHistory() {
   const raw = localStorage.getItem(STORAGE_KEYS_HISTORY);
@@ -532,36 +736,56 @@ function renderKeysHistory() {
   if (!tableBody) return;
 
   const keys = getKeysHistory();
+  if (!keys.length) {
+    tableBody.innerHTML = '<tr class="license-empty-row"><td colspan="5">Лицензионных ключей пока нет.</td></tr>';
+    return;
+  }
+
   tableBody.innerHTML = keys.map((item, index) => {
-    const isPrimary = index === 0;
+    const meta = resolveLicenseMeta(item);
     const rawKey = String(item?.key || '');
-    // License keys are limited to their expected character set before being used in an inline handler.
     const copySafeKey = rawKey.toUpperCase().replace(/[^A-Z0-9_-]/g, '');
     const safeKey = escapeHtml(rawKey || '—');
     const safeCallsign = escapeHtml(item?.callsign || 'Пользователь');
-    const safeUnit = escapeHtml(item?.unit || 'Подразделение');
-    const safeStatus = escapeHtml(item?.status || '—');
-    const safeDate = escapeHtml(item?.date || '—');
+    const safeUnit = escapeHtml(item?.unit || '');
+    const days = licenseDaysRemaining(meta.expiresAt);
+    const expiryDate = formatLicenseDate(meta.expiresAt);
+    const activatedDate = formatLicenseDate(meta.activatedAt) || escapeHtml(item?.date || '');
+    const active = !!meta.registryVerified && Number(meta.expiresAt || 0) > Date.now() && String(meta.status || 'ACTIVE').toUpperCase() === 'ACTIVE';
+    const expired = !!meta.registryVerified && Number(meta.expiresAt || 0) > 0 && Number(meta.expiresAt) <= Date.now();
+
+    let statusText = 'Срок не подтверждён';
+    let statusClass = 'license-state-pending';
+    if (active) {
+      statusText = 'Осталось ' + (days ?? '—') + ' дн.';
+      statusClass = 'license-state-active';
+    } else if (expired) {
+      statusText = 'Истекла';
+      statusClass = 'license-state-expired';
+    }
+
+    const dateText = active && expiryDate
+      ? 'до ' + expiryDate
+      : (expired && expiryDate ? 'до ' + expiryDate : (activatedDate ? 'добавлен ' + activatedDate : '—'));
+
     return `
-      <tr>
-        <td>
+      <tr class="license-history-row ${index === 0 ? 'is-current' : ''}">
+        <td data-label="Ключ">
           <span class="table-key-tag">${safeKey}</span>
         </td>
-        <td>
-          <strong style="color:var(--text-primary);">${safeCallsign}</strong>
-          <div style="font-size:0.75rem; color:var(--text-muted);">${safeUnit}</div>
+        <td data-label="Пользователь">
+          <strong class="license-user">${safeCallsign}</strong>
+          ${safeUnit ? `<div class="license-unit">${safeUnit}</div>` : ''}
         </td>
-        <td>
-          <span class="badge ${isPrimary ? 'badge-gold' : ''}" style="font-size:0.72rem; padding:2px 8px;">
-            ${safeStatus}
-          </span>
+        <td data-label="Статус">
+          <span class="license-state ${statusClass}">${escapeHtml(statusText)}</span>
         </td>
-        <td style="font-family:var(--font-mono); font-size:0.8rem; color:var(--text-secondary);">
-          ${safeDate}
+        <td data-label="Срок">
+          <span class="license-history-date">${escapeHtml(dateText)}</span>
         </td>
-        <td>
-          <button class="btn btn-primary btn-sm" onclick="copyKeyText('${copySafeKey}')" title="Скопировать">
-            Скопировать
+        <td class="license-copy-cell">
+          <button class="btn btn-outline btn-sm license-copy-btn" onclick="copyKeyText('${copySafeKey}')" title="Скопировать ключ">
+            Копировать
           </button>
         </td>
       </tr>
@@ -843,7 +1067,7 @@ async function claimPaidLicenseKey() {
 }
 
 // Активация ключа бойцом (из письма на Email, СМС или от администратора)
-function verifyWithManualOrderId() {
+async function verifyWithManualOrderId() {
   const input = document.getElementById('payOrderIdInput');
   const enteredKey = input ? input.value.trim().toUpperCase().replace(/\s+/g, '') : '';
   const callsign = localStorage.getItem('kapterka_pending_callsign') || 'Боец';
@@ -863,12 +1087,21 @@ function verifyWithManualOrderId() {
     return;
   }
 
-  applyNewPaidKey(enteredKey, callsign);
+  showToast('Проверяю ключ в реестре лицензий…');
+  const registry = await fetchLicenseRegistryMeta(enteredKey);
+  if (!registry.found || !registry.registryVerified || Number(registry.expiresAt || 0) <= Date.now()) {
+    showToast(registry.unavailable
+      ? 'Не удалось проверить срок лицензии. Попробуйте ещё раз при стабильном интернете.'
+      : 'Ключ не найден среди активных лицензий или срок уже завершён.');
+    return;
+  }
+
+  applyNewPaidKey(enteredKey, callsign, registry);
   input.value = '';
-  showToast('✓ Ключ лицензии проверен и привязан к кабинету.');
+  showToast('✓ Лицензия подтверждена. Срок загружен из реестра.');
 }
 
-function applyNewPaidKey(newKey, callsign) {
+function applyNewPaidKey(newKey, callsign, meta = {}) {
   // Update Live Display
   const liveDisplay = document.getElementById('liveGeneratedKeyDisplay');
   const liveStatus = document.getElementById('liveKeyStatusDisplay');
@@ -879,7 +1112,10 @@ function applyNewPaidKey(newKey, callsign) {
     liveDisplay.textContent = newKey;
     liveDisplay.style.color = 'var(--accent-gold)';
   }
-  if (liveStatus) liveStatus.textContent = '✓ Лицензия активна • 30 дней доступа';
+  const daysLeft = licenseDaysRemaining(meta.expiresAt);
+  if (liveStatus) liveStatus.textContent = meta.registryVerified
+    ? '✓ Лицензия подтверждена • осталось ' + (daysLeft ?? '—') + ' дн.'
+    : 'Ключ сохранён • срок не подтверждён';
   if (btnCopy) {
     btnCopy.style.display = 'block';
     btnCopy.removeAttribute('disabled');
@@ -901,20 +1137,25 @@ function applyNewPaidKey(newKey, callsign) {
     navBadgeStatus.style.display = 'inline-block';
   }
 
-  // Add to History
+  // Add/update history without duplicating the same key.
   const history = getKeysHistory();
   const today = new Date().toLocaleDateString('ru-RU');
   const unitName = localStorage.getItem(STORAGE_UNIT_NAME) || '';
-
-  history.unshift({
+  const filteredHistory = history.filter(item => String(item?.key || '').toUpperCase() !== String(newKey || '').toUpperCase());
+  const historyItem = {
     key: newKey,
     callsign: callsign,
     unit: unitName,
-    status: 'Активен (30 дн)',
-    date: today
-  });
+    status: meta.status || 'ACTIVE',
+    date: meta.activatedAt ? formatLicenseDate(meta.activatedAt) : today,
+    activatedAt: Number(meta.activatedAt || 0),
+    expiresAt: Number(meta.expiresAt || 0),
+    registryVerified: !!meta.registryVerified
+  };
+  const nextHistory = [historyItem, ...filteredHistory];
 
-  localStorage.setItem(STORAGE_KEYS_HISTORY, JSON.stringify(history));
+  localStorage.setItem(STORAGE_KEYS_HISTORY, JSON.stringify(nextHistory));
+  saveLicenseMeta(newKey, historyItem);
 
   // Keep authenticated cabinet session aware of the newly linked license.
   try {
@@ -923,12 +1164,13 @@ function applyNewPaidKey(newKey, callsign) {
       const updatedSession = {
         ...currentSession,
         activeKey: newKey,
-        keys: history
+        keys: nextHistory
       };
       localStorage.setItem(STORAGE_AUTH_USER, JSON.stringify(updatedSession));
     }
   } catch (e) {}
 
+  updateCabinetLicenseStatus();
   renderKeysHistory();
   updateAuthUI();
 
@@ -944,7 +1186,7 @@ function applyNewPaidKey(newKey, callsign) {
 }
 
 // Ручная привязка ключа бойцом в Личном кабинете (для синхронизации с приложением на Android)
-function linkLicenseKeyInCabinet() {
+async function linkLicenseKeyInCabinet() {
   const input = document.getElementById('cabManualKeyInput');
   const key = input.value.trim().toUpperCase().replace(/\s+/g, '');
 
@@ -964,9 +1206,19 @@ function linkLicenseKeyInCabinet() {
   }
 
   const callsign = localStorage.getItem(STORAGE_USER_CALLSIGN) || 'Боец';
-  applyNewPaidKey(key, callsign);
+  showToast('Проверяю лицензию в облачном реестре…');
+  const registry = await fetchLicenseRegistryMeta(key);
+
+  if (!registry.found || !registry.registryVerified || Number(registry.expiresAt || 0) <= Date.now()) {
+    showToast(registry.unavailable
+      ? 'Не удалось проверить реестр. Ключ не активирован — попробуйте ещё раз при стабильном интернете.'
+      : 'Ключ не найден среди активных лицензий или срок уже завершён.');
+    return;
+  }
+
+  applyNewPaidKey(key, callsign, registry);
   input.value = '';
-  showToast('✓ Ключ лицензии проверен и привязан к личному кабинету.');
+  showToast('✓ Лицензия подтверждена. Счётчик срока обновлён.');
 }
 
 // 9. Modals Controller
@@ -1064,6 +1316,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Load profile data
   loadCabinetProfile();
+  refreshStoredLicenseStatus();
 
   function enableTablistKeyboardNavigation(tablist) {
     if (!tablist) return;

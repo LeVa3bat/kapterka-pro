@@ -105,7 +105,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css?v=3.4.9.33">
-  <link rel="stylesheet" href="tabs_and_cabinet.css?v=3.4.9.31">
+  <link rel="stylesheet" href="tabs_and_cabinet.css?v=3.4.9.32">
 
   <!-- Favicon & Mobile Icons (Тактическая светящаяся иконка Каптёрка Про) -->
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
@@ -468,13 +468,21 @@
               <div class="vault-key-card" id="cabActiveKeyCard" style="display:none;">
                 <div class="v2-card-topline">
                   <div>
-                    <span class="badge badge-gold" id="cabStatusBadge">PRO АКТИВЕН</span>
-                    <small id="cabExpiryText">30 дней</small>
+                    <span class="badge" id="cabStatusBadge">КЛЮЧ СОХРАНЁН</span>
+                    <small id="cabExpiryText">Проверяем срок в реестре</small>
                   </div>
                   <button class="btn btn-gold btn-sm" onclick="copyCabinetKey()">Скопировать</button>
                 </div>
                 <div class="v2-license-key" id="cabActiveKeyDisp">—</div>
-                <div class="v2-note">В приложении откройте раздел лицензии и вставьте этот ключ.</div>
+                <div class="v2-license-countdown" id="cabLicenseCountdown">
+                  <div class="v2-license-countdown-main">
+                    <strong id="cabDaysLeft">—</strong>
+                    <span>дней осталось</span>
+                    <small id="cabExpiryDate">срок не подтверждён</small>
+                  </div>
+                  <div class="v2-license-progress" aria-hidden="true"><i id="cabExpiryProgress"></i></div>
+                </div>
+                <div class="v2-note">Срок показывается по облачному реестру лицензий, а не считается от момента вставки ключа на сайте.</div>
               </div>
 
               <div class="vault-key-card" id="cabNoKeyCard" style="display:block;">
@@ -948,7 +956,7 @@
     </button>
   </nav>
 
-  <script src="app.js?v=3.4.9.33d"></script>
+  <script src="app.js?v=3.4.9.34a"></script>
   <script src="auth-config.js?v=3.4.9.31a"></script>
   <script src="auth-v2.js?v=3.4.9.31i"></script>
 </body>
