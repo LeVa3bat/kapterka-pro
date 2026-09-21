@@ -524,4 +524,103 @@ fun DeveloperAdminDialog(
                                             shape = RoundedCornerShape(6.dp)
                                         ) {
                                             Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(14.dp), tint = SageGreenBright)
-                                            Spacer(modifier = Modifier
+                                            Spacer(modifier = Modifier.width(5.dp))
+                                            Text("Синхронизация", fontSize = 10.sp, color = SageGreenBright)
+                                        }
+                                        OutlinedButton(
+                                            onClick = {
+                                                clipboard.setText(AnnotatedString(diagnostics.toSupportReport()))
+                                                Toast.makeText(context, "Диагностический отчёт скопирован", Toast.LENGTH_SHORT).show()
+                                            },
+                                            modifier = Modifier.weight(1f),
+                                            border = BorderStroke(1.dp, TacticalGold),
+                                            shape = RoundedCornerShape(6.dp)
+                                        ) {
+                                            Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(14.dp), tint = TacticalGoldText)
+                                            Spacer(modifier = Modifier.width(5.dp))
+                                            Text("Копировать отчёт", fontSize = 10.sp, color = TacticalGoldText)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // 2. АККОРДЕОН: СВОДКА И СТАТИСТИКА
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { expandStats = !expandStats },
+                        color = TacticalSurface,
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(1.dp, if (expandStats) TacticalGold else TacticalBorderSubtle)
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.Shield, contentDescription = null, tint = TacticalGoldText, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "СВОДКА И СТАТИСТИКА",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = TacticalGoldText,
+                                        fontFamily = FontFamily.Monospace
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "($totalCount чел. / $onlineCount в сети)",
+                                        fontSize = 10.sp,
+                                        color = TacticalTextMuted
+                                    )
+                                }
+                                Icon(
+                                    imageVector = if (expandStats) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                    contentDescription = null,
+                                    tint = TacticalGoldText
+                                )
+                            }
+
+                            AnimatedVisibility(visible = expandStats) {
+                                Column(modifier = Modifier.padding(top = 8.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceAround,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text("БОЙЦОВ", color = TacticalTextMuted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                                            Text("$totalCount", color = TacticalTextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                        }
+                                        Box(modifier = Modifier.width(1.dp).height(20.dp).background(TacticalBorder))
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text("В СЕТИ", color = SageGreenBright, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                                            Text("$onlineCount", color = SageGreenBright, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                        }
+                                        Box(modifier = Modifier.width(1.dp).height(20.dp).background(TacticalBorder))
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text("С ЛИЦЕНЗИЕЙ", color = TacticalGoldText, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                                            Text("$proCount", color = TacticalGoldText, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // 3. АККОРДЕОН: ПОИСК И ФИЛЬТР
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { expandSearch = !expandSearch },
+                        color = TacticalSurface,
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(1.dp, if (expandSearch) TacticalGold else TacticalBorderSubtle)
+                    ) {
+                        Column(modifier 
