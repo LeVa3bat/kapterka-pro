@@ -273,3 +273,7 @@ if ((updatesPage.match(/<h1\b/gi) || []).length !== 1 || !/rel="canonical"/.test
 if (!securityPage.includes('39ffa4cf13a50398235078a49b7dfaa420fdd095d3258bab8336edb79c410250')) fail('security page APK hash is missing');
 if (!securityPage.includes('843a7e883914f3a7a5a7665ff07b2e8c43da87a24ee4dc35e1600758aee73cb9')) fail('security page signer fingerprint is missing');
 else ok('professional trust/security/update surfaces are present');
+
+if (!index.includes('id="plans"') || !index.includes('neo-plan-demo') || !index.includes('neo-plan-pro')) fail('professional Demo/PRO comparison section is missing');
+if (!index.includes('3 дня') || !index.includes('490 ₽') || !index.includes('30 дней')) fail('Demo/PRO terms are missing from homepage');
+else ok('professional demo/PRO section is present');

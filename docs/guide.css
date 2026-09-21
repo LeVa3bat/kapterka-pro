@@ -35,3 +35,39 @@ main{padding:34px 0 50px}.crumbs{font-size:.68rem;color:#718178;margin-bottom:12
   .spec,.page-links{grid-template-columns:1fr}
   .release{padding:13px}.release-head{display:block}.release-badge{display:inline-block;margin-top:7px}
 }
+
+
+/* PROFESSIONAL GUIDE POLISH 2026-09-21 */
+@media(min-width:900px){
+  .top{backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+  .hero{padding-top:46px}
+  .hero h1{max-width:760px;letter-spacing:-.045em}
+  .hero .lead{max-width:760px}
+  .status-grid,.page-links{gap:10px}
+  .status-card,.page-links a,.release,.article{box-shadow:0 14px 38px rgba(0,0,0,.14)}
+  .article{padding:28px 30px}
+}
+@media(max-width:620px){
+  .top .wrap{min-height:56px}
+  .brand{font-size:.86rem}
+  .back{font-size:.65rem}
+  main{padding-top:66px}
+  .hero{padding:18px 0 8px}
+  .hero h1{font-size:1.72rem;line-height:1.04}
+  .hero .lead{font-size:.76rem;line-height:1.48}
+  .chips{gap:5px}.chips span{font-size:.58rem;padding:4px 7px}
+  .status-grid{grid-template-columns:1fr 1fr;gap:6px}
+  .status-card{padding:10px;border-radius:11px}
+  .status-card span,.status-card small{font-size:.56rem}
+  .status-card strong{font-size:.72rem}
+  .article{padding:14px;border-radius:14px}
+  .article h2{font-size:1rem;margin-top:18px}
+  .article p,.article li{font-size:.7rem;line-height:1.5}
+  .checks{gap:6px}.check{padding:9px;border-radius:10px}
+  .spec{gap:5px}.spec>div{padding:9px;border-radius:9px}
+  .page-links{display:flex;overflow-x:auto;gap:6px;scroll-snap-type:x mandatory;scrollbar-width:none}
+  .page-links>a{flex:0 0 82%;scroll-snap-align:start}
+  .release{padding:13px;border-radius:14px}
+  .release-head{align-items:flex-start;gap:8px}
+  .release-badge{font-size:.55rem}
+}
