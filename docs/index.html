@@ -283,11 +283,11 @@
                 <div class="v2-form-grid">
                   <div class="form-group">
                     <label class="form-label">Имя или позывной *</label>
-                    <input type="text" id="regCallsign" class="form-input" placeholder="Например: Сокол">
+                    <input type="text" id="regCallsign" class="form-input" placeholder="Например: Сокол" autocomplete="nickname">
                   </div>
                   <div class="form-group">
                     <label class="form-label">Email *</label>
-                    <input type="email" id="regEmail" class="form-input" placeholder="name@domain.ru">
+                    <input type="email" id="regEmail" class="form-input" placeholder="name@domain.ru" autocomplete="email">
                   </div>
                   <div class="form-group">
                     <label class="form-label">Должность / звание</label>
@@ -329,7 +329,7 @@
               </div>
               <div class="form-group">
                 <label class="form-label">Email</label>
-                <input type="email" id="loginEmail" class="form-input" placeholder="name@domain.ru">
+                <input type="email" id="loginEmail" class="form-input" placeholder="name@domain.ru" autocomplete="email">
               </div>
               <button class="btn btn-primary btn-lg v2-full-btn" onclick="processUserLogin()">Получить код для входа</button>
             </div>
@@ -405,7 +405,7 @@
                   </div>
                   <div class="form-group">
                     <label class="form-label">Email</label>
-                    <input type="email" id="cabEmailInput" class="form-input" placeholder="name@domain.ru">
+                    <input type="email" id="cabEmailInput" class="form-input" placeholder="name@domain.ru" readonly aria-readonly="true" title="Email аккаунта меняется только через повторную регистрацию/поддержку">
                   </div>
                   <div class="form-group">
                     <label class="form-label">Телефон / Telegram</label>
@@ -468,7 +468,7 @@
                 </div>
                 <div class="form-group">
                   <label class="form-label">Email для чека и ключа</label>
-                  <input type="email" id="payEmailInput" class="form-input" placeholder="name@mail.ru">
+                  <input type="email" id="payEmailInput" class="form-input" placeholder="name@mail.ru" autocomplete="email">
                 </div>
               </div>
 
