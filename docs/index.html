@@ -101,11 +101,8 @@
   <meta name="twitter:image" content="https://kapterka-pro.ru/app_icon_512.png">
 
   <link rel="preload" as="image" href="screen_main_349.jpg" fetchpriority="high" media="(min-width: 561px)">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=3.4.9.38">
-  <link rel="stylesheet" href="tabs_and_cabinet.css?v=3.4.9.34">
+  <link rel="stylesheet" href="style.css?v=3.4.9.39">
+  <link rel="stylesheet" href="tabs_and_cabinet.css?v=3.4.9.35">
 
   <!-- Favicon & Mobile Icons (Тактическая светящаяся иконка Каптёрка Про) -->
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
@@ -119,32 +116,54 @@
   <meta name="apple-mobile-web-app-title" content="Каптёрка PRO">
   <meta name="color-scheme" content="dark">
 
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-RYV6TP63D3"></script>
+  <!-- Analytics: queue immediately, load heavy third-party scripts after interaction/idle. -->
   <script>
     window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
+    function gtag(){ dataLayer.push(arguments); }
     gtag('js', new Date());
-
     gtag('config', 'G-RYV6TP63D3');
-  </script>
 
-  <!-- Yandex.Metrika counter -->
-  <script type="text/javascript">
-      (function(m,e,t,r,i,k,a){
-          m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
-          m[i].l=1*new Date();
-          for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
-          k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
-      })(window, document,'script','https://mc.yandex.ru/metrika/tag.js', 'ym');
+    window.ym = window.ym || function(){ (window.ym.a = window.ym.a || []).push(arguments); };
+    window.ym.l = Date.now();
+    ym(112482290, 'init', {
+      clickmap:true,
+      referrer:document.referrer,
+      url:location.href,
+      accurateTrackBounce:true,
+      trackLinks:true,
+      webvisor:false
+    });
 
-      ym(112482290, 'init', {clickmap:true, referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true, webvisor:false});
+    (function scheduleAnalyticsLoad(){
+      let started = false;
+      function loadScript(src, id) {
+        if (id && document.getElementById(id)) return;
+        const script = document.createElement('script');
+        if (id) script.id = id;
+        script.async = true;
+        script.src = src;
+        document.head.appendChild(script);
+      }
+      function start() {
+        if (started) return;
+        started = true;
+        loadScript('https://www.googletagmanager.com/gtag/js?id=G-RYV6TP63D3', 'kapterka-ga');
+        loadScript('https://mc.yandex.ru/metrika/tag.js', 'kapterka-ym');
+        ['pointerdown','touchstart','keydown','scroll'].forEach(type =>
+          window.removeEventListener(type, start, { capture:true })
+        );
+      }
+      ['pointerdown','touchstart','keydown','scroll'].forEach(type =>
+        window.addEventListener(type, start, { once:true, passive:true, capture:true })
+      );
+      window.setTimeout(start, 8000);
+    })();
   </script>
   <noscript><div><img src="https://mc.yandex.ru/watch/112482290" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
   <!-- /Yandex.Metrika counter -->
 
   <script>
-    window.KAPTERKA_WEB_VERSION = "3.4.9-web.43";
+    window.KAPTERKA_WEB_VERSION = "3.4.9-web.44";
     (function () {
       try {
         const key = 'kapterka_web_version_seen';
@@ -374,11 +393,11 @@
 
           <div class="neo-preview-meta"><span>Версия <b data-release-version>3.4.9</b></span><span>Свайп на телефоне</span><span>Нажмите для увеличения</span></div>
           <div class="neo-shot-row" id="previewGalleryTrack" aria-label="Скриншоты Каптёрка PRO">
-            <button class="neo-shot active" data-gallery-index="0" onclick="openGallerySlide(0)" aria-label="Открыть экран Главная">
+            <button class="neo-shot active" data-gallery-index="0" onclick="openGallerySlide(0)">
               <img src="screen_main_349.jpg" alt="Главная Каптёрка PRO — склады и операции" loading="lazy" decoding="async" fetchpriority="low">
               <span><strong>Главная</strong><small>Склады и быстрые операции</small></span>
             </button>
-            <button class="neo-shot" data-gallery-index="1" onclick="openGallerySlide(1)" aria-label="Открыть экран Каталог">
+            <button class="neo-shot" data-gallery-index="1" onclick="openGallerySlide(1)">
               <img src="screen_catalog_349.jpg" alt="Каталог Каптёрка PRO — номенклатура и категории" loading="lazy" decoding="async" fetchpriority="low">
               <span><strong>Каталог</strong><small>Поиск, категории и номенклатура</small></span>
             </button>

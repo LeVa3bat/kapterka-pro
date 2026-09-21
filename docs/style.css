@@ -4001,3 +4001,23 @@ a.neo-trust-item:hover{transform:translateY(-1px);background:#111b15;border-colo
   .neo-home>section.pro-reveal.is-revealed{animation:proReveal .42s cubic-bezier(.2,.75,.25,1) both}
   @keyframes proReveal{from{opacity:.82;transform:translateY(8px)}to{opacity:1;transform:none}}
 }
+
+
+/* LIGHTHOUSE MOBILE READABILITY FIX 2026-09-21 */
+@media(max-width:560px){
+  .neo-feature small,
+  .neo-fit-card small,
+  .neo-start-grid small,
+  .neo-why-card p,
+  .neo-resource-card small,
+  .neo-release-points span,
+  .neo-plan-card>p,
+  .neo-faq-list details p,
+  .neo-final-card p{
+    font-size:.75rem!important;
+    line-height:1.45!important;
+  }
+  .neo-trust-item small{font-size:.72rem!important;line-height:1.4!important}
+  .neo-faq-list summary{font-size:.78rem!important;line-height:1.4!important}
+  .neo-plan-points span{font-size:.68rem!important;line-height:1.35!important}
+}
