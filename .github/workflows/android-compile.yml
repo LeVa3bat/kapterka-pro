@@ -25,7 +25,7 @@ permissions:
 jobs:
   compile:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,18 +36,26 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android SDK packages
-        shell: bash
-        run: |
-          yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager "platform-tools" "build-tools;36.0.0" "platforms;android-36"
-          sdkmanager "platforms;android-36.1" || true
-
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+
+      - name: Show Android SDK
+        shell: bash
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+          command -v sdkmanager || true
+          sdkmanager --version
+
+      - name: Accept Android SDK licenses
+        shell: bash
+        run: yes | sdkmanager --licenses >/dev/null || true
+
+      - name: Install required Android SDK
+        shell: bash
+        run: |
+          sdkmanager "platform-tools" "build-tools;36.0.0" "platforms;android-36"
+          sdkmanager "platforms;android-36.1" || true
 
       - name: Compile debug Kotlin
         run: ./gradlew :app:compileDebugKotlin --no-daemon --stacktrace
