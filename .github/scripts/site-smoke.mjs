@@ -114,6 +114,48 @@ if (!/Contact:\s*mailto:/i.test(securityTxt) || !/Canonical:\s*https:\/\/kapterk
 if (!index.includes('v3.4.9') && !index.includes('3.4.9')) fail('site version 3.4.9 is not visible');
 if (!index.includes('сборка 31') && !index.includes('Сборка 31')) fail('site build 31 marker is missing');
 
+
+const htmlFiles = ['docs/index.html', 'docs/privacy.html', 'docs/terms.html', 'docs/404.html'];
+const missingLocalTargets = [];
+for (const htmlFile of htmlFiles) {
+  const source = read(htmlFile);
+  const baseDir = path.dirname(htmlFile);
+  const refs = [...source.matchAll(/(?:href|src)=["']([^"']+)["']/g)].map((m) => m[1]);
+  for (const ref of refs) {
+    if (!ref || ref.startsWith('#') || ref.startsWith('mailto:') || ref.startsWith('tel:') ||
+        ref.startsWith('javascript:') || /^https?:\/\//i.test(ref) || ref.startsWith('data:')) continue;
+    const clean = ref.split('#')[0].split('?')[0];
+    if (!clean) continue;
+    const target = clean.startsWith('/')
+      ? path.join('docs', clean.replace(/^\/+/, ''))
+      : path.normalize(path.join(baseDir, clean));
+    if (!fs.existsSync(path.join(root, target))) missingLocalTargets.push(`${htmlFile} -> ${ref}`);
+  }
+}
+if (missingLocalTargets.length) fail(`broken local links/assets: ${missingLocalTargets.join(', ')}`);
+else ok('internal links/assets resolve');
+
+const modalIds = [...index.matchAll(/class="modal-overlay" id="([^"]+)"/g)].map((m) => m[1]);
+const openModalTargets = [...index.matchAll(/openModal\('([^']+)'\)/g)].map((m) => m[1]);
+const missingModals = [...new Set(openModalTargets.filter((id) => !modalIds.includes(id)))];
+if (missingModals.length) fail(`openModal targets are missing: ${missingModals.join(', ')}`);
+else ok('modal targets exist');
+
+const criticalScripts = app + '\n' + auth;
+const inlineCalls = [...index.matchAll(/(?:onclick|onsubmit)=["']([^"']+)["']/g)]
+  .flatMap((m) => [...m[1].matchAll(/\b([A-Za-z_$][\w$]*)\s*\(/g)].map((x) => x[1]))
+  .filter((name) => !['if'].includes(name));
+const definedFunctions = new Set([...criticalScripts.matchAll(/(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(/g)].map((m) => m[1]));
+['openModal','closeModal'].forEach((name) => definedFunctions.add(name));
+const missingHandlers = [...new Set(inlineCalls.filter((name) => !definedFunctions.has(name)))];
+if (missingHandlers.length) fail(`inline handlers reference missing functions: ${missingHandlers.join(', ')}`);
+else ok('inline handlers have matching functions');
+
+if (index.includes('112255061')) fail('retired Yandex Metrika counter returned');
+if (index.includes('webvisor:true')) fail('Webvisor must remain disabled on auth/payment pages');
+if (!index.includes("ym(112482290, 'init'")) fail('current Yandex Metrika counter is missing');
+else ok('analytics configuration matches current privacy settings');
+
 const docsFiles = fs.readdirSync(path.join(root, 'docs'));
 const staleArtifacts = docsFiles.filter((name) => /\.(patch|diff)$/i.test(name) || /-v3\.4\.[0-8].*\.apk$/i.test(name));
 if (staleArtifacts.length) fail(`stale public artifacts found: ${staleArtifacts.join(', ')}`);
