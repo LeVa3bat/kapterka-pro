@@ -496,19 +496,7 @@ function verifyKeyChecksum(key) {
   return parts[3] === expected;
 }
 
-function generateMilitaryLicenseKey() {
-  function seg(len) {
-    let s = '';
-    for (let i = 0; i < len; i++) {
-      s += CHECKSUM_CHARS.charAt(Math.floor(Math.random() * CHECKSUM_CHARS.length));
-    }
-    return s;
-  }
-  const p1 = seg(4);
-  const p2 = seg(4);
-  const p3 = computeKeyChecksum(p1, p2);
-  return `KAPT-${p1}-${p2}-${p3}`;
-}
+
 
 // 5. Render Keys History Table
 function getKeysHistory() {
@@ -591,7 +579,7 @@ function copyKeyText(text) {
 
   if (navigator.clipboard && window.isSecureContext) {
     navigator.clipboard.writeText(text).then(() => {
-      showToast(`Ключ ${text} скопирован в буфер обмена!`);
+      showToast('Ключ лицензии скопирован в буфер обмена.');
     }).catch(() => {
       fallbackCopy(text);
     });
@@ -622,7 +610,7 @@ function fallbackCopy(text) {
   textArea.select();
   try {
     document.execCommand('copy');
-    showToast(`Ключ ${text} скопирован в буфер обмена!`);
+    showToast('Ключ лицензии скопирован в буфер обмена.');
   } catch (err) {
     prompt('Скопируйте ключ вручную:', text);
   }
@@ -633,9 +621,6 @@ const YOOKASSA_PAYMENT_URL = 'https://yookassa.ru/my/i/apiQMG65ZHIE/l';
 let paymentRequestInFlight = false;
 
 // 7. YooKassa Real Payment & Automated Verification Flow
-let paymentPollingTimer = null;
-let paymentPollingSeconds = 0;
-
 async function processYooKassaPayment() {
   if (paymentRequestInFlight) {
     showToast('Платёж уже создаётся. Подождите несколько секунд.');
@@ -861,7 +846,7 @@ function verifyWithManualOrderId() {
 
   applyNewPaidKey(enteredKey, callsign);
   input.value = '';
-  showToast(`✓ Ключ ${enteredKey} успешно активирован на 30 дней!`);
+  showToast('✓ Ключ лицензии привязан к кабинету.');
 }
 
 function applyNewPaidKey(newKey, callsign) {
@@ -957,7 +942,7 @@ function linkLicenseKeyInCabinet() {
   const callsign = localStorage.getItem(STORAGE_USER_CALLSIGN) || 'Боец';
   applyNewPaidKey(key, callsign);
   input.value = '';
-  showToast(`✓ Ключ ${key} успешно привязан к вашему личному кабинету!`);
+  showToast('✓ Ключ лицензии привязан к личному кабинету.');
 }
 
 // 9. Modals Controller
