@@ -1,6 +1,7 @@
 package com.example
 
 import android.os.Bundle
+import android.content.Intent
 import android.widget.Toast
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -172,6 +173,21 @@ class MainActivity : ComponentActivity() {
             MyApplicationTheme(darkTheme = isDarkTheme) {
                 KapterkaAppRoot(viewModel = viewModel, isDarkTheme = isDarkTheme)
             }
+        }
+
+        handlePaymentReturn(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handlePaymentReturn(intent)
+    }
+
+    private fun handlePaymentReturn(sourceIntent: Intent?) {
+        val data = sourceIntent?.data ?: return
+        if (data.scheme == "kapterka" && data.host == "payment_success") {
+            viewModel.confirmPaymentAndActivateLicense()
         }
     }
 }
