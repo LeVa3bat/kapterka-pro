@@ -3785,3 +3785,20 @@ a.neo-trust-item:hover{transform:translateY(-1px);background:#111b15;border-colo
 @media(max-width:380px){
   .neo-plan-card{flex-basis:89%}
 }
+
+
+/* SAFE RENDER PERFORMANCE 2026-09-21
+   Modern browsers can skip layout/paint for distant homepage sections until needed.
+   Unsupported browsers simply ignore this block. */
+@supports (content-visibility:auto) {
+  .neo-home > section:not(.neo-hero):not(.neo-trust) {
+    content-visibility:auto;
+    contain-intrinsic-size:auto 420px;
+  }
+}
+@media (min-width: 1200px) {
+  .neo-home > section > .container,
+  .neo-footer > .container {
+    max-width:1180px;
+  }
+}

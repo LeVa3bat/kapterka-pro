@@ -12,9 +12,9 @@
     *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:20px;background:#0d140e;color:#e8ede6;font-family:Inter,system-ui,-apple-system,sans-serif}
     .card{width:min(520px,100%);padding:28px;border:1px solid #26382b;border-radius:20px;background:linear-gradient(180deg,#151f18,#101712);box-shadow:0 24px 70px rgba(0,0,0,.35)}
     .icon{font-size:44px}.code{margin-top:12px;font:800 13px/1.2 ui-monospace,monospace;color:#8daa59;letter-spacing:.14em}h1{margin:8px 0 10px;font-size:28px}p{margin:0;color:#9aaa9f;line-height:1.55}
-    .actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:22px}a{display:flex;align-items:center;justify-content:center;min-height:46px;padding:10px 14px;border-radius:12px;text-decoration:none;font-weight:800}
+    .actions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:22px}a{display:flex;align-items:center;justify-content:center;min-height:46px;padding:10px 14px;border-radius:12px;text-decoration:none;font-weight:800}
     .primary{background:#8daa59;color:#0b0f0c}.secondary{border:1px solid #334b38;color:#dbe4dd;background:#111913}
-    @media(max-width:520px){.actions{grid-template-columns:1fr}}
+    @media(max-width:620px){.actions{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
@@ -26,6 +26,7 @@
     <div class="actions">
       <a class="primary" href="/">На главную</a>
       <a class="secondary" href="/#tabDownload">Скачать приложение</a>
+      <a class="secondary" href="/help.html">Помощь</a>
     </div>
   </main>
 </body>

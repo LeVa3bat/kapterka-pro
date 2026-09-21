@@ -25,6 +25,7 @@ const requiredFiles = [
   'docs/privacy.html',
   'docs/terms.html',
   'docs/updates.html',
+  'docs/help.html',
   'docs/security.html',
   'docs/uchet-ostatkov-na-telefone.html',
   'docs/uchet-imushchestva-offline.html',
@@ -51,7 +52,8 @@ const guideFiles = [
   'docs/uchet-imushchestva-offline.html',
   'docs/uchet-ostatkov-na-telefone.html',
   'docs/security.html',
-  'docs/updates.html'
+  'docs/updates.html',
+  'docs/help.html'
 ];
 for (const file of guideFiles) {
   const source = read(file);
@@ -161,7 +163,7 @@ if (!index.includes('v3.4.9') && !index.includes('3.4.9')) fail('site version 3.
 if (!index.includes('сборка 31') && !index.includes('Сборка 31')) fail('site build 31 marker is missing');
 
 
-const htmlFiles = ['docs/index.html', 'docs/privacy.html', 'docs/terms.html', 'docs/security.html', 'docs/updates.html', 'docs/skladskoy-uchet-android.html', 'docs/uchet-imushchestva-offline.html', 'docs/uchet-ostatkov-na-telefone.html', 'docs/404.html'];
+const htmlFiles = ['docs/index.html', 'docs/privacy.html', 'docs/terms.html', 'docs/security.html', 'docs/updates.html', 'docs/help.html', 'docs/skladskoy-uchet-android.html', 'docs/uchet-imushchestva-offline.html', 'docs/uchet-ostatkov-na-telefone.html', 'docs/404.html'];
 const missingLocalTargets = [];
 for (const htmlFile of htmlFiles) {
   const source = read(htmlFile);
@@ -255,6 +257,7 @@ const requiredSitemapUrls = [
   'https://kapterka-pro.ru/terms.html',
   'https://kapterka-pro.ru/security.html',
   'https://kapterka-pro.ru/updates.html',
+  'https://kapterka-pro.ru/help.html',
   'https://kapterka-pro.ru/skladskoy-uchet-android.html',
   'https://kapterka-pro.ru/uchet-imushchestva-offline.html',
   'https://kapterka-pro.ru/uchet-ostatkov-na-telefone.html'
@@ -277,3 +280,9 @@ else ok('professional trust/security/update surfaces are present');
 if (!index.includes('id="plans"') || !index.includes('neo-plan-demo') || !index.includes('neo-plan-pro')) fail('professional Demo/PRO comparison section is missing');
 if (!index.includes('3 дня') || !index.includes('490 ₽') || !index.includes('30 дней')) fail('Demo/PRO terms are missing from homepage');
 else ok('professional demo/PRO section is present');
+
+const helpPage = read('docs/help.html');
+if ((helpPage.match(/<h1\b/gi) || []).length !== 1 || !/rel="canonical" href="https:\/\/kapterka-pro\.ru\/help\.html"/.test(helpPage)) fail('help page SEO structure is invalid');
+if (!helpPage.includes('https://t.me/kapterka_help_bot') || !helpPage.includes('index.html#tabDownload')) fail('help page support/install routes are incomplete');
+if (!index.includes('href="help.html"')) fail('homepage does not link to support center');
+else ok('professional support center is present and linked');
