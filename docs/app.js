@@ -230,8 +230,6 @@ function updateAuthUI() {
   const sessionEmail = document.getElementById('sessionEmailText');
   const sessionChip = document.getElementById('sessionNewsletterChip');
 
-  const adminQuickBadge = document.getElementById('adminQuickBadge');
-
   if (user) {
     if (authContainer) authContainer.style.display = 'none';
     if (cabinetContent) cabinetContent.style.display = 'block';
@@ -243,16 +241,10 @@ function updateAuthUI() {
         ? '✓ Подписка на обновления ПО активна'
         : 'Рассылка отключена';
     }
-    // Show admin link if developer or admin
-    if (adminQuickBadge) {
-      const isDev = user.isAdmin === true || localStorage.getItem('kapterka_admin_mode') === 'true';
-      adminQuickBadge.style.display = isDev ? 'inline-flex' : 'none';
-    }
   } else {
     if (authContainer) authContainer.style.display = 'block';
     if (cabinetContent) cabinetContent.style.display = 'none';
     if (navCallsign) navCallsign.textContent = 'Войти / Регистрация';
-    if (adminQuickBadge) adminQuickBadge.style.display = 'none';
   }
 }
 
@@ -808,7 +800,6 @@ function applyNewPaidKey(newKey, callsign) {
   const liveDisplay = document.getElementById('liveGeneratedKeyDisplay');
   const liveStatus = document.getElementById('liveKeyStatusDisplay');
   const btnCopy = document.getElementById('btnCopyPaidKey');
-  const btnMail = document.getElementById('btnSendKeyToEmail');
   const btnCab = document.getElementById('btnGoToCabinetAfterPay');
 
   if (liveDisplay) {
@@ -820,7 +811,6 @@ function applyNewPaidKey(newKey, callsign) {
     btnCopy.style.display = 'block';
     btnCopy.removeAttribute('disabled');
   }
-  if (btnMail) btnMail.style.display = 'block';
   if (btnCab) btnCab.style.display = 'block';
 
   // Update Local Storage active key
@@ -869,7 +859,20 @@ function applyNewPaidKey(newKey, callsign) {
   renderKeysHistory();
   updateAuthUI();
 
-  showToast(`Лицензия активирована! Ключ: ${newKey}`);
+  // Conversion tracking without sending the license key or personal data.
+  trackYm('reachGoal', 'license_activated', { plan: 'PRO_30' });
+  if (typeof window.gtag === 'function') {
+    try {
+      window.gtag('event', 'purchase', {
+        transaction_id: 'license_' + Date.now(),
+        value: 490,
+        currency: 'RUB',
+        items: [{ item_name: 'Каптёрка PRO — 30 дней', price: 490, quantity: 1 }]
+      });
+    } catch (e) {}
+  }
+
+  showToast('Лицензия активирована. Ключ сохранён в личном кабинете.');
 }
 
 // Ручная привязка ключа бойцом в Личном кабинете (для синхронизации с приложением на Android)
