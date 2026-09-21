@@ -159,12 +159,14 @@
     const user = {
       ...(oldSession || {}),
       ...(serverUser || {}),
-      email: serverUser?.email || pendingEmail || oldSession?.email || "",
-      callsign: serverUser?.callsign || oldSession?.callsign || localStorage.getItem("kapterka_user_callsign") || "Пользователь",
-      rank: serverUser?.rank || oldSession?.rank || localStorage.getItem("kapterka_user_rank") || "",
-      unitName: serverUser?.unitName || oldSession?.unitName || localStorage.getItem("kapterka_unit_name") || "",
-      unitKey: serverUser?.unitKey || oldSession?.unitKey || localStorage.getItem("kapterka_unit_key") || "",
-      phone: oldSession?.phone || localStorage.getItem("kapterka_user_phone") || "",
+      email: serverUser?.email || pendingEmail || oldSession?.email || localStorage.getItem("kapterka_user_email") || "",
+      // On the same device, preserve profile fields already edited in the cabinet.
+      // On a new device localStorage is empty, so server values are used automatically.
+      callsign: localStorage.getItem("kapterka_user_callsign") || oldSession?.callsign || serverUser?.callsign || "Пользователь",
+      rank: localStorage.getItem("kapterka_user_rank") || oldSession?.rank || serverUser?.rank || "",
+      unitName: localStorage.getItem("kapterka_unit_name") || oldSession?.unitName || serverUser?.unitName || "",
+      unitKey: localStorage.getItem("kapterka_unit_key") || oldSession?.unitKey || serverUser?.unitKey || "",
+      phone: localStorage.getItem("kapterka_user_phone") || oldSession?.phone || "",
       keys: oldKeys || [],
       emailVerified: true,
       authProvider: "email_otp_v2",
