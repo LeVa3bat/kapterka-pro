@@ -142,6 +142,29 @@
   </script>
   <noscript><div><img src="https://mc.yandex.ru/watch/112482290" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
   <!-- /Yandex.Metrika counter -->
+
+  <script>
+    window.KAPTERKA_WEB_VERSION = "3.4.9-web.35";
+    (function () {
+      try {
+        const key = 'kapterka_web_version_seen';
+        fetch('version.json?_=' + Date.now(), { cache: 'no-store' })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (data) {
+            if (!data || !data.version) return;
+            const seen = localStorage.getItem(key);
+            localStorage.setItem(key, data.version);
+            if (seen && seen !== data.version && !sessionStorage.getItem('kapterka_reload_' + data.version)) {
+              sessionStorage.setItem('kapterka_reload_' + data.version, '1');
+              const url = new URL(location.href);
+              url.searchParams.set('v', data.version);
+              location.replace(url.toString());
+            }
+          })
+          .catch(function () {});
+      } catch (_) {}
+    })();
+  </script>
 </head>
 <body>
 

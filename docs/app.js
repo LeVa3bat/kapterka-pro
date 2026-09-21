@@ -1,3 +1,4 @@
+const KAPTERKA_WEB_BUILD = window.KAPTERKA_WEB_VERSION || 'unknown';
 // ==========================================================================
 // KAPTERKA PRO — APP.JS (WITH USER REGISTRATION, EMAIL VERIFICATION & CABINET)
 // ==========================================================================

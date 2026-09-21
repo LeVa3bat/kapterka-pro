@@ -30,6 +30,7 @@ const requiredFiles = [
   'docs/robots.txt',
   'docs/sitemap.xml',
   'docs/site.webmanifest',
+  'docs/version.json',
   'docs/404.html',
   'docs/.well-known/security.txt',
   'docs/903fd952854fcb833f54ad87ef4b033b.txt',
@@ -223,3 +224,7 @@ if (!app.includes('registryVerified') || !app.includes('expiresAt')) fail('licen
 if (app.includes("status: 'Активен (30 дн)'")) fail('static 30-day license status returned');
 if (!index.includes('id="cabDaysLeft"') || !index.includes('id="cabExpiryProgress"')) fail('license countdown UI is missing');
 else ok('license registry countdown is wired');
+
+const versionData = JSON.parse(read('docs/version.json'));
+if (!versionData.version || !index.includes('KAPTERKA_WEB_VERSION')) fail('web cache-version handshake is missing');
+else ok('web cache-version handshake is present');
