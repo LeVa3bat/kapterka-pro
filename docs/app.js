@@ -476,6 +476,24 @@ function switchMainTab(tabId) {
     if (mobileBtn) mobileBtn.classList.add('active');
   }
 
+  // Keep a shareable/restorable URL without reloading the page.
+  try {
+    if (history && history.replaceState) {
+      history.replaceState(null, '', '#' + tabId);
+    }
+  } catch (e) {}
+
+  // Refresh payment form from the authenticated/local profile when opening payment.
+  if (tabId === 'tabPayment') {
+    const currentUser = getActiveUserSession();
+    const callsign = currentUser?.callsign || localStorage.getItem(STORAGE_USER_CALLSIGN) || '';
+    const email = currentUser?.email || localStorage.getItem(STORAGE_USER_EMAIL) || '';
+    const payCallsignInput = document.getElementById('payCallsignInput');
+    const payEmailInput = document.getElementById('payEmailInput');
+    if (payCallsignInput && callsign) payCallsignInput.value = callsign;
+    if (payEmailInput && email) payEmailInput.value = email;
+  }
+
   // Scroll smoothly to top of content
   window.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -1610,6 +1628,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Tactical Screenshots Carousel Controller
   initScreenshotsCarousel();
+});
+
+// Restore tab from URL hash on refresh/back-forward navigation.
+document.addEventListener('DOMContentLoaded', () => {
+  const allowedTabs = new Set(['tabOverview','tabCabinet','tabPayment','tabSync','tabDownload']);
+  const fromHash = (window.location.hash || '').replace('#','');
+  if (allowedTabs.has(fromHash)) {
+    switchMainTab(fromHash);
+  }
+});
+
+window.addEventListener('hashchange', () => {
+  const tabId = (window.location.hash || '').replace('#','');
+  if (['tabOverview','tabCabinet','tabPayment','tabSync','tabDownload'].includes(tabId)) {
+    const target = document.getElementById(tabId);
+    if (target && !target.classList.contains('active')) switchMainTab(tabId);
+  }
 });
 
 // =========================================================================
