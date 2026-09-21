@@ -20,7 +20,7 @@ const STORAGE_ACTIVE_KEY = 'kapterka_active_key';
 const STORAGE_KEYS_HISTORY = 'kapterka_keys_history';
 
 // Default initial state for clean empty inputs
-const YM_IDS = [112482290, 112255061];
+const YM_IDS = [112482290];
 function trackYm(action, ...args) {
   if (typeof window.ym === 'function') {
     YM_IDS.forEach(id => {
@@ -338,7 +338,8 @@ function switchMainTab(tabId) {
   }
 
   // Scroll smoothly to top of content
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+  window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
 
   // Track virtual pageview in Google Analytics and Yandex.Metrika
   try {

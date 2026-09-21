@@ -97,6 +97,12 @@ else ok('APK download link is present');
 if (!index.includes('rel="manifest"') || !index.includes('site.webmanifest')) fail('manifest link is missing from index.html');
 else ok('manifest link is present');
 
+if (!/name=["']viewport["'][^>]*viewport-fit=cover/.test(index)) fail('mobile viewport must include viewport-fit=cover');
+else ok('mobile viewport supports display cutouts/safe areas');
+
+if (!index.includes('"softwareRequirements": "Android 7.0 or later"')) fail('site compatibility text no longer matches minSdk 24');
+else ok('site Android compatibility matches minSdk 24');
+
 const manifest = JSON.parse(read('docs/site.webmanifest'));
 if (manifest.name !== 'Каптёрка PRO' || !manifest.start_url || !Array.isArray(manifest.icons) || !manifest.icons.length) {
   fail('site.webmanifest is incomplete');
@@ -151,7 +157,7 @@ const missingHandlers = [...new Set(inlineCalls.filter((name) => !definedFunctio
 if (missingHandlers.length) fail(`inline handlers reference missing functions: ${missingHandlers.join(', ')}`);
 else ok('inline handlers have matching functions');
 
-if (index.includes('112255061')) fail('retired Yandex Metrika counter returned');
+if (publicText.includes('112255061')) fail('retired Yandex Metrika counter returned in public web code');
 if (index.includes('webvisor:true')) fail('Webvisor must remain disabled on auth/payment pages');
 if (!index.includes("ym(112482290, 'init'")) fail('current Yandex Metrika counter is missing');
 else ok('analytics configuration matches current privacy settings');
