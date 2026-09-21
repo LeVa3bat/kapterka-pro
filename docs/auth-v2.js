@@ -48,6 +48,21 @@
     });
   }
 
+  function setBusy(button, busy, busyText) {
+    if (!button) return;
+    if (busy) {
+      button.dataset.originalText = button.textContent || "";
+      button.disabled = true;
+      if (busyText) button.textContent = busyText;
+    } else {
+      button.disabled = false;
+      if (button.dataset.originalText) {
+        button.textContent = button.dataset.originalText;
+        delete button.dataset.originalText;
+      }
+    }
+  }
+
   function authErrorMessage(code, data) {
     const map = {
       INVALID_EMAIL: "Проверьте адрес электронной почты.",
@@ -280,6 +295,7 @@
   }
 
   async function requestRegistrationCode() {
+    const actionBtn = document.querySelector("#regStepInputs button[onclick*='startRegistrationProcess']");
     const callsign = document.getElementById("regCallsign")?.value.trim() || "";
     const email = document.getElementById("regEmail")?.value.trim().toLowerCase() || "";
     const rank = document.getElementById("regRank")?.value.trim() || "";
@@ -293,6 +309,7 @@
     pendingRegister = { callsign, rank, newsletter };
 
     try {
+      setBusy(actionBtn, true, "Отправляю код…");
       notify("Отправляю код подтверждения...");
       const data = await jsonp({
         action: "auth_request_code",
@@ -308,10 +325,13 @@
     } catch (err) {
       console.warn(err);
       notify("Не удалось связаться с сервером авторизации.");
+    } finally {
+      setBusy(actionBtn, false);
     }
   }
 
   async function requestLoginCode() {
+    const actionBtn = document.querySelector("#panelLogin button[onclick*='processUserLogin']");
     const email = document.getElementById("loginEmail")?.value.trim().toLowerCase() || pendingEmail || "";
     if (!email || !email.includes("@")) return notify("Проверьте Email.");
 
@@ -320,6 +340,7 @@
     pendingRegister = null;
 
     try {
+      setBusy(actionBtn, true, "Отправляю код…");
       notify("Отправляю код для входа...");
       const data = await jsonp({ action: "auth_request_code", mode: "login", email });
       if (!data.ok) return notify(authErrorMessage(data.error, data));
@@ -339,6 +360,8 @@
     } catch (err) {
       console.warn(err);
       notify("Не удалось связаться с сервером авторизации.");
+    } finally {
+      setBusy(actionBtn, false);
     }
   }
 
