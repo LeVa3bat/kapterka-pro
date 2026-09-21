@@ -392,6 +392,27 @@
     notify("Вы вышли из личного кабинета.");
   }
 
+  async function refreshExistingSession() {
+    const token = localStorage.getItem(TOKEN_KEY) || "";
+    const expiresAt = Number(localStorage.getItem(TOKEN_EXP_KEY) || 0);
+    if (!token) return;
+    if (expiresAt && Date.now() > expiresAt) {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(TOKEN_EXP_KEY);
+      return;
+    }
+
+    try {
+      const data = await jsonp({ action: "auth_session", token: token }, 12000);
+      if (data && data.ok && data.user) {
+        migrateAndSetSession(data.user, token, data.sessionExpiresAt || expiresAt);
+      }
+    } catch (err) {
+      console.warn("Web Auth session refresh skipped:", err);
+      // Keep the current local profile/session as a safe fallback.
+    }
+  }
+
   function activate() {
     if (!enabled()) return;
     adaptUi();
@@ -405,6 +426,7 @@
     window.logoutUserSession = logoutV2;
 
     document.documentElement.classList.add("auth-v2-enabled");
+    refreshExistingSession();
   }
 
   if (document.readyState === "loading") {
