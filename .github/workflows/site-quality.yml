@@ -1,9 +1,13 @@
 name: Site quality audit
 
 on:
-  workflow_run:
-    workflows: ["pages build and deployment"]
-    types: [completed]
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - '.github/scripts/site-live-check.mjs'
+      - '.github/scripts/lighthouse-budget.mjs'
+      - '.github/workflows/site-quality.yml'
   schedule:
     - cron: '17 5 * * 1'
   workflow_dispatch:
@@ -11,11 +15,14 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: site-quality-live
+  cancel-in-progress: true
+
 jobs:
   quality:
-    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 18
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -24,6 +31,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+
+      - name: Allow GitHub Pages to publish
+        if: github.event_name == 'push'
+        run: sleep 60
 
       - name: Verify live pages and external links
         run: node .github/scripts/site-live-check.mjs
