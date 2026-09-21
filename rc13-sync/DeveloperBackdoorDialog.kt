@@ -146,4 +146,140 @@ data class DeveloperDiagnosticsSnapshot(
 }
 
 /**
- * Секретный диалог авторизации разработчика (не
+ * Секретный диалог авторизации разработчика (не отображается в общем интерфейсе)
+ */
+@Composable
+fun DeveloperAccessPromptDialog(
+    onSuccessAuth: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    val authPrefs = remember(context) {
+        context.getSharedPreferences("kapterka_dev_access", Context.MODE_PRIVATE)
+    }
+    var secretKeyInput by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf("") }
+    var failedAttempts by remember { mutableIntStateOf(authPrefs.getInt("failed_attempts", 0)) }
+    var lockedUntilMillis by remember { mutableLongStateOf(authPrefs.getLong("locked_until_millis", 0L)) }
+
+    fun sha256Hex(value: String): String = MessageDigest.getInstance("SHA-256")
+        .digest(value.toByteArray(Charsets.UTF_8))
+        .joinToString("") { "%02x".format(it) }
+
+    fun isDeveloperKeyValid(value: String): Boolean {
+        val expected = BuildConfig.DEV_ADMIN_KEY_SHA256
+        if (expected.length != 64) return false
+        val actual = sha256Hex(value.trim())
+        return MessageDigest.isEqual(actual.toByteArray(), expected.toByteArray())
+    }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier.fillMaxWidth(0.92f),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = TacticalSurface),
+            border = BorderStroke(1.dp, TacticalGold.copy(alpha = 0.6f))
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(18.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Lock,
+                            contentDescription = null,
+                            tint = TacticalGold,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "СЛУЖЕБНЫЙ ТЕРМИНАЛ",
+                            color = TacticalGoldText,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily.Monospace
+                        )
+                    }
+                    IconButton(onClick = onDismiss, modifier = Modifier.size(26.dp)) {
+                        Icon(Icons.Default.Close, contentDescription = "Закрыть", tint = TacticalTextMuted)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = "Доступ к единому реестру бойцов и управлению лицензиями всех подразделений.",
+                    color = TacticalTextSecondary,
+                    fontSize = 11.sp
+                )
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                OutlinedTextField(
+                    value = secretKeyInput,
+                    onValueChange = {
+                        secretKeyInput = it
+                        errorMessage = ""
+                    },
+                    placeholder = { Text("Секретный ключ разработчика", color = TacticalTextDim, fontSize = 12.sp) },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = TacticalSurfaceLight,
+                        unfocusedContainerColor = TacticalSurfaceLight,
+                        focusedBorderColor = TacticalGold,
+                        unfocusedBorderColor = TacticalBorder,
+                        focusedTextColor = TacticalTextPrimary,
+                        unfocusedTextColor = TacticalTextPrimary
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                )
+
+                if (errorMessage.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(text = errorMessage, color = Color(0xFFFF6B6B), fontSize = 11.sp)
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text("Отмена", color = TacticalTextMuted, fontSize = 12.sp)
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = {
+                            val nowMillis = System.currentTimeMillis()
+                            if (nowMillis < lockedUntilMillis) {
+                                val seconds = ((lockedUntilMillis - nowMillis + 999L) / 1000L).coerceAtLeast(1L)
+                                errorMessage = "Слишком много попыток. Повторите через $seconds сек."
+                            } else if (isDeveloperKeyValid(secretKeyInput)) {
+                                secretKeyInput = ""
+                                failedAttempts = 0
+                                lockedUntilMillis = 0L
+                                authPrefs.edit()
+                                    .remove("failed_attempts")
+                                    .remove("locked_until_millis")
+                                    .apply()
+                                onSuccessAuth()
+                            } else {
+                                failedAttempts += 1
+                                secretKeyInput = ""
+                                if (failedAttempts >= 4) {
+                                    failedAttempts = 0
+                                    lockedUntilMillis = nowMillis + 30_000L
+                                    authPrefs.edit()
+                                        .putInt("failed_attempts", 0)
+                                        .putLong("locked_until_millis", lockedUntilMillis)
+                                        .apply()
+                                    errorMessage = "Доступ временно заблокирован на 30 секунд."
