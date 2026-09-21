@@ -32,10 +32,6 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Allow GitHub Pages to publish
-        if: github.event_name == 'push'
-        run: sleep 60
-
       - name: Verify live pages and external links
         run: node .github/scripts/site-live-check.mjs
 

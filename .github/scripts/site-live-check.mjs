@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+
 const targets = [
   { name: 'Главная', url: 'https://kapterka-pro.ru/', own: true },
   { name: 'Помощь', url: 'https://kapterka-pro.ru/help.html', own: true },
@@ -11,6 +13,31 @@ const targets = [
   { name: 'Telegram поддержка', url: 'https://t.me/kapterka_help_bot', own: false }
 ];
 const timeoutMs = 15000;
+const expectedVersion = JSON.parse(fs.readFileSync('docs/version.json', 'utf8')).version;
+
+async function waitForPublishedVersion() {
+  for (let attempt = 1; attempt <= 15; attempt++) {
+    try {
+      const response = await fetch('https://kapterka-pro.ru/version.json?_=' + Date.now(), {
+        cache: 'no-store',
+        headers: { 'user-agent': 'Kapterka-Pro-Site-Quality/1.0' }
+      });
+      if (response.ok) {
+        const live = await response.json();
+        if (live?.version === expectedVersion) {
+          console.log(`OK: live web version is ${live.version}`);
+          return;
+        }
+        console.log(`WAIT: live=${live?.version || 'unknown'}, expected=${expectedVersion} (attempt ${attempt}/15)`);
+      }
+    } catch (error) {
+      console.log(`WAIT: version probe failed: ${error.name || error.message} (attempt ${attempt}/15)`);
+    }
+    await new Promise(resolve => setTimeout(resolve, 12000));
+  }
+  throw new Error(`Live site did not reach expected version ${expectedVersion}`);
+}
+
 let failed = false;
 async function check(target) {
   const controller = new AbortController();
@@ -41,6 +68,7 @@ async function check(target) {
     } else console.warn(`WARN: external ${target.name} could not be probed: ${error.name || error.message}`);
   } finally { clearTimeout(timer); }
 }
+await waitForPublishedVersion();
 for (const target of targets) await check(target);
 if (failed) process.exit(1);
 console.log('Live link check PASSED.');
