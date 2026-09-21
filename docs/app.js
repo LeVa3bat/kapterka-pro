@@ -315,10 +315,14 @@ function switchMainTab(tabId) {
   if (mobileNav) mobileNav.classList.remove('open');
   if (mobileToggle) mobileToggle.setAttribute('aria-expanded', 'false');
 
-  // Keep a shareable/restorable URL without reloading the page.
+  // Keep a shareable/restorable URL. New selections go into browser history,
+  // while restoring the already-selected hash does not create duplicate entries.
   try {
-    if (history && history.replaceState) {
-      history.replaceState(null, '', '#' + tabId);
+    const nextHash = '#' + tabId;
+    if (history && history.pushState && window.location.hash !== nextHash) {
+      history.pushState({ tabId }, '', nextHash);
+    } else if (history && history.replaceState) {
+      history.replaceState({ tabId }, '', nextHash);
     }
   } catch (e) {}
 
@@ -1052,6 +1056,29 @@ document.addEventListener('DOMContentLoaded', () => {
   // Load profile data
   loadCabinetProfile();
 
+  function enableTablistKeyboardNavigation(tablist) {
+    if (!tablist) return;
+    const tabs = Array.from(tablist.querySelectorAll('[role="tab"]'));
+    tabs.forEach((tab, index) => {
+      tab.addEventListener('keydown', (event) => {
+        let targetIndex = null;
+        if (event.key === 'ArrowRight') targetIndex = (index + 1) % tabs.length;
+        if (event.key === 'ArrowLeft') targetIndex = (index - 1 + tabs.length) % tabs.length;
+        if (event.key === 'Home') targetIndex = 0;
+        if (event.key === 'End') targetIndex = tabs.length - 1;
+        if (targetIndex === null) return;
+
+        event.preventDefault();
+        const target = tabs[targetIndex];
+        target.focus();
+        const panelId = target.getAttribute('aria-controls');
+        if (panelId) switchMainTab(panelId);
+      });
+    });
+  }
+
+  document.querySelectorAll('[role="tablist"]').forEach(enableTablistKeyboardNavigation);
+
   // Mobile Toggle
   const mobileToggle = document.getElementById('mobileToggle');
   const mainTabNav = document.getElementById('mainTabNav');
@@ -1140,13 +1167,20 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-window.addEventListener('hashchange', () => {
+function restoreTabFromLocation() {
+  const allowed = ['tabOverview','tabCabinet','tabPayment','tabSync','tabDownload'];
   const tabId = (window.location.hash || '').replace('#','');
-  if (['tabOverview','tabCabinet','tabPayment','tabSync','tabDownload'].includes(tabId)) {
-    const target = document.getElementById(tabId);
-    if (target && !target.classList.contains('active')) switchMainTab(tabId);
+  const resolved = allowed.includes(tabId) ? tabId : 'tabOverview';
+  const target = document.getElementById(resolved);
+  if (target && !target.classList.contains('active')) {
+    // Temporarily normalize the URL before calling switchMainTab so it does not push a duplicate entry.
+    if (!tabId && history?.replaceState) history.replaceState({ tabId: resolved }, '', '#' + resolved);
+    switchMainTab(resolved);
   }
-});
+}
+
+window.addEventListener('hashchange', restoreTabFromLocation);
+window.addEventListener('popstate', restoreTabFromLocation);
 
 // SCREENSHOT LIGHTBOX
 // Lightbox modal opener
