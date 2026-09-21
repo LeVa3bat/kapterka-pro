@@ -460,7 +460,7 @@ fun PersonalLicenseDialog(
                             }
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                 Text("Ключ подразделения:", color = TacticalTextSecondary, fontSize = 11.sp)
-                                Text(profile?.unitKey ?: "kapt_default", color = TacticalGoldText, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
+                                Text(profile?.unitKey?.takeIf { it.isNotBlank() } ?: "не настроен", color = TacticalGoldText, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
                             }
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                 Text("ID устройства:", color = TacticalTextSecondary, fontSize = 11.sp)
