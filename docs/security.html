@@ -20,19 +20,20 @@
   <link rel="stylesheet" href="guide.css?v=3.4.9.3">
 </head>
 <body>
+  <a class="skip-link" href="#main-content">Перейти к содержимому</a>
   <header class="top"><div class="wrap"><a class="brand" href="index.html"><i>📦</i><span>Каптёрка PRO</span></a><a class="back" href="index.html">← На главную</a></div></header>
-  <main><div class="wrap">
+  <main id="main-content"><div class="wrap">
     <nav class="crumbs"><a href="index.html">Главная</a> / Безопасность</nav>
     <section class="hero">
       <div class="eyebrow">Прозрачность продукта</div>
       <h1>Безопасность и данные</h1>
-      <p class="lead">Что хранится на телефоне, что передаётся в сеть и как проверяется официальный APK. Здесь описана фактическая схема текущей версии 3.4.9.</p>
+      <p class="lead">Что хранится на телефоне, что передаётся в сеть и как проверяется официальный APK. Здесь описана фактическая схема текущей версии <span data-release-version>3.4.9</span>.</p>
       <div class="chips"><span>Android 7.0+</span><span>Room / SQLite</span><span>Firebase при синхронизации</span><span>ЮKassa</span></div>
     </section>
 
     <div class="status-grid">
-      <div class="status-card"><span>Приложение</span><strong>3.4.9</strong><small>build 31</small></div>
-      <div class="status-card"><span>Package</span><strong class="mono">com.aistudio.kapterka.jmwqve</strong><small>сохраняется между обновлениями</small></div>
+      <div class="status-card"><span>Приложение</span><strong data-release-version>3.4.9</strong><small>build <span data-release-code>31</span></small></div>
+      <div class="status-card"><span>Package</span><strong class="mono" data-release-package>com.aistudio.kapterka.jmwqve</strong><small>сохраняется между обновлениями</small></div>
       <div class="status-card"><span>Минимальный Android</span><strong>7.0+</strong><small>minSdk 24</small></div>
       <div class="status-card"><span>APK</span><strong class="good">Автоматически проверяется</strong><small>подпись + SHA-256 + версия</small></div>
     </div>
@@ -53,8 +54,8 @@
       <h2>Как проверяется официальный APK</h2>
       <p>GitHub автоматически анализирует опубликованный APK и сверяет его с Android-проектом и страницей загрузки.</p>
       <div class="spec">
-        <div><span>SHA-256 APK</span><strong class="mono">39ffa4cf13a50398235078a49b7dfaa420fdd095d3258bab8336edb79c410250</strong></div>
-        <div><span>SHA-256 сертификата подписи</span><strong class="mono">843a7e883914f3a7a5a7665ff07b2e8c43da87a24ee4dc35e1600758aee73cb9</strong></div>
+        <div><span>SHA-256 APK</span><strong class="mono" data-release-sha>39ffa4cf13a50398235078a49b7dfaa420fdd095d3258bab8336edb79c410250</strong></div>
+        <div><span>SHA-256 сертификата подписи</span><strong class="mono" data-release-signer>843a7e883914f3a7a5a7665ff07b2e8c43da87a24ee4dc35e1600758aee73cb9</strong></div>
         <div><span>Проверяется</span><strong>package • versionCode • versionName • minSdk</strong></div>
         <div><span>Совместимость</span><strong>текущая сборка проверена установкой поверх предыдущей версии</strong></div>
       </div>
@@ -78,5 +79,6 @@
     </div>
   </div></main>
   <footer class="footer"><div class="wrap"><span>© 2026 Каптёрка PRO • ИНН 250104230398</span><span><a href="terms.html">Оферта</a> · <a href="privacy.html">Конфиденциальность</a></span></div></footer>
+  <script src="release-meta.js?v=1"></script>
 </body>
 </html>

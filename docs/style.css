@@ -3992,3 +3992,12 @@ a.neo-trust-item:hover{transform:translateY(-1px);background:#111b15;border-colo
     grid-template-columns:1fr!important;
   }
 }
+
+
+/* QUALITY ACCESSIBILITY REVEAL 2026-09-21 */
+.skip-link{position:fixed;left:12px;top:10px;z-index:10000;transform:translateY(-160%);padding:9px 12px;border-radius:9px;background:#dff5e8;color:#07100a;font-size:.72rem;font-weight:900;text-decoration:none;box-shadow:0 8px 28px rgba(0,0,0,.35)}
+.skip-link:focus{transform:translateY(0)}
+@media(prefers-reduced-motion:no-preference){
+  .neo-home>section.pro-reveal.is-revealed{animation:proReveal .42s cubic-bezier(.2,.75,.25,1) both}
+  @keyframes proReveal{from{opacity:.82;transform:translateY(8px)}to{opacity:1;transform:none}}
+}

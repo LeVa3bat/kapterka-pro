@@ -20,21 +20,22 @@
   <link rel="stylesheet" href="guide.css?v=3.4.9.3">
 </head>
 <body>
+  <a class="skip-link" href="#main-content">Перейти к содержимому</a>
   <header class="top"><div class="wrap"><a class="brand" href="index.html"><i>📦</i><span>Каптёрка PRO</span></a><a class="back" href="index.html">← На главную</a></div></header>
-  <main><div class="wrap">
+  <main id="main-content"><div class="wrap">
     <nav class="crumbs"><a href="index.html">Главная</a> / Обновления</nav>
     <section class="hero">
       <div class="eyebrow">Release history</div>
       <h1>История обновлений</h1>
       <p class="lead">Что изменилось между версиями, какая сборка опубликована сейчас и какие параметры совместимости сохраняются.</p>
-      <div class="chips"><span>Текущая 3.4.9</span><span>build 31</span><span>Android 7.0+</span><span>Room DB v2</span></div>
-      <div class="cta"><a class="btn primary" href="kapterka-pro.apk" download>Скачать текущий APK</a><a class="btn secondary" href="https://apps.rustore.ru/app/com.aistudio.kapterka.jmwqve" target="_blank" rel="noopener noreferrer">Открыть RuStore</a></div>
+      <div class="chips"><span>Текущая <span data-release-version>3.4.9</span></span><span>build <span data-release-code>31</span></span><span>Android <span data-release-android>7.0+</span></span><span>Room DB v2</span></div>
+      <div class="cta"><a class="btn primary" href="kapterka-pro.apk" download>Скачать текущий APK</a><a class="btn secondary" href="https://apps.rustore.ru/app/com.aistudio.kapterka.jmwqve" data-release-rustore target="_blank" rel="noopener noreferrer">Открыть RuStore</a></div>
     </section>
 
     <div class="release-list">
       <article class="release">
-        <div class="release-head"><div><strong>Каптёрка PRO 3.4.9</strong><small>build 31 • стабилизационное обновление</small></div><span class="release-badge">Текущая версия</span></div>
-        <ul>
+        <div class="release-head"><div><strong>Каптёрка PRO <span data-release-version>3.4.9</span></strong><small>build <span data-release-code>31</span> • <span data-release-type>стабилизационное обновление</span></small></div><span class="release-badge">Текущая версия</span></div>
+        <ul data-release-highlights>
           <li>улучшено лицензирование и восстановление действующей лицензии;</li>
           <li>исправлена привязка данных при работе с ключом подразделения;</li>
           <li>исправлен счётчик активных устройств и добавлено регулярное обновление presence;</li>
@@ -43,8 +44,8 @@
           <li>улучшена мобильная версия сайта и отображение скриншотов.</li>
         </ul>
         <div class="spec">
-          <div><span>Package</span><strong class="mono">com.aistudio.kapterka.jmwqve</strong></div>
-          <div><span>versionCode</span><strong>31</strong></div>
+          <div><span>Package</span><strong class="mono" data-release-package>com.aistudio.kapterka.jmwqve</strong></div>
+          <div><span>versionCode</span><strong data-release-code>31</strong></div>
           <div><span>Room DB</span><strong>2 • destructive migration не добавлялась</strong></div>
           <div><span>Проверка обновления</span><strong>установка поверх предыдущей версии сохранила данные и лицензию</strong></div>
         </div>
@@ -74,5 +75,6 @@
     </div>
   </div></main>
   <footer class="footer"><div class="wrap"><span>© 2026 Каптёрка PRO • ИНН 250104230398</span><span><a href="terms.html">Оферта</a> · <a href="privacy.html">Конфиденциальность</a></span></div></footer>
+  <script src="release-meta.js?v=1"></script>
 </body>
 </html>

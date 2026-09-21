@@ -1,0 +1,71 @@
+name: Site quality audit
+
+on:
+  workflow_run:
+    workflows: ["pages build and deployment"]
+    types: [completed]
+  schedule:
+    - cron: '17 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify live pages and external links
+        run: node .github/scripts/site-live-check.mjs
+
+      - name: Detect Chrome
+        shell: bash
+        run: |
+          CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          test -n "$CHROME_BIN"
+          echo "CHROME_BIN=$CHROME_BIN" >> "$GITHUB_ENV"
+          "$CHROME_BIN" --version
+
+      - name: Lighthouse mobile
+        run: >
+          npx --yes lighthouse@12
+          https://kapterka-pro.ru/
+          --quiet
+          --chrome-path="$CHROME_BIN"
+          --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage"
+          --output=json
+          --output-path=lh-mobile.json
+
+      - name: Lighthouse desktop
+        run: >
+          npx --yes lighthouse@12
+          https://kapterka-pro.ru/
+          --quiet
+          --preset=desktop
+          --chrome-path="$CHROME_BIN"
+          --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage"
+          --output=json
+          --output-path=lh-desktop.json
+
+      - name: Check quality gates
+        run: node .github/scripts/lighthouse-budget.mjs lh-mobile.json lh-desktop.json
+
+      - name: Upload Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-reports
+          path: |
+            lh-mobile.json
+            lh-desktop.json
+          retention-days: 14

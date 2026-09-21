@@ -71,3 +71,10 @@ main{padding:34px 0 50px}.crumbs{font-size:.68rem;color:#718178;margin-bottom:12
   .release-head{align-items:flex-start;gap:8px}
   .release-badge{font-size:.55rem}
 }
+
+
+/* ACCESSIBILITY FINISH 2026-09-21 */
+.skip-link{position:fixed;left:12px;top:10px;z-index:9999;transform:translateY(-160%);padding:9px 12px;border-radius:9px;background:#dff5e8;color:#07100a;font-size:.72rem;font-weight:900;text-decoration:none;box-shadow:0 8px 28px rgba(0,0,0,.35)}
+.skip-link:focus{transform:translateY(0)}
+a:focus-visible,button:focus-visible,[tabindex]:focus-visible{outline:2px solid #71d7a7;outline-offset:3px}
+@media(max-width:620px){a,button{touch-action:manipulation}}

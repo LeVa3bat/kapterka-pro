@@ -1309,6 +1309,7 @@ document.addEventListener('DOMContentLoaded', () => {
   installSiteFunnelTracking();
   loadReleaseManifest();
   installPreviewGallery();
+  installProfessionalReveal();
 
   // Check user session state and setup auth UI
   updateAuthUI();
@@ -1554,6 +1555,22 @@ async function loadReleaseManifest() {
     document.querySelectorAll('[data-release-code]').forEach(el => { el.textContent = String(release.versionCode); });
     document.querySelectorAll('[data-release-status]').forEach(el => { el.textContent = release.statusLabel || 'Стабильный релиз'; });
   } catch (_) {}
+}
+
+function installProfessionalReveal() {
+  if (!('IntersectionObserver' in window) || window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) return;
+  const sections = Array.from(document.querySelectorAll('.neo-home > section')).slice(1);
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add('is-revealed');
+      observer.unobserve(entry.target);
+    });
+  }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
+  sections.forEach(section => {
+    section.classList.add('pro-reveal');
+    observer.observe(section);
+  });
 }
 
 function installPreviewGallery() {

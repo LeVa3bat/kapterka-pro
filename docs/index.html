@@ -104,7 +104,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=3.4.9.37">
+  <link rel="stylesheet" href="style.css?v=3.4.9.38">
   <link rel="stylesheet" href="tabs_and_cabinet.css?v=3.4.9.34">
 
   <!-- Favicon & Mobile Icons (Тактическая светящаяся иконка Каптёрка Про) -->
@@ -144,7 +144,7 @@
   <!-- /Yandex.Metrika counter -->
 
   <script>
-    window.KAPTERKA_WEB_VERSION = "3.4.9-web.42";
+    window.KAPTERKA_WEB_VERSION = "3.4.9-web.43";
     (function () {
       try {
         const key = 'kapterka_web_version_seen';
@@ -167,11 +167,12 @@
   </script>
 </head>
 <body>
+  <a class="skip-link" href="#home">Перейти к содержимому</a>
 
   <!-- Navigation Bar with Tabs Switcher -->
   <nav class="navbar">
     <div class="container">
-      <a href="javascript:void(0)" class="logo-brand" onclick="switchMainTab('tabOverview')">
+      <a href="#tabOverview" class="logo-brand" onclick="switchMainTab('tabOverview')">
         <div class="logo-icon">📦</div>
         <div>КАПТЁРКА<span class="logo-pro">PRO</span></div>
       </a>
@@ -197,7 +198,7 @@
 
       <div class="nav-actions" style="display:flex; align-items:center; gap:8px;">
         <a href="help.html" class="btn btn-outline btn-sm" style="font-size:0.75rem; padding:5px 9px; color:#82bfa1; border-color:rgba(130,191,161,0.32); text-decoration:none; display:inline-flex; align-items:center; gap:4px;" title="Центр помощи Каптёрка PRO"><span>?</span> Помощь</a>
-        <div class="user-quick-pill" id="userQuickPill" onclick="switchMainTab('tabCabinet')" title="Открыть Личный кабинет">
+        <div class="user-quick-pill" id="userQuickPill" role="button" tabindex="0" onclick="switchMainTab('tabCabinet')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchMainTab('tabCabinet');}" title="Открыть Личный кабинет">
           <span class="status-indicator"></span>
           <span id="navCallsignDisplay">Войти / Регистрация</span>
           <span class="badge badge-gold" id="navBadgeStatus" style="font-size:0.7rem; padding:2px 6px;">ПРО</span>
@@ -1075,7 +1076,7 @@
     </button>
   </nav>
 
-  <script src="app.js?v=3.4.9.36a"></script>
+  <script src="app.js?v=3.4.9.37a"></script>
   <script src="auth-config.js?v=3.4.9.31a"></script>
   <script src="auth-v2.js?v=3.4.9.31i"></script>
 </body>

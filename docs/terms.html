@@ -78,10 +78,15 @@
       font-weight: 600;
     }
     .btn-back:hover { background: var(--primary); color: #000; text-decoration: none; }
+  
+    .skip-link{position:fixed;left:12px;top:10px;z-index:9999;transform:translateY(-160%);padding:9px 12px;border-radius:9px;background:#dff5e8;color:#07100a;font-size:.72rem;font-weight:900;text-decoration:none;box-shadow:0 8px 28px rgba(0,0,0,.35)}
+    .skip-link:focus{transform:translateY(0)}
+    a:focus-visible{outline:2px solid #a3c46a;outline-offset:3px}
   </style>
 </head>
 <body>
-  <div class="container">
+  <a class="skip-link" href="#main-content">Перейти к содержимому</a>
+  <main class="container" id="main-content">
     <div class="header">
       <span class="badge">Публичная оферта</span>
       <h1>Пользовательское соглашение (Лицензионный договор)</h1>
@@ -120,6 +125,6 @@
     <p>ИНН: 250104230398<br>Email: <a href="mailto:alex.666.881@gmail.com">alex.666.881@gmail.com</a><br>Telegram: <a href="https://t.me/kapterka_help_bot" target="_blank" rel="noopener noreferrer">@kapterka_help_bot</a></p>
 
     <a href="index.html" class="btn-back">← На главную страницу</a>
-  </div>
+  </main>
 </body>
 </html>

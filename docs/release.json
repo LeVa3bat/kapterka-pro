@@ -12,5 +12,14 @@
   "apkSha256": "39ffa4cf13a50398235078a49b7dfaa420fdd095d3258bab8336edb79c410250",
   "signerSha256": "843a7e883914f3a7a5a7665ff07b2e8c43da87a24ee4dc35e1600758aee73cb9",
   "releaseDate": "2026-09-21",
-  "rustoreUrl": "https://apps.rustore.ru/app/com.aistudio.kapterka.jmwqve"
+  "rustoreUrl": "https://apps.rustore.ru/app/com.aistudio.kapterka.jmwqve",
+  "highlights": [
+    "улучшено лицензирование и восстановление действующей лицензии",
+    "исправлена привязка данных при работе с ключом подразделения",
+    "исправлен счётчик активных устройств и регулярное обновление presence",
+    "усилена защита диагностических и опасных действий",
+    "улучшена мобильная версия сайта и просмотр скриншотов"
+  ],
+  "releaseType": "стабилизационное обновление",
+  "roomDatabaseVersion": 2
 }

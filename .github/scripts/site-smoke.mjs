@@ -36,6 +36,7 @@ const requiredFiles = [
   'docs/site.webmanifest',
   'docs/version.json',
   'docs/release.json',
+  'docs/release-meta.js',
   'docs/404.html',
   'docs/.well-known/security.txt',
   'docs/903fd952854fcb833f54ad87ef4b033b.txt',
@@ -303,3 +304,33 @@ if (!app.includes('SCREENSHOT_GALLERY') || !app.includes('openGallerySlide') || 
 if (!app.includes('loadReleaseManifest') || !index.includes('data-release-version') || !index.includes('data-release-code')) fail('release manifest is not wired to visible site metadata');
 if (!app.includes("trackSiteAction('pro_view'") || !app.includes("trackSiteAction('scroll_depth'") || !app.includes("support_center_open")) fail('site funnel analytics coverage is incomplete');
 else ok('release manifest and professional gallery are consistent');
+
+const publicHtmlForA11y = [
+  'docs/index.html','docs/help.html','docs/security.html','docs/updates.html',
+  'docs/privacy.html','docs/terms.html','docs/skladskoy-uchet-android.html',
+  'docs/uchet-imushchestva-offline.html','docs/uchet-ostatkov-na-telefone.html'
+];
+for (const file of publicHtmlForA11y) {
+  const source = read(file);
+  if (!/lang=["']ru["']/.test(source)) fail(`${file}: html lang=ru is missing`);
+  if (!source.includes('class="skip-link"')) fail(`${file}: skip link is missing`);
+  const imgs = [...source.matchAll(/<img\b[^>]*>/gi)].map(m => m[0]);
+  if (imgs.some(tag => !/\balt=["'][^"']*["']/i.test(tag))) fail(`${file}: image alt is missing`);
+  const unsafeBlanks = [...source.matchAll(/<a\b[^>]*target=["']_blank["'][^>]*>/gi)]
+    .map(m => m[0]).filter(tag => !/rel=["'][^"']*noopener[^"']*["']/i.test(tag));
+  if (unsafeBlanks.length) fail(`${file}: target=_blank link without noopener`);
+}
+if (index.includes('javascript:void(0)')) fail('homepage still uses javascript:void(0) navigation');
+if (!index.includes('role="button" tabindex="0"') || !index.includes('id="userQuickPill"')) fail('keyboard access for user quick pill is missing');
+
+const releaseMeta = read('docs/release-meta.js');
+const releaseForSite = JSON.parse(read('docs/release.json'));
+if (!Array.isArray(releaseForSite.highlights) || releaseForSite.highlights.length < 3) fail('release.json highlights are incomplete');
+if (!releaseMeta.includes("data-release-highlights") || !releaseMeta.includes("data-release-version")) fail('release-meta.js does not hydrate current-release content');
+if (!updatesPage.includes('data-release-highlights') || !updatesPage.includes('release-meta.js')) fail('updates page is not wired to release.json');
+
+for (const eventName of ['apk_download','rustore_open','pro_view','license_activated','support_center_open','support_open','faq_open','gallery_open','scroll_depth']) {
+  if (!app.includes(eventName)) fail(`analytics event missing: ${eventName}`);
+}
+if (!app.includes('installProfessionalReveal')) fail('safe professional reveal initializer is missing');
+else ok('accessibility and release automation guards are present');
