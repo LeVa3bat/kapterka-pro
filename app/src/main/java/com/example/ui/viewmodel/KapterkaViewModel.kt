@@ -26,6 +26,8 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -691,6 +693,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
     // --- LICENSE & YOOKASSA ACTIONS ---
     private var lastPaymentId: String = ""
     private var paymentPollingJob: kotlinx.coroutines.Job? = null
+    private var paymentActivationInProgress = false
 
     private val _issuedPaymentKey = MutableStateFlow<String?>(null)
     val issuedPaymentKey: StateFlow<String?> = _issuedPaymentKey.asStateFlow()
@@ -741,73 +744,90 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun confirmPaymentAndActivateLicense() {
+        if (paymentActivationInProgress) return
+
         viewModelScope.launch {
-            paymentPollingJob?.cancel()
-            val profile = userProfile.value
-            val callsign = profile?.callsign?.ifBlank { "Боец" } ?: "Боец"
-            val email = profile?.email?.trim().orEmpty()
-            val unitName = profile?.unitName ?: "1-е Подразделение"
-            val unitKey = profile?.unitKey?.trim().orEmpty()
+            paymentActivationInProgress = true
+            try {
+                paymentPollingJob?.cancel()
 
-            val paymentIdToVerify = if (lastPaymentId.isNotBlank()) {
-                lastPaymentId
-            } else {
-                prefs.getString("last_yookassa_payment_id", "") ?: ""
-            }
+                val profile = userProfile.filterNotNull().first()
+                val callsign = profile.callsign.ifBlank { "Боец" }
+                val email = profile.email.trim()
+                val unitName = profile.unitName.ifBlank { "Подразделение" }
+                val unitKey = profile.unitKey.trim()
 
-            if (paymentIdToVerify.isBlank()) {
-                _toastEvent.emit("Счет на оплату еще не был сформирован. Сначала нажмите «Оплатить через ЮKassa / СБП».")
-                return@launch
-            }
+                val paymentIdToVerify = if (lastPaymentId.isNotBlank()) {
+                    lastPaymentId
+                } else {
+                    prefs.getString("last_yookassa_payment_id", "") ?: ""
+                }
 
-            _toastEvent.emit("Проверка статуса оплаты в ЮKassa...")
+                if (paymentIdToVerify.isBlank()) {
+                    _toastEvent.emit("Счёт на оплату ещё не был сформирован. Сначала нажмите «Оплатить через ЮKassa / СБП».")
+                    return@launch
+                }
 
-            val (isPaid, statusMsg) = yooKassaService.verifyPaymentStatus(paymentIdToVerify)
-            if (!isPaid) {
-                _toastEvent.emit("❌ ПЛАТЕЖ НЕ ОПЛАЧЕН!\n$statusMsg")
-                return@launch
-            }
+                val alreadyActivatedPaymentId = prefs.getString("last_activated_yookassa_payment_id", "") ?: ""
+                if (alreadyActivatedPaymentId == paymentIdToVerify) {
+                    licenseManager.refreshLicenseStatus()
+                    _toastEvent.emit("Лицензия по этому платежу уже активирована.")
+                    return@launch
+                }
 
-            // Ключ генерируется и активируется мгновенно
-            val newKey = licenseManager.activateLicenseAfterPayment(callsign, email, paymentIdToVerify)
-            _issuedPaymentKey.value = newKey
+                _toastEvent.emit("Проверка статуса оплаты в ЮKassa...")
 
-            // Мгновенно обновляем профиль в репозитории и БД Room
-            val curProfile = userProfile.value ?: UserProfile()
-            repository.saveUserProfile(curProfile.copy(isProActive = true, proDaysLeft = 30, demoDaysLeft = 0))
+                val (isPaid, statusMsg) = yooKassaService.verifyPaymentStatus(paymentIdToVerify)
+                if (!isPaid) {
+                    _toastEvent.emit("❌ ПЛАТЕЖ НЕ ОПЛАЧЕН!\n$statusMsg")
+                    return@launch
+                }
 
-            // Заносим бойца в реестр всех подразделений
-            fighterRegistryManager.registerOrUpdateFighter(
-                fighterId = licenseManager.getFighterPersonalId(),
-                callsign = callsign,
-                unitName = unitName,
-                unitKey = unitKey,
-                email = email,
-                licenseKey = newKey,
-                isProActive = true,
-                expiresAt = System.currentTimeMillis() + 30L * 86400000L
-            )
+                // Ключ выдаётся только один раз на конкретный paymentId на этом устройстве.
+                val newKey = licenseManager.activateLicenseAfterPayment(callsign, email, paymentIdToVerify)
+                _issuedPaymentKey.value = newKey
+                prefs.edit()
+                    .putString("last_activated_yookassa_payment_id", paymentIdToVerify)
+                    .apply()
 
-            // Отправляем уведомление разработчику в Telegram
-            com.example.data.notification.TelegramNotifier.notifyPaymentConfirmed(
-                callsign = callsign,
-                email = email,
-                licenseKey = newKey,
-                days = 30
-            )
+                // Мгновенно обновляем профиль в репозитории и БД Room
+                repository.saveUserProfile(
+                    profile.copy(isProActive = true, proDaysLeft = 30, demoDaysLeft = 0)
+                )
 
-            // Автоматически отправляем лицензионный ключ на email покупателя
-            if (email.isNotBlank()) {
-                com.example.data.notification.EmailDeliveryService.sendLicenseKeyEmail(
-                    context = getApplication(),
-                    recipientEmail = email,
+                // Заносим пользователя в реестр без фиктивного unit key.
+                fighterRegistryManager.registerOrUpdateFighter(
+                    fighterId = licenseManager.getFighterPersonalId(),
                     callsign = callsign,
+                    unitName = unitName,
+                    unitKey = unitKey,
+                    email = email,
+                    licenseKey = newKey,
+                    isProActive = true,
+                    expiresAt = System.currentTimeMillis() + 30L * 86400000L
+                )
+
+                com.example.data.notification.TelegramNotifier.notifyPaymentConfirmed(
+                    callsign = callsign,
+                    email = email,
                     licenseKey = newKey,
                     days = 30
                 )
-            }
 
-            _toastEvent.emit("🎉 Оплата подтверждена! Ключ $newKey выдан и направлен на $email!")
+                if (email.isNotBlank()) {
+                    com.example.data.notification.EmailDeliveryService.sendLicenseKeyEmail(
+                        context = getApplication(),
+                        recipientEmail = email,
+                        callsign = callsign,
+                        licenseKey = newKey,
+                        days = 30
+                    )
+                }
+
+                _toastEvent.emit("🎉 Оплата подтверждена! Лицензия PRO активирована на 30 дней.")
+            } finally {
+                paymentActivationInProgress = false
+            }
         }
     }
 
