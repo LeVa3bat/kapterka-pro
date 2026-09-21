@@ -6,9 +6,59 @@
 (function () {
   const TOKEN_KEY = "kapterka_web_auth_token_v2";
   const TOKEN_EXP_KEY = "kapterka_web_auth_token_exp_v2";
+  const ACCOUNT_CACHE_PREFIX = "kapterka_account_cache_v2_";
   let pendingMode = null;
   let pendingEmail = null;
   let pendingRegister = null;
+
+  function normalizeAccountEmail(value) {
+    return String(value || "").trim().toLowerCase();
+  }
+
+  function accountCacheKey(email) {
+    return ACCOUNT_CACHE_PREFIX + encodeURIComponent(normalizeAccountEmail(email));
+  }
+
+  function readAccountCache(email) {
+    const normalized = normalizeAccountEmail(email);
+    if (!normalized) return null;
+    try {
+      return JSON.parse(localStorage.getItem(accountCacheKey(normalized)) || "null");
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function snapshotAccount(email) {
+    const normalized = normalizeAccountEmail(email || localStorage.getItem("kapterka_user_email"));
+    if (!normalized) return;
+    let keys = [];
+    try { keys = JSON.parse(localStorage.getItem("kapterka_keys_history") || "[]"); } catch (_) {}
+    const snapshot = {
+      email: normalized,
+      callsign: localStorage.getItem("kapterka_user_callsign") || "",
+      rank: localStorage.getItem("kapterka_user_rank") || "",
+      unitName: localStorage.getItem("kapterka_unit_name") || "",
+      unitKey: localStorage.getItem("kapterka_unit_key") || "",
+      phone: localStorage.getItem("kapterka_user_phone") || "",
+      activeKey: localStorage.getItem("kapterka_active_key") || "",
+      keys: Array.isArray(keys) ? keys : []
+    };
+    localStorage.setItem(accountCacheKey(normalized), JSON.stringify(snapshot));
+  }
+
+  function clearGenericProfileStorage() {
+    [
+      "kapterka_user_callsign",
+      "kapterka_user_rank",
+      "kapterka_unit_name",
+      "kapterka_unit_key",
+      "kapterka_user_email",
+      "kapterka_user_phone",
+      "kapterka_active_key",
+      "kapterka_keys_history"
+    ].forEach((key) => localStorage.removeItem(key));
+  }
 
   function enabled() {
     return typeof window.KAPTERKA_AUTH_API_URL === "string" &&
@@ -147,27 +197,45 @@
   }
 
   function migrateAndSetSession(serverUser, token, expiresAt) {
-    const oldSession = typeof window.getActiveUserSession === "function" ? window.getActiveUserSession() : null;
-    let oldKeys = [];
-    try { oldKeys = JSON.parse(localStorage.getItem("kapterka_keys_history") || "[]"); } catch (_) {}
+    const targetEmail = normalizeAccountEmail(serverUser?.email || pendingEmail || "");
+    const currentSession = typeof window.getActiveUserSession === "function" ? window.getActiveUserSession() : null;
+    const currentEmail = normalizeAccountEmail(currentSession?.email || localStorage.getItem("kapterka_user_email") || "");
 
-    const activeKey = localStorage.getItem("kapterka_active_key") || oldSession?.activeKey || "";
-    if ((!oldKeys || !oldKeys.length) && activeKey) {
-      oldKeys = [{ key: activeKey, date: new Date().toLocaleDateString("ru-RU"), plan: "PRO" }];
+    // Persist the current account before switching to another one.
+    if (currentEmail && targetEmail && currentEmail !== targetEmail) {
+      snapshotAccount(currentEmail);
+      clearGenericProfileStorage();
+    }
+
+    const cached = targetEmail ? readAccountCache(targetEmail) : null;
+    const sameGenericOwner = !!targetEmail && normalizeAccountEmail(localStorage.getItem("kapterka_user_email")) === targetEmail;
+
+    let legacyKeys = [];
+    if (sameGenericOwner) {
+      try { legacyKeys = JSON.parse(localStorage.getItem("kapterka_keys_history") || "[]"); } catch (_) {}
+    }
+
+    const cachedKeys = Array.isArray(cached?.keys) ? cached.keys : [];
+    const keys = cachedKeys.length ? cachedKeys : (Array.isArray(legacyKeys) ? legacyKeys : []);
+    const activeKey =
+      cached?.activeKey ||
+      (sameGenericOwner ? localStorage.getItem("kapterka_active_key") || "" : "") ||
+      "";
+
+    if (!keys.length && activeKey) {
+      keys.push({ key: activeKey, date: new Date().toLocaleDateString("ru-RU"), plan: "PRO" });
     }
 
     const user = {
-      ...(oldSession || {}),
       ...(serverUser || {}),
-      email: serverUser?.email || pendingEmail || oldSession?.email || localStorage.getItem("kapterka_user_email") || "",
-      // On the same device, preserve profile fields already edited in the cabinet.
-      // On a new device localStorage is empty, so server values are used automatically.
-      callsign: localStorage.getItem("kapterka_user_callsign") || oldSession?.callsign || serverUser?.callsign || "Пользователь",
-      rank: localStorage.getItem("kapterka_user_rank") || oldSession?.rank || serverUser?.rank || "",
-      unitName: localStorage.getItem("kapterka_unit_name") || oldSession?.unitName || serverUser?.unitName || "",
-      unitKey: localStorage.getItem("kapterka_unit_key") || oldSession?.unitKey || serverUser?.unitKey || "",
-      phone: localStorage.getItem("kapterka_user_phone") || oldSession?.phone || "",
-      keys: oldKeys || [],
+      email: targetEmail || normalizeAccountEmail(currentSession?.email) || "",
+      callsign: cached?.callsign || (sameGenericOwner ? localStorage.getItem("kapterka_user_callsign") || "" : "") || serverUser?.callsign || "Пользователь",
+      rank: cached?.rank || (sameGenericOwner ? localStorage.getItem("kapterka_user_rank") || "" : "") || serverUser?.rank || "",
+      unitName: cached?.unitName || (sameGenericOwner ? localStorage.getItem("kapterka_unit_name") || "" : "") || serverUser?.unitName || "",
+      unitKey: cached?.unitKey || (sameGenericOwner ? localStorage.getItem("kapterka_unit_key") || "" : "") || serverUser?.unitKey || "",
+      phone: cached?.phone || (sameGenericOwner ? localStorage.getItem("kapterka_user_phone") || "" : "") || "",
+      activeKey: activeKey,
+      keys: keys,
       emailVerified: true,
       authProvider: "email_otp_v2",
       webAuthV2: true
@@ -180,9 +248,12 @@
       window.setUserSession(user);
     } else {
       localStorage.setItem("kapterka_auth_user", JSON.stringify(user));
+      localStorage.setItem("kapterka_user_email", user.email || "");
       if (typeof window.updateAuthUI === "function") window.updateAuthUI();
       if (typeof window.loadCabinetProfile === "function") window.loadCabinetProfile();
     }
+
+    snapshotAccount(user.email);
   }
 
   function showRegistrationVerify() {
@@ -407,35 +478,17 @@
   }
 
   function logoutV2() {
+    const current = typeof window.getActiveUserSession === "function" ? window.getActiveUserSession() : null;
+    snapshotAccount(current?.email || localStorage.getItem("kapterka_user_email"));
+
     localStorage.removeItem("kapterka_auth_user");
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(TOKEN_EXP_KEY);
+    clearGenericProfileStorage();
 
-    // Profile, unit key and license are intentionally preserved.
     if (typeof window.updateAuthUI === "function") window.updateAuthUI();
     if (typeof window.loadCabinetProfile === "function") window.loadCabinetProfile();
     notify("Вы вышли из личного кабинета.");
-  }
-
-  async function refreshExistingSession() {
-    const token = localStorage.getItem(TOKEN_KEY) || "";
-    const expiresAt = Number(localStorage.getItem(TOKEN_EXP_KEY) || 0);
-    if (!token) return;
-    if (expiresAt && Date.now() > expiresAt) {
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(TOKEN_EXP_KEY);
-      return;
-    }
-
-    try {
-      const data = await jsonp({ action: "auth_session", token: token }, 12000);
-      if (data && data.ok && data.user) {
-        migrateAndSetSession(data.user, token, data.sessionExpiresAt || expiresAt);
-      }
-    } catch (err) {
-      console.warn("Web Auth session refresh skipped:", err);
-      // Keep the current local profile/session as a safe fallback.
-    }
   }
 
   function activate() {
