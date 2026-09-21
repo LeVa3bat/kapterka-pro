@@ -1,0 +1,19 @@
+{
+  "name": "Каптёрка PRO",
+  "short_name": "Каптёрка PRO",
+  "description": "Android-приложение для учёта имущества и складов.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0d140e",
+  "theme_color": "#0d140e",
+  "lang": "ru",
+  "icons": [
+    {
+      "src": "/app_icon_512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
