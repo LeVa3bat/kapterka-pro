@@ -19,6 +19,9 @@ import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -63,6 +66,12 @@ class FirebaseSyncManager(
 
     private var activeUnitKey: String = ""
     private var listeners = mutableListOf<ListenerRegistration>()
+    private var presenceHeartbeatJob: Job? = null
+
+    private companion object {
+        const val ACTIVE_DEVICE_WINDOW_MS = 15 * 60 * 1000L
+        const val PRESENCE_HEARTBEAT_MS = 5 * 60 * 1000L
+    }
 
     fun startSyncForUnit(unitKey: String, callsign: String, unitName: String) {
         val cleanKey = unitKey.trim()
@@ -82,9 +91,10 @@ class FirebaseSyncManager(
         )
 
         
-            registerUnitListeners(unitKey)
+            registerUnitListeners(cleanKey)
         sendPresencePing(cleanKey, callsign, unitName)
-        
+        startPresenceHeartbeat(cleanKey, callsign, unitName)
+
         _syncState.value = _syncState.value.copy(
             isSyncing = false,
             isOnline = true,
@@ -248,9 +258,26 @@ class FirebaseSyncManager(
         
         val presReg = unitRef.collection("devices").addSnapshotListener { snap, e ->
             if (e != null || snap == null) return@addSnapshotListener
-            _syncState.value = _syncState.value.copy(connectedDevicesCount = snap.documents.size)
+            val now = System.currentTimeMillis()
+            val activeDevices = snap.documents.count { doc ->
+                val lastSeen = doc.getLong("timestampMillis") ?: 0L
+                lastSeen > 0L && (now - lastSeen) <= ACTIVE_DEVICE_WINDOW_MS
+            }
+            _syncState.value = _syncState.value.copy(connectedDevicesCount = activeDevices.coerceAtLeast(1))
         }
         listeners.add(presReg)
+    }
+
+    private fun startPresenceHeartbeat(unitKey: String, callsign: String, unitName: String) {
+        presenceHeartbeatJob?.cancel()
+        presenceHeartbeatJob = scope.launch(Dispatchers.IO) {
+            while (isActive && activeUnitKey == unitKey) {
+                delay(PRESENCE_HEARTBEAT_MS)
+                if (isActive && activeUnitKey == unitKey) {
+                    sendPresencePing(unitKey, callsign, unitName)
+                }
+            }
+        }
     }
 
     private fun sendPresencePing(unitKey: String, callsign: String, unitName: String) {
@@ -880,6 +907,8 @@ class FirebaseSyncManager(
     }
 
     fun stopSync() {
+        presenceHeartbeatJob?.cancel()
+        presenceHeartbeatJob = null
         for (l in listeners) {
             try {
                 l.remove()
