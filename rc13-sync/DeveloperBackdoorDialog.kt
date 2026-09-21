@@ -283,3 +283,151 @@ fun DeveloperAccessPromptDialog(
                                         .putLong("locked_until_millis", lockedUntilMillis)
                                         .apply()
                                     errorMessage = "Доступ временно заблокирован на 30 секунд."
+                                } else {
+                                    authPrefs.edit().putInt("failed_attempts", failedAttempts).apply()
+                                    errorMessage = "Неверный ключ разработчика."
+                                }
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = TacticalGold,
+                            contentColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(6.dp)
+                    ) {
+                        Text("Войти", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Секретное меню разработчика: реестр пользователей всех подразделений
+ */
+@Composable
+fun DeveloperAdminDialog(
+    fightersList: List<FighterAdminRecord>,
+    diagnostics: DeveloperDiagnosticsSnapshot,
+    onDeleteFighter: (String) -> Unit,
+    onGrantLicense: (String, Int) -> Unit,
+    onRefreshList: () -> Unit,
+    onForceSync: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    val clipboard = LocalClipboardManager.current
+    var searchQuery by remember { mutableStateOf("") }
+    var fighterToDelete by remember { mutableStateOf<FighterAdminRecord?>(null) }
+    var fighterToGrant by remember { mutableStateOf<FighterAdminRecord?>(null) }
+
+    // Состояния сворачивания (по умолчанию ВСЁ СКРЫТО)
+    var expandDiagnostics by remember { mutableStateOf(true) }
+    var expandStats by remember { mutableStateOf(false) }
+    var expandSearch by remember { mutableStateOf(false) }
+    var expandRegistry by remember { mutableStateOf(false) }
+    var expandedUnits by remember { mutableStateOf(setOf<String>()) }
+
+    val filteredList = remember(fightersList, searchQuery) {
+        if (searchQuery.isBlank()) {
+            fightersList
+        } else {
+            val q = searchQuery.trim().lowercase()
+            fightersList.filter {
+                it.callsign.lowercase().contains(q) ||
+                it.unitName.lowercase().contains(q) ||
+                it.unitKey.lowercase().contains(q) ||
+                it.licenseKey.lowercase().contains(q) ||
+                it.role.lowercase().contains(q)
+            }
+        }
+    }
+
+    val groupedByUnit = remember(filteredList) {
+        filteredList.groupBy { "${it.unitName} [${it.unitKey}]" }
+    }
+
+    val totalCount = fightersList.size
+    val onlineCount = fightersList.count { it.isOnline }
+    val proCount = fightersList.count { it.isProActive }
+    val isAnyExpanded = expandDiagnostics || expandStats || expandSearch || expandRegistry
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth(0.98f)
+                .fillMaxHeight(if (isAnyExpanded) 0.90f else 0.45f)
+                .padding(vertical = 6.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = TacticalBg),
+            border = BorderStroke(1.5.dp, TacticalGold)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(14.dp)
+            ) {
+                // Header
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(30.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(TacticalGoldDark),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AdminPanelSettings,
+                                contentDescription = null,
+                                tint = TacticalGoldText,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                text = "РЕЕСТР ВСЕХ ПОДРАЗДЕЛЕНИЙ",
+                                color = TacticalGoldText,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily.Monospace
+                            )
+                            Text(
+                                text = "Секретный терминал разработчика",
+                                color = TacticalTextMuted,
+                                fontSize = 10.sp
+                            )
+                        }
+                    }
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        // Кнопка свернуть/развернуть всё
+                        Surface(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .clickable {
+                                    val targetState = !isAnyExpanded
+                                    expandDiagnostics = targetState
+                                    expandStats = targetState
+                                    expandSearch = targetState
+                                    expandRegistry = targetState
+                                    if (!targetState) {
+                                        expandedUnits = emptySet()
+                                    } else {
+                                        expandedUnits = groupedByUnit.keys.toSet()
+                                    }
+                                },
+                            color = TacticalSurfaceLight,
+                            border = BorderStroke(0.5.dp, TacticalBorderSubtle)
+                        ) {
+                            Text(
+                                text = if (isAnyExpanded) "Скрыть всё" else "Развернуть",
+                                fontSize = 9.sp,
+                                color = TacticalGoldText,
+                                modifier = Modifier.padding(horiz
