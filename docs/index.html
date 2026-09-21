@@ -58,7 +58,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=3.4.9.31m">
+  <link rel="stylesheet" href="style.css?v=3.4.9.31n">
   <link rel="stylesheet" href="tabs_and_cabinet.css?v=3.4.9.31">
 
   <!-- Favicon & Mobile Icons (Тактическая светящаяся иконка Каптёрка Про) -->
@@ -295,10 +295,11 @@
                   </div>
                 </div>
                 <label class="auth-newsletter-check">
-                  <input type="checkbox" id="regNewsletterCheck" checked>
+                  <input type="checkbox" id="regNewsletterCheck">
                   <span>Получать уведомления о важных обновлениях Каптёрка PRO.</span>
                 </label>
                 <button class="btn btn-primary btn-lg v2-full-btn" onclick="startRegistrationProcess()">Получить код на Email</button>
+                <div class="v3-legal-line">Продолжая, вы принимаете <a href="terms.html">условия использования</a> и <a href="privacy.html">политику конфиденциальности</a>.</div>
               </div>
 
               <div id="regStepVerification" style="display:none;">
@@ -332,6 +333,7 @@
                 <input type="email" id="loginEmail" class="form-input" placeholder="name@domain.ru" autocomplete="email">
               </div>
               <button class="btn btn-primary btn-lg v2-full-btn" onclick="processUserLogin()">Получить код для входа</button>
+              <div class="v3-legal-line">Вход выполняется по одноразовому коду. Пароль на сайте не хранится.</div>
             </div>
           </div>
         </div>
@@ -476,6 +478,7 @@
                 <div class="v2-payment-warning">Если банк отклоняет переход к оплате, временно отключите VPN.</div>
                 <button id="btnPayYooKassaMain" class="btn btn-gold btn-lg v2-full-btn" onclick="processYooKassaPayment()">Оплатить 490 ₽ через ЮKassa</button>
                 <div class="v2-payment-footnote">Платёж проводится на стороне ЮKassa • магазин №1450722</div>
+                <div class="v3-legal-line">Нажимая «Оплатить», вы принимаете <a href="terms.html">условия лицензии</a>.</div>
               </div>
 
               <div id="boxPaymentPending" style="display:none;">
