@@ -747,7 +747,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             val callsign = profile?.callsign?.ifBlank { "Боец" } ?: "Боец"
             val email = profile?.email?.trim().orEmpty()
             val unitName = profile?.unitName ?: "1-е Подразделение"
-            val unitKey = profile?.unitKey ?: "kapt_default"
+            val unitKey = profile?.unitKey?.trim().orEmpty()
 
             val paymentIdToVerify = if (lastPaymentId.isNotBlank()) {
                 lastPaymentId
