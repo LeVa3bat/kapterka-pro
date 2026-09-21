@@ -1227,3 +1227,353 @@
     font-size:.54rem!important;
   }
 }
+
+
+/* MOBILE PRO SYNC APK COMPACT 2026-09-21
+   Presentation-only polish for the remaining mobile tabs.
+   No payment, sync or Android application logic is changed. */
+@media(max-width:640px){
+  #tabPayment>.section,
+  #tabSync>.section,
+  #tabDownload>.section{
+    padding-top:64px!important;
+    padding-bottom:10px!important;
+  }
+  #tabPayment>.section>.container,
+  #tabSync>.section>.container,
+  #tabDownload>.section>.container{
+    padding-left:8px!important;
+    padding-right:8px!important;
+  }
+  #tabPayment .section-header,
+  #tabSync .section-header,
+  #tabDownload .section-header{
+    text-align:left!important;
+    margin:0 2px 8px!important;
+  }
+  #tabPayment .section-header .badge,
+  #tabSync .section-header .badge,
+  #tabDownload .section-header .badge{
+    padding:3px 8px!important;
+    font-size:.6rem!important;
+    margin-bottom:2px!important;
+  }
+  #tabPayment .section-header h2,
+  #tabSync .section-header h2,
+  #tabDownload .section-header h2{
+    margin:3px 0!important;
+    font-size:1.22rem!important;
+    line-height:1.08!important;
+  }
+  #tabPayment .section-header p,
+  #tabSync .section-header p,
+  #tabDownload .section-header p{
+    margin:0!important;
+    font-size:.68rem!important;
+    line-height:1.35!important;
+  }
+
+  /* PRO / payment: keep the important action above the fold. */
+  #tabPayment .yookassa-checkout-card{
+    padding:10px!important;
+    border-radius:14px!important;
+    box-shadow:0 8px 22px rgba(0,0,0,.25)!important;
+  }
+  #tabPayment .checkout-grid{gap:7px!important;}
+  #tabPayment .v2-price-row{
+    margin-bottom:8px!important;
+    padding:10px!important;
+    border-radius:11px!important;
+    align-items:center!important;
+  }
+  #tabPayment .v2-price-row>div>span{font-size:.58rem!important;}
+  #tabPayment .v2-price-row strong{
+    margin-top:2px!important;
+    font-size:1.45rem!important;
+  }
+  #tabPayment .v2-price-row small{
+    max-width:128px!important;
+    font-size:.58rem!important;
+    line-height:1.3!important;
+  }
+  #tabPayment .payment-method-pills{
+    margin:6px 0 8px!important;
+    gap:5px!important;
+    padding-bottom:2px!important;
+  }
+  #tabPayment .payment-method-pill{
+    padding:4px 7px!important;
+    font-size:.58rem!important;
+  }
+  #tabPayment .form-group{margin-bottom:7px!important;}
+  #tabPayment .form-label{
+    margin-bottom:3px!important;
+    font-size:.65rem!important;
+  }
+  #tabPayment .form-input{
+    min-height:38px!important;
+    padding:8px 10px!important;
+    border-radius:10px!important;
+    font-size:16px!important;
+  }
+  #tabPayment .v2-payment-warning{
+    margin:2px 0 7px!important;
+    padding:7px 8px!important;
+    font-size:.59rem!important;
+    line-height:1.3!important;
+    border-radius:9px!important;
+  }
+  #tabPayment #btnPayYooKassaMain,
+  #tabPayment #btnManualVerify{
+    min-height:40px!important;
+    padding:8px 10px!important;
+    font-size:.72rem!important;
+  }
+  #tabPayment .v2-payment-footnote,
+  #tabPayment .v3-legal-line{
+    margin-top:5px!important;
+    font-size:.56rem!important;
+    line-height:1.3!important;
+  }
+  #tabPayment .v2-key-activate{margin-top:7px!important;}
+  #tabPayment .v2-input-action{gap:4px!important;margin-top:4px!important;}
+  #tabPayment .v2-input-action .btn{
+    min-height:34px!important;
+    padding:6px 9px!important;
+    font-size:.62rem!important;
+  }
+  #tabPayment .v2-checkout-status{
+    gap:6px!important;
+    padding:9px!important;
+    border-radius:12px!important;
+  }
+  #tabPayment .v2-status-icon{display:none!important;}
+  #tabPayment .v2-checkout-status>span{
+    font-size:.56rem!important;
+    letter-spacing:.08em!important;
+  }
+  #tabPayment .live-key-generation-box{
+    padding:9px!important;
+    border-radius:10px!important;
+  }
+  #tabPayment .live-key-result{
+    margin:3px 0!important;
+    font-size:.8rem!important;
+    letter-spacing:.04em!important;
+  }
+  #tabPayment #liveKeyStatusDisplay{
+    font-size:.61rem!important;
+    line-height:1.35!important;
+  }
+  #tabPayment .v2-trust-list{
+    display:flex!important;
+    overflow-x:auto!important;
+    gap:5px!important;
+    margin-top:1px!important;
+    padding-top:6px!important;
+    scrollbar-width:none!important;
+  }
+  #tabPayment .v2-trust-list span{
+    flex:0 0 auto!important;
+    padding:4px 7px!important;
+    border-radius:999px!important;
+    background:rgba(255,255,255,.025)!important;
+    border:1px solid rgba(255,255,255,.055)!important;
+    font-size:.56rem!important;
+    white-space:nowrap!important;
+  }
+
+  /* Sync: swipeable concept cards instead of a long vertical stack. */
+  #tabSync .v2-sync-hero{
+    display:flex!important;
+    overflow-x:auto!important;
+    gap:6px!important;
+    margin-bottom:7px!important;
+    scroll-snap-type:x mandatory!important;
+    scrollbar-width:none!important;
+  }
+  #tabSync .v2-sync-side{
+    flex:0 0 88%!important;
+    scroll-snap-align:start!important;
+    padding:11px!important;
+    border-radius:13px!important;
+  }
+  #tabSync .v2-sync-number{font-size:.55rem!important;}
+  #tabSync .v2-sync-side h3{
+    margin:3px 0 5px!important;
+    font-size:.86rem!important;
+  }
+  #tabSync .v2-sync-side code{
+    font-size:.72rem!important;
+    padding:4px 7px!important;
+  }
+  #tabSync .v2-sync-side p{
+    margin-top:6px!important;
+    font-size:.62rem!important;
+    line-height:1.35!important;
+  }
+  #tabSync .v2-sync-divider{display:none!important;}
+  #tabSync .v2-steps-card{
+    padding:10px!important;
+    margin-bottom:7px!important;
+    border-radius:13px!important;
+  }
+  #tabSync .v2-card-heading{
+    margin-bottom:7px!important;
+    padding-bottom:7px!important;
+  }
+  #tabSync .v2-card-heading span{font-size:.55rem!important;}
+  #tabSync .v2-card-heading h3{
+    margin-top:1px!important;
+    font-size:.86rem!important;
+  }
+  #tabSync .v2-card-heading .btn{
+    min-height:32px!important;
+    padding:5px 8px!important;
+    font-size:.59rem!important;
+  }
+  #tabSync .v2-step-row{
+    gap:6px!important;
+    padding-bottom:2px!important;
+  }
+  #tabSync .v2-step-row>div{
+    flex-basis:76%!important;
+    padding:8px!important;
+    border-radius:10px!important;
+  }
+  #tabSync .v2-step-row b{
+    flex-basis:24px!important;
+    width:24px!important;
+    height:24px!important;
+    font-size:.58rem!important;
+  }
+  #tabSync .v2-step-row strong{font-size:.68rem!important;}
+  #tabSync .v2-step-row small{font-size:.58rem!important;}
+  #tabSync .v2-mini-features{
+    gap:6px!important;
+    margin-bottom:7px!important;
+    padding-bottom:2px!important;
+  }
+  #tabSync .v2-mini-features>div{
+    flex-basis:58%!important;
+    padding:9px!important;
+    border-radius:11px!important;
+  }
+  #tabSync .v2-mini-features>div>span{font-size:.9rem!important;}
+  #tabSync .v2-mini-features strong{font-size:.66rem!important;}
+  #tabSync .v2-mini-features small{font-size:.56rem!important;}
+  #tabSync .v2-security-note{
+    padding:10px!important;
+    border-radius:12px!important;
+  }
+  #tabSync .v2-security-note span{font-size:.55rem!important;}
+  #tabSync .v2-security-note h3{
+    margin:2px 0 4px!important;
+    font-size:.8rem!important;
+  }
+  #tabSync .v2-security-note p{
+    font-size:.59rem!important;
+    line-height:1.35!important;
+  }
+  #tabSync .v2-security-note .btn{
+    min-height:34px!important;
+    margin-top:7px!important;
+    padding:6px 9px!important;
+    font-size:.61rem!important;
+  }
+
+  /* APK: one compact install card, details remain available on demand. */
+  #tabDownload .v2-download-card{
+    padding:11px!important;
+    border-radius:14px!important;
+    box-shadow:0 8px 22px rgba(0,0,0,.23)!important;
+  }
+  #tabDownload .v2-download-main{
+    gap:9px!important;
+    align-items:center!important;
+  }
+  #tabDownload .v2-download-icon{
+    flex:0 0 40px!important;
+    width:40px!important;
+    height:40px!important;
+    border-radius:11px!important;
+    font-size:1.05rem!important;
+  }
+  #tabDownload .v2-download-main>div:last-child>span{font-size:.56rem!important;}
+  #tabDownload .v2-download-main h3{
+    margin:1px 0 2px!important;
+    font-size:.92rem!important;
+  }
+  #tabDownload .v2-download-main p{
+    font-size:.61rem!important;
+    line-height:1.35!important;
+  }
+  #tabDownload .v2-download-actions{
+    grid-template-columns:1.18fr .82fr!important;
+    gap:5px!important;
+    margin-top:9px!important;
+  }
+  #tabDownload .v2-download-actions .btn{
+    min-height:38px!important;
+    padding:7px 7px!important;
+    font-size:.64rem!important;
+  }
+  #tabDownload .v3-integrity{
+    margin:7px 0!important;
+    border-radius:10px!important;
+  }
+  #tabDownload .v3-integrity summary{
+    padding:8px 9px!important;
+    font-size:.61rem!important;
+  }
+  #tabDownload .v3-integrity-body{
+    gap:5px!important;
+    padding:0 9px 9px!important;
+    font-size:.56rem!important;
+  }
+  #tabDownload .v2-install-steps{
+    gap:5px!important;
+    margin-top:7px!important;
+    padding-bottom:2px!important;
+  }
+  #tabDownload .v2-install-steps>div{
+    flex-basis:72%!important;
+    padding:8px!important;
+    border-radius:10px!important;
+  }
+  #tabDownload .v2-install-steps b{
+    flex-basis:22px!important;
+    width:22px!important;
+    height:22px!important;
+    font-size:.56rem!important;
+  }
+  #tabDownload .v2-install-steps span{
+    font-size:.58rem!important;
+    line-height:1.3!important;
+  }
+  #tabDownload .v2-release-strip{
+    margin-top:7px!important;
+    padding:8px 9px!important;
+    border-radius:10px!important;
+  }
+  #tabDownload .v2-release-strip>span{font-size:.55rem!important;}
+  #tabDownload .v2-release-strip>div{
+    margin-top:2px!important;
+    font-size:.57rem!important;
+    line-height:1.3!important;
+  }
+  #tabDownload .v2-support-links{
+    gap:9px!important;
+    margin-top:7px!important;
+    padding-top:7px!important;
+  }
+  #tabDownload .v2-support-links a,
+  #tabDownload .v2-support-links button{
+    font-size:.57rem!important;
+  }
+
+  /* The bottom navigation already provides global navigation on phone. */
+  body:has(.app-view-tab:not(#tabOverview).active) .neo-footer{
+    padding-top:7px!important;
+  }
+}
