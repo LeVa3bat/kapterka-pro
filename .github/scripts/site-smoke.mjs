@@ -28,6 +28,7 @@ const requiredFiles = [
   'docs/site.webmanifest',
   'docs/404.html',
   'docs/.well-known/security.txt',
+  'docs/903fd952854fcb833f54ad87ef4b033b.txt',
   'docs/kapterka-pro.apk'
 ];
 
@@ -36,6 +37,10 @@ for (const file of requiredFiles) {
   if (!fs.existsSync(full)) fail(`required file is missing: ${file}`);
 }
 if (!process.exitCode) ok('required public files are present');
+
+const indexNowKey = read('docs/903fd952854fcb833f54ad87ef4b033b.txt').trim();
+if (indexNowKey !== '903fd952854fcb833f54ad87ef4b033b') fail('IndexNow verification key file is invalid');
+else ok('IndexNow verification key file is valid');
 
 const apkPath = path.join(root, 'docs/kapterka-pro.apk');
 if (fs.existsSync(apkPath)) {

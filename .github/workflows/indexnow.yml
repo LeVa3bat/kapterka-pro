@@ -1,0 +1,63 @@
+name: Notify search engines
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/index.html'
+      - 'docs/privacy.html'
+      - 'docs/terms.html'
+      - 'docs/sitemap.xml'
+      - 'docs/robots.txt'
+      - 'docs/site.webmanifest'
+      - '.github/workflows/indexnow.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  indexnow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Wait until the IndexNow key is public
+        shell: bash
+        run: |
+          KEY="903fd952854fcb833f54ad87ef4b033b"
+          KEY_URL="https://kapterka-pro.ru/$KEY.txt"
+          for attempt in {1..12}; do
+            if curl -fsS --max-time 10 "$KEY_URL" | tr -d '\r\n' | grep -Fxq "$KEY"; then
+              echo "IndexNow key is available."
+              exit 0
+            fi
+            echo "Key is not public yet (attempt $attempt/12)."
+            sleep 10
+          done
+          echo "Key was not published in time; skip notification without blocking the site."
+          exit 78
+        continue-on-error: true
+
+      - name: Notify IndexNow
+        shell: bash
+        run: |
+          KEY="903fd952854fcb833f54ad87ef4b033b"
+          PAYLOAD=$(cat <<JSON
+          {
+            "host": "kapterka-pro.ru",
+            "key": "$KEY",
+            "keyLocation": "https://kapterka-pro.ru/$KEY.txt",
+            "urlList": [
+              "https://kapterka-pro.ru/",
+              "https://kapterka-pro.ru/privacy.html",
+              "https://kapterka-pro.ru/terms.html"
+            ]
+          }
+          JSON
+          )
+          HTTP_CODE=$(curl -sS -o /tmp/indexnow-response.txt -w "%{http_code}"             --retry 3 --retry-delay 5 --retry-all-errors             -H "Content-Type: application/json; charset=utf-8"             --data "$PAYLOAD"             "https://api.indexnow.org/indexnow" || true)
+          cat /tmp/indexnow-response.txt || true
+          if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "202" ]; then
+            echo "IndexNow accepted the updated URLs (HTTP $HTTP_CODE)."
+          else
+            echo "::warning::IndexNow notification returned HTTP $HTTP_CODE. The site remains published; the next content update will retry."
+          fi
