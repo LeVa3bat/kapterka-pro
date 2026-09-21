@@ -257,15 +257,18 @@ class LicenseManager(
             return Pair(false, "На этом устройстве нет ранее сохраненных лицензионных ключей.")
         }
 
+        if (vaultExpires <= now) {
+            refreshLicenseStatus()
+            return Pair(false, "Сохранённая лицензия истекла и не может быть продлена восстановлением.")
+        }
+
         val sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val finalExpires = if (vaultExpires > now) vaultExpires else (now + 30L * 86400000L)
         sp.edit()
             .putString("active_license_key", vaultKey)
-            .putLong("license_expires_at", finalExpires)
+            .putLong("license_expires_at", vaultExpires)
             .apply()
-        saveToPermanentVault(vaultKey, finalExpires)
         refreshLicenseStatus()
-        return Pair(true, "Лицензия бойца успешно восстановлена: $vaultKey")
+        return Pair(true, "Действующая лицензия бойца восстановлена: $vaultKey")
     }
 
     /**
@@ -337,33 +340,12 @@ class LicenseManager(
 
         // 3. (REMOVED: Поиск по позывному) - Это небезопасно, так как позывные могут совпадать. Лицензия привязывается только к email.
 
-        // 4. Поиск в общем реестре бойцов 'fighters_registry'
-        if (foundKey.isBlank() && cleanEmail.isNotBlank()) {
-            try {
-                val db = firestore
-                if (db != null) {
-                    val regDoc = db.collection("fighters_registry")
-                        .whereEqualTo("email", cleanEmail)
-                        .get()
-                        .await()
-                    for (doc in regDoc.documents) {
-                        val key = doc.getString("licenseKey") ?: ""
-                        val isPro = doc.getBoolean("isProActive") ?: false
-                        if (key.isNotBlank() && isPro) {
-                            foundKey = key
-                            foundExpiresAt = now + 30L * 86400000L
-                            break
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed searching fighters_registry", e)
-            }
-        }
+        // Восстановление по общему реестру бойцов намеренно отключено:
+        // только запись из коллекции licenses с реальным expiresAt считается источником истины.
 
         // 5. Применение найденного в облаке ключа
-        if (foundKey.isNotBlank()) {
-            val finalExpires = if (foundExpiresAt > now) foundExpiresAt else (now + 30L * 86400000L)
+        if (foundKey.isNotBlank() && foundExpiresAt > now) {
+            val finalExpires = foundExpiresAt
             val sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             sp.edit()
                 .putString("active_license_key", foundKey)
