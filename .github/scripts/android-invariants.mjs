@@ -80,6 +80,20 @@ if (historicalUnitKeyHits.length) {
   ok('historical shared unit key is absent from production source');
 }
 
+const outdatedReferenceHits = sourceFiles.filter((file) => {
+  try {
+    const text = read(file);
+    return text.includes('https://kapterka-pro.ru/#cabinet') || text.includes('@Levaminbat');
+  } catch (_) {
+    return false;
+  }
+});
+if (outdatedReferenceHits.length) {
+  fail(`outdated cabinet/support references remain: ${outdatedReferenceHits.join(', ')}`);
+} else {
+  ok('cabinet/support references use current destinations');
+}
+
 const sensitiveTracked = [
   'app/google-services.json',
   'google-services.json',
