@@ -26,7 +26,7 @@ data class FighterAdminRecord(
     val callsign: String, // Позывной (например "сокол", "буран")
     val role: String = "Старшина / Боец", // Должность
     val unitName: String = "1-е Подразделение", // Название подразделения
-    val unitKey: String = "kapt_59e13b", // Секретный ключ подразделения
+    val unitKey: String = "", // Ключ подразделения задаётся профилем и не должен иметь общий fallback
     val licenseKey: String = "", // Ключ лицензии (KAPT-XXXX-XXXX-XXXX)
     val isProActive: Boolean = false, // Статус лицензии
     val licenseDaysLeft: Int = 0, // Оставшиеся дни
