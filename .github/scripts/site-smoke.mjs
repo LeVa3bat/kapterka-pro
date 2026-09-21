@@ -228,3 +228,9 @@ else ok('license registry countdown is wired');
 const versionData = JSON.parse(read('docs/version.json'));
 if (!versionData.version || !index.includes('KAPTERKA_WEB_VERSION')) fail('web cache-version handshake is missing');
 else ok('web cache-version handshake is present');
+
+const apkTrackerCount = (app.match(/function\s+trackApkDownload\s*\(/g) || []).length;
+if (apkTrackerCount !== 1) fail(`expected one trackApkDownload function, found ${apkTrackerCount}`);
+if (!app.includes('function trackSiteAction') || !app.includes('installSiteFunnelTracking')) fail('privacy-safe site funnel analytics is missing');
+if (/trackSiteAction\([^\n]*(?:email|callsign|licenseKey|unitKey|paymentId)\s*:/i.test(app)) fail('personal/sensitive data must not be sent through site funnel analytics');
+else ok('single APK analytics handler and privacy-safe funnel tracking are present');

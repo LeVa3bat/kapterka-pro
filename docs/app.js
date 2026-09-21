@@ -828,17 +828,6 @@ function copyKeyText(text) {
   }
 }
 
-// Track APK Download & notify user
-function trackApkDownload(source) {
-  trackYm('reachGoal', 'apk_download_started', { source: source || 'direct' });
-  if (typeof window.gtag === 'function') {
-    try {
-      window.gtag('event', 'download_apk', { event_category: 'APK', event_label: source || 'direct' });
-    } catch (e) {}
-  }
-  showToast('📥 Скачивание APK-файла «Каптёрка Про v3.4.9» началось...');
-}
-
 function fallbackCopy(text) {
   const textArea = document.createElement('textarea');
   textArea.value = text;
@@ -1312,6 +1301,9 @@ function escapeHtml(value) {
 
 // 10. Initialization on DOMContentLoaded
 document.addEventListener('DOMContentLoaded', () => {
+  // Anonymous funnel analytics; no personal data is included.
+  installSiteFunnelTracking();
+
   // Check user session state and setup auth UI
   updateAuthUI();
 
@@ -1464,14 +1456,46 @@ function openLightbox(imgSrc, title) {
   openModal('modalScreenshot');
 }
 
-// Track APK Downloads & RuStore clicks
-function trackApkDownload(source) {
+// Privacy-safe site funnel analytics.
+// Never send Email, callsign, license keys, unit keys or payment identifiers.
+function trackSiteAction(eventName, params = {}) {
+  const safeParams = { ...params, web_version: window.KAPTERKA_WEB_VERSION || 'unknown' };
   try {
-    trackYm('reachGoal', 'apk_download', { source: source });
-    if (typeof gtag === 'function') {
-      gtag('event', 'download_apk', { 'event_category': 'APK', 'event_label': source });
-    }
-  } catch (e) {
-    console.warn('Analytics tracking error:', e);
+    trackYm('reachGoal', eventName, safeParams);
+  } catch (_) {}
+  if (typeof window.gtag === 'function') {
+    try {
+      window.gtag('event', eventName, safeParams);
+    } catch (_) {}
   }
+}
+
+function trackApkDownload(source) {
+  const placement = String(source || 'direct').slice(0, 40);
+  trackSiteAction('apk_download', { source: placement });
+  showToast('📥 Скачивание APK-файла «Каптёрка PRO 3.4.9» началось…');
+}
+
+function installSiteFunnelTracking() {
+  document.addEventListener('click', (event) => {
+    const link = event.target?.closest?.('a[href]');
+    if (!link) return;
+    const href = String(link.getAttribute('href') || '');
+
+    if (href.includes('apps.rustore.ru/app/com.aistudio.kapterka.jmwqve')) {
+      trackSiteAction('rustore_open', { source: 'site' });
+    } else if (href.includes('t.me/kapterka_help_bot')) {
+      trackSiteAction('support_open', { channel: 'telegram_bot' });
+    } else if (href.includes('t.me/kapterka_pro')) {
+      trackSiteAction('telegram_channel_open', { source: 'site' });
+    } else if (href.startsWith('mailto:')) {
+      trackSiteAction('support_open', { channel: 'email' });
+    }
+  }, { passive: true });
+
+  document.querySelectorAll('.neo-faq-list details').forEach((details, index) => {
+    details.addEventListener('toggle', () => {
+      if (details.open) trackSiteAction('faq_open', { faq_index: index + 1 });
+    });
+  });
 }
