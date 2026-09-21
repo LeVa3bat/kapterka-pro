@@ -513,6 +513,11 @@
     localStorage.removeItem("kapterka_auth_user");
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(TOKEN_EXP_KEY);
+    // Pending payment state must never leak into another account.
+    localStorage.removeItem("kapterka_pending_callsign");
+    localStorage.removeItem("kapterka_pending_key");
+    localStorage.removeItem("kapterka_pending_payment_id");
+    localStorage.removeItem("kapterka_verified_key");
     clearGenericProfileStorage();
 
     if (typeof window.updateAuthUI === "function") window.updateAuthUI();
