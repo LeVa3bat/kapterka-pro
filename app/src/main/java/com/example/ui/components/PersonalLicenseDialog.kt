@@ -105,7 +105,6 @@ fun PersonalLicenseDialog(
     onTestPaymentConfirm: () -> Unit,
     onRestoreSavedLicense: () -> Unit = {},
     onRestoreFromCloud: (email: String, callsign: String) -> Unit = { _, _ -> },
-    onOpenDeveloperBackdoor: () -> Unit = {},
     onSaveYooKassaSettings: (shopId: String, secretKey: String, isTestMode: Boolean, priceRubles: Int) -> Unit,
     onResendEmailKey: (String) -> Unit = {},
     onResetLicense: () -> Unit = {},
@@ -117,7 +116,6 @@ fun PersonalLicenseDialog(
     var selectedTab by remember { mutableIntStateOf(if (licenseStatus.isProActive || licenseStatus.licenseKey.isNotEmpty() || licenseStatus.lastSavedKey.isNotEmpty()) 0 else 1) }
     var enteredKey by remember { mutableStateOf("") }
     var copiedNotice by remember { mutableStateOf(false) }
-    var secretShieldTaps by remember { mutableIntStateOf(0) }
     var showLostKeyHelp by remember { mutableStateOf(false) }
     var isPaymentStarted by remember { mutableStateOf(false) }
     var isVerifyingPayment by remember { mutableStateOf(false) }
@@ -144,14 +142,7 @@ fun PersonalLicenseDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.clickable {
-                            secretShieldTaps++
-                            if (secretShieldTaps >= 5) {
-                                secretShieldTaps = 0
-                                onOpenDeveloperBackdoor()
-                            }
-                        }
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
                             modifier = Modifier
@@ -924,11 +915,7 @@ fun PersonalLicenseDialog(
                         Button(
                             onClick = {
                                 val clean = enteredKey.trim().uppercase()
-                                if (clean in listOf("DEV-ADMIN-777", "KAPT-DEV", "ROOT")) {
-                                    enteredKey = ""
-                                    onDismiss()
-                                    onOpenDeveloperBackdoor()
-                                } else if (clean.isNotBlank()) {
+                                if (clean.isNotBlank()) {
                                     onActivateLicenseKey(clean)
                                     enteredKey = ""
                                     selectedTab = 0
