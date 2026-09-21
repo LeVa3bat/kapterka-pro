@@ -25,6 +25,9 @@ const requiredFiles = [
   'docs/terms.html',
   'docs/robots.txt',
   'docs/sitemap.xml',
+  'docs/site.webmanifest',
+  'docs/404.html',
+  'docs/.well-known/security.txt',
   'docs/kapterka-pro.apk'
 ];
 
@@ -90,6 +93,23 @@ if (!/KAPTERKA_AUTH_API_URL\s*=\s*["']https:\/\/script\.google\.com\/macros\/s\/
 
 if (!index.includes('kapterka-pro.apk')) fail('APK download link is missing from index.html');
 else ok('APK download link is present');
+
+if (!index.includes('rel="manifest"') || !index.includes('site.webmanifest')) fail('manifest link is missing from index.html');
+else ok('manifest link is present');
+
+const manifest = JSON.parse(read('docs/site.webmanifest'));
+if (manifest.name !== 'Каптёрка PRO' || !manifest.start_url || !Array.isArray(manifest.icons) || !manifest.icons.length) {
+  fail('site.webmanifest is incomplete');
+} else {
+  ok('site.webmanifest is valid enough for install metadata');
+}
+
+const securityTxt = read('docs/.well-known/security.txt');
+if (!/Contact:\s*mailto:/i.test(securityTxt) || !/Canonical:\s*https:\/\/kapterka-pro\.ru\/\.well-known\/security\.txt/i.test(securityTxt)) {
+  fail('security.txt is missing contact/canonical');
+} else {
+  ok('security.txt contains contact and canonical');
+}
 
 if (!index.includes('v3.4.9') && !index.includes('3.4.9')) fail('site version 3.4.9 is not visible');
 if (!index.includes('сборка 31') && !index.includes('Сборка 31')) fail('site build 31 marker is missing');
