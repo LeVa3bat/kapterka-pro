@@ -136,7 +136,7 @@ class FighterRegistryManager(
                     callsign = obj.optString("callsign"),
                     role = obj.optString("role", "Боец"),
                     unitName = obj.optString("unitName", "Подразделение"),
-                    unitKey = obj.optString("unitKey", "kapt_default"),
+                    unitKey = obj.optString("unitKey", ""),
                     licenseKey = obj.optString("licenseKey", ""),
                     isProActive = obj.optBoolean("isProActive", false),
                     licenseDaysLeft = obj.optInt("licenseDaysLeft", 0),
@@ -171,7 +171,7 @@ class FighterRegistryManager(
                 val callsign = doc.getString("callsign") ?: "Боец"
                 val role = doc.getString("role") ?: "Старшина / Боец"
                 val unitName = doc.getString("unitName") ?: "1-е Подразделение"
-                val unitKey = doc.getString("unitKey") ?: "kapt_default"
+                val unitKey = doc.getString("unitKey").orEmpty()
                 val licenseKey = doc.getString("licenseKey") ?: ""
                 val expiresAt = doc.getLong("expiresAt") ?: 0L
                 val isProActive = expiresAt > now
@@ -239,7 +239,7 @@ class FighterRegistryManager(
             callsign = callsign.ifEmpty { "Боец" },
             role = role,
             unitName = unitName.ifEmpty { "1-е Подразделение" },
-            unitKey = unitKey.ifEmpty { "kapt_default" },
+            unitKey = unitKey.trim(),
             licenseKey = licenseKey,
             isProActive = isProActive || expiresAt > now,
             licenseDaysLeft = daysLeft,
