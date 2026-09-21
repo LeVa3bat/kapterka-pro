@@ -129,7 +129,8 @@ fun MoreSettingsScreen(
     onToggleTheme: () -> Unit = {}
 ) {
     val context = LocalContext.current
-        val unitKey = profile?.unitKey ?: "kapt_59e13b"
+    val unitKey = profile?.unitKey?.trim().orEmpty()
+    val unitKeyDisplay = unitKey.ifBlank { "не настроен" }
     var devVersionTaps by remember { androidx.compose.runtime.mutableIntStateOf(0) }
     var devTapWindowStartedAt by remember { androidx.compose.runtime.mutableLongStateOf(0L) }
 
@@ -533,7 +534,7 @@ fun MoreSettingsScreen(
         item {
             CollapsibleCard(
                 title = "Облачная база Google Firebase",
-                subtitle = "Канал: ${profile?.unitKey ?: "kapt_59e13b"} • Онлайн синхронизация",
+                subtitle = "Канал: $unitKeyDisplay • Онлайн синхронизация",
                 icon = Icons.Default.Cloud,
                 iconColor = SageGreenBright,
                 isExpanded = expandedProfile,
@@ -613,7 +614,7 @@ fun MoreSettingsScreen(
                                     color = TacticalTextMuted
                                 )
                                 Text(
-                                    text = unitKey,
+                                    text = unitKeyDisplay,
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = TacticalGold
@@ -725,7 +726,7 @@ fun MoreSettingsScreen(
         item {
             CollapsibleCard(
                 title = "Код подключения бойцов (без QR)",
-                subtitle = "Секретный код склада/подразделения: $unitKey",
+                subtitle = "Код склада/подразделения: $unitKeyDisplay",
                 icon = Icons.Default.Key,
                 iconColor = SageGreenBright,
                 isExpanded = expandedConnectCode,
@@ -747,7 +748,7 @@ fun MoreSettingsScreen(
                             .clip(RoundedCornerShape(8.dp))
                             .background(TacticalBg)
                             .border(1.dp, SageGreenPrimary.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
-                            .clickable {
+                            .clickable(enabled = unitKey.isNotBlank()) {
                                 copyToClip(context, unitKey)
                             }
                             .padding(horizontal = 12.dp, vertical = 10.dp),
