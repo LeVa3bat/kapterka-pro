@@ -288,7 +288,11 @@ function cleanupExpiredAuthData_() {
     }
   });
 
-  if (toDelete.length) props.deleteProperties(toDelete);
+  if (toDelete.length) {
+    toDelete.forEach(function(key) {
+      props.deleteProperty(key);
+    });
+  }
 }
 
 function createSixDigitCode_() {
