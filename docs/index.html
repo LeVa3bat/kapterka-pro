@@ -51,7 +51,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=3.4.9.31f">
+  <link rel="stylesheet" href="style.css?v=3.4.9.31g">
   <link rel="stylesheet" href="tabs_and_cabinet.css?v=3.4.9.31">
 
   <!-- Favicon & Mobile Icons (Тактическая светящаяся иконка Каптёрка Про) -->
@@ -133,149 +133,116 @@
   <!-- TAB 1: ОБЗОР, ВОЗМОЖНОСТИ И СКЛАДЫ (TAB OVERVIEW) -->
   <!-- ========================================================================= -->
   <div id="tabOverview" class="app-view-tab active">
-    <header class="hero compact-hero sleek-hero" id="home">
-      <div class="container">
-        <div class="sleek-hero-grid">
-          <div class="sleek-hero-copy">
-            <div class="badge"><span class="badge-dot"></span> Android • версия 3.4.9 • сборка 31</div>
-            <h1>Учёт имущества, склада и заявок <span>без перегруза и лишних действий</span></h1>
-            <p class="sleek-lead">
-              Каптёрка PRO помогает вести приход, выдачу, перемещения, остатки и заявки на одном телефоне.
-              Основной учёт работает локально, а синхронизация и Excel доступны, когда нужна связь и выгрузка.
-            </p>
+    <main class="neo-home" id="home">
+      <section class="neo-hero">
+        <div class="container">
+          <div class="neo-hero-card">
+            <div class="neo-copy">
+              <div class="neo-kicker"><span></span> Каптёрка PRO • Android • 3.4.9</div>
+              <h1>Складской учёт<br><em>в одном телефоне</em></h1>
+              <p>Приход, выдача, остатки, заявки и Excel — без перегруженного интерфейса.</p>
 
-            <div class="sleek-chip-row">
-              <span>3 дня полного демо</span>
-              <span>Обновление поверх старой версии</span>
-              <span>Без рекламы</span>
-              <span>Android 8–15</span>
+              <div class="neo-actions">
+                <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('neo_hero')" class="neo-btn neo-primary">Скачать APK</a>
+                <button class="neo-btn neo-rustore" onclick="openModal('modalRuStore')">RuStore</button>
+              </div>
+
+              <div class="neo-meta">
+                <span>3 дня демо</span>
+                <span>Без рекламы</span>
+                <span>Обновление без удаления данных</span>
+              </div>
             </div>
 
-            <div class="sleek-hero-actions">
-              <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('hero_sleek')" class="btn btn-primary btn-lg">📥 Скачать APK</a>
-              <a href="javascript:void(0)" onclick="openModal('modalRuStore')" class="btn btn-outline btn-lg">🛍️ Открыть RuStore</a>
-              <button class="btn btn-gold btn-lg" onclick="switchMainTab('tabPayment')">PRO — 490 ₽</button>
-            </div>
-
-            <div class="sleek-mini-proof">
-              <div><strong>Что внутри:</strong> склад, журнал, заявки, каталог, Excel-формы.</div>
-              <div><strong>Обновление 3.4.9:</strong> исправлено разделение подразделений, ключ <code>kapt_...</code>, лицензия и счётчик устройств.</div>
-            </div>
-          </div>
-
-          <div class="sleek-preview-stack">
-            <button class="sleek-phone-main" onclick="openLightbox('screen_main_349.jpg', 'Главный экран Каптёрка PRO 3.4.9')">
-              <img src="screen_main_349.jpg" alt="Главный экран Каптёрка PRO 3.4.9" loading="eager">
-            </button>
-            <button class="sleek-mini-screen" onclick="openLightbox('screen_catalog_349.jpg', 'Каталог Каптёрка PRO 3.4.9')">
-              <img src="screen_catalog_349.jpg" alt="Каталог Каптёрка PRO 3.4.9" loading="lazy">
-              <span>Каталог</span>
+            <button class="neo-phone" onclick="openLightbox('screen_main_349.jpg','Каптёрка PRO 3.4.9 — главный экран')" aria-label="Открыть скриншот">
+              <img src="screen_main_349.jpg" alt="Каптёрка PRO 3.4.9 — главный экран" loading="eager">
             </button>
           </div>
         </div>
-      </div>
-    </header>
+      </section>
 
-    <section class="section sleek-proof-section">
-      <div class="container">
-        <div class="sleek-proof-grid">
-          <article class="sleek-proof-card">
-            <span class="sleek-proof-icon">📦</span>
-            <div><strong>Остатки без путаницы</strong><p>Любое поступление, выдача или перемещение сразу отражаются в точках и остатках.</p></div>
-          </article>
-          <article class="sleek-proof-card">
-            <span class="sleek-proof-icon">🧾</span>
-            <div><strong>Журнал и история</strong><p>Все движения хранятся в журнале, чтобы быстро проверить, что и когда изменилось.</p></div>
-          </article>
-          <article class="sleek-proof-card">
-            <span class="sleek-proof-icon">📊</span>
-            <div><strong>Excel и печатные формы</strong><p>Сводки, ведомости и выгрузки формируются на основе уже введённых данных.</p></div>
-          </article>
-          <article class="sleek-proof-card">
-            <span class="sleek-proof-icon">🔐</span>
-            <div><strong>Разделение подразделений</strong><p>Код <code>kapt_...</code> отделяет ваши данные от других подразделений и складов.</p></div>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section class="section sleek-story-section">
-      <div class="container">
-        <div class="sleek-story-grid">
-          <div class="sleek-story-copy">
-            <span class="badge badge-gold">Почему удобно на телефоне</span>
-            <h2>Сначала главное, потом детали</h2>
-            <p>На сайте оставлено только то, что помогает быстро принять решение: скачать, посмотреть интерфейс, понять обновления и условия установки.</p>
-            <ul class="sleek-bullet-list">
-              <li><strong>Главная:</strong> остатки, быстрые операции и переключение по точкам.</li>
-              <li><strong>Каталог:</strong> поиск по номенклатуре и категориям снабжения.</li>
-              <li><strong>Заявки:</strong> формирование потребностей и передача на склад.</li>
-              <li><strong>Синхронизация:</strong> обмен между устройствами при появлении связи.</li>
-            </ul>
+      <section class="neo-features">
+        <div class="container">
+          <div class="neo-section-title">
+            <span>ВОЗМОЖНОСТИ</span>
+            <h2>Всё нужное — без лишнего</h2>
           </div>
 
-          <div class="sleek-feature-rail">
-            <button class="sleek-feature-card" onclick="openLightbox('screen_main_349.jpg', 'Главная — остатки и операции')">
-              <img src="screen_main_349.jpg" alt="Главная" loading="lazy">
-              <div><strong>Главная</strong><span>Склады, остатки, приход, выдача и перемещения.</span></div>
+          <div class="neo-feature-grid">
+            <button class="neo-feature neo-green" onclick="openModal('modalFeatures')">
+              <b>01</b><div><strong>Учёт остатков</strong><small>Приход, выдача и перемещения сразу меняют склад.</small></div>
             </button>
-            <button class="sleek-feature-card" onclick="openLightbox('screen_catalog_349.jpg', 'Каталог — номенклатура')">
-              <img src="screen_catalog_349.jpg" alt="Каталог" loading="lazy">
-              <div><strong>Каталог</strong><span>Категории, поиск и собственные позиции в одном справочнике.</span></div>
+            <button class="neo-feature neo-cyan" onclick="switchMainTab('tabSync')">
+              <b>02</b><div><strong>Синхронизация</strong><small>Работа локально и обмен данными при появлении связи.</small></div>
+            </button>
+            <button class="neo-feature neo-gold" onclick="openModal('modalFeatures')">
+              <b>03</b><div><strong>Excel и формы</strong><small>Отчёты и ведомости из уже введённых данных.</small></div>
             </button>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <section class="section sleek-update-section">
-      <div class="container">
-        <div class="sleek-update-box">
-          <div class="sleek-update-head">
+      <section class="neo-preview">
+        <div class="container">
+          <div class="neo-preview-head">
             <div>
-              <span class="badge">Что нового</span>
-              <h2>Версия 3.4.9</h2>
-              <p>Подготовлена для безопасного обновления поверх прошлой версии без удаления данных.</p>
+              <span>ИНТЕРФЕЙС</span>
+              <h2>Понятно с первого экрана</h2>
             </div>
-            <div class="sleek-release-pill">Актуальный релиз</div>
+            <button onclick="switchMainTab('tabDownload')">Как установить →</button>
           </div>
-          <div class="sleek-update-grid">
-            <div>✓ Старые точки больше не переходят в новое подразделение</div>
-            <div>✓ Новому пользователю доступно 3 дня полного демо</div>
-            <div>✓ Ключ <code>kapt_...</code> отображается понятнее</div>
-            <div>✓ Счётчик устройств показывает корректное значение</div>
-            <div>✓ Вход, лицензия и служебная синхронизация стали стабильнее</div>
-            <div>✓ Приложение устанавливается поверх прежней версии без потери локальной базы</div>
+
+          <div class="neo-shot-row">
+            <button class="neo-shot" onclick="openLightbox('screen_main_349.jpg','Главная — склады и быстрые операции')">
+              <img src="screen_main_349.jpg" alt="Главная" loading="lazy">
+              <span><strong>Главная</strong><small>Склады и операции</small></span>
+            </button>
+            <button class="neo-shot" onclick="openLightbox('screen_catalog_349.jpg','Каталог — номенклатура')">
+              <img src="screen_catalog_349.jpg" alt="Каталог" loading="lazy">
+              <span><strong>Каталог</strong><small>Поиск и категории</small></span>
+            </button>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <section class="section sleek-install-section">
-      <div class="container">
-        <div class="sleek-install-card">
-          <div class="sleek-install-copy">
-            <span class="badge">Перед установкой</span>
-            <h2>Попробовать можно за пару минут</h2>
-            <div class="sleek-install-steps">
-              <div><strong>1.</strong><span>Скачайте APK или откройте страницу приложения в RuStore.</span></div>
-              <div><strong>2.</strong><span>Установите приложение поверх старой версии или как новую установку.</span></div>
-              <div><strong>3.</strong><span>Новый пользователь получает 3 дня полного демо-доступа.</span></div>
+      <section class="neo-release">
+        <div class="container">
+          <div class="neo-release-card">
+            <div class="neo-release-title">
+              <span>3.4.9</span>
+              <div><strong>Стабильное обновление</strong><small>Сборка 31</small></div>
+            </div>
+            <div class="neo-release-points">
+              <span>✓ данные подразделений не смешиваются</span>
+              <span>✓ ключ <code>kapt_...</code> отображается понятнее</span>
+              <span>✓ исправлен счётчик активных устройств</span>
+              <span>✓ лицензия сохраняется при обычном обновлении</span>
             </div>
           </div>
-          <div class="sleek-install-actions">
-            <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('overview_bottom_sleek')" class="btn btn-primary btn-lg">📥 Скачать APK</a>
-            <button class="btn btn-outline btn-lg" onclick="switchMainTab('tabCabinet')">👤 Личный кабинет</button>
-            <button class="btn btn-gold btn-lg" onclick="switchMainTab('tabDownload')">ℹ️ Как установить</button>
+        </div>
+      </section>
+
+      <section class="neo-final">
+        <div class="container">
+          <div class="neo-final-card">
+            <div>
+              <span>ГОТОВЫ ПОПРОБОВАТЬ?</span>
+              <h2>3 дня полного доступа бесплатно</h2>
+              <p>Установите приложение и проверьте его на своих данных.</p>
+            </div>
+            <div class="neo-final-actions">
+              <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('neo_bottom')" class="neo-btn neo-primary">Скачать APK</a>
+              <button class="neo-btn neo-dark" onclick="switchMainTab('tabPayment')">PRO — 490 ₽</button>
+            </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <div class="mobile-cta-bar">
-      <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('mobile_cta')">Скачать APK</a>
-      <button onclick="openModal('modalRuStore')">RuStore</button>
-    </div>
+      <div class="neo-mobile-bar">
+        <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('neo_mobile')">Скачать APK</a>
+        <button onclick="openModal('modalRuStore')">RuStore</button>
+      </div>
+    </main>
   </div>
 
   <!-- ========================================================================= -->
@@ -1185,95 +1152,23 @@
   </div>
 
   <!-- Footer -->
-  <footer class="footer">
+  <footer class="footer neo-footer">
     <div class="container">
-      <div class="footer-grid">
-        
-        <div class="footer-col">
-          <div class="logo-brand" style="margin-bottom:14px;">
-            <div class="logo-icon">📦</div>
-            <div>КАПТЁРКА<span class="logo-pro">PRO</span></div>
-          </div>
-          <p style="color:var(--text-secondary); line-height:1.6; font-size:0.85rem;">
-            Автономный тактический комплекс учета материально-технических средств, имущества складов и боеприпасов для подразделений и волонтёрских штабов.
-          </p>
-          <div class="footer-legal-badge">
-            <div><strong>Разработчик:</strong> Самозанятый / ИП</div>
-            <div><strong>ИНН:</strong> 250104230398</div>
-            <div><strong>Магазин ЮKassa:</strong> №1450722</div>
-          </div>
+      <div class="neo-footer-top">
+        <div class="neo-footer-brand">
+          <div class="logo-brand"><div class="logo-icon">📦</div><div>КАПТЁРКА<span class="logo-pro">PRO</span></div></div>
+          <small>Android-приложение для учёта имущества и складов</small>
         </div>
-
-        <div class="footer-col">
-          <h4>Разделы платформы</h4>
-          <ul class="footer-links">
-            <li><a href="javascript:void(0)" onclick="switchMainTab('tabOverview')">⚡ Главный экран</a></li>
-            <li><a href="javascript:void(0)" onclick="openModal('modalFeatures')">⚙️ Функционал МТО</a></li>
-            <li><a href="javascript:void(0)" onclick="openModal('modalSyncMech')">🔗 Синхронизация складов</a></li>
-            <li><a href="javascript:void(0)" onclick="openModal('modalOpsec')">🛡️ Безопасность (OPSEC)</a></li>
-            <li><a href="javascript:void(0)" onclick="switchMainTab('tabCabinet')">👤 Личный кабинет бойца</a></li>
-            <li><a href="javascript:void(0)" onclick="switchMainTab('tabPayment')">💳 Оплата ЮKassa (490 ₽)</a></li>
-            <li><a href="javascript:void(0)" onclick="switchMainTab('tabSync')">🔗 Ключи подразделений</a></li>
-            <li><a href="javascript:void(0)" onclick="switchMainTab('tabDownload')">📥 Скачать APK</a></li>
-          </ul>
-        </div>
-
-        <div class="footer-col">
-          <h4>Документы и безопасность</h4>
-          <ul class="footer-links">
-            <li><a href="terms.html">📄 Публичная оферта (Лицензия)</a></li>
-            <li><a href="privacy.html">🛡️ Политика конфиденциальности (152-ФЗ)</a></li>
-            <li><a href="javascript:void(0)" onclick="openModal('modalContact')">❓ Помощь и техподдержка</a></li>
-          </ul>
-        </div>
-
-        <div class="footer-col">
-          <h4>Связь и сообщество</h4>
-          <ul class="footer-links">
-            <li><strong style="color:var(--text-primary);">📢 Канал:</strong> <a href="https://t.me/kapterka_pro" target="_blank" rel="noopener noreferrer" style="color:#29b6f6;">@kapterka_pro</a></li>
-            <li><strong style="color:var(--text-primary);">🤖 Бот поддержки:</strong> <a href="https://t.me/kapterka_help_bot" target="_blank" rel="noopener noreferrer" style="color:#5bc0be;">@kapterka_help_bot</a></li>
-            <li><strong style="color:var(--text-primary);">💬 Разработчик:</strong> <a href="https://t.me/Levaminbat" target="_blank" rel="noopener noreferrer">@Levaminbat</a></li>
-            <li><strong style="color:var(--text-primary);">✉️ Email:</strong> <a href="mailto:alex.666.881@gmail.com">alex.666.881@gmail.com</a></li>
-          </ul>
-          <div style="margin-top:14px; display:flex; flex-direction:column; gap:8px;">
-            <a href="https://t.me/kapterka_pro" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm" style="width:100%; padding:7px 12px; font-size:0.82rem; text-align:center; text-decoration:none;">
-              📢 Подписаться на канал
-            </a>
-            <button class="btn btn-outline btn-sm" style="width:100%; padding:7px 12px; font-size:0.82rem;" onclick="openModal('modalContact')">
-              ✉️ Написать разработчику
-            </button>
-          </div>
-        </div>
-
-      </div>
-
-          <div class="footer-bottom">
-        <div>© 2026 «Каптёрка Про» (kapterka-pro.ru). ИНН 250104230398.</div>
-        <div>
-          Разработано для полевой работы. 100% автономность. 
-          <a href="javascript:void(0)" onclick="promptAdminAccess()" style="color:var(--text-muted); text-decoration:none; margin-left:12px; font-size:0.75rem;" title="Служебный вход">⚙️</a>
+        <div class="neo-footer-links">
+          <button onclick="switchMainTab('tabCabinet')">Личный кабинет</button>
+          <button onclick="switchMainTab('tabPayment')">Тариф PRO</button>
+          <a href="privacy.html">Конфиденциальность</a>
+          <a href="terms.html">Оферта</a>
         </div>
       </div>
-      
-      <!-- Видимый официальный информер Яндекс.Метрики -->
-      <div style="margin-top:16px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.06); display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap;">
-        <a href="https://metrika.yandex.ru/stat/?id=112482290&amp;from=informer" target="_blank" rel="nofollow" style="text-decoration:none; display:inline-flex; align-items:center;">
-          <img src="https://informer.yandex.ru/informer/112482290/3_1_212822FF_010802FF_1_pageviews"
-            onerror="this.onerror=null; this.style.display='none'; document.getElementById('informerFallbackBadge').style.display='inline-flex';"
-            style="width:88px; height:31px; border:0; border-radius:4px; box-shadow:0 2px 8px rgba(0,0,0,0.5);" alt="Яндекс.Метрика" title="Яндекс.Метрика: данные за сегодня" class="ym-advanced-informer" data-cid="112482290" data-lang="ru" />
-          <div id="informerFallbackBadge" style="display:inline-flex; align-items:center; background:#111913; border:1px solid var(--accent-gold); border-radius:6px; padding:4px 10px; gap:6px; box-shadow:0 2px 8px rgba(0,0,0,0.5);">
-            <span style="font-size:0.9rem;">📊</span>
-            <div style="font-size:0.75rem; font-family:var(--font-mono); color:var(--accent-gold); font-weight:700; line-height:1.2;">
-              Яндекс.Метрика<br><span style="color:#00e676; font-size:0.68rem;">● Online #112482290</span>
-            </div>
-          </div>
-        </a>
-        <div style="font-size:0.78rem; color:var(--text-secondary); text-align:left;">
-          <span style="color:#00e676; font-weight:bold;">● Онлайн:</span> Мониторинг посетителей сайта активен<br>
-          <a href="https://metrika.yandex.ru/dashboard?id=112482290" target="_blank" style="color:var(--accent-gold); font-size:0.74rem; text-decoration:none; font-weight:600;">
-            Открыть сводку в реальном времени ➔
-          </a>
-        </div>
+      <div class="neo-footer-bottom">
+        <span>© 2026 Каптёрка PRO • ИНН 250104230398</span>
+        <span><a href="https://t.me/kapterka_pro" target="_blank" rel="noopener noreferrer">Telegram</a> · <a href="mailto:alex.666.881@gmail.com">Email</a> <a href="javascript:void(0)" onclick="promptAdminAccess()" class="neo-admin">⚙</a></span>
       </div>
     </div>
   </footer>
