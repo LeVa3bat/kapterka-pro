@@ -3054,3 +3054,7 @@ box-shadow:0 18px 60px rgba(0,0,0,.28);}
   .v3-store-actions{grid-template-columns:1fr}
   .v3-shot-actions{display:grid;grid-template-columns:1fr 1fr}
 }
+
+.v3-legal-line{margin-top:8px;text-align:center;color:#63746a;font-size:.64rem;line-height:1.45}
+.v3-legal-line a{color:#829d8f;text-decoration:underline;text-underline-offset:2px}
+.v3-legal-line a:hover{color:#b8c9bf}
