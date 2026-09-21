@@ -4021,3 +4021,28 @@ a.neo-trust-item:hover{transform:translateY(-1px);background:#111b15;border-colo
   .neo-faq-list summary{font-size:.78rem!important;line-height:1.4!important}
   .neo-plan-points span{font-size:.68rem!important;line-height:1.35!important}
 }
+
+
+/* FINAL DESKTOP ACCESSIBILITY 100 FIX 2026-09-21 */
+.neo-footer-brand small{color:#83948a!important}
+.neo-footer-bottom{color:#83948a!important}
+.neo-gallery-dots{gap:2px!important}
+.neo-gallery-dots button{
+  width:28px!important;
+  height:28px!important;
+  display:grid!important;
+  place-items:center!important;
+  padding:0!important;
+  background:transparent!important;
+  border:0!important;
+}
+.neo-gallery-dots button::after{
+  content:'';
+  width:18px;
+  height:4px;
+  border-radius:999px;
+  background:#26332b;
+  transition:width .18s ease,background .18s ease;
+}
+.neo-gallery-dots button.active{width:32px!important;background:transparent!important}
+.neo-gallery-dots button.active::after{width:28px;background:#71d7a7}
