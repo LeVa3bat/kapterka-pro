@@ -51,7 +51,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=3.4.9.31j">
+  <link rel="stylesheet" href="style.css?v=3.4.9.31k">
   <link rel="stylesheet" href="tabs_and_cabinet.css?v=3.4.9.31">
 
   <!-- Favicon & Mobile Icons (Тактическая светящаяся иконка Каптёрка Про) -->
@@ -610,146 +610,6 @@
     </section>
   </div>
 
-  <div id="tabAdmin" class="app-view-tab">
-    <section class="section">
-      <div class="container">
-        
-        <div class="admin-card">
-          <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px;">
-            <div>
-              <span class="admin-header-badge">🛡️ СЛУЖЕБНЫЙ ДОСТУП • АДМИНИСТРАТОР</span>
-              <h2 style="font-size:1.6rem; color:var(--text-primary); margin:6px 0;">Управление пользователями и рассылкой</h2>
-              <p style="color:var(--text-secondary); font-size:0.88rem;">
-                База зарегистрированных бойцов, мониторинг сроков лицензий и формирование писем для рассылки обновлений.
-              </p>
-            </div>
-            <div style="display:flex; gap:8px;">
-              <button class="btn btn-primary btn-sm" onclick="exportSubscribersToCSV()">
-                📥 Экспорт базы в CSV (Excel)
-              </button>
-              <button class="btn btn-outline btn-sm" onclick="closeAdminPanel()">
-                ✕ Закрыть админку
-              </button>
-            </div>
-          </div>
-
-          <!-- Сводные индикаторы -->
-          <div class="admin-stats-grid">
-            <div class="admin-stat-box">
-              <div class="admin-stat-num" id="adminTotalUsers">0</div>
-              <div class="admin-stat-label">Всего бойцов в базе</div>
-            </div>
-            <div class="admin-stat-box">
-              <div class="admin-stat-num" id="adminTotalSubscribers" style="color:#4db6ac;">0</div>
-              <div class="admin-stat-label">Подписчиков на обновления</div>
-            </div>
-            <div class="admin-stat-box">
-              <div class="admin-stat-num" id="adminExpiringSoon" style="color:#e57373;">0</div>
-              <div class="admin-stat-label">Лицензия истекает (≤ 5 дн)</div>
-            </div>
-            <div class="admin-stat-box">
-              <div class="admin-stat-num" id="adminTotalActiveKeys" style="color:var(--primary);">0</div>
-              <div class="admin-stat-label">Активных ключей</div>
-            </div>
-            <div class="admin-stat-box" style="border-color:rgba(255,179,0,0.5); background:#141209;">
-              <div class="admin-stat-num" style="color:var(--accent-gold); display:flex; align-items:center; justify-content:center; gap:6px;">
-                <span class="status-indicator" style="background:#00e676; box-shadow:0 0 8px #00e676; width:10px; height:10px;"></span>
-                <span>Онлайн</span>
-              </div>
-              <div class="admin-stat-label" style="color:var(--accent-gold);">Яндекс.Метрика № 112482290</div>
-              <a href="https://metrika.yandex.ru/dashboard?id=112482290" target="_blank" rel="noopener noreferrer" style="display:inline-block; font-size:0.75rem; color:#ffd54f; text-decoration:underline; margin-top:6px;">
-                🔴 Смотреть посетителей в реальном времени ➔
-              </a>
-            </div>
-          </div>
-
-          <!-- Панель быстрых действий и фильтров -->
-          <div class="admin-filter-bar">
-            <div style="display:flex; gap:8px; align-items:center;">
-              <strong style="font-size:0.85rem; color:var(--text-primary);">Фильтр:</strong>
-              <button class="btn btn-sm btn-primary" id="btnFilterAll" onclick="filterAdminUsers('all')">Все</button>
-              <button class="btn btn-sm btn-outline" id="btnFilterExpiring" onclick="filterAdminUsers('expiring')">⚠️ Скоро кончается</button>
-              <button class="btn btn-sm btn-outline" id="btnFilterSubscribers" onclick="filterAdminUsers('subscribers')">🔔 Подписчики</button>
-            </div>
-
-            <div class="admin-quick-actions">
-              <button class="btn btn-gold btn-sm" onclick="openNewsletterModal('update')">
-                📢 Написать о новом обновлении ПО
-              </button>
-              <button class="btn btn-outline btn-sm" onclick="openNewsletterModal('expiring')">
-                ✉️ Напомнить о продлении
-              </button>
-            </div>
-          </div>
-
-          <!-- Таблица пользователей со всеми данными -->
-          <div class="admin-table-container">
-            <table class="admin-table">
-              <thead>
-                <tr>
-                  <th>Позывной / Звание</th>
-                  <th>Email (для рассылки)</th>
-                  <th>Подразделение / Код</th>
-                  <th>Активный ключ</th>
-                  <th>Срок действия</th>
-                  <th>Статус</th>
-                  <th>Действия</th>
-                </tr>
-              </thead>
-              <tbody id="adminUsersTableBody">
-                <!-- Заполняется динамически -->
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Блок формирования рассылки обновлений -->
-          <div style="background:#090d0a; border:1px solid var(--border-color); border-radius:var(--radius-lg); padding:20px; margin-top:20px;">
-            <h3 style="font-size:1.1rem; color:var(--accent-gold); margin-bottom:10px;">
-              ✉️ Инструмент массовой рассылки (Шаблон письма)
-            </h3>
-            <p style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:14px;">
-              Сформируйте тему и текст уведомления. Готовый список email-адресов можно скопировать в строку «Скрытая копия (BCC)» вашей почты или почтовой службы.
-            </p>
-
-            <div class="form-group">
-              <label class="form-label">Тема письма:</label>
-              <input type="text" id="adminMailSubject" class="form-input" value="[Каптёрка Про] Вышло обновление v3.4.9 (Сборка 31): стабильность и безопасное обновление">
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Текст рассылки:</label>
-              <textarea id="adminMailBody" class="form-input" rows="5" style="font-family:inherit; font-size:0.85rem; line-height:1.5;">Здравствуйте, боец!
-
-Вышло обновление программы «Каптёрка Про» v3.4.9 (Сборка 31).
-
-Что изменилось:
-1. Обновление устанавливается поверх предыдущей версии без удаления пользовательских данных.
-2. Исправлено разделение данных между подразделениями — старые точки не переносятся в новый kapt_... .
-3. Для новых пользователей действует 3-дневный демо-период.
-4. Улучшены отображение ключа подразделения, вход и работа лицензии.
-5. Исправлен счётчик активных устройств, включая отображение одного подключённого телефона.
-6. Улучшена стабильность синхронизации и восстановлены Telegram-уведомления.
-
-Скачать официальный APK v3.4.9: https://kapterka-pro.ru/kapterka-pro.apk
-Ваш персональный лицензионный ключ сохранён в вашем Личном кабинете.</textarea>
-            </div>
-
-            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-              <button class="btn btn-primary" onclick="copyAllSubscriberEmails()">
-                📋 Скопировать все Email адреса (<span id="btnCopyEmailsCount">0</span>)
-              </button>
-              <button class="btn btn-gold" onclick="sendMailToSubscribersClient()">
-                🚀 Открыть в почтовом клиенте
-              </button>
-            </div>
-          </div>
-
-        </div>
-
-      </div>
-    </section>
-  </div>
-
   <!-- Footer -->
   <footer class="footer neo-footer">
     <div class="container">
@@ -767,7 +627,7 @@
       </div>
       <div class="neo-footer-bottom">
         <span>© 2026 Каптёрка PRO • ИНН 250104230398</span>
-        <span><a href="https://t.me/kapterka_pro" target="_blank" rel="noopener noreferrer">Telegram</a> · <a href="mailto:alex.666.881@gmail.com">Email</a> <a href="javascript:void(0)" onclick="promptAdminAccess()" class="neo-admin">⚙</a></span>
+        <span><a href="https://t.me/kapterka_pro" target="_blank" rel="noopener noreferrer">Telegram</a> · <a href="mailto:alex.666.881@gmail.com">Email</a></span>
       </div>
     </div>
   </footer>
@@ -970,7 +830,7 @@
     </button>
   </nav>
 
-  <script src="app.js?v=3.4.9.31c"></script>
+  <script src="app.js?v=3.4.9.31d"></script>
   <script src="auth-config.js?v=3.4.9.31a"></script>
   <script src="auth-v2.js?v=3.4.9.31d"></script>
 </body>
