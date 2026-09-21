@@ -62,6 +62,24 @@ if (/DEFAULT_LIVE_KEY|live_[A-Za-z0-9_-]{20,}/.test(read('app/src/main/java/com/
   warn('YooKassa secret material is still present in Android source. Do not treat this as resolved; migrate payment API calls to a server before a future security release.');
 }
 
+const sourceFiles = [];
+const walk = (dir) => {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = `${dir}/${entry.name}`;
+    if (entry.isDirectory()) walk(full);
+    else sourceFiles.push(full);
+  }
+};
+walk('app/src/main');
+const historicalUnitKeyHits = sourceFiles.filter((file) => {
+  try { return read(file).includes('kapt_59e13b'); } catch (_) { return false; }
+});
+if (historicalUnitKeyHits.length) {
+  fail(`historical shared unit key must not be used as a fallback: ${historicalUnitKeyHits.join(', ')}`);
+} else {
+  ok('historical shared unit key is absent from production source');
+}
+
 const sensitiveTracked = [
   'app/google-services.json',
   'google-services.json',
