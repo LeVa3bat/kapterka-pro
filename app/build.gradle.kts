@@ -17,10 +17,14 @@ android {
     applicationId = "com.aistudio.kapterka.jmwqve"
     minSdk = 24
     targetSdk = 34
-    versionCode = 26
-    versionName = "3.4.8"
+    versionCode = 31
+    versionName = "3.4.9"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+    // Developer access: only a SHA-256 fingerprint is embedded in the APK.
+    // The actual key is never stored in app source or resources.
+    buildConfigField("String", "DEV_ADMIN_KEY_SHA256", "\"621e801ca063883242a6a22131a5a4b06cf2b07daca53d805e885615a614845b\"")
   }
 
   signingConfigs {
