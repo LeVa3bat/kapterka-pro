@@ -103,6 +103,18 @@ else ok('mobile viewport supports display cutouts/safe areas');
 if (!index.includes('"softwareRequirements": "Android 7.0 or later"')) fail('site compatibility text no longer matches minSdk 24');
 else ok('site Android compatibility matches minSdk 24');
 
+const title = (index.match(/<title>([^<]+)<\/title>/i) || [])[1] || '';
+const description = (index.match(/<meta\s+name=["']description["']\s+content=["']([^"']+)["']/i) || [])[1] || '';
+const h1Count = (index.match(/<h1\b/gi) || []).length;
+if (!/Складской учёт/i.test(title) || !/Android/i.test(title)) fail('SEO title is missing primary search intent');
+else ok('SEO title is present');
+if (description.length < 110 || !/учёт имущества/i.test(description) || !/офлайн/i.test(description)) fail('meta description is too weak or missing core intent');
+else ok('meta description covers core search intent');
+if (h1Count !== 1) fail(`homepage must contain exactly one H1 (found ${h1Count})`);
+else ok('homepage has one H1');
+if (!index.includes('id="for-whom"') || !index.includes('id="how-to-start"')) fail('conversion/SEO explainer sections are missing');
+else ok('conversion/SEO explainer sections are present');
+
 const manifest = JSON.parse(read('docs/site.webmanifest'));
 if (manifest.name !== 'Каптёрка PRO' || !manifest.start_url || !Array.isArray(manifest.icons) || !manifest.icons.length) {
   fail('site.webmanifest is incomplete');

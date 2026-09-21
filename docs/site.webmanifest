@@ -1,7 +1,7 @@
 {
   "name": "Каптёрка PRO",
   "short_name": "Каптёрка PRO",
-  "description": "Android-приложение для учёта имущества и складов.",
+  "description": "Складской учёт и учёт имущества на Android: приход, выдача, остатки, перемещения, Excel и офлайн-работа.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
