@@ -31,7 +31,7 @@
     "operatingSystem": "Android",
     "applicationCategory": "BusinessApplication",
     "softwareVersion": "3.4.9",
-    "dateModified": "2026-09-20",
+    "dateModified": "2026-09-21",
     "offers": {
       "@type": "Offer",
       "price": "490.00",
@@ -51,7 +51,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=3.4.9.31k">
+  <link rel="stylesheet" href="style.css?v=3.4.9.31m">
   <link rel="stylesheet" href="tabs_and_cabinet.css?v=3.4.9.31">
 
   <!-- Favicon & Mobile Icons (Тактическая светящаяся иконка Каптёрка Про) -->
@@ -98,16 +98,16 @@
       <!-- Compact Tab Navigation: Все разделено по вкладкам -->
       <div class="main-tab-nav" id="mainTabNav">
         <button class="main-tab-btn active" id="btnTabOverview" onclick="switchMainTab('tabOverview')">
-          ⚡ Что умеет
+          ⚡ Обзор
         </button>
         <button class="main-tab-btn" id="btnTabCabinet" onclick="switchMainTab('tabCabinet')">
           👤 Личный кабинет
         </button>
         <button class="main-tab-btn gold-tab" id="btnTabPayment" onclick="switchMainTab('tabPayment')">
-          💳 Тарифы и PRO
+          💳 PRO
         </button>
         <button class="main-tab-btn" id="btnTabSync" onclick="switchMainTab('tabSync')">
-          🤝 Работа вдвоём
+          🔄 Синхронизация
         </button>
         <button class="main-tab-btn" id="btnTabDownload" onclick="switchMainTab('tabDownload')">
           📥 Скачать APK
@@ -663,37 +663,36 @@
   </div>
 
   <!-- Modal: Contact Developer -->
-  <div class="modal-overlay" id="modalContact">
-    <div class="modal-content">
+  <div class="modal-overlay" id="modalContact" onclick="if(event.target===this) closeModal('modalContact')">
+    <div class="modal-content v3-modal v3-contact-modal">
       <div class="modal-header">
-        <h3>Связаться с разработчиком</h3>
-        <button class="modal-close" onclick="closeModal('modalContact')">×</button>
+        <div><span class="v3-modal-kicker">Поддержка</span><h3>Связаться с разработчиком</h3></div>
+        <button class="modal-close" onclick="closeModal('modalContact')" aria-label="Закрыть">×</button>
       </div>
       <div class="modal-body">
-        <p style="margin-bottom:16px;">По вопросам приобретения партий ключей для подразделений, индивидуальных доработок или техподдержки:</p>
-        
-        <div style="background:#0c0f0d; padding:14px; border-radius:10px; border:1px solid var(--border-color); margin-bottom:20px;">
-          <div>📢 <strong>Telegram-канал:</strong> <a href="https://t.me/kapterka_pro" target="_blank" rel="noopener noreferrer" style="color:#29b6f6; font-weight:bold;">@kapterka_pro</a></div>
-          <div style="margin-top:6px;">🤖 <strong>Бот поддержки:</strong> <a href="https://t.me/kapterka_help_bot" target="_blank" rel="noopener noreferrer" style="color:#5bc0be; font-weight:bold;">@kapterka_help_bot</a></div>
-          <div style="margin-top:6px;">💬 <strong>Личка разработчика:</strong> <a href="https://t.me/Levaminbat" target="_blank" rel="noopener noreferrer" style="color:var(--accent-gold); font-weight:bold;">@Levaminbat</a></div>
-          <div style="margin-top:6px;">✉️ <strong>Email:</strong> alex.666.881@gmail.com</div>
-          <div style="margin-top:6px;">🛡️ <strong>ИНН:</strong> 250104230398</div>
+        <div class="v3-contact-links">
+          <a href="https://t.me/kapterka_help_bot" target="_blank" rel="noopener noreferrer"><span>🤖</span><div><strong>Бот поддержки</strong><small>@kapterka_help_bot</small></div></a>
+          <a href="https://t.me/kapterka_pro" target="_blank" rel="noopener noreferrer"><span>📢</span><div><strong>Канал обновлений</strong><small>@kapterka_pro</small></div></a>
+          <a href="mailto:alex.666.881@gmail.com"><span>✉️</span><div><strong>Email</strong><small>alex.666.881@gmail.com</small></div></a>
         </div>
 
-        <form id="contactForm">
-          <div class="form-group">
-            <label class="form-label">Ваше имя / Позывной:</label>
-            <input type="text" id="contactNameInput" class="form-input" placeholder="Например: Старшина 2 роты" required>
+        <form id="contactForm" class="v3-contact-form">
+          <div class="v2-form-grid">
+            <div class="form-group">
+              <label class="form-label">Имя / позывной</label>
+              <input type="text" id="contactNameInput" class="form-input" placeholder="Как к вам обращаться" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Контакт</label>
+              <input type="text" id="contactInfoInput" class="form-input" placeholder="Telegram, телефон или Email" required>
+            </div>
           </div>
           <div class="form-group">
-            <label class="form-label">Контакт для связи (Телефон / Telegram / Email):</label>
-            <input type="text" id="contactInfoInput" class="form-input" placeholder="@ваш_телеграм или +7..." required>
+            <label class="form-label">Сообщение</label>
+            <textarea id="contactMessageInput" class="form-input" rows="4" placeholder="Коротко опишите вопрос" required></textarea>
           </div>
-          <div class="form-group">
-            <label class="form-label">Сообщение / Вопрос:</label>
-            <textarea id="contactMessageInput" class="form-input" rows="3" placeholder="Опишите ваш вопрос..." required style="resize:vertical;"></textarea>
-          </div>
-          <button type="submit" id="btnSubmitContact" class="btn btn-primary" style="width:100%;">Отправить сообщение разработчику</button>
+          <button type="submit" id="btnSubmitContact" class="btn btn-primary btn-lg v2-full-btn">Отправить сообщение</button>
+          <div class="v3-contact-note">ИНН: 250104230398</div>
         </form>
       </div>
     </div>
@@ -705,23 +704,21 @@
     <span id="toastMessage">Ключ скопирован в буфер обмена!</span>
   </div>
 
-  <!-- Modal: Screenshot Lightbox Full Screen -->
+  <!-- Modal: Screenshot Lightbox -->
   <div class="modal-overlay" id="modalScreenshot" onclick="if(event.target===this) closeModal('modalScreenshot')">
-    <div class="modal-content" style="max-width: 520px; padding: 16px; text-align: center; background: #131915; border: 1px solid var(--primary);">
-      <div class="modal-header" style="padding-bottom: 10px; margin-bottom: 12px;">
-        <h3 id="modalScreenshotTitle" style="font-size: 1.1rem; color: var(--text-primary);">Просмотр экрана</h3>
-        <button class="modal-close" onclick="closeModal('modalScreenshot')">×</button>
+    <div class="modal-content v3-modal v3-shot-modal">
+      <div class="modal-header">
+        <div><span class="v3-modal-kicker">Интерфейс приложения</span><h3 id="modalScreenshotTitle">Просмотр экрана</h3></div>
+        <button class="modal-close" onclick="closeModal('modalScreenshot')" aria-label="Закрыть">×</button>
       </div>
-      <div style="width: 100%; max-height: 75vh; overflow-y: auto; border-radius: 12px; background: #000; border: 1px solid rgba(141,170,89,0.3);">
-        <img id="modalScreenshotImg" src="" alt="Скриншот приложения" style="width: 100%; height: auto; display: block; border-radius: 12px;">
-      </div>
-      <div style="margin-top: 14px; display: flex; justify-content: space-between; align-items: center;">
-        <a id="modalScreenshotDownload" href="" download class="btn btn-secondary btn-sm" style="font-size: 0.8rem;">
-          📥 Скачать скриншот (JPG)
-        </a>
-        <button class="btn btn-primary btn-sm" onclick="closeModal('modalScreenshot')" style="font-size: 0.8rem;">
-          Закрыть
-        </button>
+      <div class="modal-body">
+        <div class="v3-shot-frame">
+          <img id="modalScreenshotImg" src="" alt="Скриншот приложения">
+        </div>
+        <div class="v3-shot-actions">
+          <a id="modalScreenshotDownload" href="" download class="btn btn-outline btn-sm">Сохранить JPG</a>
+          <button class="btn btn-primary btn-sm" onclick="closeModal('modalScreenshot')">Готово</button>
+        </div>
       </div>
     </div>
   </div>
@@ -779,29 +776,23 @@
     </div>
   </div>
 
-  <!-- Modal: RuStore Pending Publication -->
+  <!-- Modal: RuStore -->
   <div class="modal-overlay" id="modalRuStore" onclick="if(event.target===this) closeModal('modalRuStore')">
-    <div class="modal-content" style="max-width: 480px; padding: 24px; text-align: center; background: #131915; border: 1px solid rgba(0, 91, 255, 0.4); box-shadow: 0 10px 40px rgba(0,0,0,0.8);">
-      <div style="width: 56px; height: 56px; margin: 0 auto 16px; border-radius: 14px; background: rgba(0,91,255,0.15); display: flex; align-items: center; justify-content: center; border: 1px solid rgba(0,91,255,0.4);">
-        <img src="rustore_badge.svg" alt="RuStore" style="height: 32px; width: auto;">
+    <div class="modal-content v3-modal v3-store-modal">
+      <div class="modal-header">
+        <div><span class="v3-modal-kicker">Установка</span><h3>Каптёрка PRO для Android</h3></div>
+        <button class="modal-close" onclick="closeModal('modalRuStore')" aria-label="Закрыть">×</button>
       </div>
-      <h3 style="font-size: 1.25rem; color: #fff; margin-bottom: 12px; font-weight: 700;">Публикация в RuStore</h3>
-      <p style="font-size: 0.95rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 20px;">
-        Обновление «Каптёрка Про» <strong>v3.4.9 (сборка 31)</strong> подготовлено для публикации в RuStore. Новая версия появится в карточке магазина после прохождения модерации.
-      </p>
-      <div style="background: rgba(141,170,89,0.08); border: 1px solid rgba(141,170,89,0.25); border-radius: 8px; padding: 12px; margin-bottom: 20px; font-size: 0.88rem; color: var(--text-primary); text-align: left;">
-        ⚡ <strong>Не нужно ждать:</strong> Вы можете прямо сейчас установить официальный релизный APK без ограничений напрямую на телефон или планшет.
-      </div>
-      <div style="display: flex; flex-direction: column; gap: 10px;">
-        <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('rustore_modal'); closeModal('modalRuStore');" class="btn btn-primary btn-lg" style="width: 100%; box-shadow: 0 0 16px rgba(141,170,89,0.35);">
-          📥 Скачать официальный APK v3.4.9 (18 МБ)
-        </a>
-        <a href="https://apps.rustore.ru/app/com.aistudio.kapterka.jmwqve" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" style="color: #6da2ff; border-color: rgba(0,91,255,0.4); font-size: 0.82rem;">
-          Открыть «Каптёрка Про» в RuStore ➔
-        </a>
-        <button class="btn btn-secondary btn-sm" onclick="closeModal('modalRuStore')" style="margin-top: 4px;">
-          Понятно, закрыть
-        </button>
+      <div class="modal-body">
+        <div class="v3-store-head">
+          <img src="rustore_badge.svg" alt="RuStore">
+          <div><strong>Версия 3.4.9 • сборка 31</strong><small>Можно установить через RuStore или скачать официальный APK.</small></div>
+        </div>
+        <div class="v3-store-actions">
+          <a href="https://apps.rustore.ru/app/com.aistudio.kapterka.jmwqve" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-lg">Открыть в RuStore</a>
+          <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('rustore_modal'); closeModal('modalRuStore');" class="btn btn-primary btn-lg">Скачать APK • ~18 МБ</a>
+        </div>
+        <div class="v3-modal-note">При обновлении поверх установленной версии Android должен сохранить локальные данные приложения при совпадающей подписи пакета.</div>
       </div>
     </div>
   </div>
@@ -822,7 +813,7 @@
     </button>
     <button class="mobile-bottom-tab-btn" id="mobileTabSync" onclick="switchMainTab('tabSync')">
       <span class="tab-icon">🔗</span>
-      <span>Склады</span>
+      <span>Синхр.</span>
     </button>
     <button class="mobile-bottom-tab-btn" id="mobileTabDownload" onclick="switchMainTab('tabDownload')">
       <span class="tab-icon">📥</span>
