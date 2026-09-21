@@ -3,21 +3,20 @@ package com.example.data.payment
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.util.Base64
 import android.util.Log
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.InputStreamReader
-import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
+import java.net.URLEncoder
 import java.util.UUID
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 data class YooKassaConfig(
-    val shopId: String = "1450722", // Официальный ID магазина ЮKassa
-    val secretKey: String = YooKassaPaymentService.DEFAULT_LIVE_KEY,
+    val shopId: String = "1450722",
+    val secretKey: String = "",
     val isTestMode: Boolean = false,
     val priceRubles: Int = 490
 )
@@ -35,116 +34,142 @@ class YooKassaPaymentService(private val context: Context) {
 
     companion object {
         const val DIRECT_PAYMENT_URL = "https://yookassa.ru/my/i/apiQMG65ZHIE/l"
-        val DEFAULT_LIVE_KEY: String = arrayOf("live", "oBs99BEUyDFyi5Hp-EcZODX9uJVtJLhbdl3fLKhbtB4").joinToString("_")
+
+        // Public backend URL only. YooKassa secret credentials remain on the server.
+        const val PAYMENT_API_URL =
+            "https://script.google.com/macros/s/AKfycbwuwY74vD9El1R6ZVvO3DDpJ7BkY-wX0ljRphWRSA-jgB33-duUAqEp0g03D_7oFzjqmA/exec"
     }
 
     fun getConfig(): YooKassaConfig {
         val sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val defaultSecret = DEFAULT_LIVE_KEY
-        val currentSecret = sp.getString("secret_key", "") ?: ""
-        val resolvedSecret = if (currentSecret.isBlank() || currentSecret.contains("i9CzUuFo")) defaultSecret else currentSecret
-
         return YooKassaConfig(
             shopId = sp.getString("shop_id", "1450722") ?: "1450722",
-            secretKey = resolvedSecret,
-            isTestMode = sp.getBoolean("is_test_mode", false),
+            secretKey = "",
+            isTestMode = false,
             priceRubles = sp.getInt("price_rubles", 490)
         )
     }
 
-    fun saveConfig(shopId: String, secretKey: String, isTestMode: Boolean, priceRubles: Int = 490) {
+    /**
+     * Kept for binary/source compatibility with the existing UI.
+     * Secret keys are intentionally ignored: payment credentials must never be stored in the APK.
+     */
+    fun saveConfig(
+        shopId: String,
+        secretKey: String,
+        isTestMode: Boolean,
+        priceRubles: Int = 490
+    ) {
         val sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         sp.edit()
-            .putString("shop_id", shopId.trim())
-            .putString("secret_key", secretKey.trim())
-            .putBoolean("is_test_mode", isTestMode)
+            .putString("shop_id", shopId.trim().ifBlank { "1450722" })
+            .remove("secret_key")
+            .remove("is_test_mode")
             .putInt("price_rubles", priceRubles)
             .apply()
+
+        if (secretKey.isNotBlank() || isTestMode) {
+            Log.w(TAG, "Client-side YooKassa secret/test-mode settings are ignored by design")
+        }
     }
 
-    /**
-     * Создает платеж в ЮKassa API v3
-     * POST https://api.yookassa.ru/v3/payments
-     */
     suspend fun createPayment(
         fighterCallsign: String,
         fighterEmail: String,
         returnUrl: String = "kapterka://payment_success"
     ): PaymentInitResult = withContext(Dispatchers.IO) {
-        val config = getConfig()
+        val cleanEmail = fighterEmail.trim().lowercase()
+        if (!Regex("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$").matches(cleanEmail)) {
+            return@withContext PaymentInitResult(
+                success = false,
+                errorMessage = "Укажите корректный Email для оплаты и восстановления лицензии."
+            )
+        }
+
+        val callsign = fighterCallsign.trim().ifBlank { "Пользователь" }
+        val idempotenceKey = UUID.randomUUID().toString()
 
         try {
-            val url = URL("https://api.yookassa.ru/v3/payments")
-            val connection = (url.openConnection() as HttpURLConnection).apply {
-                requestMethod = "POST"
-                doOutput = true
-                doInput = true
-                connectTimeout = 15000
-                readTimeout = 15000
-                setRequestProperty("Content-Type", "application/json")
-                setRequestProperty("Idempotence-Key", UUID.randomUUID().toString())
-
-                // Basic Auth: shopId:secretKey
-                val authString = "${config.shopId}:${config.secretKey}"
-                val authHeader = "Basic " + Base64.encodeToString(authString.toByteArray(), Base64.NO_WRAP)
-                setRequestProperty("Authorization", authHeader)
+            val requestUrl = buildString {
+                append(PAYMENT_API_URL)
+                append("?action=pay")
+                append("&email=").append(urlEncode(cleanEmail))
+                append("&callsign=").append(urlEncode(callsign))
+                append("&return_url=").append(urlEncode(returnUrl))
+                append("&idempotence_key=").append(urlEncode(idempotenceKey))
             }
 
-            val customerEmail = if (fighterEmail.isNotBlank() && fighterEmail.contains("@")) fighterEmail.trim() else "alex.666.881@gmail.com"
-            val payload = JSONObject().apply {
-                put("amount", JSONObject().apply {
-                    put("value", "${config.priceRubles}.00")
-                    put("currency", "RUB")
-                })
-                put("capture", true) // автоматическое списание
-                put("confirmation", JSONObject().apply {
-                    put("type", "redirect")
-                    put("return_url", returnUrl)
-                })
-                put("description", "Лицензия Каптёрка ПРО (30 дн.) боец $fighterCallsign")
-                put("metadata", JSONObject().apply {
-                    put("callsign", fighterCallsign)
-                    put("email", customerEmail)
-                    put("duration_days", "30")
-                })
-            }
+            val json = getJson(requestUrl)
+            val paymentId = json.optString("payment_id")
+            val confirmationUrl = json.optString("confirmation_url")
+            val ok = json.optBoolean("ok", confirmationUrl.isNotBlank())
 
-            OutputStreamWriter(connection.outputStream).use { it.write(payload.toString()) }
-
-            val responseCode = connection.responseCode
-            if (responseCode in 200..299) {
-                val responseText = BufferedReader(InputStreamReader(connection.inputStream)).use { it.readText() }
-                val json = JSONObject(responseText)
-                val paymentId = json.optString("id")
-                val confirmation = json.optJSONObject("confirmation")
-                val confirmationUrl = confirmation?.optString("confirmation_url") ?: ""
-
+            if (ok && paymentId.isNotBlank() && confirmationUrl.isNotBlank()) {
                 PaymentInitResult(
                     success = true,
                     paymentId = paymentId,
                     confirmationUrl = confirmationUrl
                 )
             } else {
-                val errorStream = connection.errorStream
-                val errText = errorStream?.let { BufferedReader(InputStreamReader(it)).use { r -> r.readText() } } ?: "HTTP $responseCode"
-                Log.e(TAG, "YooKassa API returned $responseCode: $errText")
                 PaymentInitResult(
                     success = false,
-                    errorMessage = "Ошибка шлюза ЮKassa ($responseCode). Проверьте настройки или интернет."
+                    errorMessage = when (json.optString("error")) {
+                        "INVALID_EMAIL" -> "Сервер оплаты отклонил Email."
+                        "UPSTREAM_ERROR" -> "ЮKassa временно недоступна. Попробуйте позже."
+                        else -> "Сервер не смог создать платёж ЮKassa."
+                    }
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Network or SSL error calling YooKassa API", e)
+            Log.e(TAG, "Payment backend create error", e)
             PaymentInitResult(
                 success = false,
-                errorMessage = "Не удалось связаться с сервером ЮKassa: ${e.localizedMessage}"
+                errorMessage = "Не удалось связаться с сервером оплаты. Проверьте интернет и попробуйте позже."
             )
         }
     }
 
-    /**
-     * Открывает платежный интерфейс (браузер / приложение банка)
-     */
+    suspend fun verifyPaymentStatus(paymentId: String): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val cleanId = paymentId.trim()
+        if (cleanId.isBlank()) {
+            return@withContext Pair(false, "Счёт на оплату не найден.")
+        }
+
+        if (cleanId.startsWith("yk_direct_") ||
+            cleanId.startsWith("yk_order_") ||
+            cleanId.startsWith("pay_test_")
+        ) {
+            return@withContext Pair(false, "Платёж не зарегистрирован сервером ЮKassa.")
+        }
+
+        try {
+            val requestUrl =
+                "${PAYMENT_API_URL}?action=check&payment_id=${urlEncode(cleanId)}"
+            val json = getJson(requestUrl)
+            val status = json.optString("status", "unknown")
+            val paid = json.optBoolean("paid", false) ||
+                (status == "succeeded" && json.optString("key").isNotBlank())
+
+            when {
+                status == "succeeded" && paid ->
+                    Pair(true, "Оплата подтверждена сервером ЮKassa.")
+                status == "pending" ->
+                    Pair(false, "Платёж ожидает завершения.")
+                status == "waiting_for_capture" ->
+                    Pair(false, "Платёж авторизован, ожидается окончательное списание.")
+                status == "canceled" ->
+                    Pair(false, "Платёж отменён.")
+                json.optString("error") == "UPSTREAM_ERROR" ->
+                    Pair(false, "Сервер оплаты временно не получил ответ ЮKassa.")
+                else ->
+                    Pair(false, "Оплата пока не подтверждена. Статус: $status")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Payment backend verify error", e)
+            Pair(false, "Не удалось проверить оплату через сервер. Попробуйте ещё раз позже.")
+        }
+    }
+
     fun openPaymentUrl(confirmationUrl: String) {
         try {
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(confirmationUrl)).apply {
@@ -156,74 +181,37 @@ class YooKassaPaymentService(private val context: Context) {
         }
     }
 
-    /**
-     * Проверяет реальный статус платежа в ЮKassa через GET /v3/payments/{payment_id}
-     * СТРОГО: Возвращает true ИСКЛЮЧИТЕЛЬНО при подтверждении статуса "succeeded" и "paid" = true от API банка.
-     */
-    suspend fun verifyPaymentStatus(paymentId: String): Pair<Boolean, String> = withContext(Dispatchers.IO) {
-        if (paymentId.isBlank()) {
-            return@withContext Pair(false, "Счет на оплату не найден. Сначала нажмите «Оплатить через ЮKassa».")
+    private fun getJson(requestUrl: String): JSONObject {
+        val connection = (URL(requestUrl).openConnection() as HttpURLConnection).apply {
+            requestMethod = "GET"
+            connectTimeout = 12000
+            readTimeout = 12000
+            instanceFollowRedirects = true
+            setRequestProperty("Accept", "application/json")
+            setRequestProperty("Cache-Control", "no-store")
         }
 
-        // КАТЕГОРИЧЕСКИ ЗАПРЕЩАЕМ подтверждение синтетических или неподтвержденных ID
-        if (paymentId.startsWith("yk_direct_") || paymentId.startsWith("yk_order_") || paymentId.startsWith("pay_test_")) {
-            return@withContext Pair(
-                false,
-                "Платеж не зарегистрирован в шлюзе ЮKassa или не был оплачен в банке. Завершите оплату 490 ₽."
-            )
-        }
+        return try {
+            val code = connection.responseCode
+            val stream = if (code in 200..299) connection.inputStream else connection.errorStream
+            val body = stream?.let {
+                BufferedReader(InputStreamReader(it)).use { reader -> reader.readText() }
+            }.orEmpty()
 
-        val config = getConfig()
-
-        try {
-            val url = URL("https://api.yookassa.ru/v3/payments/$paymentId")
-            val connection = (url.openConnection() as HttpURLConnection).apply {
-                requestMethod = "GET"
-                connectTimeout = 12000
-                readTimeout = 12000
-                val authString = "${config.shopId}:${config.secretKey}"
-                val encodedAuth = Base64.encodeToString(authString.toByteArray(), Base64.NO_WRAP)
-                setRequestProperty("Authorization", "Basic $encodedAuth")
+            if (body.isBlank()) {
+                throw IllegalStateException("Empty payment backend response (HTTP $code)")
             }
 
-            val responseCode = connection.responseCode
-            if (responseCode in 200..299) {
-                val responseText = BufferedReader(InputStreamReader(connection.inputStream)).use { it.readText() }
-                val json = JSONObject(responseText)
-                val status = json.optString("status", "pending")
-                val paid = json.optBoolean("paid", false)
-
-                when (status) {
-                    "succeeded" -> {
-                        if (paid) {
-                            Pair(true, "Оплата подтверждена банком ЮKassa!")
-                        } else {
-                            Pair(false, "Платеж авторизован, но списание средств еще не завершено банком.")
-                        }
-                    }
-                    "pending" -> {
-                        Pair(false, "Платёж не оплачен! Ожидает оплаты. Завершите перевод.")
-                    }
-                    "waiting_for_capture" -> {
-                        // Даже если авторизовано, ждем полного списания (succeeded)
-                        Pair(false, "Платеж авторизован, но списание средств еще не завершено банком.")
-                    }
-                    "canceled" -> {
-                        Pair(false, "Платёж был закрыт или отменен без списания средств.")
-                    }
-                    else -> {
-                        Pair(false, "Статус платежа: $status. Оплата не поступила.")
-                    }
-                }
-            } else {
-                val errorStream = connection.errorStream
-                val errText = errorStream?.let { BufferedReader(InputStreamReader(it)).use { r -> r.readText() } } ?: "HTTP $responseCode"
-                Log.e(TAG, "YooKassa API returned $responseCode: $errText")
-                Pair(false, "Банк ЮKassa не нашел подтверждения платежа (код $responseCode).")
+            val json = JSONObject(body)
+            if (code !in 200..299) {
+                Log.w(TAG, "Payment backend returned HTTP $code: ${json.optString("error")}")
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Network check error for YooKassa payment", e)
-            Pair(false, "Ошибка связи с банком ЮKassa. Платеж не может быть подтвержден без ответа шлюза.")
+            json
+        } finally {
+            connection.disconnect()
         }
     }
+
+    private fun urlEncode(value: String): String =
+        URLEncoder.encode(value, Charsets.UTF_8.name())
 }
