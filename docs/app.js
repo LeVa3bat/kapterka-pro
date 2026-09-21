@@ -863,12 +863,7 @@ function applyNewPaidKey(newKey, callsign) {
   trackYm('reachGoal', 'license_activated', { plan: 'PRO_30' });
   if (typeof window.gtag === 'function') {
     try {
-      window.gtag('event', 'purchase', {
-        transaction_id: 'license_' + Date.now(),
-        value: 490,
-        currency: 'RUB',
-        items: [{ item_name: 'Каптёрка PRO — 30 дней', price: 490, quantity: 1 }]
-      });
+      window.gtag('event', 'license_activated', { plan: 'PRO_30' });
     } catch (e) {}
   }
 
