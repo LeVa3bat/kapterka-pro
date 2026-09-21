@@ -110,6 +110,20 @@ if (directTelegramCredentialHits.length) {
   ok('Android notifications do not embed Telegram bot credentials');
 }
 
+const genericUnitFallbackHits = sourceFiles.filter((file) => {
+  try {
+    const text = read(file);
+    return text.includes('kapt_default');
+  } catch (_) {
+    return false;
+  }
+});
+if (genericUnitFallbackHits.length) {
+  fail(`generic shared unit-key fallbacks detected: ${genericUnitFallbackHits.join(', ')}`);
+} else {
+  ok('generic shared unit-key fallbacks are absent');
+}
+
 const sensitiveTracked = [
   'app/google-services.json',
   'google-services.json',
