@@ -6,20 +6,28 @@
 - backend: `server/google-apps-script-auth.js`
 - frontend: `docs/auth-v2.js`
 - config: `docs/auth-config.js`
+- Google Таблица НЕ нужна.
 - пока URL в auth-config.js пустой, старая авторизация продолжает работать.
 
-## Публикация Google Apps Script
-1. Открыть Google Таблицу, к которой будет привязана база аккаунтов.
-2. Расширения → Apps Script.
-3. Заменить содержимое Code.gs кодом из `server/google-apps-script-auth.js`.
-4. Нажать Deploy → New deployment → Web app.
-5. Execute as: Me.
-6. Who has access: Anyone.
-7. Скопировать URL, заканчивающийся на `/exec`.
-8. В `docs/auth-config.js` вставить этот URL в `window.KAPTERKA_AUTH_API_URL`.
-9. Открыть сайт и проверить регистрацию на тестовом Email.
+## Публикация standalone Google Apps Script
+1. Открыть https://script.google.com и создать новый проект.
+2. В файле `Code.gs` удалить пример `myFunction`.
+3. Вставить код из `server/google-apps-script-auth.js`.
+4. Сохранить проект.
+5. Нажать `Начать развертывание` → `Новое развертывание`.
+6. Тип: `Веб-приложение`.
+7. Выполнять от имени: `Я`.
+8. Доступ: `Все` / `Anyone`.
+9. Разрешить доступ Google Apps Script к отправке Email.
+10. Скопировать URL, заканчивающийся на `/exec`.
+11. Передать этот URL в чат — он будет вставлен в `docs/auth-config.js` через GitHub.
 
-Секреты Telegram хранятся только в Script Properties:
+## Хранение данных
+Пользователи, одноразовые коды и сессии хранятся в Script Properties.
+Пароли не используются и не хранятся.
+
+## Telegram
+Если нужны служебные уведомления, токен и chat id хранятся только в Script Properties:
 - TG_BOT_TOKEN
 - TG_ADMIN_CHAT_ID
 
