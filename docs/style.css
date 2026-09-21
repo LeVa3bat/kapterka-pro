@@ -1846,7 +1846,7 @@ details > summary::-webkit-details-marker {
   box-shadow:0 1px 0 rgba(255,255,255,.08);
 }
 .compact-phone-card:hover { transform:translateY(-4px); outline-color:rgba(61,229,175,.38); }
-.compact-phone-card img { width:100%; height:100%; object-fit:cover; display:block; border-radius:26px; }
+.compact-phone-card img { width:100%; height:100%; object-fit:contain; object-position:top center; display:block; border-radius:26px; }
 .compact-benefits-section { padding:18px 0 28px; }
 .compact-benefits-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
 .compact-benefit { width:100%; text-align:left; color:inherit; font:inherit; padding:16px; min-height:148px; border:1px solid var(--border-color); border-radius:16px; background:linear-gradient(180deg,rgba(30,49,38,.84),rgba(17,26,21,.86)); cursor:pointer; transition:.2s ease; }
@@ -1862,7 +1862,7 @@ details > summary::-webkit-details-marker {
 .compact-screens-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; max-width:900px; margin:0 auto; }
 .compact-screen-card { display:grid; grid-template-columns:170px 1fr; align-items:center; gap:16px; text-align:left; color:inherit; font:inherit; padding:10px; border:1px solid var(--border-color); background:var(--bg-card); border-radius:18px; cursor:zoom-in; overflow:hidden; transition:.2s ease; }
 .compact-screen-card:hover { border-color:rgba(70,223,169,.46); transform:translateY(-2px); }
-.compact-screen-card img { width:170px; height:330px; object-fit:cover; object-position:top; border-radius:13px; background:#07100c; }
+.compact-screen-card img { width:100%; max-width:170px; height:auto; max-height:330px; object-fit:contain; object-position:top center; justify-self:center; border-radius:13px; background:#07100c; }
 .compact-screen-card span { padding-right:8px; }
 .compact-screen-card strong { display:block; color:var(--text-primary); font-size:1.05rem; margin-bottom:6px; }
 .compact-screen-card small { color:var(--text-secondary); line-height:1.45; font-size:.82rem; }
@@ -1908,13 +1908,22 @@ details > summary::-webkit-details-marker {
   .compact-hero-actions { display:grid; grid-template-columns:1fr; width:100%; }
   .compact-hero-actions .btn, .compact-rustore-link { width:100%; }
   .compact-rustore-link { justify-content:center; border:1px solid var(--border-color); border-radius:14px; background:rgba(255,255,255,.02); }
+  .compact-rustore-link img { max-width:100%; height:auto; }
   .compact-benefits-grid { grid-template-columns:1fr 1fr; gap:9px; }
   .compact-benefit { min-height:134px; padding:13px; }
   .compact-benefit strong { font-size:.9rem; }
   .compact-benefit small { font-size:.75rem; }
-  .compact-screen-card { grid-template-columns:122px 1fr; gap:12px; }
-  .compact-screen-card img { width:122px; height:242px; }
+  .compact-screen-card { grid-template-columns:1fr; gap:12px; padding:14px; text-align:center; }
+  .compact-screen-card img { width:min(210px,100%); max-width:100%; max-height:none; }
+  .compact-screen-card span { padding-right:0; }
+  .compact-section-heading .btn { width:100%; }
   .compact-update-card { padding:17px; }
   .compact-bottom-actions { width:100%; display:grid; grid-template-columns:1fr; }
   .compact-bottom-actions .btn { width:100%; }
+}
+
+@media (max-width: 400px) {
+  .compact-benefits-grid { grid-template-columns:1fr; }
+  .compact-phone-card { width:min(240px,74vw); }
+  .compact-update-list div { padding:8px 10px; font-size:.86rem; }
 }
