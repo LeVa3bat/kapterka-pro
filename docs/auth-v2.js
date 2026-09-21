@@ -461,6 +461,17 @@
       const loginBox = document.getElementById("loginOtpVerifyBox");
       if (loginBox) loginBox.style.display = "none";
 
+      if (typeof window.trackYm === "function") {
+        try {
+          window.trackYm("reachGoal", mode === "register" ? "registration_complete" : "login_complete");
+        } catch (_) {}
+      }
+      if (typeof window.gtag === "function") {
+        try {
+          window.gtag("event", mode === "register" ? "sign_up" : "login", { method: "email_otp" });
+        } catch (_) {}
+      }
+
       notify(mode === "register" ? "Аккаунт создан. Добро пожаловать!" : "Вход выполнен.");
     } catch (err) {
       console.warn(err);
