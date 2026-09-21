@@ -508,7 +508,7 @@ function classifyLicenseKey(key) {
   const legacyPattern = /^(?:KAPT|KPT)-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}$/;
   if (!legacyPattern.test(clean)) return 'invalid';
   if (clean.startsWith('KAPT-') && verifyKeyChecksum(clean)) return 'signed';
-  return 'legacy';
+  return 'legacy_unverified';
 }
 
 
@@ -858,16 +858,17 @@ function verifyWithManualOrderId() {
     showToast('❌ Неверный формат ключа. Проверьте символы и дефисы.');
     return;
   }
+  if (keyKind === 'legacy_unverified') {
+    showToast('ℹ️ Это старый формат ключа. Для безопасности сайт не активирует его без подтверждения.');
+    return;
+  }
 
-  applyNewPaidKey(enteredKey, callsign, { legacy: keyKind === 'legacy' });
+  applyNewPaidKey(enteredKey, callsign);
   input.value = '';
-  showToast(keyKind === 'legacy'
-    ? '✓ Старый ключ Каптёрка PRO принят для совместимости.'
-    : '✓ Ключ лицензии проверен и привязан к кабинету.');
+  showToast('✓ Ключ лицензии проверен и привязан к кабинету.');
 }
 
-function applyNewPaidKey(newKey, callsign, options = {}) {
-  const isLegacyKey = options?.legacy === true;
+function applyNewPaidKey(newKey, callsign) {
   // Update Live Display
   const liveDisplay = document.getElementById('liveGeneratedKeyDisplay');
   const liveStatus = document.getElementById('liveKeyStatusDisplay');
@@ -878,7 +879,7 @@ function applyNewPaidKey(newKey, callsign, options = {}) {
     liveDisplay.textContent = newKey;
     liveDisplay.style.color = 'var(--accent-gold)';
   }
-  if (liveStatus) liveStatus.textContent = isLegacyKey ? '✓ Старый ключ привязан • совместимый формат' : '✓ Лицензия активна • 30 дней доступа';
+  if (liveStatus) liveStatus.textContent = '✓ Лицензия активна • 30 дней доступа';
   if (btnCopy) {
     btnCopy.style.display = 'block';
     btnCopy.removeAttribute('disabled');
@@ -909,7 +910,7 @@ function applyNewPaidKey(newKey, callsign, options = {}) {
     key: newKey,
     callsign: callsign,
     unit: unitName,
-    status: isLegacyKey ? 'Старый формат • привязан' : 'Активен (30 дн)',
+    status: 'Активен (30 дн)',
     date: today
   });
 
@@ -932,14 +933,14 @@ function applyNewPaidKey(newKey, callsign, options = {}) {
   updateAuthUI();
 
   // Conversion tracking without sending the license key or personal data.
-  trackYm('reachGoal', isLegacyKey ? 'legacy_license_linked' : 'license_activated', { plan: 'PRO_30' });
+  trackYm('reachGoal', 'license_activated', { plan: 'PRO_30' });
   if (typeof window.gtag === 'function') {
     try {
-      window.gtag('event', isLegacyKey ? 'legacy_license_linked' : 'license_activated', { plan: 'PRO_30' });
+      window.gtag('event', 'license_activated', { plan: 'PRO_30' });
     } catch (e) {}
   }
 
-  showToast(isLegacyKey ? 'Старый ключ сохранён в личном кабинете.' : 'Лицензия активирована. Ключ сохранён в личном кабинете.');
+  showToast('Лицензия активирована. Ключ сохранён в личном кабинете.');
 }
 
 // Ручная привязка ключа бойцом в Личном кабинете (для синхронизации с приложением на Android)
@@ -957,13 +958,15 @@ function linkLicenseKeyInCabinet() {
     showToast('❌ Неверный формат ключа. Проверьте символы и дефисы.');
     return;
   }
+  if (keyKind === 'legacy_unverified') {
+    showToast('ℹ️ Старый ключ распознан, но для безопасности не активирован. Нужна серверная проверка.');
+    return;
+  }
 
   const callsign = localStorage.getItem(STORAGE_USER_CALLSIGN) || 'Боец';
-  applyNewPaidKey(key, callsign, { legacy: keyKind === 'legacy' });
+  applyNewPaidKey(key, callsign);
   input.value = '';
-  showToast(keyKind === 'legacy'
-    ? '✓ Старый ключ Каптёрка PRO принят для совместимости.'
-    : '✓ Ключ лицензии проверен и привязан к личному кабинету.');
+  showToast('✓ Ключ лицензии проверен и привязан к личному кабинету.');
 }
 
 // 9. Modals Controller

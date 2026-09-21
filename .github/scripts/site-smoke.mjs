@@ -212,3 +212,8 @@ if (!app.includes('function classifyLicenseKey')) fail('legacy license-key class
 if (!/KPT\|KAPT|KAPT\|KPT/.test(app) && !app.includes('(?:KAPT|KPT)')) fail('legacy KPT/KAPT compatibility is missing');
 if (/недействителен или подделан|ключ не прошел проверку подлинности/i.test(app)) fail('legacy keys must not be mislabeled as counterfeit');
 else ok('legacy license-key compatibility is present without counterfeit wording');
+
+if (!app.includes("return 'legacy_unverified'")) fail('legacy keys must be classified as unverified');
+if (/applyNewPaidKey\([^\n]+legacy/i.test(app)) fail('legacy-looking keys must never be activated client-side');
+if (/Старый ключ Каптёрка PRO принят для совместимости/i.test(app)) fail('unsafe legacy acceptance wording returned');
+else ok('legacy-looking keys are never activated client-side');
