@@ -39,7 +39,7 @@ class KapterkaRepository(
     val syncEvents: kotlinx.coroutines.flow.SharedFlow<String>? = syncManager?.syncEvents
 
     private suspend fun getCurrentUnitKey(): String {
-        return dao.getUserProfile().first()?.unitKey ?: "kapt_59e13b"
+        return dao.getUserProfile().first()?.unitKey?.trim().orEmpty()
     }
 
     fun getStockForPoint(pointId: String): Flow<List<StockRecord>> = dao.getStockForPoint(pointId)
