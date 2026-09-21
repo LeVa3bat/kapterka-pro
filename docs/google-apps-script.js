@@ -4,8 +4,8 @@
  */
 
 // Конфигурация
-const TG_BOT_TOKEN = "8913866950:AAFSMMAOHyULBE4uhsxdEoYG5fUT0-pSSr8";
-const TG_ADMIN_CHAT_ID = "7426550032";
+const TG_BOT_TOKEN = PropertiesService.getScriptProperties().getProperty("TG_BOT_TOKEN") || "";
+const TG_ADMIN_CHAT_ID = PropertiesService.getScriptProperties().getProperty("TG_ADMIN_CHAT_ID") || "";
 const CHECKSUM_CHARS = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
 
 function computeKeyChecksum(p1, p2) {
@@ -90,6 +90,10 @@ function doGet(e) {
 }
 
 function sendTgMessage(htmlText) {
+  if (!TG_BOT_TOKEN || !TG_ADMIN_CHAT_ID) {
+    console.warn("Telegram notification skipped: Script Properties are not configured.");
+    return;
+  }
   const url = "https://api.telegram.org/bot" + TG_BOT_TOKEN + "/sendMessage";
   const payload = {
     chat_id: TG_ADMIN_CHAT_ID,
