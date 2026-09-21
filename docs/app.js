@@ -952,15 +952,18 @@ function linkLicenseKeyInCabinet() {
     return;
   }
 
-  if (!verifyKeyChecksum(key)) {
-    showToast('❌ Ошибка: Ключ недействителен или подделан!');
+  const keyKind = classifyLicenseKey(key);
+  if (keyKind === 'invalid') {
+    showToast('❌ Неверный формат ключа. Проверьте символы и дефисы.');
     return;
   }
 
   const callsign = localStorage.getItem(STORAGE_USER_CALLSIGN) || 'Боец';
-  applyNewPaidKey(key, callsign);
+  applyNewPaidKey(key, callsign, { legacy: keyKind === 'legacy' });
   input.value = '';
-  showToast('✓ Ключ лицензии привязан к личному кабинету.');
+  showToast(keyKind === 'legacy'
+    ? '✓ Старый ключ Каптёрка PRO принят для совместимости.'
+    : '✓ Ключ лицензии проверен и привязан к личному кабинету.');
 }
 
 // 9. Modals Controller
