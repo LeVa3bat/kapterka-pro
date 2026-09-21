@@ -3058,3 +3058,35 @@ box-shadow:0 18px 60px rgba(0,0,0,.28);}
 .v3-legal-line{margin-top:8px;text-align:center;color:#63746a;font-size:.64rem;line-height:1.45}
 .v3-legal-line a{color:#829d8f;text-decoration:underline;text-underline-offset:2px}
 .v3-legal-line a:hover{color:#b8c9bf}
+
+
+/* ACCESSIBILITY & MOTION 2026-09-21 */
+body.modal-open{overflow:hidden}
+button:disabled,.btn:disabled{cursor:not-allowed;opacity:.62;transform:none!important;filter:none!important}
+a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,[tabindex]:focus-visible{
+  outline:2px solid #71d7a7!important;
+  outline-offset:3px!important;
+}
+.form-input:focus-visible{
+  border-color:#71d7a7!important;
+  box-shadow:0 0 0 3px rgba(113,215,167,.12)!important;
+}
+.modal-content:focus{outline:none}
+.mobile-bottom-tab-btn,.main-tab-btn,.btn{touch-action:manipulation}
+input,textarea{font-size:16px}
+@media(max-width:820px){
+  .btn,.auth-switch-btn,.main-tab-btn{min-height:44px}
+  .form-input{min-height:44px}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    scroll-behavior:auto!important;
+    animation-duration:.01ms!important;
+    animation-iteration-count:1!important;
+    transition-duration:.01ms!important;
+  }
+}
+@media(prefers-contrast:more){
+  .form-input,.v3-modal,.neo-card,.feature-card{border-color:rgba(255,255,255,.28)!important}
+  .text-muted,.v2-muted,.neo-muted{color:#b7c3bc!important}
+}
