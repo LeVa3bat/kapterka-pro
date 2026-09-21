@@ -402,7 +402,9 @@ function saveCabinetProfile() {
   const rank = document.getElementById('cabRankInput')?.value.trim() || '';
   const unitName = document.getElementById('cabUnitNameInput')?.value.trim() || '';
   const unitKey = document.getElementById('cabUnitKeyInput')?.value.trim() || localStorage.getItem(STORAGE_UNIT_KEY) || '';
-  const email = document.getElementById('cabEmailInput')?.value.trim() || '';
+  const currentSession = getActiveUserSession();
+  // Email является идентификатором серверного аккаунта и не меняется локальным редактированием профиля.
+  const email = (currentSession?.email || document.getElementById('cabEmailInput')?.value || '').trim().toLowerCase();
   const phone = document.getElementById('cabPhoneInput')?.value.trim() || '';
 
   localStorage.setItem(STORAGE_USER_CALLSIGN, callsign);
@@ -414,7 +416,6 @@ function saveCabinetProfile() {
 
   // Keep current authenticated session profile in sync with edited cabinet fields.
   try {
-    const currentSession = getActiveUserSession();
     if (currentSession) {
       const updatedSession = {
         ...currentSession,
