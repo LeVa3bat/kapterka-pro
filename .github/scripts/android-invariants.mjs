@@ -94,6 +94,22 @@ if (outdatedReferenceHits.length) {
   ok('cabinet/support references use current destinations');
 }
 
+const directTelegramCredentialHits = sourceFiles.filter((file) => {
+  try {
+    const text = read(file);
+    return /\b\d{8,12}:[A-Za-z0-9_-]{25,}\b/.test(text) ||
+      text.includes('api.telegram.org/bot') ||
+      text.includes('TOKEN_PARTS');
+  } catch (_) {
+    return false;
+  }
+});
+if (directTelegramCredentialHits.length) {
+  fail(`direct Telegram bot credentials/API use detected in Android source: ${directTelegramCredentialHits.join(', ')}`);
+} else {
+  ok('Android notifications do not embed Telegram bot credentials');
+}
+
 const sensitiveTracked = [
   'app/google-services.json',
   'google-services.json',
