@@ -106,20 +106,20 @@
       </a>
 
       <!-- Compact Tab Navigation: Все разделено по вкладкам -->
-      <div class="main-tab-nav" id="mainTabNav">
-        <button class="main-tab-btn active" id="btnTabOverview" onclick="switchMainTab('tabOverview')">
+      <div class="main-tab-nav" id="mainTabNav" role="tablist" aria-label="Разделы сайта">
+        <button type="button" class="main-tab-btn active" id="btnTabOverview" role="tab" aria-controls="tabOverview" aria-selected="true" onclick="switchMainTab('tabOverview')">
           ⚡ Обзор
         </button>
-        <button class="main-tab-btn" id="btnTabCabinet" onclick="switchMainTab('tabCabinet')">
+        <button type="button" class="main-tab-btn" id="btnTabCabinet" role="tab" aria-controls="tabCabinet" aria-selected="false" onclick="switchMainTab('tabCabinet')">
           👤 Личный кабинет
         </button>
-        <button class="main-tab-btn gold-tab" id="btnTabPayment" onclick="switchMainTab('tabPayment')">
+        <button type="button" class="main-tab-btn gold-tab" id="btnTabPayment" role="tab" aria-controls="tabPayment" aria-selected="false" onclick="switchMainTab('tabPayment')">
           💳 PRO
         </button>
-        <button class="main-tab-btn" id="btnTabSync" onclick="switchMainTab('tabSync')">
+        <button type="button" class="main-tab-btn" id="btnTabSync" role="tab" aria-controls="tabSync" aria-selected="false" onclick="switchMainTab('tabSync')">
           🔄 Синхронизация
         </button>
-        <button class="main-tab-btn" id="btnTabDownload" onclick="switchMainTab('tabDownload')">
+        <button type="button" class="main-tab-btn" id="btnTabDownload" role="tab" aria-controls="tabDownload" aria-selected="false" onclick="switchMainTab('tabDownload')">
           📥 Скачать APK
         </button>
       </div>
@@ -142,7 +142,7 @@
   <!-- ========================================================================= -->
   <!-- TAB 1: ОБЗОР, ВОЗМОЖНОСТИ И СКЛАДЫ (TAB OVERVIEW) -->
   <!-- ========================================================================= -->
-  <div id="tabOverview" class="app-view-tab active">
+  <div id="tabOverview" class="app-view-tab active" role="tabpanel" aria-labelledby="btnTabOverview" aria-hidden="false">
     <main class="neo-home" id="home">
       <section class="neo-hero">
         <div class="container">
@@ -258,7 +258,7 @@
   <!-- ========================================================================= -->
   <!-- TAB 2: ЛИЧНЫЙ КАБИНЕТ И РЕГИСТРАЦИЯ БОЙЦА (TAB CABINET) -->
   <!-- ========================================================================= -->
-  <div id="tabCabinet" class="app-view-tab">
+  <div id="tabCabinet" class="app-view-tab" role="tabpanel" aria-labelledby="btnTabCabinet" aria-hidden="true">
     <section class="section">
       <div class="container">
         <div class="section-header v2-page-head">
@@ -283,15 +283,15 @@
                 <div class="v2-form-grid">
                   <div class="form-group">
                     <label class="form-label">Имя или позывной *</label>
-                    <input type="text" id="regCallsign" class="form-input" placeholder="Например: Сокол" autocomplete="nickname">
+                    <input type="text" id="regCallsign" class="form-input" placeholder="Например: Сокол" autocomplete="nickname" maxlength="80" required>
                   </div>
                   <div class="form-group">
                     <label class="form-label">Email *</label>
-                    <input type="email" id="regEmail" class="form-input" placeholder="name@domain.ru" autocomplete="email">
+                    <input type="email" id="regEmail" class="form-input" placeholder="name@domain.ru" autocomplete="email" inputmode="email" maxlength="160" required>
                   </div>
                   <div class="form-group">
                     <label class="form-label">Должность / звание</label>
-                    <input type="text" id="regRank" class="form-input" placeholder="По желанию">
+                    <input type="text" id="regRank" class="form-input" placeholder="По желанию" maxlength="80">
                   </div>
                 </div>
                 <label class="auth-newsletter-check">
@@ -330,7 +330,7 @@
               </div>
               <div class="form-group">
                 <label class="form-label">Email</label>
-                <input type="email" id="loginEmail" class="form-input" placeholder="name@domain.ru" autocomplete="email">
+                <input type="email" id="loginEmail" class="form-input" placeholder="name@domain.ru" autocomplete="email" inputmode="email" maxlength="160" required>
               </div>
               <button class="btn btn-primary btn-lg v2-full-btn" onclick="processUserLogin()">Получить код для входа</button>
               <div class="v3-legal-line">Вход выполняется по одноразовому коду. Пароль на сайте не хранится.</div>
@@ -375,7 +375,7 @@
                 </div>
                 <div class="v2-note">Уже получили лицензионный ключ?</div>
                 <div class="v2-key-link-row">
-                  <input type="text" id="cabManualKeyInput" class="form-input mono" placeholder="KAPT-XXXX-XXXX-XXXX">
+                  <input type="text" id="cabManualKeyInput" class="form-input mono" placeholder="KAPT-XXXX-XXXX-XXXX" maxlength="19" autocapitalize="characters" spellcheck="false">
                   <button class="btn btn-outline btn-sm" onclick="linkLicenseKeyInCabinet()">Привязать</button>
                 </div>
               </div>
@@ -388,30 +388,30 @@
                 <div class="v2-form-grid">
                   <div class="form-group">
                     <label class="form-label">Имя / позывной</label>
-                    <input type="text" id="cabCallsignInput" class="form-input" placeholder="Сокол">
+                    <input type="text" id="cabCallsignInput" class="form-input" placeholder="Сокол" autocomplete="nickname" maxlength="80">
                   </div>
                   <div class="form-group">
                     <label class="form-label">Должность / звание</label>
-                    <input type="text" id="cabRankInput" class="form-input" placeholder="По желанию">
+                    <input type="text" id="cabRankInput" class="form-input" placeholder="По желанию" maxlength="80">
                   </div>
                   <div class="form-group">
                     <label class="form-label">Подразделение</label>
-                    <input type="text" id="cabUnitNameInput" class="form-input" placeholder="Название подразделения">
+                    <input type="text" id="cabUnitNameInput" class="form-input" placeholder="Название подразделения" maxlength="120">
                   </div>
                   <div class="form-group">
                     <label class="form-label">Ключ подразделения</label>
                     <div class="v2-input-action">
-                      <input type="text" id="cabUnitKeyInput" class="form-input mono" placeholder="kapt_xxxxxx">
+                      <input type="text" id="cabUnitKeyInput" class="form-input mono" placeholder="kapt_xxxxxx" maxlength="64" autocapitalize="none" spellcheck="false">
                       <button class="btn btn-outline btn-sm" onclick="generateNewUnitKey()">Новый</button>
                     </div>
                   </div>
                   <div class="form-group">
                     <label class="form-label">Email</label>
-                    <input type="email" id="cabEmailInput" class="form-input" placeholder="name@domain.ru" readonly aria-readonly="true" title="Email аккаунта меняется только через повторную регистрацию/поддержку">
+                    <input type="email" id="cabEmailInput" class="form-input" placeholder="name@domain.ru" autocomplete="email" readonly aria-readonly="true" title="Email аккаунта меняется только через повторную регистрацию/поддержку">
                   </div>
                   <div class="form-group">
                     <label class="form-label">Телефон / Telegram</label>
-                    <input type="text" id="cabPhoneInput" class="form-input" placeholder="Контакт">
+                    <input type="tel" id="cabPhoneInput" class="form-input" placeholder="Контакт" autocomplete="tel" maxlength="64">
                   </div>
                 </div>
               </div>
@@ -439,7 +439,7 @@
     </section>
   </div>
 
-  <div id="tabPayment" class="app-view-tab">
+  <div id="tabPayment" class="app-view-tab" role="tabpanel" aria-labelledby="btnTabPayment" aria-hidden="true">
     <section class="section">
       <div class="container">
         <div class="section-header v2-page-head">
@@ -466,11 +466,11 @@
               <div class="v2-form-grid">
                 <div class="form-group">
                   <label class="form-label">Имя или позывной</label>
-                  <input type="text" id="payCallsignInput" class="form-input" placeholder="Например: Сокол">
+                  <input type="text" id="payCallsignInput" class="form-input" placeholder="Например: Сокол" autocomplete="nickname" maxlength="80">
                 </div>
                 <div class="form-group">
                   <label class="form-label">Email для чека и ключа</label>
-                  <input type="email" id="payEmailInput" class="form-input" placeholder="name@mail.ru" autocomplete="email">
+                  <input type="email" id="payEmailInput" class="form-input" placeholder="name@mail.ru" autocomplete="email" inputmode="email" maxlength="160" required>
                 </div>
               </div>
 
@@ -487,7 +487,7 @@
                 <div class="v2-key-activate">
                   <label class="form-label">Уже получили ключ?</label>
                   <div class="v2-input-action">
-                    <input type="text" id="payOrderIdInput" class="form-input mono" placeholder="KAPT-XXXX-XXXX-XXXX">
+                    <input type="text" id="payOrderIdInput" class="form-input mono" placeholder="KAPT-XXXX-XXXX-XXXX" maxlength="19" autocapitalize="characters" spellcheck="false">
                     <button class="btn btn-primary btn-sm" onclick="verifyWithManualOrderId()">Активировать</button>
                   </div>
                 </div>
@@ -499,7 +499,7 @@
               <span>Статус лицензии</span>
               <div class="live-key-generation-box">
                 <div class="live-key-result" id="liveGeneratedKeyDisplay">Ожидание оплаты 490 ₽</div>
-                <div id="liveKeyStatusDisplay">После подтверждения оплаты лицензионный ключ можно активировать в приложении.</div>
+                <div id="liveKeyStatusDisplay" role="status" aria-live="polite">После подтверждения оплаты лицензионный ключ можно активировать в приложении.</div>
               </div>
               <button class="btn btn-primary btn-lg" id="btnCopyPaidKey" onclick="copyPaidKeyAction()" style="display:none;">Скопировать ключ</button>
               <button class="btn btn-outline btn-sm" id="btnGoToCabinetAfterPay" onclick="switchMainTab('tabCabinet')" style="display:none;">Открыть кабинет</button>
@@ -515,7 +515,7 @@
     </section>
   </div>
 
-  <div id="tabSync" class="app-view-tab">
+  <div id="tabSync" class="app-view-tab" role="tabpanel" aria-labelledby="btnTabSync" aria-hidden="true">
     <section class="section">
       <div class="container">
         <div class="section-header v2-page-head">
@@ -568,7 +568,7 @@
     </section>
   </div>
 
-  <div id="tabDownload" class="app-view-tab">
+  <div id="tabDownload" class="app-view-tab" role="tabpanel" aria-labelledby="btnTabDownload" aria-hidden="true">
     <section class="section">
       <div class="container">
         <div class="section-header v2-page-head">
@@ -636,11 +636,11 @@
   </footer>
 
   <!-- Modal: Public Offer -->
-  <div class="modal-overlay" id="modalOffer" onclick="if(event.target===this) closeModal('modalOffer')">
+  <div class="modal-overlay" id="modalOffer" role="dialog" aria-modal="true" onclick="if(event.target===this) closeModal('modalOffer')">
     <div class="modal-content v3-modal v3-legal-modal">
       <div class="modal-header">
         <div><span class="v3-modal-kicker">Документы</span><h3>Условия использования</h3></div>
-        <button class="modal-close" onclick="closeModal('modalOffer')">×</button>
+        <button type="button" class="modal-close" onclick="closeModal('modalOffer')" aria-label="Закрыть окно">×</button>
       </div>
       <div class="modal-body">
         <p>Для новых пользователей действует 3-дневный демо-период. PRO-доступ предоставляется на 30 дней по текущей цене 490 ₽. Оплата проводится через ЮKassa.</p>
@@ -651,11 +651,11 @@
   </div>
 
   <!-- Modal: Privacy Policy -->
-  <div class="modal-overlay" id="modalPrivacy" onclick="if(event.target===this) closeModal('modalPrivacy')">
+  <div class="modal-overlay" id="modalPrivacy" role="dialog" aria-modal="true" onclick="if(event.target===this) closeModal('modalPrivacy')">
     <div class="modal-content v3-modal v3-legal-modal">
       <div class="modal-header">
         <div><span class="v3-modal-kicker">Данные</span><h3>Конфиденциальность</h3></div>
-        <button class="modal-close" onclick="closeModal('modalPrivacy')">×</button>
+        <button type="button" class="modal-close" onclick="closeModal('modalPrivacy')" aria-label="Закрыть окно">×</button>
       </div>
       <div class="modal-body">
         <p>Основная база приложения хранится локально в Room/SQLite. При включённой синхронизации выбранные данные передаются через Firebase по ключу подразделения.</p>
@@ -666,11 +666,11 @@
   </div>
 
   <!-- Modal: Contact Developer -->
-  <div class="modal-overlay" id="modalContact" onclick="if(event.target===this) closeModal('modalContact')">
+  <div class="modal-overlay" id="modalContact" role="dialog" aria-modal="true" onclick="if(event.target===this) closeModal('modalContact')">
     <div class="modal-content v3-modal v3-contact-modal">
       <div class="modal-header">
         <div><span class="v3-modal-kicker">Поддержка</span><h3>Связаться с разработчиком</h3></div>
-        <button class="modal-close" onclick="closeModal('modalContact')" aria-label="Закрыть">×</button>
+        <button type="button" class="modal-close" onclick="closeModal('modalContact')" aria-label="Закрыть окно">×</button>
       </div>
       <div class="modal-body">
         <div class="v3-contact-links">
@@ -683,16 +683,16 @@
           <div class="v2-form-grid">
             <div class="form-group">
               <label class="form-label">Имя / позывной</label>
-              <input type="text" id="contactNameInput" class="form-input" placeholder="Как к вам обращаться" required>
+              <input type="text" id="contactNameInput" class="form-input" placeholder="Как к вам обращаться" autocomplete="name" maxlength="120" required>
             </div>
             <div class="form-group">
               <label class="form-label">Контакт</label>
-              <input type="text" id="contactInfoInput" class="form-input" placeholder="Telegram, телефон или Email" required>
+              <input type="text" id="contactInfoInput" class="form-input" placeholder="Telegram, телефон или Email" maxlength="160" required>
             </div>
           </div>
           <div class="form-group">
             <label class="form-label">Сообщение</label>
-            <textarea id="contactMessageInput" class="form-input" rows="4" placeholder="Коротко опишите вопрос" required></textarea>
+            <textarea id="contactMessageInput" class="form-input" rows="4" placeholder="Коротко опишите вопрос" maxlength="2000" required></textarea>
           </div>
           <button type="submit" id="btnSubmitContact" class="btn btn-primary btn-lg v2-full-btn">Отправить сообщение</button>
           <div class="v3-contact-note">ИНН: 250104230398</div>
@@ -702,17 +702,17 @@
   </div>
 
   <!-- Floating Tactical Toast Notification -->
-  <div class="tactical-toast" id="tacticalToast">
+  <div class="tactical-toast" id="tacticalToast" role="status" aria-live="polite" aria-atomic="true">
     <span class="toast-icon">✓</span>
     <span id="toastMessage">Ключ скопирован в буфер обмена!</span>
   </div>
 
   <!-- Modal: Screenshot Lightbox -->
-  <div class="modal-overlay" id="modalScreenshot" onclick="if(event.target===this) closeModal('modalScreenshot')">
+  <div class="modal-overlay" id="modalScreenshot" role="dialog" aria-modal="true" onclick="if(event.target===this) closeModal('modalScreenshot')">
     <div class="modal-content v3-modal v3-shot-modal">
       <div class="modal-header">
         <div><span class="v3-modal-kicker">Интерфейс приложения</span><h3 id="modalScreenshotTitle">Просмотр экрана</h3></div>
-        <button class="modal-close" onclick="closeModal('modalScreenshot')" aria-label="Закрыть">×</button>
+        <button type="button" class="modal-close" onclick="closeModal('modalScreenshot')" aria-label="Закрыть окно">×</button>
       </div>
       <div class="modal-body">
         <div class="v3-shot-frame">
@@ -727,14 +727,14 @@
   </div>
 
   <!-- Modal: Полный функционал -->
-  <div class="modal-overlay" id="modalFeatures" onclick="if(event.target===this) closeModal('modalFeatures')">
+  <div class="modal-overlay" id="modalFeatures" role="dialog" aria-modal="true" onclick="if(event.target===this) closeModal('modalFeatures')">
     <div class="modal-content v3-modal">
       <div class="modal-header">
         <div>
           <span class="v3-modal-kicker">Возможности</span>
           <h3>Что умеет Каптёрка PRO</h3>
         </div>
-        <button class="modal-close" onclick="closeModal('modalFeatures')">×</button>
+        <button type="button" class="modal-close" onclick="closeModal('modalFeatures')" aria-label="Закрыть окно">×</button>
       </div>
       <div class="modal-body">
         <div class="v3-modal-grid">
@@ -754,14 +754,14 @@
   </div>
 
   <!-- Modal: Механизм синхронизации -->
-  <div class="modal-overlay" id="modalSyncMech" onclick="if(event.target===this) closeModal('modalSyncMech')">
+  <div class="modal-overlay" id="modalSyncMech" role="dialog" aria-modal="true" onclick="if(event.target===this) closeModal('modalSyncMech')">
     <div class="modal-content v3-modal">
       <div class="modal-header">
         <div>
           <span class="v3-modal-kicker">Синхронизация</span>
           <h3>Как устройства работают вместе</h3>
         </div>
-        <button class="modal-close" onclick="closeModal('modalSyncMech')">×</button>
+        <button type="button" class="modal-close" onclick="closeModal('modalSyncMech')" aria-label="Закрыть окно">×</button>
       </div>
       <div class="modal-body">
         <div class="v3-sync-flow">
@@ -780,11 +780,11 @@
   </div>
 
   <!-- Modal: RuStore -->
-  <div class="modal-overlay" id="modalRuStore" onclick="if(event.target===this) closeModal('modalRuStore')">
+  <div class="modal-overlay" id="modalRuStore" role="dialog" aria-modal="true" onclick="if(event.target===this) closeModal('modalRuStore')">
     <div class="modal-content v3-modal v3-store-modal">
       <div class="modal-header">
         <div><span class="v3-modal-kicker">Установка</span><h3>Каптёрка PRO для Android</h3></div>
-        <button class="modal-close" onclick="closeModal('modalRuStore')" aria-label="Закрыть">×</button>
+        <button type="button" class="modal-close" onclick="closeModal('modalRuStore')" aria-label="Закрыть окно">×</button>
       </div>
       <div class="modal-body">
         <div class="v3-store-head">
@@ -801,24 +801,24 @@
   </div>
 
   <!-- Mobile Bottom Tab Navigation (Easy thumb-reach navigation) -->
-  <nav class="mobile-bottom-tabs" aria-label="Быстрая навигация">
-    <button class="mobile-bottom-tab-btn active" id="mobileTabOverview" onclick="switchMainTab('tabOverview')">
+  <nav class="mobile-bottom-tabs" aria-label="Быстрая навигация" role="tablist">
+    <button type="button" class="mobile-bottom-tab-btn active" id="mobileTabOverview" role="tab" aria-controls="tabOverview" aria-selected="true" onclick="switchMainTab('tabOverview')">
       <span class="tab-icon">⚡</span>
       <span>Обзор</span>
     </button>
-    <button class="mobile-bottom-tab-btn" id="mobileTabCabinet" onclick="switchMainTab('tabCabinet')">
+    <button type="button" class="mobile-bottom-tab-btn" id="mobileTabCabinet" role="tab" aria-controls="tabCabinet" aria-selected="false" onclick="switchMainTab('tabCabinet')">
       <span class="tab-icon">👤</span>
       <span>Кабинет</span>
     </button>
-    <button class="mobile-bottom-tab-btn gold" id="mobileTabPayment" onclick="switchMainTab('tabPayment')">
+    <button type="button" class="mobile-bottom-tab-btn gold" id="mobileTabPayment" role="tab" aria-controls="tabPayment" aria-selected="false" onclick="switchMainTab('tabPayment')">
       <span class="tab-icon">💳</span>
       <span>Лицензия</span>
     </button>
-    <button class="mobile-bottom-tab-btn" id="mobileTabSync" onclick="switchMainTab('tabSync')">
+    <button type="button" class="mobile-bottom-tab-btn" id="mobileTabSync" role="tab" aria-controls="tabSync" aria-selected="false" onclick="switchMainTab('tabSync')">
       <span class="tab-icon">🔗</span>
       <span>Синхр.</span>
     </button>
-    <button class="mobile-bottom-tab-btn" id="mobileTabDownload" onclick="switchMainTab('tabDownload')">
+    <button type="button" class="mobile-bottom-tab-btn" id="mobileTabDownload" role="tab" aria-controls="tabDownload" aria-selected="false" onclick="switchMainTab('tabDownload')">
       <span class="tab-icon">📥</span>
       <span>APK</span>
     </button>
