@@ -613,7 +613,7 @@ fun DeveloperAdminDialog(
                         }
                     }
 
-                    // 2. АККОРДЕОН: ПОИСК И ФИЛЬТР (По умолчанию скрыт)
+                    // 3. АККОРДЕОН: ПОИСК И ФИЛЬТР
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -687,7 +687,7 @@ fun DeveloperAdminDialog(
                         }
                     }
 
-                    // 3. АККОРДЕОН: РЕЕСТР БОЙЦОВ ПО ПОДРАЗДЕЛЕНИЯМ (По умолчанию скрыт)
+                    // 4. АККОРДЕОН: РЕЕСТР БОЙЦОВ ПО ПОДРАЗДЕЛЕНИЯМ
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
