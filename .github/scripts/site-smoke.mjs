@@ -161,7 +161,7 @@ if (!/Contact:\s*mailto:/i.test(securityTxt) || !/Canonical:\s*https:\/\/kapterk
 }
 
 if (!index.includes('v3.4.9') && !index.includes('3.4.9')) fail('site version 3.4.9 is not visible');
-if (!index.includes('сборка 31') && !index.includes('Сборка 31')) fail('site build 31 marker is missing');
+if (!index.includes('сборка 31') && !index.includes('Сборка 31') && !index.includes('data-release-code>31</span>')) fail('site build 31 marker is missing');
 
 
 const htmlFiles = ['docs/index.html', 'docs/privacy.html', 'docs/terms.html', 'docs/security.html', 'docs/updates.html', 'docs/help.html', 'docs/skladskoy-uchet-android.html', 'docs/uchet-imushchestva-offline.html', 'docs/uchet-ostatkov-na-telefone.html', 'docs/404.html'];
