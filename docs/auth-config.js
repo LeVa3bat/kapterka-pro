@@ -1,4 +1,2 @@
 // KAPTERKA PRO — Web Auth v2 configuration
-// После публикации server/google-apps-script-auth.js как Web App сюда вставляется URL /exec.
-// Пока URL пустой, сайт продолжает использовать старую авторизацию без риска для работающей версии.
-window.KAPTERKA_AUTH_API_URL = window.KAPTERKA_AUTH_API_URL || "";
+window.KAPTERKA_AUTH_API_URL = "https://script.google.com/macros/s/AKfycbwFotDf-fn-4rBgWKdHp454CIln2YYpJrvjHrWkV7WWOQ3WPBfTAwOBw1k1Oj7Mfh8bjQ/exec";
