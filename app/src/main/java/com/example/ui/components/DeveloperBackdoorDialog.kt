@@ -820,7 +820,7 @@ fun DeveloperAdminDialog(
                                                                 clipboard.setText(AnnotatedString(key))
                                                                 Toast.makeText(context, "Скопировано: $key", Toast.LENGTH_SHORT).show()
                                                             },
-                                                            onGrantLicense = { onGrantLicense(fighter.id, 30) },
+                                                            onGrantLicense = { fighterToGrant = fighter },
                                                             onDeleteClick = { fighterToDelete = fighter }
                                                         )
                                                     }
@@ -835,6 +835,47 @@ fun DeveloperAdminDialog(
                 }
             }
         }
+    }
+
+    // Подтверждение выдачи лицензии: исключает случайное изменение платного статуса.
+    fighterToGrant?.let { fighter ->
+        AlertDialog(
+            onDismissRequest = { fighterToGrant = null },
+            title = {
+                Text(
+                    text = "Выдать 30 дней PRO?",
+                    color = TacticalTextPrimary,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = "Пользователь «${fighter.callsign}», подразделение «${fighter.unitName}». Срок лицензии будет изменён штатным механизмом на 30 дней.",
+                    color = TacticalTextSecondary,
+                    fontSize = 12.sp
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onGrantLicense(fighter.id, 30)
+                        fighterToGrant = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = TacticalGoldDark, contentColor = TacticalGoldText),
+                    shape = RoundedCornerShape(6.dp)
+                ) {
+                    Text("Выдать 30 дней", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { fighterToGrant = null }) {
+                    Text("Отмена", color = TacticalTextMuted, fontSize = 12.sp)
+                }
+            },
+            containerColor = TacticalSurface,
+            shape = RoundedCornerShape(10.dp)
+        )
     }
 
     // Подтверждение удаления бойца
@@ -875,6 +916,30 @@ fun DeveloperAdminDialog(
             },
             containerColor = TacticalSurface,
             shape = RoundedCornerShape(10.dp)
+        )
+    }
+}
+
+@Composable
+private fun DeveloperDiagnosticRow(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.Top
+    ) {
+        Text(
+            text = label,
+            color = TacticalTextMuted,
+            fontSize = 9.sp,
+            modifier = Modifier.weight(0.42f)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = value,
+            color = TacticalTextPrimary,
+            fontSize = 9.sp,
+            fontFamily = FontFamily.Monospace,
+            modifier = Modifier.weight(0.58f)
         )
     }
 }
