@@ -76,7 +76,8 @@ fun TacticalHeader(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val unitKey = profile?.unitKey ?: "kapt_59e13b"
+    val unitKey = profile?.unitKey?.trim().orEmpty()
+    val unitKeyDisplay = unitKey.ifBlank { "не настроен" }
 
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     val pulseAlpha by infiniteTransition.animateFloat(
@@ -281,10 +282,10 @@ fun TacticalHeader(
                         .clip(RoundedCornerShape(12.dp))
                         .background(TacticalSurfaceLight)
                         .border(1.dp, TacticalBorder, RoundedCornerShape(12.dp))
-                        .clickable {
+                        .clickable(enabled = unitKey.isNotBlank()) {
                             val clipManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                             clipManager.setPrimaryClip(ClipData.newPlainText("UnitKey", unitKey))
-                            Toast.makeText(context, "Код скопирован: $unitKey", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Код подразделения скопирован", Toast.LENGTH_SHORT).show()
                         }
                         .padding(horizontal = 10.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -298,7 +299,7 @@ fun TacticalHeader(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = unitKey,
+                        text = unitKeyDisplay,
                         color = SageGreenPrimary,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
