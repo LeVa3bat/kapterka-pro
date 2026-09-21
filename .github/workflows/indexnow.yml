@@ -10,6 +10,9 @@ on:
       - 'docs/sitemap.xml'
       - 'docs/robots.txt'
       - 'docs/site.webmanifest'
+      - 'docs/uchet-ostatkov-na-telefone.html'
+      - 'docs/uchet-imushchestva-offline.html'
+      - 'docs/skladskoy-uchet-android.html'
       - '.github/workflows/indexnow.yml'
 
 permissions:
@@ -49,7 +52,10 @@ jobs:
             "urlList": [
               "https://kapterka-pro.ru/",
               "https://kapterka-pro.ru/privacy.html",
-              "https://kapterka-pro.ru/terms.html"
+              "https://kapterka-pro.ru/terms.html",
+              "https://kapterka-pro.ru/uchet-ostatkov-na-telefone.html",
+              "https://kapterka-pro.ru/uchet-imushchestva-offline.html",
+              "https://kapterka-pro.ru/skladskoy-uchet-android.html"
             ]
           }
           JSON

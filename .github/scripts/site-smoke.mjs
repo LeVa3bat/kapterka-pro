@@ -18,11 +18,15 @@ const requiredFiles = [
   'docs/CNAME',
   'docs/index.html',
   'docs/style.css',
+  'docs/guide.css',
   'docs/app.js',
   'docs/auth-config.js',
   'docs/auth-v2.js',
   'docs/privacy.html',
   'docs/terms.html',
+  'docs/uchet-ostatkov-na-telefone.html',
+  'docs/uchet-imushchestva-offline.html',
+  'docs/skladskoy-uchet-android.html',
   'docs/robots.txt',
   'docs/sitemap.xml',
   'docs/site.webmanifest',
@@ -37,6 +41,19 @@ for (const file of requiredFiles) {
   if (!fs.existsSync(full)) fail(`required file is missing: ${file}`);
 }
 if (!process.exitCode) ok('required public files are present');
+
+const guideFiles = [
+  'docs/skladskoy-uchet-android.html',
+  'docs/uchet-imushchestva-offline.html',
+  'docs/uchet-ostatkov-na-telefone.html'
+];
+for (const file of guideFiles) {
+  const source = read(file);
+  const guideTitle = (source.match(/<title>([^<]+)<\/title>/i) || [])[1] || '';
+  const guideH1Count = (source.match(/<h1\b/gi) || []).length;
+  if (!guideTitle || guideH1Count !== 1 || !/rel="canonical"/.test(source)) fail(`SEO guide is incomplete: ${file}`);
+}
+if (!process.exitCode) ok('SEO guide pages are present and structured');
 
 const indexNowKey = read('docs/903fd952854fcb833f54ad87ef4b033b.txt').trim();
 if (indexNowKey !== '903fd952854fcb833f54ad87ef4b033b') fail('IndexNow verification key file is invalid');
@@ -138,7 +155,7 @@ if (!index.includes('v3.4.9') && !index.includes('3.4.9')) fail('site version 3.
 if (!index.includes('сборка 31') && !index.includes('Сборка 31')) fail('site build 31 marker is missing');
 
 
-const htmlFiles = ['docs/index.html', 'docs/privacy.html', 'docs/terms.html', 'docs/404.html'];
+const htmlFiles = ['docs/index.html', 'docs/privacy.html', 'docs/terms.html', 'docs/skladskoy-uchet-android.html', 'docs/uchet-imushchestva-offline.html', 'docs/uchet-ostatkov-na-telefone.html', 'docs/404.html'];
 const missingLocalTargets = [];
 for (const htmlFile of htmlFiles) {
   const source = read(htmlFile);
