@@ -1,0 +1,39 @@
+name: Android invariants
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - 'gradle/**'
+      - 'gradle.properties'
+      - 'settings.gradle.kts'
+      - '.github/scripts/android-invariants.mjs'
+      - '.github/workflows/android-invariants.yml'
+  pull_request:
+    paths:
+      - 'app/**'
+      - 'gradle/**'
+      - 'gradle.properties'
+      - 'settings.gradle.kts'
+      - '.github/scripts/android-invariants.mjs'
+      - '.github/workflows/android-invariants.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  invariants:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Protect update compatibility
+        run: node .github/scripts/android-invariants.mjs
