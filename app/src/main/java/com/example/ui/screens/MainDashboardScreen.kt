@@ -341,20 +341,64 @@ fun MainDashboardScreen(
             )
         }
 
-        // 4 MAIN OPERATION TILES (Приход, Перенос, Выдача, Расход ф.8)
+        // COMPACT OVERVIEW
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 4.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = CardDefaults.cardColors(containerColor = TacticalSurface),
+                border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorderSubtle)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 11.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    DashboardSummaryMetric(
+                        value = overallStockSum.toString(),
+                        label = "единиц на учёте",
+                        modifier = Modifier.weight(1f)
+                    )
+                    DashboardSummaryMetric(
+                        value = overallPositionsCount.toString(),
+                        label = "активных позиций",
+                        modifier = Modifier.weight(1f)
+                    )
+                    DashboardSummaryMetric(
+                        value = points.size.toString(),
+                        label = "складов и точек",
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+
+        // PRIMARY ACTIONS — optimized for phone screens
         item {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 14.dp, vertical = 4.dp)
             ) {
+                Text(
+                    text = "БЫСТРЫЕ ОПЕРАЦИИ",
+                    color = TacticalTextMuted,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.8.sp,
+                    modifier = Modifier.padding(start = 2.dp, bottom = 6.dp)
+                )
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     SleekOperationTile(
                         title = "Приход",
-                        subtitle = "Поступление",
+                        subtitle = "Поступление на склад",
                         icon = Icons.Default.LocalShipping,
                         accentColor = SageGreenBright,
                         onClick = onIncomeClick,
@@ -364,8 +408,8 @@ fun MainDashboardScreen(
                     )
 
                     SleekOperationTile(
-                        title = "Перенос",
-                        subtitle = "Локации",
+                        title = "Перемещение",
+                        subtitle = "Между складами",
                         icon = Icons.AutoMirrored.Filled.Send,
                         accentColor = TacticalTealText,
                         onClick = onTransferClick,
@@ -373,10 +417,17 @@ fun MainDashboardScreen(
                             .weight(1f)
                             .testTag("op_transfer_button")
                     )
+                }
 
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     SleekOperationTile(
                         title = "Выдача",
-                        subtitle = "В руки / Бойцу",
+                        subtitle = "Передача получателю",
                         icon = Icons.Default.FlightTakeoff,
                         accentColor = TacticalGoldText,
                         onClick = onIssueClick,
@@ -386,8 +437,8 @@ fun MainDashboardScreen(
                     )
 
                     SleekOperationTile(
-                        title = "Расход",
-                        subtitle = "Акт ф.8",
+                        title = "Списание",
+                        subtitle = "Расход имущества",
                         icon = Icons.Default.NorthEast,
                         accentColor = TacticalRedText,
                         isHighlighted = true,
@@ -488,11 +539,11 @@ fun MainDashboardScreen(
                             imageVector = Icons.Default.Warehouse,
                             contentDescription = null,
                             tint = SageGreenPrimary,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "ТОЧКИ И СКЛАДЫ УЧЕТА",
+                            text = "СКЛАДЫ И ТОЧКИ УЧЁТА",
                             color = TacticalTextPrimary,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
@@ -518,7 +569,7 @@ fun MainDashboardScreen(
                         )
                         Spacer(modifier = Modifier.width(3.dp))
                         Text(
-                            text = "Склад / Точка",
+                            text = "Добавить",
                             color = SageGreenBright,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold
@@ -939,7 +990,7 @@ fun MainDashboardScreen(
                                         Text(
                                             text = "$pointStockSum ед.",
                                             color = SageGreenBright,
-                                            fontSize = 11.5.sp,
+                                            fontSize = 13.sp,
                                             fontWeight = FontWeight.Bold,
                                             fontFamily = FontFamily.Monospace
                                         )
@@ -1163,7 +1214,7 @@ private fun PointStockTableView(
                                 Text(
                                     text = rowData.item.subType.uppercase(),
                                     color = TacticalTextMuted,
-                                    fontSize = 8.5.sp,
+                                    fontSize = 10.sp,
                                     fontWeight = FontWeight.Medium
                                 )
                                 if (rowData.item.standardCode.isNotBlank()) {
@@ -1342,6 +1393,34 @@ private fun TableVerticalDivider() {
 }
 
 @Composable
+private fun DashboardSummaryMetric(
+    value: String,
+    label: String,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = value,
+            color = TacticalTextPrimary,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Black,
+            maxLines = 1
+        )
+        Text(
+            text = label,
+            color = TacticalTextMuted,
+            fontSize = 9.5.sp,
+            textAlign = TextAlign.Center,
+            lineHeight = 12.sp,
+            maxLines = 2
+        )
+    }
+}
+
+@Composable
 private fun SleekOperationTile(
     title: String,
     subtitle: String,
@@ -1367,7 +1446,7 @@ private fun SleekOperationTile(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp, horizontal = 4.dp),
+                .padding(vertical = 10.dp, horizontal = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
