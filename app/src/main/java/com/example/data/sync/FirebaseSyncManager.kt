@@ -126,6 +126,16 @@ class FirebaseSyncManager(
         }
     }
 
+    private suspend fun isTombstoned(
+        unitKey: String,
+        entityType: String,
+        entityId: String
+    ): Boolean {
+        if (unitKey.isBlank() || entityId.isBlank()) return false
+        val id = SyncTombstone.create(unitKey, entityType, entityId, 1L).id
+        return dao.getSyncTombstoneById(id) != null
+    }
+
     private suspend fun syncTombstones(unitKey: String) {
         if (unitKey.isBlank()) return
         val unitRef = firestore.collection("units").document(unitKey)
@@ -233,7 +243,9 @@ class FirebaseSyncManager(
                         orderIndex = dc.document.getLong("orderIndex")?.toInt() ?: 0,
                         createdAt = dc.document.getLong("createdAt") ?: 0L
                     )
-                    if (dc.type != DocumentChange.Type.REMOVED) {
+                    if (dc.type != DocumentChange.Type.REMOVED &&
+                        !isTombstoned(unitKey, TOMBSTONE_POINT, p.id)
+                    ) {
                         dao.insertPoint(p)
                     }
                 }
@@ -255,7 +267,9 @@ class FirebaseSyncManager(
                         standardCode = dc.document.getString("standardCode") ?: "",
                         isCustom = dc.document.getBoolean("isCustom") ?: false
                     )
-                    if (dc.type != DocumentChange.Type.REMOVED) {
+                    if (dc.type != DocumentChange.Type.REMOVED &&
+                        !isTombstoned(unitKey, TOMBSTONE_ITEM, item.id)
+                    ) {
                         dao.insertItem(item)
                     }
                 }
@@ -281,7 +295,10 @@ class FirebaseSyncManager(
                             expenseTotal = dc.document.getLong("expenseTotal")?.toInt() ?: 0,
                             lastUpdated = dc.document.getLong("lastUpdated") ?: 0L
                         )
-                        if (s.pointId.isNotBlank() && s.itemId.isNotBlank()) {
+                        if (s.pointId.isNotBlank() && s.itemId.isNotBlank() &&
+                            !isTombstoned(unitKey, TOMBSTONE_POINT, s.pointId) &&
+                            !isTombstoned(unitKey, TOMBSTONE_ITEM, s.itemId)
+                        ) {
                             dao.insertOrUpdateStock(s)
                             // Do not create generic placeholder from stock record if nameHint is missing;
                             // operations listener will register it with exact name from itemsJson.
@@ -312,7 +329,9 @@ class FirebaseSyncManager(
                         itemsSummary = dc.document.getString("itemsSummary") ?: "",
                         itemsJson = dc.document.getString("itemsJson") ?: ""
                     )
-                    if (dc.type != DocumentChange.Type.REMOVED) {
+                    if (dc.type != DocumentChange.Type.REMOVED &&
+                        !isTombstoned(unitKey, TOMBSTONE_OPERATION, op.id)
+                    ) {
                         dao.insertOperation(op)
                         extractAndRegisterItemsFromOperation(unitKey, op)
                         if (!isFirstOpLoad && dc.type == DocumentChange.Type.ADDED) {
@@ -350,7 +369,9 @@ class FirebaseSyncManager(
                         itemsSummary = dc.document.getString("itemsSummary") ?: "",
                         itemsJson = dc.document.getString("itemsJson") ?: ""
                     )
-                    if (dc.type != DocumentChange.Type.REMOVED) {
+                    if (dc.type != DocumentChange.Type.REMOVED &&
+                        !isTombstoned(unitKey, TOMBSTONE_REQUISITION, req.id)
+                    ) {
                         dao.insertRequisition(req)
                     }
                 }
@@ -448,7 +469,7 @@ class FirebaseSyncManager(
                     orderIndex = doc.getLong("orderIndex")?.toInt() ?: 0,
                     createdAt = doc.getLong("createdAt") ?: 0L
                 )
-                if (p.name.isNotBlank()) {
+                if (p.name.isNotBlank() && !isTombstoned(cleanKey, TOMBSTONE_POINT, p.id)) {
                     existingPointsMap[p.id] = p
                 }
             }
@@ -497,7 +518,10 @@ class FirebaseSyncManager(
 
                     if (ptId.isNotBlank() && itemId.isNotBlank()) {
                         // Do not re-insert stocks belonging to points that no longer exist in cloud
-                        if (existingPointsMap.containsKey(ptId) || ptId == "base_sklad") {
+                        if ((existingPointsMap.containsKey(ptId) || ptId == "base_sklad") &&
+                            !isTombstoned(cleanKey, TOMBSTONE_POINT, ptId) &&
+                            !isTombstoned(cleanKey, TOMBSTONE_ITEM, itemId)
+                        ) {
                             cloudStockKeys.add("${ptId}:::${itemId}")
                             recordsToInsert.add(
                                 StockRecord(
@@ -545,8 +569,10 @@ class FirebaseSyncManager(
                     itemsSummary = doc.getString("itemsSummary") ?: "",
                     itemsJson = doc.getString("itemsJson") ?: ""
                 )
-                dao.insertOperation(op)
-                extractAndRegisterItemsFromOperation(cleanKey, op)
+                if (!isTombstoned(cleanKey, TOMBSTONE_OPERATION, op.id)) {
+                    dao.insertOperation(op)
+                    extractAndRegisterItemsFromOperation(cleanKey, op)
+                }
             }
 
             // 5. Reconcile Requisitions
@@ -565,7 +591,9 @@ class FirebaseSyncManager(
                     itemsSummary = doc.getString("itemsSummary") ?: "",
                     itemsJson = doc.getString("itemsJson") ?: ""
                 )
-                dao.insertRequisition(req)
+                if (!isTombstoned(cleanKey, TOMBSTONE_REQUISITION, req.id)) {
+                    dao.insertRequisition(req)
+                }
             }
 
             // 6. Reconcile Custom Items
@@ -581,7 +609,9 @@ class FirebaseSyncManager(
                     standardCode = doc.getString("standardCode") ?: "",
                     isCustom = doc.getBoolean("isCustom") ?: false
                 )
-                dao.insertItem(item)
+                if (!isTombstoned(cleanKey, TOMBSTONE_ITEM, item.id)) {
+                    dao.insertItem(item)
+                }
             }
 
             // 7. Connect and register realtime snapshot listeners
