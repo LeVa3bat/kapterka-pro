@@ -59,7 +59,7 @@ class FirebaseSyncManager(
         val prefs = context.getSharedPreferences("kapterka_sync_prefs", Context.MODE_PRIVATE)
         var id = prefs.getString("device_uuid", null)
         if (id == null) {
-            id = "dev_" + UUID.randomUUID().toString().take(8)
+            id = SyncIdentityGenerator.newDeviceId()
             prefs.edit().putString("device_uuid", id).apply()
         }
         id
