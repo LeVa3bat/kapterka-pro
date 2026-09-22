@@ -579,6 +579,11 @@ module.exports.handler = async function handler(event) {
           licenseKey,
           days: daysLeft
         });
+        await sendTelegram(
+          '✉️ <b>Лицензионное письмо отправлено</b>\n' +
+          'Email: <code>' + escapeTelegramHtml(license.email) + '</code>\n' +
+          'Ключ: <code>' + escapeTelegramHtml(licenseKey.slice(0, 5) + '-****-****-' + licenseKey.slice(-4)) + '</code>'
+        ).catch(() => false);
         return json(200, { ok: true });
       } catch (emailError) {
         console.error('License email error:', emailError?.message || emailError);
@@ -707,6 +712,14 @@ module.exports.handler = async function handler(event) {
         },
         idempotenceKey
       );
+
+      await sendTelegram(
+        '💳 <b>Новый платеж Каптёрка ПРО</b>\n' +
+        'Позывной: <b>' + escapeTelegramHtml(callsign) + '</b>\n' +
+        'Email: <code>' + escapeTelegramHtml(email) + '</code>\n' +
+        'Сумма: <b>' + PAYMENT_AMOUNT_RUB + ' ₽</b>\n' +
+        'Payment ID: <code>' + escapeTelegramHtml(payment.id || '') + '</code>'
+      ).catch(() => false);
 
       return jsonpOrJson(200, {
         ok: true,
