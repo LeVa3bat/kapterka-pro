@@ -107,6 +107,10 @@ jobs:
           if (/body\.(license|expires|isPro)|license_key|expires_at/.test(fighterUpsertBlock)) {
             throw new Error('fighter_upsert must not trust client-supplied license state');
           }
+          if (!fighterUpsertBlock.includes('storedEmail && email && storedEmail === email') ||
+              !fighterUpsertBlock.includes('profile_updated: true')) {
+            throw new Error('Existing fighter profile updates must require the registered email identity');
+          }
           const licenseVerifyStart = s.indexOf("action === 'license_verify'");
           const licenseRestoreStart = s.indexOf("action === 'license_restore'");
           if (fighterLookupStart < 0 || licenseVerifyStart < 0 || licenseRestoreStart < 0) {
