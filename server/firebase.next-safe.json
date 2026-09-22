@@ -1,0 +1,10 @@
+{
+  "firestore": {
+    "rules": "server/firestore.next-safe.rules"
+  },
+  "emulators": {
+    "firestore": {
+      "port": 8080
+    }
+  }
+}
