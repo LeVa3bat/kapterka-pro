@@ -1,0 +1,89 @@
+name: Android NEXT-SAFE test APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - android/next-safe
+    paths:
+      - 'app/**'
+      - 'gradle/**'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
+      - '.github/workflows/android-next-safe-test-apk.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-test-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Configure Android SDK
+        shell: bash
+        run: |
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -path '*/bin/sdkmanager' 2>/dev/null | sort -V | tail -n 1)"
+          test -x "$SDKMANAGER"
+          echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "ANDROID_HOME=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "SDKMANAGER=$SDKMANAGER" >> "$GITHUB_ENV"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
+
+      - name: Install required Android SDK
+        shell: bash
+        run: |
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "build-tools;36.0.0" "platforms;android-36"
+          "$SDKMANAGER" "platforms;android-36.1"
+
+      - name: Create ephemeral NEXT-SAFE test signer
+        shell: bash
+        run: |
+          keytool -genkeypair -v             -keystore "$GITHUB_WORKSPACE/debug.keystore"             -storepass android             -alias androiddebugkey             -keypass android             -keyalg RSA             -keysize 2048             -validity 10000             -dname "CN=Kapterka NEXT-SAFE Test,O=Test,C=US"
+
+      - name: Build side-by-side NEXT-SAFE APK
+        env:
+          PAYMENT_API_URL: ''
+        run: gradle :app:assembleNextSafeTest --no-daemon --stacktrace
+
+      - name: Verify test package is isolated from production
+        shell: bash
+        run: |
+          APK="$(find app/build/outputs/apk/nextSafeTest -name '*.apk' | head -n 1)"
+          test -f "$APK"
+          AAPT="$ANDROID_SDK_ROOT/build-tools/36.0.0/aapt"
+          BADGING="$("$AAPT" dump badging "$APK" | head -n 1)"
+          echo "$BADGING"
+          echo "$BADGING" | grep -q "name='com.aistudio.kapterka.jmwqve.nextsafe'"
+          ! echo "$BADGING" | grep -q "name='com.aistudio.kapterka.jmwqve' versionCode"
+
+      - name: Rename APK
+        shell: bash
+        run: |
+          APK="$(find app/build/outputs/apk/nextSafeTest -name '*.apk' | head -n 1)"
+          cp "$APK" "$GITHUB_WORKSPACE/kapterka-pro-next-safe-test.apk"
+          sha256sum "$GITHUB_WORKSPACE/kapterka-pro-next-safe-test.apk"
+
+      - name: Upload test APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kapterka-pro-next-safe-test
+          path: kapterka-pro-next-safe-test.apk
+          if-no-files-found: error
+          retention-days: 14
