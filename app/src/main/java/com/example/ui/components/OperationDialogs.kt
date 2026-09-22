@@ -120,7 +120,7 @@ fun IncomeOperationDialog(
     )
 
     TacticalOperationModalLayout(
-        title = "Операция «Привезли»",
+        title = "Приход",
         titleColor = SageGreenBright,
         badgeColor = SageGreenDark,
         onDismiss = onDismiss
@@ -169,7 +169,7 @@ fun IncomeOperationDialog(
 
         // Save Button with guaranteed fit
         TacticalFitButton(
-            text = "СОХРАНИТЬ ПРИХОД НА СКЛАД",
+            text = "Сохранить приход",
             icon = Icons.Default.Add,
             containerColor = SageGreenPrimary,
             contentColor = Color.White,
@@ -268,7 +268,7 @@ fun TransferOperationDialog(
     }
 
     TacticalOperationModalLayout(
-        title = "Операция «Перемещение»",
+        title = "Перемещение",
         titleColor = TacticalTealText,
         badgeColor = TacticalTealDark,
         onDismiss = onDismiss
@@ -309,9 +309,9 @@ fun TransferOperationDialog(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(14.dp))
                     .background(TacticalRedDark.copy(alpha = 0.4f))
-                    .border(1.dp, TacticalRed.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
+                    .border(1.dp, TacticalRed.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
                     .padding(12.dp)
             ) {
                 Text(
@@ -345,7 +345,7 @@ fun TransferOperationDialog(
         Spacer(modifier = Modifier.height(18.dp))
 
         TacticalFitButton(
-            text = "ВЫПОЛНИТЬ ПЕРЕМЕЩЕНИЕ",
+            text = "Выполнить перемещение",
             icon = Icons.Default.ArrowDropDown,
             containerColor = TacticalTeal,
             contentColor = Color.White,
@@ -448,7 +448,7 @@ fun IssueOperationDialog(
     }
 
     TacticalOperationModalLayout(
-        title = "Операция «Подняли» (Выдача)",
+        title = "Выдача",
         titleColor = TacticalGoldText,
         badgeColor = TacticalGoldDark,
         onDismiss = onDismiss
@@ -486,9 +486,9 @@ fun IssueOperationDialog(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(14.dp))
                     .background(TacticalRedDark.copy(alpha = 0.4f))
-                    .border(1.dp, TacticalRed.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
+                    .border(1.dp, TacticalRed.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
                     .padding(12.dp)
             ) {
                 Text(
@@ -520,7 +520,7 @@ fun IssueOperationDialog(
         Spacer(modifier = Modifier.height(18.dp))
 
         TacticalFitButton(
-            text = "ЗАФИКСИРОВАТЬ ВЫДАЧУ",
+            text = "Сохранить выдачу",
             containerColor = TacticalGold,
             contentColor = Color.White,
             onClick = {
@@ -630,7 +630,7 @@ fun ExpenditureOperationDialog(
     }
 
     TacticalOperationModalLayout(
-        title = "Операция «Расход» (Форма 8)",
+        title = "Списание",
         titleColor = TacticalRedText,
         badgeColor = TacticalRedDark,
         onDismiss = onDismiss
@@ -679,9 +679,9 @@ fun ExpenditureOperationDialog(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(14.dp))
                 .background(TacticalRedDark.copy(alpha = 0.5f))
-                .border(1.dp, TacticalRed.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                .border(1.dp, TacticalRed.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
                 .padding(10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -693,7 +693,7 @@ fun ExpenditureOperationDialog(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Списанное имущество автоматически сформирует Акт Формы № 8 для службы РАВ и архива журнала.",
+                text = "Операция сохраняется в журнале и при необходимости используется для формирования Формы № 8.",
                 color = TacticalRedText,
                 fontSize = 11.sp,
                 lineHeight = 15.sp
@@ -706,9 +706,9 @@ fun ExpenditureOperationDialog(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(14.dp))
                     .background(TacticalRedDark.copy(alpha = 0.4f))
-                    .border(1.dp, TacticalRed.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
+                    .border(1.dp, TacticalRed.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
                     .padding(12.dp)
             ) {
                 Text(
@@ -740,7 +740,7 @@ fun ExpenditureOperationDialog(
         Spacer(modifier = Modifier.height(18.dp))
 
         TacticalFitButton(
-            text = "СПИСАТЬ И ПРОВЕСТИ АКТ Ф.8",
+            text = "Сохранить списание",
             containerColor = TacticalRed,
             contentColor = Color.White,
             onClick = {
@@ -808,7 +808,7 @@ private fun InsufficientStockAlertDialog(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "НЕДОСТАТОЧНО ИМУЩЕСТВА",
+                        text = "Недостаточно имущества",
                         color = TacticalRedText,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold
@@ -829,7 +829,7 @@ private fun InsufficientStockAlertDialog(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(6.dp))
+                        .clip(RoundedCornerShape(12.dp))
                         .background(TacticalRedDark.copy(alpha = 0.4f))
                         .padding(8.dp)
                 ) {
@@ -857,7 +857,7 @@ private fun InsufficientStockAlertDialog(
                         modifier = Modifier.weight(1f)
                     )
                     TacticalFitButton(
-                        text = "ВСЁ РАВНО ПРОВЕСТИ",
+                        text = "Продолжить",
                         containerColor = TacticalRed,
                         contentColor = Color.White,
                         onClick = onProceedAnyway,
@@ -884,50 +884,57 @@ private fun TacticalOperationModalLayout(
     ) {
         Card(
             modifier = Modifier
-                .fillMaxWidth(0.95f)
-                .padding(vertical = 20.dp),
-            shape = RoundedCornerShape(12.dp),
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 16.dp),
+            shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(containerColor = TacticalSurface),
-            border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorder)
+            border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorderSubtle),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp)
+                    .padding(18.dp)
             ) {
-                // Header
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(badgeColor)
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
-                        ) {
-                            Text(
-                                text = title,
-                                color = titleColor,
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
+                                .size(9.dp)
+                                .clip(RoundedCornerShape(100.dp))
+                                .background(titleColor)
+                        )
+                        Spacer(modifier = Modifier.width(9.dp))
+                        Text(
+                            text = title,
+                            color = TacticalTextPrimary,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.ExtraBold
+                        )
                     }
 
-                    IconButton(
-                        onClick = onDismiss,
-                        modifier = Modifier.size(28.dp)
+                    Box(
+                        modifier = Modifier
+                            .size(34.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(TacticalSurfaceLight),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Закрыть",
-                            tint = TacticalTextMuted
-                        )
+                        IconButton(
+                            onClick = onDismiss,
+                            modifier = Modifier.size(34.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Закрыть",
+                                tint = TacticalTextMuted,
+                                modifier = Modifier.size(19.dp)
+                            )
+                        }
                     }
                 }
 
@@ -962,9 +969,9 @@ fun PointDropdownSelector(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(14.dp))
                 .background(TacticalSurfaceLight)
-                .border(1.dp, TacticalBorder, RoundedCornerShape(8.dp))
+                .border(1.dp, TacticalBorder, RoundedCornerShape(14.dp))
                 .clickable { expanded = true }
                 .padding(horizontal = 12.dp, vertical = 11.dp)
         ) {
@@ -1030,7 +1037,7 @@ fun TacticalInputField(
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(8.dp),
+            shape = RoundedCornerShape(14.dp),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedContainerColor = TacticalSurfaceLight,
                 unfocusedContainerColor = TacticalSurfaceLight,
@@ -1057,7 +1064,7 @@ private fun ItemsDraftListSection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "ИМУЩЕСТВО И КОЛИЧЕСТВО",
+                text = "Позиции и количество",
                 color = TacticalTextSecondary,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
@@ -1066,7 +1073,7 @@ private fun ItemsDraftListSection(
 
             Row(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
+                    .clip(RoundedCornerShape(12.dp))
                     .background(SageGreenDark)
                     .clickable {
                         draftItems.add(OperationDraftItem(selectedItem = null, quantityString = "1"))
@@ -1097,7 +1104,7 @@ private fun ItemsDraftListSection(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 4.dp),
-                shape = RoundedCornerShape(8.dp),
+                shape = RoundedCornerShape(14.dp),
                 colors = CardDefaults.cardColors(containerColor = TacticalBg),
                 border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorderSubtle)
             ) {
@@ -1166,7 +1173,7 @@ private fun ItemsDraftListSection(
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             singleLine = true,
                             modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(8.dp),
+                            shape = RoundedCornerShape(14.dp),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedContainerColor = TacticalSurfaceLight,
                                 unfocusedContainerColor = TacticalSurfaceLight,
@@ -1206,9 +1213,9 @@ private fun ItemsDraftListSection(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(6.dp))
+                                .clip(RoundedCornerShape(12.dp))
                                 .background(TacticalRedDark.copy(alpha = 0.45f))
-                                .border(0.5.dp, TacticalRed.copy(alpha = 0.6f), RoundedCornerShape(6.dp))
+                                .border(0.5.dp, TacticalRed.copy(alpha = 0.6f), RoundedCornerShape(12.dp))
                             .padding(horizontal = 8.dp, vertical = 5.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
