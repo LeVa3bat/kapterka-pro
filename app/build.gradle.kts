@@ -28,6 +28,7 @@ android {
     val paymentApiUrl = System.getenv("PAYMENT_API_URL") ?: ""
     buildConfigField("String", "PAYMENT_API_URL", "\"$paymentApiUrl\"")
     buildConfigField("String", "PAYMENT_CALLBACK_SCHEME", "\"kapterka\"")
+    buildConfigField("boolean", "IS_NEXT_SAFE_TEST", "false")
     manifestPlaceholders["paymentScheme"] = "kapterka"
   }
 
@@ -80,6 +81,7 @@ android {
       signingConfig = signingConfigs.getByName("debugConfig")
       resValue("string", "app_name", "Каптёрка PRO NEXT-SAFE")
       buildConfigField("String", "PAYMENT_CALLBACK_SCHEME", "\"kapterka-nextsafe\"")
+      buildConfigField("boolean", "IS_NEXT_SAFE_TEST", "true")
       manifestPlaceholders["paymentScheme"] = "kapterka-nextsafe"
     }
 
