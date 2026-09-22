@@ -94,6 +94,12 @@ async function call(action, body = {}, method = 'POST', sourceIp = '127.0.0.1') 
   assert.strictEqual(missingFighter.statusCode, 400);
   assert.strictEqual(missingFighter.parsed.error, 'MISSING_FIGHTER_ID');
 
+  const missingLookupEmail = await call('fighter_lookup', {
+    fighter_id: 'fighter-test'
+  });
+  assert.strictEqual(missingLookupEmail.statusCode, 400);
+  assert.strictEqual(missingLookupEmail.parsed.error, 'INVALID_EMAIL');
+
   const options = await handler({ httpMethod: 'OPTIONS' });
   assert.strictEqual(options.statusCode, 200);
 
