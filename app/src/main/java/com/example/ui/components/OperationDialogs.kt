@@ -747,7 +747,26 @@ fun ExpenditureOperationDialog(
             draftItems = draftItems,
             catalogItems = availableItemsOnPoint,
             availableStocksMap = stocksMapForFromPoint,
-            showReasonField = true
+            showReasonField = true,
+            reasonPresets = if (writeOffMilitary) {
+                listOf(
+                    "Боевая работа",
+                    "Учебная подготовка",
+                    "Повреждение",
+                    "Естественный износ",
+                    "Передача в ремонт",
+                    "Утрата / уничтожение"
+                )
+            } else {
+                listOf(
+                    "Брак",
+                    "Естественный износ",
+                    "Повреждение",
+                    "Просрочка",
+                    "Утилизация",
+                    "Корректировка остатка"
+                )
+            }
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -1077,7 +1096,15 @@ private fun ItemsDraftListSection(
     draftItems: MutableList<OperationDraftItem>,
     catalogItems: List<InventoryItem>,
     availableStocksMap: Map<String, Int>? = null,
-    showReasonField: Boolean
+    showReasonField: Boolean,
+    reasonPresets: List<String> = listOf(
+        "Брак",
+        "Естественный износ",
+        "Повреждение",
+        "Просрочка",
+        "Утилизация",
+        "Корректировка остатка"
+    )
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
@@ -1173,15 +1200,6 @@ private fun ItemsDraftListSection(
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
-
-                    val reasonPresets = listOf(
-                        "Боевая работа (поражение целей)",
-                        "Пристрелка и выверка боя",
-                        "Учебные стрельбы / подготовка",
-                        "Повреждение при артобстреле",
-                        "Естественный износ ствола/узлов",
-                        "Передача в рембат / на ТО"
-                    )
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
