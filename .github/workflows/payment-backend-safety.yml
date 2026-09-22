@@ -131,7 +131,8 @@ jobs:
             throw new Error('Repeated payment checks must not rebind an existing license');
           }
 
-          const adminGrantBlock = s.slice(adminGrantStart);
+          const paymentAdminGrantStart = s.indexOf("action === 'admin_grant_license'");
+          const adminGrantBlock = paymentAdminGrantStart >= 0 ? s.slice(paymentAdminGrantStart) : '';
           if (!adminGrantBlock.includes('getFighterById(fighterId)') ||
               !adminGrantBlock.includes("error: 'FIGHTER_NOT_FOUND'")) {
             throw new Error('Admin grant must target an existing fighter');
