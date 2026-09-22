@@ -117,6 +117,11 @@ import com.example.ui.theme.TacticalSurface
 import com.example.ui.theme.TacticalSurfaceLight
 import com.example.ui.theme.TacticalTextMuted
 import com.example.ui.theme.TacticalTextPrimary
+import com.example.ui.components.UniversalBottomNavigationBar
+import com.example.ui.screens.UniversalAuthScreen
+import com.example.ui.screens.UniversalDashboardScreen
+import com.example.ui.screens.UniversalSplashScreen
+import com.example.universal.UniversalLocalAuth
 import com.example.ui.viewmodel.KapterkaViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -211,6 +216,13 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
     var warehouseProfileId by remember {
         mutableStateOf(setupPrefs.getString("warehouse_profile_id", null))
     }
+    val universalAuth = remember(context) { UniversalLocalAuth(context) }
+    var universalAuthenticated by remember {
+        mutableStateOf(setupPrefs.getBoolean("universal_authenticated_v2", false))
+    }
+    var universalWorkspaceReady by remember {
+        mutableStateOf(setupPrefs.getBoolean("universal_workspace_ready_v2", false))
+    }
 
     // Request notification permission for Android 13+
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -273,43 +285,93 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
         }
     }
 
-    // SPLASH SCREEN DISPLAY
+    // SPLASH / ONBOARDING
     if (isSplashVisible) {
-        SplashScreen(
-            onInitializationComplete = { isSplashVisible = false }
-        )
-        return
-    }
-
-    if (BuildConfig.IS_UNIVERSAL_APP && warehouseProfileId.isNullOrBlank()) {
-        WarehouseProfileSetupScreen(
-            onProfileSelected = { profileId ->
-                setupPrefs.edit().putString("warehouse_profile_id", profileId).apply()
-                viewModel.applyWarehouseProfile(profileId)
-                warehouseProfileId = profileId
-            }
-        )
-        return
-    }
-
-    // WORKSPACE SETUP / AUTH
-    if (profile?.isLoggedIn != true) {
         if (BuildConfig.IS_UNIVERSAL_APP) {
+            UniversalSplashScreen(
+                onInitializationComplete = { isSplashVisible = false }
+            )
+        } else {
+            SplashScreen(
+                onInitializationComplete = { isSplashVisible = false }
+            )
+        }
+        return
+    }
+
+    if (BuildConfig.IS_UNIVERSAL_APP) {
+        if (!universalAuthenticated) {
+            UniversalAuthScreen(
+                hasAccount = universalAuth.hasAccount(),
+                savedEmail = universalAuth.registeredEmail(),
+                onRegister = { name, email, password ->
+                    val error = universalAuth.register(email, password)
+                    if (error == null) {
+                        viewModel.registerOrLoginProfile(
+                            (profile ?: com.example.data.model.UserProfile()).copy(
+                                callsign = name,
+                                email = email.trim().lowercase(),
+                                unitName = "",
+                                unitKey = "",
+                                isLoggedIn = true,
+                                isOnline = false
+                            )
+                        )
+                        setupPrefs.edit().putBoolean("universal_authenticated_v2", true).apply()
+                        universalAuthenticated = true
+                    }
+                    error
+                },
+                onLogin = { email, password ->
+                    if (!universalAuth.verify(email, password)) {
+                        "Неверный email или пароль"
+                    } else {
+                        viewModel.registerOrLoginProfile(
+                            (profile ?: com.example.data.model.UserProfile()).copy(
+                                email = email.trim().lowercase(),
+                                isLoggedIn = true,
+                                isOnline = false
+                            )
+                        )
+                        setupPrefs.edit().putBoolean("universal_authenticated_v2", true).apply()
+                        universalAuthenticated = true
+                        null
+                    }
+                }
+            )
+            return
+        }
+
+        if (warehouseProfileId.isNullOrBlank()) {
+            WarehouseProfileSetupScreen(
+                onProfileSelected = { profileId ->
+                    setupPrefs.edit().putString("warehouse_profile_id", profileId).apply()
+                    viewModel.applyWarehouseProfile(profileId)
+                    warehouseProfileId = profileId
+                }
+            )
+            return
+        }
+
+        if (!universalWorkspaceReady) {
             UniversalWorkspaceSetupScreen(
                 currentProfile = profile,
                 warehouseProfileId = warehouseProfileId,
                 onComplete = { newProfile ->
                     viewModel.registerOrLoginProfile(newProfile)
+                    setupPrefs.edit().putBoolean("universal_workspace_ready_v2", true).apply()
+                    universalWorkspaceReady = true
                 }
             )
-        } else {
-            AuthScreen(
-                currentProfile = profile,
-                onCompleteAuth = { newProfile ->
-                    viewModel.registerOrLoginProfile(newProfile)
-                }
-            )
+            return
         }
+    } else if (profile?.isLoggedIn != true) {
+        AuthScreen(
+            currentProfile = profile,
+            onCompleteAuth = { newProfile ->
+                viewModel.registerOrLoginProfile(newProfile)
+            }
+        )
         return
     }
 
@@ -318,11 +380,19 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
         modifier = Modifier.fillMaxSize(),
         containerColor = TacticalBg,
         bottomBar = {
-            TacticalBottomNavigationBar(
-                currentDestination = currentDestination,
-                onNavigate = { currentDestination = it },
-                pendingRequestsCount = requisitions.count { it.status == com.example.data.model.RequestStatus.PENDING }
-            )
+            if (BuildConfig.IS_UNIVERSAL_APP) {
+                UniversalBottomNavigationBar(
+                    currentDestination = currentDestination,
+                    pendingRequestsCount = requisitions.count { it.status == com.example.data.model.RequestStatus.PENDING },
+                    onNavigate = { currentDestination = it }
+                )
+            } else {
+                TacticalBottomNavigationBar(
+                    currentDestination = currentDestination,
+                    onNavigate = { currentDestination = it },
+                    pendingRequestsCount = requisitions.count { it.status == com.example.data.model.RequestStatus.PENDING }
+                )
+            }
         }
     ) { innerPadding ->
         Box(
@@ -430,54 +500,66 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
             ) { targetScreen ->
                 when (targetScreen) {
                     AppDestination.HOME -> {
-                        MainDashboardScreen(
-                            profile = profile,
-                            points = points,
-                            catalogItems = catalogItems,
-                            stockRecords = stockRecords,
-                            operations = operations,
-                            availableCategories = availableCategories,
-                            selectedCategory = selectedCategory,
-                            searchQuery = dashboardSearchQuery,
-                            onSelectCategory = { viewModel.selectCategory(it) },
-                            onSearchChange = { viewModel.setInventorySearchQuery(it) },
-                            onIncomeClick = { showIncomeDialog = true },
-                            onTransferClick = { showTransferDialog = true },
-                            onIssueClick = { showIssueDialog = true },
-                            onExpenditureClick = {
-                                checkProAccess("списания имущества") {
-                                    showExpenditureDialog = true
-                                }
-                            },
-                            onAddPointClick = { showAddPointDialog = true },
-                            onEditPointClick = { editingPoint = it },
-                            onAddCustomItemClick = { showAddCustomItemDialog = true },
-                            onAdjustStock = { pointId, pointName, itemId, itemName, newQty ->
-                                viewModel.adjustPointStock(pointId, pointName, itemId, itemName, newQty)
-                            },
-                            onSyncClick = { viewModel.simulateCloudSync() },
-                            onSecondPhoneClick = { showUnitKeySyncDialog = true },
-                            onExportClick = {
-                                if (BuildConfig.IS_UNIVERSAL_APP) {
-                                    Toast.makeText(
-                                        context,
-                                        "Универсальные отчёты готовятся для следующей Alpha.",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                } else {
+                        if (BuildConfig.IS_UNIVERSAL_APP) {
+                            UniversalDashboardScreen(
+                                userProfile = profile,
+                                warehouseProfileId = warehouseProfileId,
+                                points = points,
+                                catalogItems = catalogItems,
+                                stockRecords = stockRecords,
+                                operations = operations,
+                                requisitions = requisitions,
+                                onIncomeClick = { showIncomeDialog = true },
+                                onTransferClick = { showTransferDialog = true },
+                                onIssueClick = { showIssueDialog = true },
+                                onWriteOffClick = { showExpenditureDialog = true },
+                                onAddItemClick = { showAddCustomItemDialog = true },
+                                onOpenCatalog = { currentDestination = AppDestination.CATALOG },
+                                onOpenOperations = { currentDestination = AppDestination.HISTORY },
+                                onOpenProfile = { currentDestination = AppDestination.MORE }
+                            )
+                        } else {
+                            MainDashboardScreen(
+                                profile = profile,
+                                points = points,
+                                catalogItems = catalogItems,
+                                stockRecords = stockRecords,
+                                operations = operations,
+                                availableCategories = availableCategories,
+                                selectedCategory = selectedCategory,
+                                searchQuery = dashboardSearchQuery,
+                                onSelectCategory = { viewModel.selectCategory(it) },
+                                onSearchChange = { viewModel.setInventorySearchQuery(it) },
+                                onIncomeClick = { showIncomeDialog = true },
+                                onTransferClick = { showTransferDialog = true },
+                                onIssueClick = { showIssueDialog = true },
+                                onExpenditureClick = {
+                                    checkProAccess("списания имущества") {
+                                        showExpenditureDialog = true
+                                    }
+                                },
+                                onAddPointClick = { showAddPointDialog = true },
+                                onEditPointClick = { editingPoint = it },
+                                onAddCustomItemClick = { showAddCustomItemDialog = true },
+                                onAdjustStock = { pointId, pointName, itemId, itemName, newQty ->
+                                    viewModel.adjustPointStock(pointId, pointName, itemId, itemName, newQty)
+                                },
+                                onSyncClick = { viewModel.simulateCloudSync() },
+                                onSecondPhoneClick = { showUnitKeySyncDialog = true },
+                                onExportClick = {
                                     checkProAccess("выгрузки отчетов в Excel") {
                                         excelReportInitialTab = 0
                                         showExcelReportDialog = true
                                     }
-                                }
-                            },
-                            onBannerClick = { showPaymentProDialog = true },
-                            onProfileClick = { currentDestination = AppDestination.MORE },
-                            onHelpClick = { showUserManualDialog = true },
-                            isDarkTheme = isDarkTheme,
-                            onToggleTheme = { viewModel.toggleTheme() },
-                            onReorderPoints = { viewModel.reorderWarehousePoints(it) }
-                        )
+                                },
+                                onBannerClick = { showPaymentProDialog = true },
+                                onProfileClick = { currentDestination = AppDestination.MORE },
+                                onHelpClick = { showUserManualDialog = true },
+                                isDarkTheme = isDarkTheme,
+                                onToggleTheme = { viewModel.toggleTheme() },
+                                onReorderPoints = { viewModel.reorderWarehousePoints(it) }
+                            )
+                        }
                     }
 
                     AppDestination.HISTORY -> {
