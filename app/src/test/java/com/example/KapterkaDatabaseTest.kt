@@ -11,6 +11,7 @@ import com.example.data.model.OperationRecord
 import com.example.data.model.OperationType
 import com.example.data.model.OperationItemEntry
 import com.example.data.model.StockRecord
+import com.example.data.model.SyncTombstone
 import com.example.data.model.WarehousePoint
 import com.example.data.repository.KapterkaRepository
 import kotlinx.coroutines.flow.first
@@ -239,6 +240,25 @@ class KapterkaDatabaseTest {
         assertEquals(5, from.expenseTotal)
         assertEquals(10, to!!.quantity)
         assertEquals(10, to.incomeTotal)
+    }
+
+    @Test
+    fun testSyncTombstonePersistsDeletionIntent() = runBlocking {
+        val tombstone = SyncTombstone.create(
+            unitKey = "kapt_test",
+            entityType = "inventory_item",
+            entityId = "item_deleted",
+            deletedAt = 123456789L
+        )
+
+        dao.upsertSyncTombstone(tombstone)
+
+        val stored = dao.getSyncTombstoneById(tombstone.id)
+        assertNotNull(stored)
+        assertEquals("kapt_test", stored!!.unitKey)
+        assertEquals("inventory_item", stored.entityType)
+        assertEquals("item_deleted", stored.entityId)
+        assertEquals(123456789L, stored.deletedAt)
     }
 
     @Test
