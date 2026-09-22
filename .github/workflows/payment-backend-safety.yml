@@ -139,6 +139,14 @@ jobs:
               !adminGrantBlock.includes("error: 'FIGHTER_NOT_FOUND'")) {
             throw new Error('Admin grant must target an existing fighter');
           }
+          if (!paymentCheckBlock.includes('existingLicense.expiresAt') ||
+              !paymentCheckBlock.includes('currentFighter.expiresAt + LICENSE_DURATION_MS')) {
+            throw new Error('Paid renewals must be idempotent and preserve unused entitlement time');
+          }
+          if (!adminGrantBlock.includes('existingLicense.expiresAt + days * 24 * 60 * 60 * 1000') ||
+              !adminGrantBlock.includes("patchFirestoreDocument('licenses', licenseKey")) {
+            throw new Error('Admin +days action must extend an active license instead of replacing it');
+          }
 
           const adminListStart = s.indexOf("action === 'admin_list_fighters'");
           const adminGrantStart = s.indexOf("action === 'admin_grant_license'");
