@@ -133,7 +133,7 @@ fun HistoryScreen(
     parseItems: (String) -> List<OperationItemEntry>
 ) {
     val dateFormat = remember { SimpleDateFormat("dd.MM.yyyy HH:mm", Locale("ru")) }
-    var selectedCategoryFilter by remember { mutableStateOf("Все службы") }
+    var selectedCategoryFilter by remember { mutableStateOf("Все категории") }
     val expandedOpIds = remember { mutableStateMapOf<String, Boolean>() }
 
     LaunchedEffect(filterType, selectedCategoryFilter, searchQuery) {
@@ -145,7 +145,7 @@ fun HistoryScreen(
             val matchesType = filterType == null || op.type == filterType
             val parsedItems = parseItems(op.itemsJson)
 
-            val matchesCategory = if (selectedCategoryFilter == "Все службы") {
+            val matchesCategory = if (selectedCategoryFilter == "Все категории") {
                 true
             } else {
                 parsedItems.any { resolveItemCategory(it, catalogItems) == selectedCategoryFilter } ||
@@ -180,13 +180,13 @@ fun HistoryScreen(
         item {
             Column {
                 Text(
-                    text = "ЖУРНАЛ ОПЕРАЦИЙ",
-                    color = SageGreenBright,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
+                    text = "Операции",
+                    color = TacticalTextPrimary,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.ExtraBold
                 )
                 Text(
-                    text = "Тактическая история движения и проводок имущества",
+                    text = "История движения имущества и документов",
                     color = TacticalTextMuted,
                     fontSize = 12.sp
                 )
@@ -200,7 +200,7 @@ fun HistoryScreen(
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = onSearchChange,
-                placeholder = { Text("Поиск: склад, поставщик, наименование, акт №...", color = TacticalTextDim, fontSize = 13.sp) },
+                placeholder = { Text("Поиск по операциям", color = TacticalTextDim, fontSize = 13.sp) },
                 singleLine = true,
                 leadingIcon = {
                     Icon(
@@ -213,7 +213,7 @@ fun HistoryScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("history_search_input"),
-                shape = RoundedCornerShape(8.dp),
+                shape = RoundedCornerShape(14.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = TacticalSurface,
                     unfocusedContainerColor = TacticalSurface,
@@ -255,16 +255,16 @@ fun HistoryScreen(
                 // All
                 HistoryFilterChip(
                     label = "Все (${operations.size})",
-                    isSelected = filterType == null && selectedCategoryFilter == "Все службы",
+                    isSelected = filterType == null && selectedCategoryFilter == "Все категории",
                     onClick = {
                         onFilterChange(null)
-                        selectedCategoryFilter = "Все службы"
+                        selectedCategoryFilter = "Все категории"
                     }
                 )
 
                 // Types
                 HistoryFilterChip(
-                    label = "Привезли ($countIncome)",
+                    label = "Приход ($countIncome)",
                     isSelected = filterType == OperationType.INCOME,
                     onClick = {
                         onFilterChange(if (filterType == OperationType.INCOME) null else OperationType.INCOME)
@@ -278,14 +278,14 @@ fun HistoryScreen(
                     }
                 )
                 HistoryFilterChip(
-                    label = "Подняли ($countIssue)",
+                    label = "Выдача ($countIssue)",
                     isSelected = filterType == OperationType.ISSUE,
                     onClick = {
                         onFilterChange(if (filterType == OperationType.ISSUE) null else OperationType.ISSUE)
                     }
                 )
                 HistoryFilterChip(
-                    label = "Расход ($countExpenditure)",
+                    label = "Списание ($countExpenditure)",
                     isSelected = filterType == OperationType.EXPENDITURE,
                     onClick = {
                         onFilterChange(if (filterType == OperationType.EXPENDITURE) null else OperationType.EXPENDITURE)
@@ -316,15 +316,15 @@ fun HistoryScreen(
                     }
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
+                            .clip(RoundedCornerShape(12.dp))
                             .background(if (isSel) SageGreenDark else TacticalSurfaceLight)
                             .border(
                                 1.dp,
                                 if (isSel) SageGreenBright else TacticalBorder,
-                                RoundedCornerShape(6.dp)
+                                RoundedCornerShape(12.dp)
                             )
                             .clickable {
-                                selectedCategoryFilter = if (selectedCategoryFilter == cat) "Все службы" else cat
+                                selectedCategoryFilter = if (selectedCategoryFilter == cat) "Все категории" else cat
                             }
                             .padding(horizontal = 9.dp, vertical = 6.dp)
                     ) {
@@ -353,8 +353,8 @@ fun HistoryScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Проводок: ${filteredOperations.size}" +
-                            if (selectedCategoryFilter != "Все службы") " • $selectedCategoryFilter" else "",
+                    text = "Записей: ${filteredOperations.size}" +
+                            if (selectedCategoryFilter != "Все категории") " • $selectedCategoryFilter" else "",
                     color = TacticalTextMuted,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -367,9 +367,9 @@ fun HistoryScreen(
                     val allExpanded = filteredOperations.all { expandedOpIds[it.id] == true }
                     Row(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(4.dp))
+                            .clip(RoundedCornerShape(10.dp))
                             .background(TacticalSurfaceLight)
-                            .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(4.dp))
+                            .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(10.dp))
                             .clickable {
                                 val target = !allExpanded
                                 filteredOperations.forEach { expandedOpIds[it.id] = target }
@@ -454,19 +454,19 @@ private fun HistoryFilterChip(
 ) {
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(6.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(if (isSelected) SageGreenPrimary else TacticalSurfaceLight)
             .border(
                 1.dp,
                 if (isSelected) SageGreenBright else TacticalBorder,
-                RoundedCornerShape(6.dp)
+                RoundedCornerShape(12.dp)
             )
             .clickable { onClick() }
             .padding(horizontal = 10.dp, vertical = 6.dp)
     ) {
         Text(
             text = label,
-            color = if (isSelected) Color(0xFF0F1B14) else TacticalTextSecondary,
+            color = if (isSelected) Color.White else TacticalTextSecondary,
             fontSize = 12.sp,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
         )
@@ -485,20 +485,21 @@ private fun OperationAccordionCard(
     val items = remember(operation.itemsJson) { parseItems(operation.itemsJson) }
 
     val (badgeBg, badgeText, badgeTitle) = when (operation.type) {
-        OperationType.INCOME -> Triple(SageGreenDark, SageGreenBright, "ПРИВЕЗЛИ")
+        OperationType.INCOME -> Triple(SageGreenDark, SageGreenBright, "ПРИХОД")
         OperationType.TRANSFER -> Triple(TacticalTealDark, TacticalTealText, "ПЕРЕМЕЩЕНИЕ")
-        OperationType.ISSUE -> Triple(TacticalGoldDark, TacticalGoldText, "ПОДНЯЛИ")
-        OperationType.EXPENDITURE -> Triple(TacticalRedDark, TacticalRedText, "ОТСТРЕЛ (Ф. 8)")
+        OperationType.ISSUE -> Triple(TacticalGoldDark, TacticalGoldText, "ВЫДАЧА")
+        OperationType.EXPENDITURE -> Triple(TacticalRedDark, TacticalRedText, "СПИСАНИЕ")
     }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(16.dp))
             .clickable { onToggleExpand() }
             .testTag("operation_card_${operation.id}"),
         colors = CardDefaults.cardColors(containerColor = TacticalSurface),
-        border = BorderStroke(1.dp, if (isExpanded) SageGreenPrimary else TacticalBorder)
+        border = BorderStroke(1.dp, if (isExpanded) SageGreenPrimary.copy(alpha = 0.35f) else TacticalBorderSubtle),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isExpanded) 2.dp else 0.dp)
     ) {
         Column(
             modifier = Modifier
@@ -517,7 +518,7 @@ private fun OperationAccordionCard(
                 ) {
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(4.dp))
+                            .clip(RoundedCornerShape(10.dp))
                             .background(badgeBg)
                             .padding(horizontal = 7.dp, vertical = 3.dp)
                     ) {
@@ -533,9 +534,9 @@ private fun OperationAccordionCard(
                         Spacer(modifier = Modifier.width(6.dp))
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(4.dp))
+                                .clip(RoundedCornerShape(10.dp))
                                 .background(TacticalSurfaceLight)
-                                .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(4.dp))
+                                .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(10.dp))
                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                         ) {
                             Text(
@@ -584,7 +585,7 @@ private fun OperationAccordionCard(
                 )
                 OperationType.EXPENDITURE -> Pair(
                     operation.fromPointName.ifBlank { operation.toPointName.ifBlank { "Позиция" } },
-                    "Списание (ф. 8)"
+                    "Списание"
                 )
             }
 
@@ -704,7 +705,7 @@ private fun OperationAccordionCard(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .background(TacticalBg, RoundedCornerShape(4.dp))
+                                .background(TacticalBg, RoundedCornerShape(10.dp))
                                 .padding(horizontal = 8.dp, vertical = 5.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -740,9 +741,9 @@ private fun OperationAccordionCard(
                                 Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .clip(RoundedCornerShape(6.dp))
+                                        .clip(RoundedCornerShape(12.dp))
                                         .background(TacticalBg)
-                                        .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(6.dp))
+                                        .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(12.dp))
                                         .padding(8.dp)
                                 ) {
                                     // Service Header
@@ -817,9 +818,9 @@ private fun OperationAccordionCard(
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(6.dp))
+                                .clip(RoundedCornerShape(12.dp))
                                 .background(TacticalBg)
-                                .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(6.dp))
+                                .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(12.dp))
                                 .padding(8.dp)
                         ) {
                             operation.itemsSummary.split(",").forEachIndexed { idx, part ->
