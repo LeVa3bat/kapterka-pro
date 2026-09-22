@@ -124,6 +124,18 @@ jobs:
               !s.slice(paymentCheckStart).includes('paymentFighterId && requestedFighterId !== paymentFighterId')) {
             throw new Error('Bound payments must require the exact fighter identity');
           }
+          const paymentCheckBlock = s.slice(paymentCheckStart);
+          if (!paymentCheckBlock.includes("getFirestoreDocument('licenses', licenseKey)") ||
+              !paymentCheckBlock.includes('LICENSE_FIGHTER_MISMATCH') ||
+              !paymentCheckBlock.includes('existingFighterId || paymentFighterId || requestedFighterId')) {
+            throw new Error('Repeated payment checks must not rebind an existing license');
+          }
+
+          const adminGrantBlock = s.slice(adminGrantStart);
+          if (!adminGrantBlock.includes('getFighterById(fighterId)') ||
+              !adminGrantBlock.includes("error: 'FIGHTER_NOT_FOUND'")) {
+            throw new Error('Admin grant must target an existing fighter');
+          }
 
           const adminListStart = s.indexOf("action === 'admin_list_fighters'");
           const adminGrantStart = s.indexOf("action === 'admin_grant_license'");
