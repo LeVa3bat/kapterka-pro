@@ -71,6 +71,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.sp
 import com.example.data.model.InventoryItem
 import com.example.data.model.OperationRecord
+import com.example.data.model.OperationType
 import com.example.data.model.StockRecord
 import com.example.data.model.UserProfile
 import com.example.data.model.WarehousePoint
@@ -101,6 +102,7 @@ import com.example.ui.theme.TacticalTextDim
 import com.example.ui.theme.TacticalTextMuted
 import com.example.ui.theme.TacticalTextPrimary
 import com.example.ui.theme.TacticalTextSecondary
+import java.util.Calendar
 
 private data class PendingAdjustStock(
     val pointId: String,
@@ -279,6 +281,24 @@ fun MainDashboardScreen(
     }
     val overallStockSum = stockRecords.sumOf { it.quantity }
     val overallPositionsCount = stockRecords.filter { it.quantity > 0 }.map { it.itemId }.distinct().size
+    val todayStartMillis = remember {
+        Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+    }
+    val todayOperations = remember(operations, todayStartMillis) {
+        operations.filter { it.timestamp >= todayStartMillis }
+    }
+    val todayIncomeCount = todayOperations.count { it.type == OperationType.INCOME }
+    val todayIssueCount = todayOperations.count { it.type == OperationType.ISSUE }
+    val todayTransferCount = todayOperations.count { it.type == OperationType.TRANSFER }
+    val todayWriteOffCount = todayOperations.count { it.type == OperationType.EXPENDITURE }
+    val zeroStockCount = remember(stockRecords) {
+        stockRecords.filter { it.quantity <= 0 }.map { it.itemId }.distinct().size
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -310,37 +330,143 @@ fun MainDashboardScreen(
             }
         }
 
-        // COMPACT OVERVIEW
-        item {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 4.dp),
-                shape = RoundedCornerShape(14.dp),
-                colors = CardDefaults.cardColors(containerColor = TacticalSurface),
-                border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorderSubtle)
-            ) {
-                Row(
+        // SMART OVERVIEW
+        if (BuildConfig.IS_UNIVERSAL_APP) {
+            item {
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 11.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        .padding(horizontal = 14.dp, vertical = 4.dp)
                 ) {
-                    DashboardSummaryMetric(
-                        value = overallStockSum.toString(),
-                        label = "единиц на учёте",
-                        modifier = Modifier.weight(1f)
+                    Text(
+                        text = "Сегодня",
+                        color = TacticalTextPrimary,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
                     )
-                    DashboardSummaryMetric(
-                        value = overallPositionsCount.toString(),
-                        label = "активных позиций",
-                        modifier = Modifier.weight(1f)
-                    )
-                    DashboardSummaryMetric(
-                        value = points.size.toString(),
-                        label = "складов и точек",
-                        modifier = Modifier.weight(1f)
-                    )
+                    Spacer(modifier = Modifier.height(7.dp))
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = TacticalSurface),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorderSubtle),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(14.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                DashboardSummaryMetric(
+                                    value = overallStockSum.toString(),
+                                    label = "единиц",
+                                    modifier = Modifier.weight(1f)
+                                )
+                                DashboardSummaryMetric(
+                                    value = overallPositionsCount.toString(),
+                                    label = "позиций",
+                                    modifier = Modifier.weight(1f)
+                                )
+                                DashboardSummaryMetric(
+                                    value = points.size.toString(),
+                                    label = "складов",
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                SmartActivityPill("Приход", todayIncomeCount, SageGreenBright, Modifier.weight(1f))
+                                SmartActivityPill("Выдача", todayIssueCount, TacticalGoldText, Modifier.weight(1f))
+                                SmartActivityPill("Перем.", todayTransferCount, TacticalTealText, Modifier.weight(1f))
+                                SmartActivityPill("Спис.", todayWriteOffCount, TacticalRedText, Modifier.weight(1f))
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(9.dp))
+
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(18.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (zeroStockCount > 0) TacticalRedDark else SageGreenDark
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            if (zeroStockCount > 0) TacticalRed.copy(alpha = 0.35f) else SageGreenPrimary.copy(alpha = 0.35f)
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 13.dp, vertical = 11.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(9.dp)
+                                    .clip(CircleShape)
+                                    .background(if (zeroStockCount > 0) TacticalRed else SageGreenPrimary)
+                            )
+                            Spacer(modifier = Modifier.width(9.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Требует внимания",
+                                    color = TacticalTextPrimary,
+                                    fontSize = 12.5.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = when {
+                                        catalogItems.isEmpty() -> "Добавьте первую позицию — склад готов к работе"
+                                        zeroStockCount > 0 -> "Нулевой остаток у $zeroStockCount поз."
+                                        else -> "Критичных состояний сейчас нет"
+                                    },
+                                    color = TacticalTextMuted,
+                                    fontSize = 10.5.sp
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 4.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = TacticalSurface),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorderSubtle)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 11.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        DashboardSummaryMetric(
+                            value = overallStockSum.toString(),
+                            label = "единиц на учёте",
+                            modifier = Modifier.weight(1f)
+                        )
+                        DashboardSummaryMetric(
+                            value = overallPositionsCount.toString(),
+                            label = "активных позиций",
+                            modifier = Modifier.weight(1f)
+                        )
+                        DashboardSummaryMetric(
+                            value = points.size.toString(),
+                            label = "складов и точек",
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
             }
         }
@@ -1344,6 +1470,35 @@ private fun DashboardSummaryMetric(
             textAlign = TextAlign.Center,
             lineHeight = 12.sp,
             maxLines = 2
+        )
+    }
+}
+
+@Composable
+private fun SmartActivityPill(
+    label: String,
+    count: Int,
+    accent: Color,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(TacticalSurfaceLight)
+            .padding(horizontal = 7.dp, vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = count.toString(),
+            color = accent,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.ExtraBold
+        )
+        Text(
+            text = label,
+            color = TacticalTextMuted,
+            fontSize = 9.sp,
+            maxLines = 1
         )
     }
 }
