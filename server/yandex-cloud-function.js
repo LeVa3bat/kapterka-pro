@@ -552,7 +552,7 @@ function sendLicenseEmailViaBrevo({ toEmail, callsign, licenseKey, days }) {
   });
 }
 
-async function queryActiveLicenseByEmail(email) {
+async function queryActiveLicenseByEmail(email, fighterId = '') {
   const token = await requestGoogleAccessToken();
   const path = `/v1/projects/${encodeURIComponent(FIREBASE_PROJECT_ID)}/databases/(default)/documents:runQuery`;
   const payload = JSON.stringify({
@@ -612,7 +612,11 @@ async function queryActiveLicenseByEmail(email) {
                 status: value('status') || ''
               };
             })
-            .filter((item) => item.status === 'ACTIVE' && item.expiresAt > Date.now())
+            .filter((item) =>
+              item.status === 'ACTIVE' &&
+              item.expiresAt > Date.now() &&
+              (!fighterId || item.fighterId === fighterId)
+            )
             .sort((a, b) => b.expiresAt - a.expiresAt);
           resolve(parsed[0] || null);
         } catch (error) {
@@ -918,10 +922,7 @@ module.exports.handler = async function handler(event) {
       let activeLicense = null;
       if (email) {
         try {
-          const candidate = await queryActiveLicenseByEmail(email);
-          if (candidate && candidate.fighterId === fighterId) {
-            activeLicense = candidate;
-          }
+          activeLicense = await queryActiveLicenseByEmail(email, fighterId);
         } catch (_) {}
       }
 
@@ -1002,14 +1003,21 @@ module.exports.handler = async function handler(event) {
       if (!email) return json(400, { ok: false, error: 'INVALID_EMAIL' });
       if (!fighterId) return json(400, { ok: false, error: 'MISSING_FIGHTER_ID' });
 
-      const license = await queryActiveLicenseByEmail(email);
+      const license = await queryActiveLicenseByEmail(email, fighterId);
       if (!license) {
+        // Distinguish "nothing active for this email" from "email has a license,
+        // but it belongs to another persistent fighter identity".
+        const emailLicense = await queryActiveLicenseByEmail(email);
+        if (emailLicense) {
+          return json(403, {
+            ok: false,
+            error: 'LICENSE_RESTORE_IDENTITY_MISMATCH'
+          });
+        }
         return json(404, { ok: false, error: 'LICENSE_NOT_FOUND' });
       }
 
-      // Email alone is not enough to disclose a reusable license key.
-      // Normal backup/device transfer preserves fighter_personal_id, so a legitimate
-      // restored installation can be matched without weakening the trust boundary.
+      // Email alone is never enough to disclose a reusable license key.
       if (!license.fighterId || license.fighterId !== fighterId) {
         return json(403, {
           ok: false,
