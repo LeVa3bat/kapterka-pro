@@ -571,7 +571,7 @@ private fun OperationAccordionCard(
             // ROW 2: Route Display - single clean line with balanced weights
             val (fromName, toName) = when (operation.type) {
                 OperationType.INCOME -> Pair(
-                    operation.fromPointName.ifBlank { "Снабжение / Тыл" },
+                    operation.fromPointName.ifBlank { "Поставщик / Снабжение" },
                     operation.toPointName.ifBlank { "Базовый склад" }
                 )
                 OperationType.TRANSFER -> Pair(
@@ -580,7 +580,7 @@ private fun OperationAccordionCard(
                 )
                 OperationType.ISSUE -> Pair(
                     operation.fromPointName.ifBlank { "Базовый склад" },
-                    operation.toPointName.ifBlank { "Подразделение" }
+                    operation.toPointName.ifBlank { "Получатель" }
                 )
                 OperationType.EXPENDITURE -> Pair(
                     operation.fromPointName.ifBlank { operation.toPointName.ifBlank { "Позиция" } },
@@ -677,7 +677,7 @@ private fun OperationAccordionCard(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "Ответственный: ${operation.responsiblePerson.ifBlank { "Старшина" }}",
+                                text = "Ответственный: ${operation.responsiblePerson.ifBlank { "Ответственный" }}",
                                 color = TacticalTextMuted,
                                 fontSize = 11.sp,
                                 maxLines = 1,
@@ -839,7 +839,7 @@ private fun OperationAccordionCard(
                     if (operation.comment.isNotBlank()) {
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Примечание / Задача: ${operation.comment}",
+                            text = "Примечание: ${operation.comment}",
                             color = TacticalGoldText,
                             fontSize = 11.sp
                         )
@@ -847,7 +847,7 @@ private fun OperationAccordionCard(
 
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Зафиксировал в системе: ${operation.responsiblePerson.ifBlank { "Старшина" }} • ${dateFormat.format(Date(operation.timestamp))}",
+                        text = "Зафиксировал: ${operation.responsiblePerson.ifBlank { "Ответственный" }} • ${dateFormat.format(Date(operation.timestamp))}",
                         color = TacticalTextDim,
                         fontSize = 10.sp
                     )
