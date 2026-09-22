@@ -755,63 +755,77 @@ private fun TacticalBottomNavigationBar(
     onNavigate: (AppDestination) -> Unit,
     pendingRequestsCount: Int
 ) {
-    NavigationBar(
-        containerColor = TacticalSurface,
-        contentColor = SageGreenPrimary,
-        tonalElevation = 2.dp,
+    Box(
         modifier = Modifier
-            .border(androidx.compose.foundation.BorderStroke(1.dp, TacticalBorderSubtle))
+            .fillMaxWidth()
+            .background(TacticalBg)
             .navigationBarsPadding()
-            .height(64.dp)
+            .padding(horizontal = 12.dp, vertical = 7.dp)
     ) {
-        AppDestination.values().forEach { destination ->
-            val isSelected = currentDestination == destination
+        NavigationBar(
+            containerColor = TacticalSurface,
+            contentColor = SageGreenPrimary,
+            tonalElevation = 0.dp,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(64.dp)
+                .clip(RoundedCornerShape(22.dp))
+                .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(22.dp))
+        ) {
+            AppDestination.values().forEach { destination ->
+                val isSelected = currentDestination == destination
 
-            NavigationBarItem(
-                selected = isSelected,
-                onClick = { onNavigate(destination) },
-                icon = {
-                    if (destination == AppDestination.REQUESTS && pendingRequestsCount > 0) {
-                        BadgedBox(
-                            badge = {
-                                Badge(
-                                    containerColor = TacticalGold,
-                                    contentColor = Color.White
-                                ) {
-                                    Text("$pendingRequestsCount", fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                NavigationBarItem(
+                    selected = isSelected,
+                    onClick = { onNavigate(destination) },
+                    icon = {
+                        if (destination == AppDestination.REQUESTS && pendingRequestsCount > 0) {
+                            BadgedBox(
+                                badge = {
+                                    Badge(
+                                        containerColor = TacticalGold,
+                                        contentColor = Color.White
+                                    ) {
+                                        Text(
+                                            "$pendingRequestsCount",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 9.sp
+                                        )
+                                    }
                                 }
+                            ) {
+                                Icon(
+                                    imageVector = destination.icon,
+                                    contentDescription = destination.title,
+                                    modifier = Modifier.size(21.dp)
+                                )
                             }
-                        ) {
+                        } else {
                             Icon(
                                 imageVector = destination.icon,
                                 contentDescription = destination.title,
-                                modifier = Modifier.size(22.dp)
+                                modifier = Modifier.size(21.dp)
                             )
                         }
-                    } else {
-                        Icon(
-                            imageVector = destination.icon,
-                            contentDescription = destination.title,
-                            modifier = Modifier.size(22.dp)
+                    },
+                    label = {
+                        Text(
+                            text = destination.title,
+                            fontSize = 10.sp,
+                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                            maxLines = 1
                         )
-                    }
-                },
-                label = {
-                    Text(
-                        text = destination.title,
-                        fontSize = 11.sp,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                    )
-                },
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = SageGreenBright,
-                    selectedTextColor = SageGreenBright,
-                    unselectedIconColor = TacticalTextMuted,
-                    unselectedTextColor = TacticalTextMuted,
-                    indicatorColor = SageGreenDark
-                ),
-                modifier = Modifier.testTag(destination.tag)
-            )
+                    },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = SageGreenPrimary,
+                        selectedTextColor = SageGreenPrimary,
+                        unselectedIconColor = TacticalTextMuted,
+                        unselectedTextColor = TacticalTextMuted,
+                        indicatorColor = SageGreenDark
+                    ),
+                    modifier = Modifier.testTag(destination.tag)
+                )
+            }
         }
     }
 }
