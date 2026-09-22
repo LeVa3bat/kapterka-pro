@@ -22,9 +22,11 @@ const LICENSE_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
 const ADMIN_TOKEN_TTL_MS = 15 * 60 * 1000;
 const ADMIN_AUTH_WINDOW_MS = 5 * 60 * 1000;
 const ADMIN_AUTH_MAX_FAILURES = 5;
+const LICENSE_EMAIL_RATE_LIMIT_MS = 60 * 1000;
 const MAX_REQUEST_BODY_BYTES = 64 * 1024;
 let cachedGoogleToken = { value: '', expiresAt: 0 };
 const adminAuthFailures = new Map();
+const licenseEmailLastSentAt = new Map();
 
 function json(statusCode, body, headers = {}) {
   return {
@@ -63,6 +65,33 @@ function cleanText(value, max = 160) {
 function cleanEmail(value) {
   const email = cleanText(value, 160).toLowerCase();
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : '';
+}
+
+function licenseEmailRateKey(licenseKey, email) {
+  return crypto
+    .createHash('sha256')
+    .update(String(licenseKey || '') + '|' + String(email || '').toLowerCase(), 'utf8')
+    .digest('hex');
+}
+
+function reserveLicenseEmailSend(licenseKey, email, now = Date.now()) {
+  if (licenseEmailLastSentAt.size > 5000) {
+    for (const [key, sentAt] of licenseEmailLastSentAt.entries()) {
+      if (now - sentAt >= LICENSE_EMAIL_RATE_LIMIT_MS) {
+        licenseEmailLastSentAt.delete(key);
+      }
+      if (licenseEmailLastSentAt.size <= 2500) break;
+    }
+  }
+
+  const key = licenseEmailRateKey(licenseKey, email);
+  const previous = licenseEmailLastSentAt.get(key) || 0;
+  if (previous > 0 && now - previous < LICENSE_EMAIL_RATE_LIMIT_MS) {
+    return { ok: false, key, retryAfterMs: LICENSE_EMAIL_RATE_LIMIT_MS - (now - previous) };
+  }
+
+  licenseEmailLastSentAt.set(key, now);
+  return { ok: true, key, retryAfterMs: 0 };
 }
 
 function escapeTelegramHtml(value) {
@@ -990,6 +1019,15 @@ module.exports.handler = async function handler(event) {
         return json(403, { ok: false, error: 'LICENSE_EMAIL_MISMATCH' });
       }
 
+      const reservation = reserveLicenseEmailSend(licenseKey, requestedEmail);
+      if (!reservation.ok) {
+        return json(429, {
+          ok: false,
+          error: 'LICENSE_EMAIL_RATE_LIMITED',
+          retry_after_seconds: Math.max(1, Math.ceil(reservation.retryAfterMs / 1000))
+        });
+      }
+
       const daysLeft = Math.max(1, Math.ceil((license.expiresAt - Date.now()) / (24 * 60 * 60 * 1000)));
       try {
         await sendLicenseEmailViaBrevo({
@@ -1005,6 +1043,7 @@ module.exports.handler = async function handler(event) {
         ).catch(() => false);
         return json(200, { ok: true });
       } catch (emailError) {
+        licenseEmailLastSentAt.delete(reservation.key);
         console.error('License email error:', emailError?.message || emailError);
         return json(503, { ok: false, error: 'EMAIL_PROVIDER_UNAVAILABLE' });
       }
