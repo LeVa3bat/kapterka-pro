@@ -126,6 +126,20 @@ if (!restoreSource.includes("MISSING_FIGHTER_ID") ||
   ok('license restore is identity-bound and does not disclose keys by email alone');
 }
 
+const viewModelSource = read('app/src/main/java/com/example/ui/viewmodel/KapterkaViewModel.kt');
+const legacyActivateStart = viewModelSource.indexOf('fun activateProSubscription()');
+const legacyActivateEnd = viewModelSource.indexOf('\n    fun ', legacyActivateStart + 5);
+const legacyActivateSource = viewModelSource.slice(
+  legacyActivateStart,
+  legacyActivateEnd > legacyActivateStart ? legacyActivateEnd : legacyActivateStart + 1200
+);
+if (legacyActivateSource.includes('copy(isProActive = true') ||
+    legacyActivateSource.includes('proDaysLeft = 30')) {
+  fail('legacy local PRO activation path can still grant entitlement');
+} else {
+  ok('local test PRO activation path is blocked');
+}
+
 const syncSource = read('app/src/main/java/com/example/data/sync/FirebaseSyncManager.kt');
 const reconcileStart = syncSource.indexOf('suspend fun syncAndReconcileAll');
 const reconcileEnd = syncSource.indexOf('fun pushOperationAsync', reconcileStart);
