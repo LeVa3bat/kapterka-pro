@@ -668,6 +668,7 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
 
     if (showDevAuthPrompt) {
         DeveloperAccessPromptDialog(
+            onAuthenticate = { secret -> viewModel.authenticateDeveloper(secret) },
             onSuccessAuth = {
                 showDevAuthPrompt = false
                 showDevAdminDialog = true
