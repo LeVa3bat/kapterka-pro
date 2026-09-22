@@ -218,6 +218,49 @@ class FirebaseSyncManager(
         return true
     }
 
+    /**
+     * Merge one cloud stock row without destroying a newer offline edit.
+     * Tombstones are checked first; then lastUpdated decides the winner.
+     */
+    private suspend fun mergeCloudStockRecord(
+        unitKey: String,
+        cloudStock: StockRecord
+    ): Boolean {
+        if (!shouldAcceptStockRecord(unitKey, cloudStock)) return false
+
+        val local = dao.getStockItem(cloudStock.pointId, cloudStock.itemId)
+        if (StockConflictResolver.cloudMayReplaceLocal(local, cloudStock)) {
+            dao.insertOrUpdateStock(cloudStock)
+            return true
+        }
+
+        // Local row is newer: preserve it and converge cloud toward the latest value.
+        if (local != null && productionCloudEnabled) {
+            try {
+                val docId = "${local.pointId}___${local.itemId}"
+                firestore.collection("units").document(unitKey)
+                    .collection("stock_records").document(docId).set(
+                        hashMapOf(
+                            "pointId" to local.pointId,
+                            "itemId" to local.itemId,
+                            "quantity" to local.quantity,
+                            "incomeTotal" to local.incomeTotal,
+                            "expenseTotal" to local.expenseTotal,
+                            "lastUpdated" to local.lastUpdated
+                        ),
+                        SetOptions.merge()
+                    ).await()
+                Log.i(
+                    TAG,
+                    "Preserved newer local stock and republished it: ${local.pointId}:::${local.itemId}"
+                )
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed republishing newer local stock; local value preserved", e)
+            }
+        }
+        return false
+    }
+
     private suspend fun syncTombstones(unitKey: String) {
         if (unitKey.isBlank()) return
         val unitRef = firestore.collection("units").document(unitKey)
@@ -385,10 +428,8 @@ class FirebaseSyncManager(
                             expenseTotal = dc.document.getLong("expenseTotal")?.toInt() ?: 0,
                             lastUpdated = dc.document.getLong("lastUpdated") ?: 0L
                         )
-                        if (s.pointId.isNotBlank() && s.itemId.isNotBlank() &&
-                            shouldAcceptStockRecord(unitKey, s)
-                        ) {
-                            dao.insertOrUpdateStock(s)
+                        if (s.pointId.isNotBlank() && s.itemId.isNotBlank()) {
+                            mergeCloudStockRecord(unitKey, s)
                             // Do not create generic placeholder from stock record if nameHint is missing;
                             // operations listener will register it with exact name from itemsJson.
                             // ensureItemExists(unitKey, s.itemId)
@@ -609,7 +650,8 @@ class FirebaseSyncManager(
             dao.insertPoints(existingPointsMap.values.toList())
 
             // 3. Reconcile Stock Records
-            // Authoritative: If cloud has stock records, local must match cloud exactly.
+            // Conflict-safe merge: tombstones protect deletions and lastUpdated protects
+            // newer offline local changes from stale cloud snapshots.
             if (!cloudStocksSnap.isEmpty) {
                 val cloudStockKeys = mutableSetOf<String>()
                 val recordsToInsert = mutableListOf<StockRecord>()
@@ -632,9 +674,7 @@ class FirebaseSyncManager(
                             expenseTotal = exp,
                             lastUpdated = updated
                         )
-                        if ((existingPointsMap.containsKey(ptId) || ptId == "base_sklad") &&
-                            shouldAcceptStockRecord(cleanKey, cloudStock)
-                        ) {
+                        if (existingPointsMap.containsKey(ptId) || ptId == "base_sklad") {
                             cloudStockKeys.add("${ptId}:::${itemId}")
                             recordsToInsert.add(cloudStock)
                         }
@@ -642,11 +682,9 @@ class FirebaseSyncManager(
                 }
 
                 // Never delete local stock merely because a cloud snapshot does not contain it.
-                // Explicit tombstones/versioned deletes will be introduced before release.
-                // For now, cloud records are merged over local records.
-                // Upsert cloud stock records
+                // Cloud rows also cannot overwrite a newer offline local edit.
                 for (s in recordsToInsert) {
-                    dao.insertOrUpdateStock(s)
+                    mergeCloudStockRecord(cleanKey, s)
                     // ensureItemExists will be handled with real names during operation reconciliation below
                 }
             } else {
