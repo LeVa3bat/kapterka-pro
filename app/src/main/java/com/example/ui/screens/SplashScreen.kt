@@ -134,7 +134,7 @@ fun SplashScreen(
                     statusCode = "SYS_BOOT_CORE // OK"
                 }
                 elapsed < 2400L -> {
-                    statusText = "ПРОВЕРКА КРИПТОКЛЮЧА И БАЗЫ ДАННЫХ ROOM..."
+                    statusText = "ПОДГОТОВКА ЛОКАЛЬНОЙ БАЗЫ ДАННЫХ..."
                     statusCode = "SEC_CRYPTO_256 // VERIFIED"
                 }
                 elapsed < 3600L -> {
@@ -185,7 +185,7 @@ fun SplashScreen(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "«КАПТЁРКА ПРО»",
+                        text = "«СКЛАД ПРО»",
                         color = SageGreenBright,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
@@ -251,7 +251,7 @@ fun SplashScreen(
                 // Brand Name
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "КАПТЁРКА",
+                        text = "СКЛАД",
                         color = TacticalTextPrimary,
                         fontSize = 32.sp,
                         fontWeight = FontWeight.Black,
@@ -378,7 +378,7 @@ fun SplashScreen(
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "Версия программы: v${com.example.BuildConfig.VERSION_NAME} PRO (Tactical Edition)",
+                    text = "Версия: ${com.example.BuildConfig.VERSION_NAME} • Alpha",
                     color = TacticalTextMuted,
                     fontSize = 11.sp,
                     fontFamily = FontFamily.Monospace,
