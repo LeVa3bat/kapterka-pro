@@ -20,10 +20,12 @@ class KapterkaApplication : Application() {
             defaultHandler?.uncaughtException(thread, throwable)
         }
 
-        // Safe Firebase initialization
-        try {
-            if (FirebaseApp.getApps(this).isEmpty()) {
-                val options = FirebaseOptions.Builder()
+        // Safe Firebase initialization.
+        // Side-by-side NEXT-SAFE test builds must never connect to production Firebase.
+        if (!BuildConfig.IS_NEXT_SAFE_TEST) {
+            try {
+                if (FirebaseApp.getApps(this).isEmpty()) {
+                    val options = FirebaseOptions.Builder()
                     .setApplicationId("1:946233715306:android:d2502913c49c0b985c7813")
                     .setApiKey("AIzaSyAYyoG42TuQJFLxN0KnFIePZx-gAtizw0Q")
                     .setProjectId("kapterka-pro")
@@ -31,11 +33,14 @@ class KapterkaApplication : Application() {
                     .setStorageBucket("kapterka-pro.firebasestorage.app")
                     .setGcmSenderId("946233715306")
                     .build()
-                FirebaseApp.initializeApp(this, options)
-                Log.d("KapterkaApp", "Firebase initialized successfully")
+                    FirebaseApp.initializeApp(this, options)
+                    Log.d("KapterkaApp", "Firebase initialized successfully")
+                }
+            } catch (e: Throwable) {
+                Log.w("KapterkaApp", "Firebase init warning: ${e.message}")
             }
-        } catch (e: Throwable) {
-            Log.w("KapterkaApp", "Firebase init warning: ${e.message}")
+        } else {
+            Log.i("KapterkaApp", "NEXT-SAFE test: production Firebase disabled")
         }
 
         // Safe notification channel setup
