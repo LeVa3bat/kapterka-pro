@@ -23,7 +23,11 @@ service cloud.firestore {
     // These permissions MUST be reconciled with the currently deployed rules
     // before this file is ever published.
     match /units/{unitKey} {
-      allow read, write: if true;
+      // Existing clients know the unit key and address that document directly.
+      // Keep direct get/write compatibility, but do not allow enumerating all
+      // unit root documents from an unauthenticated client.
+      allow get, create, update, delete: if true;
+      allow list: if false;
 
       match /{document=**} {
         allow read, write: if true;
