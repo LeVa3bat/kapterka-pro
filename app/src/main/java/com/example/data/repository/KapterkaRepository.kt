@@ -106,9 +106,13 @@ class KapterkaRepository(
     suspend fun deleteCategory(categoryName: String, deleteItems: Boolean = false) {
         if (deleteItems) {
             val itemsToDelete = dao.getItemsByCategory(categoryName).first()
-            dao.deleteItemsByCategory(categoryName)
             val unitKey = getCurrentUnitKey()
             for (item in itemsToDelete) {
+                syncManager?.prepareDeletionTombstone(unitKey, "inventory_item", item.id)
+            }
+            dao.deleteItemsByCategory(categoryName)
+            for (item in itemsToDelete) {
+                dao.deleteStockForItem(item.id)
                 syncManager?.deleteInventoryItemAsync(unitKey, item.id)
             }
         }
@@ -227,9 +231,11 @@ class KapterkaRepository(
     }
 
     suspend fun deleteWarehousePoint(id: String) {
-        dao.deletePoint(id)
+        val unitKey = getCurrentUnitKey()
+        syncManager?.prepareDeletionTombstone(unitKey, "warehouse_point", id)
         dao.deleteStockForPoint(id)
-        syncManager?.deleteWarehousePointAsync(getCurrentUnitKey(), id)
+        dao.deletePoint(id)
+        syncManager?.deleteWarehousePointAsync(unitKey, id)
     }
 
     suspend fun reorderWarehousePoints(orderedPoints: List<WarehousePoint>) {
@@ -257,8 +263,11 @@ class KapterkaRepository(
     }
 
     suspend fun deleteInventoryItem(id: String) {
+        val unitKey = getCurrentUnitKey()
+        syncManager?.prepareDeletionTombstone(unitKey, "inventory_item", id)
+        dao.deleteStockForItem(id)
         dao.deleteItem(id)
-        syncManager?.deleteInventoryItemAsync(getCurrentUnitKey(), id)
+        syncManager?.deleteInventoryItemAsync(unitKey, id)
     }
 
     suspend fun createRequisition(pointName: String, applicant: String, items: List<RequisitionItemEntry>, comment: String) {
@@ -278,8 +287,10 @@ class KapterkaRepository(
         }
     }
     suspend fun deleteRequisition(id: String) {
+        val unitKey = getCurrentUnitKey()
+        syncManager?.prepareDeletionTombstone(unitKey, "requisition", id)
         dao.deleteRequisition(id)
-        syncManager?.deleteRequisitionAsync(getCurrentUnitKey(), id)
+        syncManager?.deleteRequisitionAsync(unitKey, id)
     }
 
     private suspend fun stageAdjustedStock(
