@@ -153,9 +153,23 @@ Target design:
 - Full unit-data reset creates explicit tombstones for stock, operation history and requisitions before local/cloud cleanup.
 - Stock records now have their own tombstone type so a stale second device cannot resurrect balances after a full reset.
 
+### Signing investigation — verified facts
+- Production 3.4.9 / build 31 is signed with the certificate SHA-256:
+  `843a7e883914f3a7a5a7665ff07b2e8c43da87a24ee4dc35e1600758aee73cb9`.
+- The certificate subject is `CN=Android Debug, O=Android, C=US`.
+- Historical Gradle for 3.4.5/build 23 already used `debugConfig` for the release build, so the old `my-upload-key.jks` found in Git history is **not** the production update signer.
+- No `debug.keystore` exists in the uploaded project ZIP, current repository, known Git history paths, or historical Android GitHub Actions (historical Actions were Pages-only).
+- The required file is the exact original `debug.keystore` from the machine/profile that built the production APK.
+- Its expected credentials are already known from the historical Gradle configuration:
+  - store password: `android`
+  - key alias: `androiddebugkey`
+  - key password: `android`
+- Release readiness now requires only the recovered keystore bytes in the GitHub secret `KAPTERKA_RELEASE_KEYSTORE_B64`; workflows verify the certificate fingerprint before any candidate can be built.
+- A new/generated debug keystore is **not** compatible with existing installations.
+
 ### Remaining hard blockers before any APK release
 1. Deploy the prepared backend and pass all live payment/license/admin/email health checks.
-2. Recover the exact private signing keystore matching the published certificate.
+2. Recover the exact original `debug.keystore` from the build machine/profile and pass the signer-readiness fingerprint gate.
 3. Validate Firestore security rules so ordinary clients cannot write license/admin records.
 4. Build a release candidate with a new versionCode/versionName only after 1-3 are green.
 5. Install that candidate **over 3.4.9** and verify data, license, sync identity/device count, backup/restore and payment end-to-end.
