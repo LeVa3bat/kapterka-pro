@@ -11,9 +11,12 @@ const PAYMENT_AMOUNT_RUB = Number(process.env.PAYMENT_AMOUNT_RUB || 490);
 const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || 'kapterka-pro';
 const FIREBASE_SERVICE_ACCOUNT_JSON = process.env.FIREBASE_SERVICE_ACCOUNT_JSON || '';
 const FIREBASE_SERVICE_ACCOUNT_B64 = process.env.FIREBASE_SERVICE_ACCOUNT_B64 || '';
+const ADMIN_API_SECRET_SHA256 = String(process.env.ADMIN_API_SECRET_SHA256 || '').trim().toLowerCase();
+const ADMIN_SESSION_SECRET = process.env.ADMIN_SESSION_SECRET || '';
 
 const CHECKSUM_CHARS = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 const LICENSE_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
+const ADMIN_TOKEN_TTL_MS = 15 * 60 * 1000;
 let cachedGoogleToken = { value: '', expiresAt: 0 };
 
 function json(statusCode, body, headers = {}) {
@@ -321,6 +324,104 @@ function amountMatchesTariff(payment) {
   return currency === 'RUB' && Math.abs(value - PAYMENT_AMOUNT_RUB) < 0.001;
 }
 
+function adminSecretMatches(secret) {
+  if (!ADMIN_API_SECRET_SHA256 || !/^[a-f0-9]{64}$/.test(ADMIN_API_SECRET_SHA256)) return false;
+  const actual = crypto.createHash('sha256').update(String(secret || ''), 'utf8').digest('hex');
+  return crypto.timingSafeEqual(Buffer.from(actual, 'hex'), Buffer.from(ADMIN_API_SECRET_SHA256, 'hex'));
+}
+
+function issueAdminToken() {
+  if (!ADMIN_SESSION_SECRET) return '';
+  const expiresAt = Date.now() + ADMIN_TOKEN_TTL_MS;
+  const nonce = crypto.randomBytes(12).toString('hex');
+  const payload = `${expiresAt}.${nonce}`;
+  const signature = crypto.createHmac('sha256', ADMIN_SESSION_SECRET).update(payload).digest('hex');
+  return `${payload}.${signature}`;
+}
+
+function verifyAdminToken(token) {
+  if (!ADMIN_SESSION_SECRET) return false;
+  const parts = String(token || '').split('.');
+  if (parts.length !== 3) return false;
+  const expiresAt = Number(parts[0]);
+  const nonce = parts[1];
+  const signature = parts[2];
+  if (!Number.isFinite(expiresAt) || expiresAt <= Date.now() || nonce.length < 12 || !/^[a-f0-9]{64}$/i.test(signature)) {
+    return false;
+  }
+  const payload = `${parts[0]}.${nonce}`;
+  const expected = crypto.createHmac('sha256', ADMIN_SESSION_SECRET).update(payload).digest('hex');
+  return crypto.timingSafeEqual(Buffer.from(expected, 'hex'), Buffer.from(signature, 'hex'));
+}
+
+function generateAdminLicenseKey() {
+  const part = () => Array.from({ length: 4 }, () => CHECKSUM_CHARS[crypto.randomInt(CHECKSUM_CHARS.length)]).join('');
+  const p1 = part();
+  const p2 = part();
+  return `KAPT-${p1}-${p2}-${computeKeyChecksum(p1, p2)}`;
+}
+
+async function patchFirestoreDocument(collection, docId, data) {
+  const token = await requestGoogleAccessToken();
+  const fields = {};
+  for (const [key, value] of Object.entries(data)) fields[key] = firestoreValue(value);
+  const payload = JSON.stringify({ fields });
+  const masks = Object.keys(data)
+    .map((key) => `updateMask.fieldPaths=${encodeURIComponent(key)}`)
+    .join('&');
+  const path =
+    `/v1/projects/${encodeURIComponent(FIREBASE_PROJECT_ID)}/databases/(default)/documents/` +
+    `${encodeURIComponent(collection)}/${encodeURIComponent(docId)}?${masks}`;
+
+  return new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname: 'firestore.googleapis.com',
+      port: 443,
+      path,
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload)
+      },
+      timeout: 10000
+    }, (res) => {
+      res.resume();
+      if (res.statusCode >= 200 && res.statusCode < 300) resolve(true);
+      else reject(new Error(`Firestore patch failed: HTTP ${res.statusCode}`));
+    });
+    req.on('timeout', () => req.destroy(new Error('Firestore timeout')));
+    req.on('error', reject);
+    req.write(payload);
+    req.end();
+  });
+}
+
+async function deleteFirestoreDocument(collection, docId) {
+  const token = await requestGoogleAccessToken();
+  const path =
+    `/v1/projects/${encodeURIComponent(FIREBASE_PROJECT_ID)}/databases/(default)/documents/` +
+    `${encodeURIComponent(collection)}/${encodeURIComponent(docId)}`;
+
+  return new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname: 'firestore.googleapis.com',
+      port: 443,
+      path,
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+      timeout: 10000
+    }, (res) => {
+      res.resume();
+      if (res.statusCode >= 200 && res.statusCode < 300) resolve(true);
+      else reject(new Error(`Firestore delete failed: HTTP ${res.statusCode}`));
+    });
+    req.on('timeout', () => req.destroy(new Error('Firestore timeout')));
+    req.on('error', reject);
+    req.end();
+  });
+}
+
 module.exports.handler = async function handler(event) {
   const method = String(event?.httpMethod || 'GET').toUpperCase();
   if (method === 'OPTIONS') return json(200, { ok: true });
@@ -348,6 +449,73 @@ module.exports.handler = async function handler(event) {
         secretConfigured: Boolean(YOOKASSA_SECRET_KEY),
         licenseRegistryConfigured: Boolean(readFirebaseServiceAccount())
       }, callback);
+    }
+
+    if (action === 'admin_auth') {
+      const secret = cleanText(body.secret, 256);
+      if (!adminSecretMatches(secret)) {
+        return json(403, { ok: false, error: 'ADMIN_AUTH_FAILED' });
+      }
+      const adminToken = issueAdminToken();
+      if (!adminToken) {
+        return json(503, { ok: false, error: 'ADMIN_SESSION_NOT_CONFIGURED' });
+      }
+      return json(200, {
+        ok: true,
+        admin_token: adminToken,
+        expires_in_seconds: Math.floor(ADMIN_TOKEN_TTL_MS / 1000)
+      });
+    }
+
+    if (action === 'admin_grant_license') {
+      if (!verifyAdminToken(body.admin_token)) {
+        return json(403, { ok: false, error: 'ADMIN_SESSION_INVALID' });
+      }
+      const fighterId = cleanText(body.fighter_id, 100);
+      const days = Math.min(365, Math.max(1, Number.parseInt(body.days, 10) || 30));
+      if (!fighterId) return json(400, { ok: false, error: 'MISSING_FIGHTER_ID' });
+
+      const now = Date.now();
+      const expiresAt = now + days * 24 * 60 * 60 * 1000;
+      const licenseKey = generateAdminLicenseKey();
+
+      await registerLicenseInFirestore({
+        licenseKey,
+        fighterId,
+        callsign: '',
+        email: '',
+        paymentId: '',
+        amount: 0,
+        activatedAt: now,
+        expiresAt,
+        durationDays: days,
+        status: 'ACTIVE',
+        source: 'Admin server grant'
+      });
+      await patchFirestoreDocument('fighters', fighterId, {
+        licenseKey,
+        expiresAt,
+        isProActive: true
+      });
+
+      return json(200, {
+        ok: true,
+        license_key: licenseKey,
+        expires_at: expiresAt,
+        days
+      });
+    }
+
+    if (action === 'admin_delete_fighter') {
+      if (!verifyAdminToken(body.admin_token)) {
+        return json(403, { ok: false, error: 'ADMIN_SESSION_INVALID' });
+      }
+      const fighterId = cleanText(body.fighter_id, 100);
+      if (!fighterId) return json(400, { ok: false, error: 'MISSING_FIGHTER_ID' });
+
+      // Delete only the registry entry. Licenses and unit data are intentionally preserved.
+      await deleteFirestoreDocument('fighters', fighterId);
+      return json(200, { ok: true });
     }
 
     // Compatibility endpoint used by the current public site/app notifications.
