@@ -142,6 +142,9 @@ interface KapterkaDao {
     @Query("SELECT * FROM sync_tombstones WHERE id = :id LIMIT 1")
     suspend fun getSyncTombstoneById(id: String): SyncTombstone?
 
+    @Query("DELETE FROM sync_tombstones WHERE id = :id")
+    suspend fun deleteSyncTombstoneById(id: String)
+
     @Query("DELETE FROM sync_tombstones WHERE deletedAt < :olderThan")
     suspend fun pruneOldSyncTombstones(olderThan: Long)
 }
