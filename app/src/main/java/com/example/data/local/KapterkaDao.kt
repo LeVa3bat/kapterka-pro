@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import com.example.data.model.InventoryItem
 import com.example.data.model.OperationRecord
@@ -82,6 +83,19 @@ interface KapterkaDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOperation(operation: OperationRecord)
+
+    /**
+     * History row and all stock mutations are committed atomically.
+     * A crash/process death cannot leave an operation without matching balances.
+     */
+    @Transaction
+    suspend fun commitOperationAndStocks(
+        operation: OperationRecord,
+        stocks: List<StockRecord>
+    ) {
+        insertOperation(operation)
+        insertOrUpdateStockList(stocks)
+    }
 
     @Query("DELETE FROM operation_records WHERE id = :operationId")
     suspend fun deleteOperation(operationId: String)
