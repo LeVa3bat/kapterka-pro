@@ -120,9 +120,9 @@ import kotlinx.coroutines.flow.collectLatest
 
 enum class AppDestination(val title: String, val icon: ImageVector, val tag: String) {
     HOME("Главная", Icons.Default.SpaceDashboard, "nav_home"),
-    HISTORY("Журнал", Icons.Default.ReceiptLong, "nav_history"),
+    HISTORY("Операции", Icons.Default.ReceiptLong, "nav_history"),
     REQUESTS("Заявки", Icons.Default.RuleFolder, "nav_requests"),
-    CATALOG("Каталог", Icons.Default.Inventory2, "nav_catalog"),
+    CATALOG("Имущество", Icons.Default.Inventory2, "nav_catalog"),
     MORE("Ещё", Icons.Default.Tune, "nav_more")
 }
 
