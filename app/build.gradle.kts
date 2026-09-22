@@ -68,6 +68,17 @@ android {
       isDebuggable = false
     }
 
+    // Side-by-side test build. It has a different applicationId and app label, so it
+    // cannot replace or modify the installed production 3.4.9 application.
+    create("nextSafeTest") {
+      initWith(getByName("debug"))
+      applicationIdSuffix = ".nextsafe"
+      versionNameSuffix = "-nextsafe"
+      matchingFallbacks += listOf("debug")
+      signingConfig = signingConfigs.getByName("debugConfig")
+      resValue("string", "app_name", "Каптёрка PRO NEXT-SAFE")
+    }
+
     debug { signingConfig = signingConfigs.getByName("debugConfig") }
   }
   compileOptions {
