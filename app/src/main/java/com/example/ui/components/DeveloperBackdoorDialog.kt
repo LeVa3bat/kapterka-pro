@@ -58,6 +58,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -72,7 +73,6 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import com.example.BuildConfig
 import com.example.data.admin.FighterAdminRecord
 import com.example.ui.theme.SageGreenBright
 import com.example.ui.theme.SageGreenDark
@@ -89,7 +89,7 @@ import com.example.ui.theme.TacticalTextDim
 import com.example.ui.theme.TacticalTextMuted
 import com.example.ui.theme.TacticalTextPrimary
 import com.example.ui.theme.TacticalTextSecondary
-import java.security.MessageDigest
+import kotlinx.coroutines.launch
 
 data class DeveloperDiagnosticsSnapshot(
     val appVersion: String,
@@ -150,30 +150,22 @@ data class DeveloperDiagnosticsSnapshot(
  */
 @Composable
 fun DeveloperAccessPromptDialog(
+    onAuthenticate: suspend (String) -> Pair<Boolean, String>,
     onSuccessAuth: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     val authPrefs = remember(context) {
         context.getSharedPreferences("kapterka_dev_access", Context.MODE_PRIVATE)
     }
     var secretKeyInput by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
+    var isSubmitting by remember { mutableStateOf(false) }
     var failedAttempts by remember { mutableIntStateOf(authPrefs.getInt("failed_attempts", 0)) }
     var lockedUntilMillis by remember { mutableLongStateOf(authPrefs.getLong("locked_until_millis", 0L)) }
 
-    fun sha256Hex(value: String): String = MessageDigest.getInstance("SHA-256")
-        .digest(value.toByteArray(Charsets.UTF_8))
-        .joinToString("") { "%02x".format(it) }
-
-    fun isDeveloperKeyValid(value: String): Boolean {
-        val expected = BuildConfig.DEV_ADMIN_KEY_SHA256
-        if (expected.length != 64) return false
-        val actual = sha256Hex(value.trim())
-        return MessageDigest.isEqual(actual.toByteArray(), expected.toByteArray())
-    }
-
-    Dialog(onDismissRequest = onDismiss) {
+    Dialog(onDismissRequest = { if (!isSubmitting) onDismiss() }) {
         Card(
             modifier = Modifier.fillMaxWidth(0.92f),
             shape = RoundedCornerShape(12.dp),
@@ -206,7 +198,11 @@ fun DeveloperAccessPromptDialog(
                             fontFamily = FontFamily.Monospace
                         )
                     }
-                    IconButton(onClick = onDismiss, modifier = Modifier.size(26.dp)) {
+                    IconButton(
+                        onClick = onDismiss,
+                        enabled = !isSubmitting,
+                        modifier = Modifier.size(26.dp)
+                    ) {
                         Icon(Icons.Default.Close, contentDescription = "Закрыть", tint = TacticalTextMuted)
                     }
                 }
@@ -214,7 +210,7 @@ fun DeveloperAccessPromptDialog(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = "Доступ к единому реестру бойцов и управлению лицензиями всех подразделений.",
+                    text = "Служебный ключ проверяется сервером и не хранится в приложении.",
                     color = TacticalTextSecondary,
                     fontSize = 11.sp
                 )
@@ -227,6 +223,7 @@ fun DeveloperAccessPromptDialog(
                         secretKeyInput = it
                         errorMessage = ""
                     },
+                    enabled = !isSubmitting,
                     placeholder = { Text("Секретный ключ разработчика", color = TacticalTextDim, fontSize = 12.sp) },
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
@@ -253,7 +250,7 @@ fun DeveloperAccessPromptDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
                 ) {
-                    TextButton(onClick = onDismiss) {
+                    TextButton(onClick = onDismiss, enabled = !isSubmitting) {
                         Text("Отмена", color = TacticalTextMuted, fontSize = 12.sp)
                     }
                     Spacer(modifier = Modifier.width(8.dp))
@@ -263,39 +260,49 @@ fun DeveloperAccessPromptDialog(
                             if (nowMillis < lockedUntilMillis) {
                                 val seconds = ((lockedUntilMillis - nowMillis + 999L) / 1000L).coerceAtLeast(1L)
                                 errorMessage = "Слишком много попыток. Повторите через $seconds сек."
-                            } else if (isDeveloperKeyValid(secretKeyInput)) {
-                                secretKeyInput = ""
-                                failedAttempts = 0
-                                lockedUntilMillis = 0L
-                                authPrefs.edit()
-                                    .remove("failed_attempts")
-                                    .remove("locked_until_millis")
-                                    .apply()
-                                onSuccessAuth()
+                            } else if (secretKeyInput.isBlank()) {
+                                errorMessage = "Введите служебный ключ."
                             } else {
-                                failedAttempts += 1
+                                val candidate = secretKeyInput
                                 secretKeyInput = ""
-                                if (failedAttempts >= 4) {
-                                    failedAttempts = 0
-                                    lockedUntilMillis = nowMillis + 30_000L
-                                    authPrefs.edit()
-                                        .putInt("failed_attempts", 0)
-                                        .putLong("locked_until_millis", lockedUntilMillis)
-                                        .apply()
-                                    errorMessage = "Доступ временно заблокирован на 30 секунд."
-                                } else {
-                                    authPrefs.edit().putInt("failed_attempts", failedAttempts).apply()
-                                    errorMessage = "Неверный ключ разработчика."
+                                isSubmitting = true
+                                coroutineScope.launch {
+                                    val (success, message) = onAuthenticate(candidate)
+                                    isSubmitting = false
+                                    if (success) {
+                                        failedAttempts = 0
+                                        lockedUntilMillis = 0L
+                                        authPrefs.edit()
+                                            .remove("failed_attempts")
+                                            .remove("locked_until_millis")
+                                            .apply()
+                                        onSuccessAuth()
+                                    } else {
+                                        failedAttempts += 1
+                                        if (failedAttempts >= 4) {
+                                            failedAttempts = 0
+                                            lockedUntilMillis = System.currentTimeMillis() + 30_000L
+                                            authPrefs.edit()
+                                                .putInt("failed_attempts", 0)
+                                                .putLong("locked_until_millis", lockedUntilMillis)
+                                                .apply()
+                                            errorMessage = "Доступ временно заблокирован на 30 секунд."
+                                        } else {
+                                            authPrefs.edit().putInt("failed_attempts", failedAttempts).apply()
+                                            errorMessage = message.ifBlank { "Сервер отклонил доступ." }
+                                        }
+                                    }
                                 }
                             }
                         },
+                        enabled = !isSubmitting,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = TacticalGold,
                             contentColor = Color.White
                         ),
                         shape = RoundedCornerShape(6.dp)
                     ) {
-                        Text("Войти", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        Text(if (isSubmitting) "Проверка…" else "Войти", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                     }
                 }
             }
