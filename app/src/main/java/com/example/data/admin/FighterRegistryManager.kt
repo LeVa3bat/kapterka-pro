@@ -1,19 +1,14 @@
 package com.example.data.admin
 
-// Re-deploy trigger
 import android.content.Context
 import android.os.Build
 import android.util.Log
-import com.example.data.license.LicenseManager
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -22,202 +17,142 @@ import java.util.Date
 import java.util.Locale
 
 data class FighterAdminRecord(
-    val id: String, // Уникальный идентификатор бойца
-    val callsign: String, // Позывной (например "сокол", "буран")
-    val role: String = "Старшина / Боец", // Должность
-    val unitName: String = "1-е Подразделение", // Название подразделения
-    val unitKey: String = "", // Ключ подразделения задаётся профилем и не должен иметь общий fallback
-    val licenseKey: String = "", // Ключ лицензии (KAPT-XXXX-XXXX-XXXX)
-    val isProActive: Boolean = false, // Статус лицензии
-    val licenseDaysLeft: Int = 0, // Оставшиеся дни
-    val licenseExpiresFormatted: String = "", // Дата окончания
-    val registeredAtMillis: Long = 0L, // Дата регистрации (таймстамп)
-    val registeredAtFormatted: String = "", // Дата регистрации (строка)
-    val lastSeenMillis: Long = 0L, // Время последней активности
-    val lastSeenFormatted: String = "", // Время последней активности (строка)
-    val isOnline: Boolean = false, // Онлайн прямо сейчас
-    val email: String = "", // Почта
-    val deviceModel: String = "" // Модель устройства
+    val id: String,
+    val callsign: String = "",
+    val role: String = "Старшина / Боец",
+    val unitName: String = "",
+    val unitKey: String = "",
+    val licenseKey: String = "",
+    val isProActive: Boolean = false,
+    val licenseDaysLeft: Int = 0,
+    val licenseExpiresFormatted: String = "",
+    val registeredAtMillis: Long = 0L,
+    val registeredAtFormatted: String = "",
+    val lastSeenMillis: Long = 0L,
+    val lastSeenFormatted: String = "",
+    val isOnline: Boolean = false,
+    val email: String = "",
+    val deviceModel: String = ""
 )
 
 class FighterRegistryManager(
     private val context: Context,
     private val scope: CoroutineScope
 ) {
-    private val TAG = "FighterRegistryManager"
-    private val PREFS_NAME = "kapterka_fighters_registry_cache"
-    private val KEY_FIGHTERS_JSON = "cached_fighters_list"
-    private val firestore: FirebaseFirestore
-        by lazy { FirebaseFirestore.getInstance() }
+    private val tag = "FighterRegistryManager"
+    private val prefsName = "kapterka_fighters_registry_cache"
+    private val keyFightersJson = "cached_fighters_list"
+    private val backend = FighterBackendService()
 
     private val _fighters = MutableStateFlow<List<FighterAdminRecord>>(emptyList())
     val fighters: StateFlow<List<FighterAdminRecord>> = _fighters.asStateFlow()
 
     init {
         loadCachedFighters()
-        // Синхронизируем с Firestore в фоновом режиме
-        scope.launch {
-            fetchFightersFromCloud()
-        }
     }
 
     private fun loadCachedFighters() {
-        val sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val jsonStr = sp.getString(KEY_FIGHTERS_JSON, null)
-        if (!jsonStr.isNullOrBlank()) {
-            try {
-                val list = parseFightersJson(jsonStr)
-                    // Удаляем любые остаточные тестовые записи
-                    .filterNot { 
-                        it.id.contains("SOKOL") || 
-                        it.id.contains("GROM") || 
-                        it.id.contains("SEVER") ||
-                        it.callsign in listOf("сокол", "гром", "север")
-                    }
-                _fighters.value = list
-                saveFightersToCache(list)
-                return
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to parse cached fighters", e)
-            }
+        val raw = context.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
+            .getString(keyFightersJson, null)
+        if (raw.isNullOrBlank()) {
+            _fighters.value = emptyList()
+            return
         }
 
-        // Изначально список пуст — наполняется только реальными бойцами при регистрации
-        _fighters.value = emptyList()
-        saveFightersToCache(emptyList())
+        try {
+            val list = parseFightersJson(raw).filterNot {
+                it.id.contains("SOKOL") ||
+                    it.id.contains("GROM") ||
+                    it.id.contains("SEVER") ||
+                    it.callsign.lowercase(Locale.ROOT) in listOf("сокол", "гром", "север")
+            }
+            _fighters.value = list
+            saveFightersToCache(list)
+        } catch (e: Exception) {
+            Log.w(tag, "Failed reading fighter cache", e)
+            _fighters.value = emptyList()
+        }
     }
 
     private fun saveFightersToCache(list: List<FighterAdminRecord>) {
         try {
-            val jsonArr = JSONArray()
-            val sdf = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
-            for (f in list) {
-                val obj = JSONObject().apply {
-                    put("id", f.id)
-                    put("callsign", f.callsign)
-                    put("role", f.role)
-                    put("unitName", f.unitName)
-                    put("unitKey", f.unitKey)
-                    put("licenseKey", f.licenseKey)
-                    put("isProActive", f.isProActive)
-                    put("licenseDaysLeft", f.licenseDaysLeft)
-                    put("licenseExpiresFormatted", f.licenseExpiresFormatted)
-                    put("registeredAtMillis", f.registeredAtMillis)
-                    put("registeredAtFormatted", f.registeredAtFormatted)
-                    put("lastSeenMillis", f.lastSeenMillis)
-                    put("lastSeenFormatted", f.lastSeenFormatted)
-                    put("isOnline", f.isOnline)
-                    put("email", f.email)
-                    put("deviceModel", f.deviceModel)
-                }
-                jsonArr.put(obj)
+            val arr = JSONArray()
+            list.forEach { fighter ->
+                arr.put(JSONObject().apply {
+                    put("id", fighter.id)
+                    put("callsign", fighter.callsign)
+                    put("role", fighter.role)
+                    put("unitName", fighter.unitName)
+                    put("unitKey", fighter.unitKey)
+                    put("licenseKey", fighter.licenseKey)
+                    put("isProActive", fighter.isProActive)
+                    put("licenseDaysLeft", fighter.licenseDaysLeft)
+                    put("licenseExpiresFormatted", fighter.licenseExpiresFormatted)
+                    put("registeredAtMillis", fighter.registeredAtMillis)
+                    put("registeredAtFormatted", fighter.registeredAtFormatted)
+                    put("lastSeenMillis", fighter.lastSeenMillis)
+                    put("lastSeenFormatted", fighter.lastSeenFormatted)
+                    put("isOnline", fighter.isOnline)
+                    put("email", fighter.email)
+                    put("deviceModel", fighter.deviceModel)
+                })
             }
-            val sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            sp.edit().putString(KEY_FIGHTERS_JSON, jsonArr.toString()).apply()
+            context.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
+                .edit()
+                .putString(keyFightersJson, arr.toString())
+                .apply()
         } catch (e: Exception) {
-            Log.e(TAG, "Error saving fighters to cache", e)
+            Log.w(tag, "Failed saving fighter cache", e)
         }
     }
 
-    private fun parseFightersJson(jsonStr: String): List<FighterAdminRecord> {
-        val list = mutableListOf<FighterAdminRecord>()
-        val arr = JSONArray(jsonStr)
-        val now = System.currentTimeMillis()
-        val fifteenMinutes = 15 * 60 * 1000L
-
-        for (i in 0 until arr.length()) {
-            val obj = arr.getJSONObject(i)
-            val lastSeen = obj.optLong("lastSeenMillis", 0L)
-            val isOnline = (now - lastSeen) < fifteenMinutes || obj.optBoolean("isOnline", false)
-
-            list.add(
-                FighterAdminRecord(
-                    id = obj.optString("id"),
-                    callsign = obj.optString("callsign"),
-                    role = obj.optString("role", "Боец"),
-                    unitName = obj.optString("unitName", "Подразделение"),
-                    unitKey = obj.optString("unitKey", ""),
-                    licenseKey = obj.optString("licenseKey", ""),
-                    isProActive = obj.optBoolean("isProActive", false),
-                    licenseDaysLeft = obj.optInt("licenseDaysLeft", 0),
-                    licenseExpiresFormatted = obj.optString("licenseExpiresFormatted", ""),
-                    registeredAtMillis = obj.optLong("registeredAtMillis", 0L),
-                    registeredAtFormatted = obj.optString("registeredAtFormatted", ""),
-                    lastSeenMillis = lastSeen,
-                    lastSeenFormatted = obj.optString("lastSeenFormatted", ""),
-                    isOnline = isOnline,
-                    email = obj.optString("email", ""),
-                    deviceModel = obj.optString("deviceModel", "Android")
-                )
-            )
-        }
-        return list
-    }
-
-    /**
-     * Загружает бойцов из всех подразделений Firebase Firestore
-     */
-    suspend fun fetchFightersFromCloud() = withContext(Dispatchers.IO) {
-        try {
-            val db = firestore
-            val snapshot = db.collection("fighters").get().await()
-            val now = System.currentTimeMillis()
-            val sdf = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
-            val fifteenMinutes = 15 * 60 * 1000L
-
-            val cloudList = mutableListOf<FighterAdminRecord>()
-            for (doc in snapshot.documents) {
-                val id = doc.id
-                val callsign = doc.getString("callsign") ?: "Боец"
-                val role = doc.getString("role") ?: "Старшина / Боец"
-                val unitName = doc.getString("unitName") ?: "1-е Подразделение"
-                val unitKey = doc.getString("unitKey").orEmpty()
-                val licenseKey = doc.getString("licenseKey") ?: ""
-                val expiresAt = doc.getLong("expiresAt") ?: 0L
-                val isProActive = expiresAt > now
-                val daysLeft = if (isProActive) ((expiresAt - now) / 86400000L).toInt().coerceAtLeast(1) else 0
-                val regAt = doc.getLong("registeredAt") ?: (now - 86400000L)
-                val lastSeen = doc.getLong("lastSeenAt") ?: now
-                val isOnline = (now - lastSeen) < fifteenMinutes
-                val email = doc.getString("email") ?: ""
-                val deviceModel = doc.getString("deviceModel") ?: "Android"
-
-                cloudList.add(
+    private fun parseFightersJson(raw: String): List<FighterAdminRecord> {
+        val arr = JSONArray(raw)
+        return buildList {
+            for (i in 0 until arr.length()) {
+                val obj = arr.optJSONObject(i) ?: continue
+                add(
                     FighterAdminRecord(
-                        id = id,
-                        callsign = callsign,
-                        role = role,
-                        unitName = unitName,
-                        unitKey = unitKey,
-                        licenseKey = licenseKey,
-                        isProActive = isProActive,
-                        licenseDaysLeft = daysLeft,
-                        licenseExpiresFormatted = if (expiresAt > 0) sdf.format(Date(expiresAt)) else "Нет",
-                        registeredAtMillis = regAt,
-                        registeredAtFormatted = sdf.format(Date(regAt)),
-                        lastSeenMillis = lastSeen,
-                        lastSeenFormatted = if (isOnline) "В сети" else sdf.format(Date(lastSeen)),
-                        isOnline = isOnline,
-                        email = email,
-                        deviceModel = deviceModel
+                        id = obj.optString("id"),
+                        callsign = obj.optString("callsign"),
+                        role = obj.optString("role", "Старшина / Боец"),
+                        unitName = obj.optString("unitName"),
+                        unitKey = obj.optString("unitKey"),
+                        licenseKey = obj.optString("licenseKey"),
+                        isProActive = obj.optBoolean("isProActive", false),
+                        licenseDaysLeft = obj.optInt("licenseDaysLeft", 0),
+                        licenseExpiresFormatted = obj.optString("licenseExpiresFormatted"),
+                        registeredAtMillis = obj.optLong("registeredAtMillis", 0L),
+                        registeredAtFormatted = obj.optString("registeredAtFormatted"),
+                        lastSeenMillis = obj.optLong("lastSeenMillis", 0L),
+                        lastSeenFormatted = obj.optString("lastSeenFormatted"),
+                        isOnline = obj.optBoolean("isOnline", false),
+                        email = obj.optString("email"),
+                        deviceModel = obj.optString("deviceModel")
                     )
                 )
             }
-
-            if (cloudList.isNotEmpty()) {
-                // Объединяем с локальным списком (приоритет облака)
-                val currentLocal = _fighters.value
-                val merged = (cloudList + currentLocal).distinctBy { it.id }
-                _fighters.value = merged
-                saveFightersToCache(merged)
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to fetch fighters from Firestore, using cached", e)
         }
     }
 
     /**
-     * Регистрирует или обновляет данные бойца во всех реестрах
+     * Admin-only result replacement. The global fighter list is never fetched
+     * directly from Firestore by Android.
+     */
+    fun replaceCachedFighters(fighters: List<FighterAdminRecord>) {
+        _fighters.value = fighters
+        saveFightersToCache(fighters)
+    }
+
+    fun removeCachedFighter(fighterId: String) {
+        val next = _fighters.value.filterNot { it.id == fighterId }
+        _fighters.value = next
+        saveFightersToCache(next)
+    }
+
+    /**
+     * Ordinary profile registration/update. License state is deliberately not
+     * trusted from Android; the server derives it from the license registry.
      */
     fun registerOrUpdateFighter(
         fighterId: String,
@@ -232,148 +167,99 @@ class FighterRegistryManager(
     ) {
         val now = System.currentTimeMillis()
         val sdf = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
-        val daysLeft = if (expiresAt > now) ((expiresAt - now) / 86400000L).toInt().coerceAtLeast(1) else (if (isProActive) 30 else 0)
+        val daysLeft = if (expiresAt > now) {
+            ((expiresAt - now) / 86400000L).toInt().coerceAtLeast(1)
+        } else if (isProActive) {
+            30
+        } else {
+            0
+        }
 
-        val updatedRecord = FighterAdminRecord(
+        val record = FighterAdminRecord(
             id = fighterId,
-            callsign = callsign.ifEmpty { "Боец" },
+            callsign = callsign.ifBlank { "Боец" },
             role = role,
-            unitName = unitName.ifEmpty { "1-е Подразделение" },
+            unitName = unitName.ifBlank { "Подразделение" },
             unitKey = unitKey.trim(),
             licenseKey = licenseKey,
-            isProActive = isProActive || expiresAt > now,
+            isProActive = isProActive,
             licenseDaysLeft = daysLeft,
-            licenseExpiresFormatted = if (expiresAt > 0) sdf.format(Date(expiresAt)) else "30 суток",
+            licenseExpiresFormatted = if (expiresAt > 0L) sdf.format(Date(expiresAt)) else "",
             registeredAtMillis = now,
             registeredAtFormatted = sdf.format(Date(now)),
             lastSeenMillis = now,
             lastSeenFormatted = "В сети",
             isOnline = true,
-            email = email,
-            deviceModel = "${Build.MANUFACTURER} ${Build.MODEL}"
+            email = email.trim(),
+            deviceModel = (Build.MANUFACTURER + " " + Build.MODEL).trim()
         )
 
         val current = _fighters.value.toMutableList()
-        val idx = current.indexOfFirst { it.id == fighterId || it.callsign.equals(callsign, ignoreCase = true) }
-        if (idx >= 0) {
-            val existing = current[idx]
-            current[idx] = updatedRecord.copy(
+        val index = current.indexOfFirst { it.id == fighterId }
+        if (index >= 0) {
+            val existing = current[index]
+            current[index] = record.copy(
                 registeredAtMillis = existing.registeredAtMillis,
-                registeredAtFormatted = existing.registeredAtFormatted,
-                licenseKey = if (licenseKey.isNotEmpty()) licenseKey else existing.licenseKey
+                registeredAtFormatted = existing.registeredAtFormatted
             )
         } else {
-            current.add(0, updatedRecord)
+            current.add(0, record)
         }
-
         _fighters.value = current
         saveFightersToCache(current)
 
-        // Асинхронно пушим в Firestore
         scope.launch(Dispatchers.IO) {
-            try {
-                val data = hashMapOf(
-                    "fighterId" to fighterId,
-                    "callsign" to callsign,
-                    "role" to role,
-                    "unitName" to unitName,
-                    "unitKey" to unitKey,
-                    "licenseKey" to licenseKey,
-                    "expiresAt" to expiresAt,
-                    "registeredAt" to updatedRecord.registeredAtMillis,
-                    "lastSeenAt" to now,
-                    "email" to email,
-                    "deviceModel" to updatedRecord.deviceModel
-                )
-                firestore.collection("fighters").document(fighterId)
-                    ?.set(data, SetOptions.merge())
-                    ?.await()
-            } catch (e: Exception) {
-                Log.w(TAG, "Could not upload fighter to Firestore", e)
+            val ok = backend.upsertFighter(
+                fighterId = fighterId,
+                callsign = callsign,
+                unitName = unitName,
+                unitKey = unitKey,
+                email = email
+            )
+            if (!ok) {
+                Log.w(tag, "Fighter server upsert deferred; local profile remains intact")
             }
         }
-    }
-
-    fun removeCachedFighter(fighterId: String) {
-        val current = _fighters.value.toMutableList()
-        current.removeAll { it.id == fighterId }
-        _fighters.value = current
-        saveFightersToCache(current)
-    }
-
-    /**
-     * Удаляет бойца из всех подразделений
-     */
-    @Deprecated("Privileged deletes must go through AdminBackendService")
-    fun deleteFighter(fighterId: String) {
-        Log.w(TAG, "Blocked client-side fighter deletion for $fighterId")
-    }
-
-    /**
-     * Выдает бойцу новую лицензию на 30 дней прямо из панели разработчика
-     */
-    @Deprecated("Privileged license grants must go through AdminBackendService")
-    fun grantLicense(fighterId: String, days: Int = 30): String {
-        Log.w(TAG, "Blocked client-side license grant for $fighterId / $days days")
-        return ""
     }
 
     suspend fun lookupFighter(
         email: String = "",
         callsign: String = "",
         fighterId: String = ""
-    ): FighterAdminRecord? {
+    ): FighterAdminRecord? = withContext(Dispatchers.IO) {
         val cleanEmail = email.trim().lowercase(Locale.ROOT)
         val cleanCallsign = callsign.trim().lowercase(Locale.ROOT)
         val cleanId = fighterId.trim()
 
-        if (cleanEmail.isBlank() && cleanCallsign.isBlank() && cleanId.isBlank()) return null
-
-        // 1. Поиск в локальном кэше
-        val localMatch = _fighters.value.find {
-            (cleanEmail.isNotBlank() && it.email.isNotBlank() && it.email.lowercase(Locale.ROOT) == cleanEmail) ||
-            (cleanCallsign.isNotBlank() && it.callsign.isNotBlank() && it.callsign.lowercase(Locale.ROOT) == cleanCallsign) ||
-            (cleanId.isNotBlank() && it.id == cleanId)
+        val local = _fighters.value.firstOrNull {
+            (cleanId.isNotBlank() && it.id == cleanId) ||
+                (cleanEmail.isNotBlank() && it.email.lowercase(Locale.ROOT) == cleanEmail) ||
+                (cleanCallsign.isNotBlank() && it.callsign.lowercase(Locale.ROOT) == cleanCallsign)
         }
-        if (localMatch != null) return localMatch
-
-        // 2. Поиск в облаке Firestore
-        return withContext(Dispatchers.IO) {
-            try {
-                val db = firestore
-                val snap = db.collection("fighters").get().await()
-                for (doc in snap.documents) {
-                    val em = doc.getString("email")?.lowercase(Locale.ROOT) ?: ""
-                    val cs = doc.getString("callsign")?.lowercase(Locale.ROOT) ?: ""
-                    val fid = doc.getString("fighterId") ?: doc.id
-
-                    val matches = (cleanEmail.isNotBlank() && em.isNotBlank() && em == cleanEmail) ||
-                            (cleanCallsign.isNotBlank() && cs.isNotBlank() && cs == cleanCallsign) ||
-                            (cleanId.isNotBlank() && fid == cleanId)
-
-                    if (matches) {
-                        val exp = doc.getLong("expiresAt") ?: 0L
-                        val daysLeft = if (exp > System.currentTimeMillis()) {
-                            ((exp - System.currentTimeMillis()) / 86400000L).toInt()
-                        } else 0
-                        return@withContext FighterAdminRecord(
-                            id = fid,
-                            callsign = doc.getString("callsign") ?: "",
-                            unitName = doc.getString("unitName") ?: "",
-                            unitKey = doc.getString("unitKey") ?: "",
-                            email = doc.getString("email") ?: "",
-                            licenseKey = doc.getString("licenseKey") ?: "",
-                            isProActive = doc.getBoolean("isProActive") ?: false,
-                            licenseDaysLeft = daysLeft,
-                            role = doc.getString("role") ?: "Старшина подразделения"
-                        )
-                    }
-                }
-                null
-            } catch (e: Exception) {
-                Log.w(TAG, "Error looking up fighter in cloud", e)
-                null
-            }
+        if (local != null && local.unitKey.isNotBlank()) {
+            return@withContext local
         }
+
+        backend.lookupFighter(
+            email = cleanEmail,
+            callsign = cleanCallsign,
+            fighterId = cleanId
+        )
+    }
+
+    @Deprecated("Global registry refresh requires AdminBackendService.listFighters()")
+    suspend fun fetchFightersFromCloud() {
+        Log.w(tag, "Blocked direct global fighter-list read from Android")
+    }
+
+    @Deprecated("Privileged deletes must go through AdminBackendService")
+    fun deleteFighter(fighterId: String) {
+        Log.w(tag, "Blocked client-side fighter deletion")
+    }
+
+    @Deprecated("Privileged license grants must go through AdminBackendService")
+    fun grantLicense(fighterId: String, days: Int = 30): String {
+        Log.w(tag, "Blocked client-side license grant")
+        return ""
     }
 }
