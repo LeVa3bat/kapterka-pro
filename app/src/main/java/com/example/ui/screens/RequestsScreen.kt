@@ -135,13 +135,13 @@ fun RequestsScreen(
     }
 
     val callsignPresets = listOf(
-        "Командир 1-го взвода",
-        "Командир 2-го взвода",
-        "Старшина роты",
-        "Оператор БПЛА «Сокол»",
-        "Начальник связи",
-        "Медик подразделения",
-        "Командир расчета"
+        "Ответственное лицо",
+        "Начальник склада",
+        "Кладовщик",
+        "Сотрудник",
+        "Водитель",
+        "Техник",
+        "Медик"
     )
 
     if (pendingWarningItems != null) {
@@ -321,11 +321,11 @@ fun RequestsScreen(
                     Spacer(modifier = Modifier.height(10.dp))
 
                     TacticalSearchableTextDropdown(
-                        label = "Позывной заявителя",
+                        label = "Заявитель",
                         value = applicantCallsign,
                         onValueChange = { applicantCallsign = it },
                         suggestions = callsignPresets,
-                        placeholder = "Позывной заявителя"
+                        placeholder = "Имя или должность заявителя"
                     )
 
                     Spacer(modifier = Modifier.height(12.dp))
