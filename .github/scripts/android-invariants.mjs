@@ -140,6 +140,19 @@ if (legacyActivateSource.includes('copy(isProActive = true') ||
   ok('local test PRO activation path is blocked');
 }
 
+const repositorySafetySource = read('app/src/main/java/com/example/data/repository/KapterkaRepository.kt');
+const clearStart = repositorySafetySource.indexOf('suspend fun clearAllData()');
+const clearEnd = repositorySafetySource.indexOf('suspend fun clearLocalUnitData()', clearStart);
+const clearSource = repositorySafetySource.slice(clearStart, clearEnd);
+if (!clearSource.includes('"stock_record"') ||
+    !clearSource.includes('"operation"') ||
+    !clearSource.includes('"requisition"') ||
+    !clearSource.includes('prepareDeletionTombstone')) {
+  fail('full unit reset does not create explicit tombstones before deletion');
+} else {
+  ok('full unit reset creates explicit tombstones before deletion');
+}
+
 const syncSource = read('app/src/main/java/com/example/data/sync/FirebaseSyncManager.kt');
 const reconcileStart = syncSource.indexOf('suspend fun syncAndReconcileAll');
 const reconcileEnd = syncSource.indexOf('fun pushOperationAsync', reconcileStart);
