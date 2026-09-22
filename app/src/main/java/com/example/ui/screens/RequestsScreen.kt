@@ -189,7 +189,7 @@ fun RequestsScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(6.dp))
+                            .clip(RoundedCornerShape(12.dp))
                             .background(TacticalRedDark.copy(alpha = 0.4f))
                             .padding(8.dp)
                     ) {
@@ -250,14 +250,14 @@ fun RequestsScreen(
         item {
             Column {
                 Text(
-                    text = "ЗАЯВКИ НА СНАБЖЕНИЕ",
-                    color = SageGreenBright,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
+                    text = "Заявки",
+                    color = TacticalTextPrimary,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.ExtraBold
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "Новая заявка поступает на склад. При сборке переводится в статус «Собрана», затем «Выдана».",
+                    text = "Создание, сборка и выдача заявок со склада",
                     color = TacticalTextSecondary,
                     fontSize = 12.sp,
                     lineHeight = 16.sp
@@ -271,9 +271,10 @@ fun RequestsScreen(
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(18.dp),
                 colors = CardDefaults.cardColors(containerColor = TacticalSurface),
-                border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorder)
+                border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorderSubtle),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
                 Column(
                     modifier = Modifier
@@ -286,7 +287,7 @@ fun RequestsScreen(
                         Box(
                             modifier = Modifier
                                 .size(26.dp)
-                                .clip(RoundedCornerShape(6.dp))
+                                .clip(RoundedCornerShape(12.dp))
                                 .background(SageGreenDark),
                             contentAlignment = Alignment.Center
                         ) {
@@ -299,9 +300,9 @@ fun RequestsScreen(
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "ФОРМИРОВАНИЕ ЗАЯВКИ",
-                            color = SageGreenBright,
-                            fontSize = 14.sp,
+                            text = "Новая заявка",
+                            color = TacticalTextPrimary,
+                            fontSize = 16.sp,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -310,7 +311,7 @@ fun RequestsScreen(
 
                     // Destination point searchable with stock summary
                     TacticalSearchablePointDropdown(
-                        label = "Куда доставить / Назначение",
+                        label = "Склад / точка назначения",
                         points = points,
                         selectedPoint = selectedPoint,
                         stockRecords = stockRecords,
@@ -337,7 +338,7 @@ fun RequestsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "ПОЗИЦИИ ЗАЯВКИ",
+                            text = "Позиции заявки",
                             color = TacticalTextSecondary,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
@@ -346,7 +347,7 @@ fun RequestsScreen(
 
                         Row(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(6.dp))
+                                .clip(RoundedCornerShape(12.dp))
                                 .background(SageGreenDark)
                                 .clickable {
                                     draftItems.add(
@@ -367,7 +368,7 @@ fun RequestsScreen(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "+ позиция",
+                                text = "Добавить позицию",
                                 color = SageGreenBright,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold
@@ -472,9 +473,9 @@ fun RequestsScreen(
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .clip(RoundedCornerShape(6.dp))
+                                            .clip(RoundedCornerShape(12.dp))
                                             .background(TacticalRedDark.copy(alpha = 0.45f))
-                                            .border(0.5.dp, TacticalRed.copy(alpha = 0.6f), RoundedCornerShape(6.dp))
+                                            .border(0.5.dp, TacticalRed.copy(alpha = 0.6f), RoundedCornerShape(12.dp))
                                             .padding(horizontal = 8.dp, vertical = 5.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
@@ -500,16 +501,16 @@ fun RequestsScreen(
                     Spacer(modifier = Modifier.height(10.dp))
 
                     TacticalInputField(
-                        label = "Комментарий (срочность, координаты, примечание)",
+                        label = "Комментарий",
                         value = comment,
                         onValueChange = { comment = it },
-                        placeholder = "Срочно для 2-го расчета / на вечерний рейс"
+                        placeholder = "Например: срочно, к определённой дате, примечание"
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
 
                     TacticalFitButton(
-                        text = "ОТПРАВИТЬ ЗАЯВКУ НА СКЛАД",
+                        text = "Создать заявку",
                         icon = Icons.Default.Send,
                         containerColor = SageGreenPrimary,
                         contentColor = Color.White,
@@ -549,7 +550,7 @@ fun RequestsScreen(
         // SECTION: СПИСОК ЗАЯВОК
         item {
             Text(
-                text = "СПИСОК ЗАЯВОК (${requisitions.size})",
+                text = "Заявки (${requisitions.size})",
                 color = TacticalTextMuted,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
@@ -574,7 +575,7 @@ fun RequestsScreen(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Активных заявок пока нет. Создайте первую заявку выше.",
+                        text = "Заявок пока нет. Создайте первую заявку выше.",
                         color = TacticalTextMuted,
                         fontSize = 12.sp,
                         textAlign = TextAlign.Center
@@ -616,9 +617,10 @@ private fun RequisitionCardItem(
         modifier = Modifier
             .fillMaxWidth()
             .testTag("requisition_card_${req.id}"),
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = TacticalSurface),
-        border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorder)
+        border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorderSubtle),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(
             modifier = Modifier
@@ -634,7 +636,7 @@ private fun RequisitionCardItem(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(4.dp))
+                            .clip(RoundedCornerShape(10.dp))
                             .background(statusBg)
                             .padding(horizontal = 7.dp, vertical = 3.dp)
                     ) {
@@ -658,7 +660,7 @@ private fun RequisitionCardItem(
                     Spacer(modifier = Modifier.width(8.dp))
 
                     Text(
-                        text = "Точка: ${req.pointName}",
+                        text = req.pointName,
                         color = SageGreenBright,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold
@@ -725,9 +727,9 @@ private fun RequisitionCardItem(
 
                 Row(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
+                        .clip(RoundedCornerShape(12.dp))
                         .background(TacticalSurfaceLight)
-                        .border(1.dp, TacticalBorder, RoundedCornerShape(6.dp))
+                        .border(1.dp, TacticalBorder, RoundedCornerShape(12.dp))
                         .clickable { onUpdateStatus(nextStatus) }
                         .padding(horizontal = 8.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
