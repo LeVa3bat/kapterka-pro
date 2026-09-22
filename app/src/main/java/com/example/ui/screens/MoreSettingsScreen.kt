@@ -490,7 +490,7 @@ fun MoreSettingsScreen(
                         Box(
                             modifier = Modifier
                                 .size(38.dp)
-                                .clip(RoundedCornerShape(8.dp))
+                                .clip(RoundedCornerShape(14.dp))
                                 .background(SageGreenDark),
                             contentAlignment = Alignment.Center
                         ) {
@@ -579,7 +579,7 @@ fun MoreSettingsScreen(
                     // Cloud info box
                     Surface(
                         color = Color(0xFF131C16),
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RoundedCornerShape(14.dp),
                         border = BorderStroke(1.dp, TacticalBorderSubtle),
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -678,7 +678,7 @@ fun MoreSettingsScreen(
                                 showEditProfileDialog = true
                             },
                             modifier = Modifier.weight(1f).height(38.dp),
-                            shape = RoundedCornerShape(6.dp),
+                            shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = SageGreenBright),
                             border = BorderStroke(1.dp, SageGreenPrimary.copy(alpha = 0.6f))
                         ) {
@@ -692,7 +692,7 @@ fun MoreSettingsScreen(
                                 containerColor = SageGreenPrimary,
                                 contentColor = Color.White
                             ),
-                            shape = RoundedCornerShape(6.dp)
+                            shape = RoundedCornerShape(12.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Sync,
@@ -710,7 +710,7 @@ fun MoreSettingsScreen(
                     OutlinedButton(
                         onClick = onRestoreLicenseFromCloud,
                         modifier = Modifier.fillMaxWidth().height(38.dp),
-                        shape = RoundedCornerShape(6.dp),
+                        shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = TacticalGoldText),
                         border = BorderStroke(1.dp, TacticalGold.copy(alpha = 0.6f))
                     ) {
@@ -744,9 +744,9 @@ fun MoreSettingsScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
+                            .clip(RoundedCornerShape(14.dp))
                             .background(TacticalBg)
-                            .border(1.dp, SageGreenPrimary.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
+                            .border(1.dp, SageGreenPrimary.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
                             .clickable(enabled = unitKey.isNotBlank()) {
                                 copyToClip(context, unitKey)
                             }
@@ -791,7 +791,7 @@ fun MoreSettingsScreen(
                             containerColor = SageGreenPrimary,
                             contentColor = Color.White
                         ),
-                        shape = RoundedCornerShape(6.dp)
+                        shape = RoundedCornerShape(12.dp)
                     ) {
                         Icon(imageVector = Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(15.dp))
                         Spacer(modifier = Modifier.width(6.dp))
@@ -830,7 +830,7 @@ fun MoreSettingsScreen(
                             containerColor = TacticalGold,
                             contentColor = Color.White
                         ),
-                        shape = RoundedCornerShape(6.dp)
+                        shape = RoundedCornerShape(12.dp)
                     ) {
                         Icon(imageVector = Icons.Default.Star, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
@@ -910,9 +910,9 @@ fun MoreSettingsScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 3.dp)
-                                .clip(RoundedCornerShape(6.dp))
+                                .clip(RoundedCornerShape(12.dp))
                                 .background(TacticalBg)
-                                .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(6.dp))
+                                .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(12.dp))
                                 .padding(horizontal = 10.dp, vertical = 6.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
@@ -953,7 +953,7 @@ fun MoreSettingsScreen(
                                 containerColor = SageGreenPrimary,
                                 contentColor = Color.White
                             ),
-                            shape = RoundedCornerShape(6.dp)
+                            shape = RoundedCornerShape(12.dp)
                         ) {
                             Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp))
                             Spacer(modifier = Modifier.width(4.dp))
@@ -967,7 +967,7 @@ fun MoreSettingsScreen(
                                 containerColor = TacticalSurfaceLight,
                                 contentColor = TacticalTextSecondary
                             ),
-                            shape = RoundedCornerShape(6.dp)
+                            shape = RoundedCornerShape(12.dp)
                         ) {
                             Icon(imageVector = Icons.Default.Restore, contentDescription = null, modifier = Modifier.size(14.dp))
                             Spacer(modifier = Modifier.width(4.dp))
@@ -1115,7 +1115,7 @@ fun MoreSettingsScreen(
                             containerColor = TacticalSurfaceLight,
                             contentColor = TacticalTextPrimary
                         ),
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RoundedCornerShape(14.dp),
                         border = BorderStroke(1.dp, TacticalBorder)
                     ) {
                         Icon(Icons.Default.Security, contentDescription = null, tint = SageGreenBright, modifier = Modifier.size(16.dp))
@@ -1133,7 +1133,7 @@ fun MoreSettingsScreen(
                             containerColor = TacticalSurfaceLight,
                             contentColor = TacticalTextPrimary
                         ),
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RoundedCornerShape(14.dp),
                         border = BorderStroke(1.dp, TacticalBorder)
                     ) {
                         Icon(Icons.Default.Description, contentDescription = null, tint = SageGreenBright, modifier = Modifier.size(16.dp))
@@ -1151,7 +1151,7 @@ fun MoreSettingsScreen(
                             containerColor = TacticalSurfaceLight,
                             contentColor = TacticalTextPrimary
                         ),
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RoundedCornerShape(14.dp),
                         border = BorderStroke(1.dp, TacticalBorder)
                     ) {
                         Icon(Icons.Default.CheckCircle, contentDescription = null, tint = SageGreenBright, modifier = Modifier.size(16.dp))
@@ -1176,7 +1176,7 @@ fun MoreSettingsScreen(
                         containerColor = TacticalSurfaceLight,
                         contentColor = TacticalTextMuted
                     ),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = RoundedCornerShape(14.dp),
                     border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorder)
                 ) {
                     Text("Изменить профиль / Выйти из группы", fontSize = 12.sp)
@@ -1250,22 +1250,21 @@ private fun CollapsibleCard(
     content: @Composable () -> Unit
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp)),
-        shape = RoundedCornerShape(8.dp),
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = TacticalSurface),
         border = androidx.compose.foundation.BorderStroke(
             1.dp,
-            if (isExpanded) SageGreenPrimary.copy(alpha = 0.6f) else TacticalBorder
-        )
+            if (isExpanded) SageGreenPrimary.copy(alpha = 0.35f) else TacticalBorderSubtle
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isExpanded) 2.dp else 0.dp)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { onToggle() }
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                    .padding(horizontal = 14.dp, vertical = 13.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -1275,43 +1274,52 @@ private fun CollapsibleCard(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(30.dp)
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(Color(0xFF14241B)),
+                            .size(38.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(iconColor.copy(alpha = 0.10f)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = icon,
                             contentDescription = null,
                             tint = iconColor,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(19.dp)
                         )
                     }
 
-                    Spacer(modifier = Modifier.width(10.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
 
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = title,
                             color = TacticalTextPrimary,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold
                         )
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = subtitle,
                             color = TacticalTextMuted,
-                            fontSize = 11.sp,
+                            fontSize = 10.5.sp,
                             maxLines = 1
                         )
                     }
                 }
 
-                Icon(
-                    imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                    contentDescription = null,
-                    tint = if (isExpanded) SageGreenBright else TacticalTextMuted,
-                    modifier = Modifier.size(20.dp)
-                )
+                Box(
+                    modifier = Modifier
+                        .size(30.dp)
+                        .clip(CircleShape)
+                        .background(TacticalSurfaceLight),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = null,
+                        tint = if (isExpanded) SageGreenPrimary else TacticalTextMuted,
+                        modifier = Modifier.size(19.dp)
+                    )
+                }
             }
 
             AnimatedVisibility(
@@ -1322,7 +1330,7 @@ private fun CollapsibleCard(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(TacticalSurfaceLight.copy(alpha = 0.4f))
+                        .background(TacticalSurfaceLight.copy(alpha = 0.55f))
                 ) {
                     content()
                 }
@@ -1340,9 +1348,9 @@ private fun ReportCompactRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(6.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(TacticalBg)
-            .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(6.dp))
+            .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(12.dp))
             .clickable { onClick() }
             .padding(horizontal = 10.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -1369,7 +1377,7 @@ private fun GuideItem(q: String, a: String) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(6.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(TacticalBg)
             .padding(8.dp)
     ) {
