@@ -83,6 +83,29 @@ class KapterkaDatabaseTest {
     }
 
     @Test
+    fun testDefaultCatalogSeedingPreservesExistingEditedRow() = runBlocking {
+        val edited = InventoryItem(
+            id = "rav_w_01",
+            name = "Пользовательское название",
+            serviceCategory = "Служба РАВ",
+            subType = "Автоматы",
+            unit = "шт.",
+            categoryClass = "Кат. 2"
+        )
+        dao.insertItem(edited)
+
+        dao.insertItemsIfMissing(InitialData.getDefaultItems())
+
+        val stored = dao.getItemById("rav_w_01")
+        assertNotNull(stored)
+        assertEquals("Пользовательское название", stored!!.name)
+        assertTrue(
+            "New standard items must still be seeded",
+            dao.getAllItems().first().size > 1
+        )
+    }
+
+    @Test
     fun testStockRecordInsertAndStockQuantityUpdate() = runBlocking {
         val pointId = "base_sklad"
         val itemId = "rav_mina_120"
