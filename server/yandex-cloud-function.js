@@ -20,7 +20,10 @@ const EMAIL_SENDER_EMAIL = process.env.EMAIL_SENDER_EMAIL || '';
 const CHECKSUM_CHARS = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 const LICENSE_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
 const ADMIN_TOKEN_TTL_MS = 15 * 60 * 1000;
+const ADMIN_AUTH_WINDOW_MS = 5 * 60 * 1000;
+const ADMIN_AUTH_MAX_FAILURES = 5;
 let cachedGoogleToken = { value: '', expiresAt: 0 };
+const adminAuthFailures = new Map();
 
 function json(statusCode, body, headers = {}) {
   return {
@@ -325,6 +328,59 @@ function amountMatchesTariff(payment) {
   const currency = String(payment?.amount?.currency || '').toUpperCase();
   const value = Number(payment?.amount?.value || 0);
   return currency === 'RUB' && Math.abs(value - PAYMENT_AMOUNT_RUB) < 0.001;
+}
+
+function adminAuthSourceKey(event) {
+  const headers = event?.headers || {};
+  const forwarded = String(
+    headers['x-forwarded-for'] ||
+    headers['X-Forwarded-For'] ||
+    ''
+  ).split(',')[0].trim();
+  return String(
+    event?.requestContext?.identity?.sourceIp ||
+    event?.requestContext?.http?.sourceIp ||
+    forwarded ||
+    'unknown'
+  ).slice(0, 120);
+}
+
+function pruneAdminAuthFailures(now = Date.now()) {
+  for (const [key, entry] of adminAuthFailures.entries()) {
+    if (!entry || now - entry.windowStartedAt >= ADMIN_AUTH_WINDOW_MS) {
+      adminAuthFailures.delete(key);
+    }
+  }
+  if (adminAuthFailures.size > 5000) {
+    for (const key of adminAuthFailures.keys()) {
+      adminAuthFailures.delete(key);
+      if (adminAuthFailures.size <= 2500) break;
+    }
+  }
+}
+
+function adminAuthIsBlocked(sourceKey, now = Date.now()) {
+  pruneAdminAuthFailures(now);
+  const entry = adminAuthFailures.get(sourceKey);
+  return Boolean(
+    entry &&
+    now - entry.windowStartedAt < ADMIN_AUTH_WINDOW_MS &&
+    entry.failures >= ADMIN_AUTH_MAX_FAILURES
+  );
+}
+
+function recordAdminAuthFailure(sourceKey, now = Date.now()) {
+  const current = adminAuthFailures.get(sourceKey);
+  if (!current || now - current.windowStartedAt >= ADMIN_AUTH_WINDOW_MS) {
+    adminAuthFailures.set(sourceKey, { failures: 1, windowStartedAt: now });
+    return;
+  }
+  current.failures += 1;
+  adminAuthFailures.set(sourceKey, current);
+}
+
+function clearAdminAuthFailures(sourceKey) {
+  adminAuthFailures.delete(sourceKey);
 }
 
 function adminSecretMatches(secret) {
@@ -937,10 +993,22 @@ module.exports.handler = async function handler(event) {
     }
 
     if (action === 'admin_auth') {
+      const sourceKey = adminAuthSourceKey(event);
+      if (adminAuthIsBlocked(sourceKey)) {
+        return json(429, {
+          ok: false,
+          error: 'ADMIN_AUTH_RATE_LIMITED',
+          retry_after_seconds: Math.floor(ADMIN_AUTH_WINDOW_MS / 1000)
+        });
+      }
+
       const secret = cleanText(body.secret, 256);
       if (!adminSecretMatches(secret)) {
+        recordAdminAuthFailure(sourceKey);
         return json(403, { ok: false, error: 'ADMIN_AUTH_FAILED' });
       }
+
+      clearAdminAuthFailures(sourceKey);
       const adminToken = issueAdminToken();
       if (!adminToken) {
         return json(503, { ok: false, error: 'ADMIN_SESSION_NOT_CONFIGURED' });
