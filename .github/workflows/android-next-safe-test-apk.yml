@@ -16,6 +16,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: android-next-safe-test-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-test-apk:
     runs-on: ubuntu-latest
