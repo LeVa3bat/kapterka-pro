@@ -1114,22 +1114,43 @@ module.exports.handler = async function handler(event) {
       }
 
       const now = Date.now();
-      const expiresAt = now + days * 24 * 60 * 60 * 1000;
-      const licenseKey = generateAdminLicenseKey();
+      let licenseKey = cleanText(fighter.licenseKey, 40).toUpperCase();
+      let existingLicense = null;
 
-      await registerLicenseInFirestore({
-        licenseKey,
-        fighterId,
-        callsign: cleanText(fighter.callsign || '', 80),
-        email: cleanEmail(fighter.email),
-        paymentId: '',
-        amount: 0,
-        activatedAt: now,
-        expiresAt,
-        durationDays: days,
-        status: 'ACTIVE',
-        source: 'Admin server grant'
-      });
+      if (/^KAPT-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(licenseKey)) {
+        existingLicense = await getFirestoreDocument('licenses', licenseKey);
+      }
+
+      let expiresAt;
+      if (existingLicense &&
+          existingLicense.status === 'ACTIVE' &&
+          existingLicense.fighterId === fighterId &&
+          existingLicense.expiresAt > now
+      ) {
+        // "+N days" really extends the current license and keeps the same key.
+        expiresAt = existingLicense.expiresAt + days * 24 * 60 * 60 * 1000;
+        await patchFirestoreDocument('licenses', licenseKey, {
+          expiresAt,
+          status: 'ACTIVE'
+        });
+      } else {
+        licenseKey = generateAdminLicenseKey();
+        expiresAt = now + days * 24 * 60 * 60 * 1000;
+        await registerLicenseInFirestore({
+          licenseKey,
+          fighterId,
+          callsign: cleanText(fighter.callsign || '', 80),
+          email: cleanEmail(fighter.email),
+          paymentId: '',
+          amount: 0,
+          activatedAt: now,
+          expiresAt,
+          durationDays: days,
+          status: 'ACTIVE',
+          source: 'Admin server grant'
+        });
+      }
+
       await patchFirestoreDocument('fighters', fighterId, {
         licenseKey,
         expiresAt,
@@ -1269,7 +1290,7 @@ module.exports.handler = async function handler(event) {
 
       const licenseKey = keyForPayment(paymentId);
       const activatedAt = paymentTimestampMillis(payment);
-      const expiresAt = activatedAt + LICENSE_DURATION_MS;
+      let expiresAt = activatedAt + LICENSE_DURATION_MS;
       const email = cleanEmail(payment.metadata?.email);
       const callsign = cleanText(payment.metadata?.callsign || 'Пользователь', 80);
 
@@ -1303,6 +1324,28 @@ module.exports.handler = async function handler(event) {
       }
 
       const fighterId = existingFighterId || paymentFighterId || requestedFighterId;
+
+      if (existingLicense && existingLicense.expiresAt > 0) {
+        // Re-checking the same payment is idempotent: never extend twice.
+        expiresAt = existingLicense.expiresAt;
+      } else if (fighterId) {
+        try {
+          const currentFighter = await getFighterById(fighterId);
+          if (currentFighter && currentFighter.expiresAt > activatedAt) {
+            // Renewal adds 30 days to the remaining paid/admin entitlement instead
+            // of discarding the user's unused time.
+            expiresAt = currentFighter.expiresAt + LICENSE_DURATION_MS;
+          }
+        } catch (fighterReadError) {
+          console.error('Fighter renewal read error:', fighterReadError?.message || fighterReadError);
+          return jsonpOrJson(503, {
+            ok: false,
+            paid: true,
+            status,
+            error: 'LICENSE_REGISTRY_UNAVAILABLE'
+          }, callback);
+        }
+      }
 
       try {
         await registerLicenseInFirestore({
