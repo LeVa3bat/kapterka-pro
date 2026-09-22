@@ -147,10 +147,11 @@ class KapterkaRepository(
         val src = supplier.ifBlank { "Служба снабжения / Тыл" }
         val dest = toPointName.ifBlank { "Базовый склад" }
         val op = OperationRecord(java.util.UUID.randomUUID().toString(), OperationType.INCOME, src, dest, "", actor, comment, System.currentTimeMillis(), summary, itemsJson)
-        val updatedStocks = mutableListOf<StockRecord>()
+        val stagedStocks = linkedMapOf<String, StockRecord>()
         for (item in items) {
-            updatedStocks.add(buildAdjustedStock(toPointId, item.itemId, item.quantity, isIncome = true))
+            stageAdjustedStock(stagedStocks, toPointId, item.itemId, item.quantity, isIncome = true)
         }
+        val updatedStocks = stagedStocks.values.toList()
         dao.commitOperationAndStocks(op, updatedStocks)
         syncManager?.pushOperationAsync(getCurrentUnitKey(), op, updatedStocks)
     }
@@ -159,11 +160,12 @@ class KapterkaRepository(
         val summary = items.joinToString(", ") { "${it.itemName} - ${it.quantity} ${it.unit}" }
         val itemsJson = serializeOperationItems(items)
         val op = OperationRecord(java.util.UUID.randomUUID().toString(), OperationType.TRANSFER, fromPointName, toPointName, "", actor, comment, System.currentTimeMillis(), summary, itemsJson)
-        val updatedStocks = mutableListOf<StockRecord>()
+        val stagedStocks = linkedMapOf<String, StockRecord>()
         for (item in items) {
-            updatedStocks.add(buildAdjustedStock(fromPointId, item.itemId, -item.quantity, isIncome = false))
-            updatedStocks.add(buildAdjustedStock(toPointId, item.itemId, item.quantity, isIncome = true))
+            stageAdjustedStock(stagedStocks, fromPointId, item.itemId, -item.quantity, isIncome = false)
+            stageAdjustedStock(stagedStocks, toPointId, item.itemId, item.quantity, isIncome = true)
         }
+        val updatedStocks = stagedStocks.values.toList()
         dao.commitOperationAndStocks(op, updatedStocks)
         syncManager?.pushOperationAsync(getCurrentUnitKey(), op, updatedStocks)
     }
@@ -172,15 +174,14 @@ class KapterkaRepository(
         val summary = items.joinToString(", ") { "${it.itemName} - ${it.quantity} ${it.unit}" }
         val itemsJson = serializeOperationItems(items)
         val op = OperationRecord(java.util.UUID.randomUUID().toString(), OperationType.ISSUE, fromPointName, toPointName, "", actor, comment, System.currentTimeMillis(), summary, itemsJson)
-        val updatedStocks = mutableListOf<StockRecord>()
+        val stagedStocks = linkedMapOf<String, StockRecord>()
         for (item in items) {
-            val adjustedStockFrom = buildAdjustedStock(fromPointId, item.itemId, -item.quantity, isIncome = false)
-            updatedStocks.add(adjustedStockFrom)
+            stageAdjustedStock(stagedStocks, fromPointId, item.itemId, -item.quantity, isIncome = false)
 
             // Issue also increases the destination point in the same local transaction.
-            val adjustedStockTo = buildAdjustedStock(toPointId, item.itemId, item.quantity, isIncome = true)
-            updatedStocks.add(adjustedStockTo)
+            stageAdjustedStock(stagedStocks, toPointId, item.itemId, item.quantity, isIncome = true)
         }
+        val updatedStocks = stagedStocks.values.toList()
         dao.commitOperationAndStocks(op, updatedStocks)
         syncManager?.pushOperationAsync(getCurrentUnitKey(), op, updatedStocks)
     }
@@ -189,10 +190,11 @@ class KapterkaRepository(
         val summary = items.joinToString(", ") { "${it.itemName} - ${it.quantity} ${it.unit}" }
         val itemsJson = serializeOperationItems(items)
         val op = OperationRecord(java.util.UUID.randomUUID().toString(), OperationType.EXPENDITURE, pointName, "Списание (ф. 8)", docNumber, responsiblePerson, comment, System.currentTimeMillis(), summary, itemsJson)
-        val updatedStocks = mutableListOf<StockRecord>()
+        val stagedStocks = linkedMapOf<String, StockRecord>()
         for (item in items) {
-            updatedStocks.add(buildAdjustedStock(fromPointId, item.itemId, -item.quantity, isIncome = false))
+            stageAdjustedStock(stagedStocks, fromPointId, item.itemId, -item.quantity, isIncome = false)
         }
+        val updatedStocks = stagedStocks.values.toList()
         dao.commitOperationAndStocks(op, updatedStocks)
         syncManager?.pushOperationAsync(getCurrentUnitKey(), op, updatedStocks)
     }
@@ -264,19 +266,22 @@ class KapterkaRepository(
         syncManager?.deleteRequisitionAsync(getCurrentUnitKey(), id)
     }
 
-    private suspend fun buildAdjustedStock(
+    private suspend fun stageAdjustedStock(
+        staged: MutableMap<String, StockRecord>,
         pointId: String,
         itemId: String,
         change: Int,
         isIncome: Boolean
     ): StockRecord {
-        val current = dao.getStockItem(pointId, itemId)
-        return if (current != null) {
+        val key = "$pointId:::$itemId"
+        val current = staged[key] ?: dao.getStockItem(pointId, itemId)
+        val now = System.currentTimeMillis()
+        val next = if (current != null) {
             current.copy(
                 quantity = current.quantity + change,
                 incomeTotal = current.incomeTotal + if (isIncome && change > 0) change else 0,
                 expenseTotal = current.expenseTotal + if (!isIncome || change < 0) java.lang.Math.abs(change) else 0,
-                lastUpdated = System.currentTimeMillis()
+                lastUpdated = now
             )
         } else {
             StockRecord(
@@ -285,9 +290,11 @@ class KapterkaRepository(
                 quantity = change,
                 incomeTotal = if (isIncome && change > 0) change else 0,
                 expenseTotal = if (!isIncome || change < 0) java.lang.Math.abs(change) else 0,
-                lastUpdated = System.currentTimeMillis()
+                lastUpdated = now
             )
         }
+        staged[key] = next
+        return next
     }
 
     suspend fun adjustStockQuantity(pointId: String, itemId: String, change: Int, isIncome: Boolean = true): StockRecord {
