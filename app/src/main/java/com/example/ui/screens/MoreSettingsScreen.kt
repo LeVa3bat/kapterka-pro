@@ -452,10 +452,10 @@ fun MoreSettingsScreen(
         item {
             Column(modifier = Modifier.padding(bottom = 12.dp)) {
                 Text(
-                    text = "НАСТРОЙКИ И ОТЧЕТНОСТЬ",
-                    color = SageGreenBright,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
+                    text = "Ещё",
+                    color = TacticalTextPrimary,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.ExtraBold
                 )
                 Text(
                     text = "Профиль, синхронизация, отчёты и настройки",
@@ -472,8 +472,9 @@ fun MoreSettingsScreen(
                     .fillMaxWidth()
                     .padding(bottom = 10.dp),
                 colors = CardDefaults.cardColors(containerColor = TacticalSurface),
-                border = BorderStroke(1.dp, TacticalBorder),
-                shape = RoundedCornerShape(10.dp)
+                border = BorderStroke(1.dp, TacticalBorderSubtle),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                shape = RoundedCornerShape(18.dp)
             ) {
                 Row(
                     modifier = Modifier
@@ -502,13 +503,13 @@ fun MoreSettingsScreen(
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text(
-                                text = "Тема: ${if (isDarkTheme) "Тёмная (Боевая ночная)" else "Светлая (Дневная)"}",
+                                text = "Тема: ${if (isDarkTheme) "Тёмная" else "Светлая"}",
                                 color = TacticalTextPrimary,
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = if (isDarkTheme) "Антибликовый тактический ночной режим" else "Высококонтрастный дневной режим",
+                                text = if (isDarkTheme) "Комфортная тёмная палитра" else "Чистая светлая палитра",
                                 color = TacticalTextMuted,
                                 fontSize = 11.sp
                             )
@@ -532,8 +533,8 @@ fun MoreSettingsScreen(
         // 1. COLLAPSIBLE ACCORDION: ПРОФИЛЬ ПОДРАЗДЕЛЕНИЯ
         item {
             CollapsibleCard(
-                title = "Облачная база Google Firebase",
-                subtitle = "Канал: $unitKeyDisplay • Онлайн синхронизация",
+                title = "Профиль и синхронизация",
+                subtitle = "Общая группа учёта • код: $unitKeyDisplay",
                 icon = Icons.Default.Cloud,
                 iconColor = SageGreenBright,
                 isExpanded = expandedProfile,
