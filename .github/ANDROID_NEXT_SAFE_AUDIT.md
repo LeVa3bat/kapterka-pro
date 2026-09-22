@@ -85,6 +85,21 @@ Target design:
 - Sync only after local transaction commits.
 - Add rollback/consistency tests.
 
+
+## Implemented in android/next-safe
+
+### Payment client hardening
+- Android no longer embeds the YooKassa secret in `YooKassaPaymentService`.
+- Direct authenticated calls from the APK to YooKassa were removed from the future branch.
+- The future client now accepts only a public `PAYMENT_API_URL` and delegates payment creation/status checks to the backend.
+- Legacy `saveConfig(...)` remains source-compatible but deliberately ignores/removes secret material instead of persisting it.
+- `.env.example` now documents which settings belong on Android vs server only.
+
+### Sync data-loss guard
+- Initial reconcile no longer deletes local warehouse points, stock, operation history or requisitions merely because they are absent from the cloud snapshot.
+- An empty cloud stock collection no longer clears local stock.
+- This is a conservative safety guard. Explicit deletion/tombstone semantics still need to be designed before release.
+
 ## Safe implementation order
 
 1. Establish green baseline compile + unit tests on this branch.
