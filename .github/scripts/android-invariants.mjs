@@ -58,8 +58,63 @@ if (!process.exitCode) ok('Room migration chain is explicit');
 
 if (!/android:allowBackup="true"/.test(manifest)) warn('android:allowBackup is no longer true; verify backup/restore impact deliberately');
 
-if (/DEFAULT_LIVE_KEY|live_[A-Za-z0-9_-]{20,}/.test(read('app/src/main/java/com/example/data/payment/YooKassaPaymentService.kt'))) {
-  warn('YooKassa secret material is still present in Android source. Do not treat this as resolved; migrate payment API calls to a server before a future security release.');
+const paymentSource = read('app/src/main/java/com/example/data/payment/YooKassaPaymentService.kt');
+if (/DEFAULT_LIVE_KEY|live_[A-Za-z0-9_-]{20,}/.test(paymentSource)) {
+  fail('YooKassa secret material must never be present in Android source');
+} else {
+  ok('YooKassa secret material is absent from Android source');
+}
+if (paymentSource.includes('api.yookassa.ru') || paymentSource.includes('Authorization", "Basic')) {
+  fail('Android must not call authenticated YooKassa API directly');
+} else if (!paymentSource.includes('BuildConfig.PAYMENT_API_URL')) {
+  fail('Android payment client is not routed through PAYMENT_API_URL');
+} else {
+  ok('Android payment client uses server-only payment API');
+}
+
+const licenseSource = read('app/src/main/java/com/example/data/license/LicenseManager.kt');
+const legacyPaymentIssuer = licenseSource.slice(
+  licenseSource.indexOf('suspend fun activateLicenseAfterPayment'),
+  licenseSource.indexOf('private suspend fun updateRoomProfilePro')
+);
+if (legacyPaymentIssuer.includes('generateLicenseKey()') || legacyPaymentIssuer.includes('30L * 24L')) {
+  fail('legacy post-payment path can still mint a client-side license');
+} else if (!licenseSource.includes('activateServerVerifiedLicense')) {
+  fail('server-verified license activation path is missing');
+} else {
+  ok('new paid licenses are persisted only from server-issued data');
+}
+
+const manualActivation = licenseSource.slice(
+  licenseSource.indexOf('suspend fun activateKeyManually'),
+  licenseSource.lastIndexOf('\n}')
+);
+if (manualActivation.includes('Ключ подтвержден цифровой подписью в оффлайн-режиме') ||
+    manualActivation.includes('Активация проверенного военного ключа')) {
+  fail('manual activation still contains offline license minting fallback');
+} else {
+  ok('manual activation does not mint a fresh offline license');
+}
+
+const syncSource = read('app/src/main/java/com/example/data/sync/FirebaseSyncManager.kt');
+const reconcileStart = syncSource.indexOf('suspend fun syncAndReconcileAll');
+const reconcileEnd = syncSource.indexOf('fun pushOperationAsync', reconcileStart);
+const reconcileSource = syncSource.slice(reconcileStart, reconcileEnd);
+if (reconcileSource.includes('dao.clearAllStockRecords()') ||
+    /if \(!cloudOpIds\.contains\([^)]+\)\)\s*\{\s*dao\.deleteOperation/.test(reconcileSource) ||
+    /if \(!cloudReqIds\.contains\([^)]+\)\)\s*\{\s*dao\.deleteRequisition/.test(reconcileSource)) {
+  fail('sync reconcile still contains delete-by-absence behavior');
+} else {
+  ok('sync reconcile preserves local data when cloud data is absent');
+}
+
+const backupRules = read('app/src/main/res/xml/backup_rules.xml');
+const extractionRules = read('app/src/main/res/xml/data_extraction_rules.xml');
+if (!backupRules.includes('kapterka_sync_prefs.xml') ||
+    !extractionRules.includes('kapterka_sync_prefs.xml')) {
+  fail('device UUID backup exclusion is missing');
+} else {
+  ok('device UUID is excluded from cloud/device restore');
 }
 
 const sourceFiles = [];
