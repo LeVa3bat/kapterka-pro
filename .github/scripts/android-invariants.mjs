@@ -85,6 +85,14 @@ if (legacyPaymentIssuer.includes('generateLicenseKey()') || legacyPaymentIssuer.
   ok('new paid licenses are persisted only from server-issued data');
 }
 
+if (licenseSource.includes('FirebaseFirestore') ||
+    licenseSource.includes('collection("licenses")') ||
+    !licenseSource.includes('LicenseBackendService')) {
+  fail('LicenseManager must not read Firestore licenses directly');
+} else {
+  ok('LicenseManager verifies/restores licenses through backend');
+}
+
 const manualActivation = licenseSource.slice(
   licenseSource.indexOf('suspend fun activateKeyManually'),
   licenseSource.lastIndexOf('\n}')
