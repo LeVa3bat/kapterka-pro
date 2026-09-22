@@ -207,6 +207,7 @@ class AdminBackendService {
         "ADMIN_SESSION_INVALID" -> "Служебная сессия истекла. Войдите заново."
         "ADMIN_SESSION_NOT_CONFIGURED" -> "Серверная админ-сессия не настроена."
         "MISSING_FIGHTER_ID" -> "Не выбран пользователь."
+        "FIGHTER_NOT_FOUND" -> "Пользователь больше не найден в серверном реестре."
         else -> "Сервер отклонил административную операцию."
     }
 }
