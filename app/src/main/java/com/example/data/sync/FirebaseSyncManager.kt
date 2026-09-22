@@ -128,7 +128,10 @@ class FirebaseSyncManager(
             TOMBSTONE_STOCK -> {
                 val parts = tombstone.entityId.split(":::", limit = 2)
                 if (parts.size == 2 && parts[0].isNotBlank() && parts[1].isNotBlank()) {
-                    dao.deleteStockRecord(parts[0], parts[1])
+                    val current = dao.getStockItem(parts[0], parts[1])
+                    if (current == null || !shouldAcceptStockRecord(tombstone.unitKey, current)) {
+                        dao.deleteStockRecord(parts[0], parts[1])
+                    }
                 }
             }
             TOMBSTONE_OPERATION -> dao.deleteOperation(tombstone.entityId)
@@ -144,6 +147,56 @@ class FirebaseSyncManager(
         if (unitKey.isBlank() || entityId.isBlank()) return false
         val id = SyncTombstone.create(unitKey, entityType, entityId, 1L).id
         return dao.getSyncTombstoneById(id) != null
+    }
+
+    /**
+     * Stock records use a stable point+item identity, so a later legitimate stock
+     * recreation must be able to supersede an older deletion marker.
+     *
+     * Parent point/item tombstones always win. For a stock tombstone, the newer
+     * timestamp wins deterministically. A newer stock revision clears the stale
+     * tombstone locally and best-effort in Firestore so other devices can converge.
+     */
+    private suspend fun shouldAcceptStockRecord(
+        unitKey: String,
+        stock: StockRecord
+    ): Boolean {
+        val cleanKey = unitKey.trim()
+        if (cleanKey.isBlank() || stock.pointId.isBlank() || stock.itemId.isBlank()) return false
+
+        if (isTombstoned(cleanKey, TOMBSTONE_POINT, stock.pointId) ||
+            isTombstoned(cleanKey, TOMBSTONE_ITEM, stock.itemId)
+        ) {
+            return false
+        }
+
+        val entityId = "${stock.pointId}:::${stock.itemId}"
+        val tombstoneId = SyncTombstone.create(
+            cleanKey,
+            TOMBSTONE_STOCK,
+            entityId,
+            1L
+        ).id
+        val tombstone = dao.getSyncTombstoneById(tombstoneId) ?: return true
+
+        if (!tombstone.isSupersededBy(stock.lastUpdated)) {
+            return false
+        }
+
+        dao.deleteSyncTombstoneById(tombstone.id)
+        if (productionCloudEnabled) {
+            try {
+                firestore.collection("units").document(cleanKey)
+                    .collection("sync_tombstones").document(tombstone.id)
+                    .delete().await()
+            } catch (e: Exception) {
+                // Local resolution is authoritative for this device. A later sync
+                // retries the same timestamp comparison if the stale cloud marker remains.
+                Log.w(TAG, "Failed clearing superseded stock tombstone in cloud", e)
+            }
+        }
+        Log.i(TAG, "Superseded stale stock tombstone: ${tombstone.id}")
+        return true
     }
 
     private suspend fun syncTombstones(unitKey: String) {
@@ -315,9 +368,7 @@ class FirebaseSyncManager(
                             lastUpdated = dc.document.getLong("lastUpdated") ?: 0L
                         )
                         if (s.pointId.isNotBlank() && s.itemId.isNotBlank() &&
-                            !isTombstoned(unitKey, TOMBSTONE_POINT, s.pointId) &&
-                            !isTombstoned(unitKey, TOMBSTONE_ITEM, s.itemId) &&
-                            !isTombstoned(unitKey, TOMBSTONE_STOCK, "${s.pointId}:::${s.itemId}")
+                            shouldAcceptStockRecord(unitKey, s)
                         ) {
                             dao.insertOrUpdateStock(s)
                             // Do not create generic placeholder from stock record if nameHint is missing;
@@ -555,22 +606,19 @@ class FirebaseSyncManager(
 
                     if (ptId.isNotBlank() && itemId.isNotBlank()) {
                         // Do not re-insert stocks belonging to points that no longer exist in cloud
+                        val cloudStock = StockRecord(
+                            pointId = ptId,
+                            itemId = itemId,
+                            quantity = qty,
+                            incomeTotal = inc,
+                            expenseTotal = exp,
+                            lastUpdated = updated
+                        )
                         if ((existingPointsMap.containsKey(ptId) || ptId == "base_sklad") &&
-                            !isTombstoned(cleanKey, TOMBSTONE_POINT, ptId) &&
-                            !isTombstoned(cleanKey, TOMBSTONE_ITEM, itemId) &&
-                            !isTombstoned(cleanKey, TOMBSTONE_STOCK, "${ptId}:::${itemId}")
+                            shouldAcceptStockRecord(cleanKey, cloudStock)
                         ) {
                             cloudStockKeys.add("${ptId}:::${itemId}")
-                            recordsToInsert.add(
-                                StockRecord(
-                                    pointId = ptId,
-                                    itemId = itemId,
-                                    quantity = qty,
-                                    incomeTotal = inc,
-                                    expenseTotal = exp,
-                                    lastUpdated = updated
-                                )
-                            )
+                            recordsToInsert.add(cloudStock)
                         }
                     }
                 }
@@ -696,6 +744,10 @@ class FirebaseSyncManager(
                 )
 
                 for (s in updatedStocks) {
+                    if (!shouldAcceptStockRecord(unitKey, s)) {
+                        Log.w(TAG, "Skipped stock push blocked by a newer tombstone: ${s.pointId}:::${s.itemId}")
+                        continue
+                    }
                     val docId = "${s.pointId}___${s.itemId}"
                     unitRef.collection("stock_records").document(docId).set(
                         hashMapOf(
@@ -766,6 +818,10 @@ class FirebaseSyncManager(
         if (unitKey.isEmpty()) return
         scope.launch(Dispatchers.IO) {
             try {
+                if (!shouldAcceptStockRecord(unitKey, s)) {
+                    Log.w(TAG, "Skipped stock push blocked by a newer tombstone: ${s.pointId}:::${s.itemId}")
+                    return@launch
+                }
                 val db = firestore
                 val docId = "${s.pointId}___${s.itemId}"
                 db.collection("units").document(unitKey)
