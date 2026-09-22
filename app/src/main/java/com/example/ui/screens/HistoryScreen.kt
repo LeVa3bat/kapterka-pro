@@ -80,43 +80,26 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-// Utility: Service Category detection
+// Category detection prefers the saved catalog. Unknown historical rows stay neutral.
 fun resolveItemCategory(item: OperationItemEntry, catalog: List<InventoryItem>): String {
-    val found = catalog.firstOrNull { it.id == item.itemId || it.name.equals(item.itemName, ignoreCase = true) }
-    if (found != null && found.serviceCategory.isNotBlank()) return found.serviceCategory
-    val lower = item.itemName.lowercase()
-    return when {
-        lower.contains("мина") || lower.contains("выстрел") || lower.contains("патрон") || lower.contains("снаряд") ||
-                lower.contains("вог") || lower.contains("граната") || lower.contains("автомат") || lower.contains("пулемет") ||
-                lower.contains("ак-") || lower.contains("пкм") || lower.contains("рпг") || lower.contains("оружие") || lower.contains("рав") -> "Служба РАВ"
-        lower.contains("дрон") || lower.contains("мавик") || lower.contains("mavic") || lower.contains("fpv") ||
-                lower.contains("бпла") || lower.contains("аккумулятор") || lower.contains("батарея") || lower.contains("ретранслятор") || lower.contains("пульт") -> "Служба БПЛА и робототехники"
-        lower.contains("форма") || lower.contains("ботинки") || lower.contains("вкпо") || lower.contains("плиты") ||
-                lower.contains("бронежилет") || lower.contains("шлем") || lower.contains("разгрузка") || lower.contains("подсумок") ||
-                lower.contains("костюм") || lower.contains("перчатки") || lower.contains("спальник") || lower.contains("каремат") -> "Вещевая служба"
-        lower.contains("аптечка") || lower.contains("жгут") || lower.contains("турникет") || lower.contains("бинт") ||
-                lower.contains("промедол") || lower.contains("нефопам") || lower.contains("пластырь") || lower.contains("ампул") ||
-                lower.contains("ножницы") || lower.contains("окклюзионн") || lower.contains("гемостатик") || lower.contains("медицин") -> "Медицинская служба"
-        lower.contains("вода") || lower.contains("сухпай") || lower.contains("ирп") || lower.contains("тушенка") ||
-                lower.contains("консерв") || lower.contains("хлеб") || lower.contains("крупа") || lower.contains("сахар") ||
-                lower.contains("чай") || lower.contains("кофе") || lower.contains("макарон") || lower.contains("продоволь") -> "Продовольственная служба"
-        lower.contains("дизель") || lower.contains("бензин") || lower.contains("масло") || lower.contains("гсм") ||
-                lower.contains("канистра") || lower.contains("топливо") || lower.contains("солярка") || lower.contains("генератор") -> "ГСМ / Техническая служба"
-        lower.contains("рация") || lower.contains("радиостанция") || lower.contains("кабель") || lower.contains("антенна") ||
-                lower.contains("та-57") || lower.contains("связь") || lower.contains("гарнитура") -> "Служба связи"
-        else -> "Прочее имущество"
-    }
+    return catalog
+        .firstOrNull { it.id == item.itemId || it.name.equals(item.itemName, ignoreCase = true) }
+        ?.serviceCategory
+        ?.takeIf { it.isNotBlank() }
+        ?: "Прочее"
 }
 
 fun getCategoryEmoji(category: String): String {
+    val value = category.lowercase()
     return when {
-        category.contains("РАВ") -> "💣"
-        category.contains("БПЛА") -> "🛸"
-        category.contains("Вещев") -> "👕"
-        category.contains("Медицин") -> "💊"
-        category.contains("Продоволь") -> "🥫"
-        category.contains("ГСМ") || category.contains("Техническ") -> "⛽"
-        category.contains("Связь") -> "📻"
+        "авто" in value || "запчаст" in value -> "🚗"
+        "мед" in value -> "🩺"
+        "продукт" in value || "напит" in value || "еда" in value -> "🍽️"
+        "инструмент" in value || "оснаст" in value -> "🧰"
+        "компьют" in value || "it" in value || "перифер" in value -> "💻"
+        "стро" in value || "крепёж" in value -> "🏗️"
+        "сырь" in value || "производ" in value || "комплектующ" in value -> "🏭"
+        "логист" in value || "отгруз" in value || "приёмк" in value -> "🚚"
         else -> "📦"
     }
 }
@@ -234,16 +217,7 @@ fun HistoryScreen(
             val countIssue = remember(operations) { operations.count { it.type == OperationType.ISSUE } }
             val countExpenditure = remember(operations) { operations.count { it.type == OperationType.EXPENDITURE } }
 
-            val serviceChips = listOf(
-                "Служба РАВ",
-                "Служба БПЛА и робототехники",
-                "Вещевая служба",
-                "Медицинская служба",
-                "Продовольственная служба",
-                "ГСМ / Техническая служба",
-                "Служба связи",
-                "Прочее имущество"
-            )
+            val serviceChips = availableCategories.ifEmpty { listOf("Прочее") }
 
             Row(
                 modifier = Modifier
@@ -304,16 +278,7 @@ fun HistoryScreen(
                 serviceChips.forEach { cat ->
                     val isSel = selectedCategoryFilter == cat
                     val emoji = getCategoryEmoji(cat)
-                    val shortName = when (cat) {
-                        "Служба РАВ" -> "РАВ"
-                        "Служба БПЛА и робототехники" -> "БПЛА"
-                        "Вещевая служба" -> "Вещевая"
-                        "Медицинская служба" -> "Мед"
-                        "Продовольственная служба" -> "Прод"
-                        "ГСМ / Техническая служба" -> "ГСМ"
-                        "Служба связи" -> "Связь"
-                        else -> "Прочее"
-                    }
+                    val shortName = cat
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(12.dp))
