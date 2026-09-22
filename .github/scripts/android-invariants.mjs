@@ -114,6 +114,18 @@ if (!daoSource.includes('@Transaction') || !daoSource.includes('commitOperationA
   ok('core operation history and stock mutations are committed atomically');
 }
 
+const backendSource = read('server/yandex-cloud-function.js');
+const restoreStart = backendSource.indexOf("if (action === 'license_restore')");
+const restoreEnd = backendSource.indexOf("if (action === 'send_license_email')", restoreStart);
+const restoreSource = backendSource.slice(restoreStart, restoreEnd);
+if (!restoreSource.includes("MISSING_FIGHTER_ID") ||
+    !restoreSource.includes("LICENSE_RESTORE_IDENTITY_MISMATCH") ||
+    !restoreSource.includes("license.fighterId !== fighterId")) {
+  fail('license restore is not bound to the existing fighter identity');
+} else {
+  ok('license restore is identity-bound and does not disclose keys by email alone');
+}
+
 const syncSource = read('app/src/main/java/com/example/data/sync/FirebaseSyncManager.kt');
 const reconcileStart = syncSource.indexOf('suspend fun syncAndReconcileAll');
 const reconcileEnd = syncSource.indexOf('fun pushOperationAsync', reconcileStart);
