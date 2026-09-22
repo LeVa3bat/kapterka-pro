@@ -318,9 +318,23 @@ class LicenseManager(
      */
     fun resetLicense() {
         val sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        sp.edit().clear().apply()
+
+        // Revoke only entitlement state. The stable fighter identity and original
+        // demo start timestamp must survive so logout/reset cannot create a new
+        // identity or restart the trial period.
+        sp.edit()
+            .remove("active_license_key")
+            .remove("license_expires_at")
+            .remove("license_activated_at")
+            .remove("license_payment_id")
+            .apply()
+
         val vault = context.getSharedPreferences(PERMANENT_VAULT, Context.MODE_PRIVATE)
-        vault.edit().remove("vault_active_key").remove("vault_expires_at").apply()
+        vault.edit()
+            .remove("vault_active_key")
+            .remove("vault_expires_at")
+            .apply()
+
         scope.launch(Dispatchers.IO) {
             try {
                 val profile = dao.getUserProfile().first()
@@ -328,8 +342,7 @@ class LicenseManager(
                     dao.saveUserProfile(
                         profile.copy(
                             isProActive = false,
-                            proDaysLeft = 0,
-                            demoDaysLeft = 3
+                            proDaysLeft = 0
                         )
                     )
                 }
