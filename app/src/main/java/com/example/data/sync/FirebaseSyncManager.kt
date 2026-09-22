@@ -11,6 +11,7 @@ import com.example.data.model.OperationType
 import com.example.data.model.RequisitionRequest
 import com.example.data.model.RequestStatus
 import com.example.data.model.StockRecord
+import com.example.data.model.SyncTombstone
 import com.example.data.model.WarehousePoint
 import com.google.firebase.firestore.DocumentChange
 import com.google.firebase.firestore.FieldValue
@@ -71,6 +72,103 @@ class FirebaseSyncManager(
     private companion object {
         const val ACTIVE_DEVICE_WINDOW_MS = 15 * 60 * 1000L
         const val PRESENCE_HEARTBEAT_MS = 5 * 60 * 1000L
+        const val TOMBSTONE_POINT = "warehouse_point"
+        const val TOMBSTONE_ITEM = "inventory_item"
+        const val TOMBSTONE_OPERATION = "operation"
+        const val TOMBSTONE_REQUISITION = "requisition"
+        const val TOMBSTONE_RETENTION_MS = 120L * 24L * 60L * 60L * 1000L
+    }
+
+    suspend fun prepareDeletionTombstone(
+        unitKey: String,
+        entityType: String,
+        entityId: String
+    ): SyncTombstone = withContext(Dispatchers.IO) {
+        val cleanKey = unitKey.trim()
+        val tombstone = SyncTombstone.create(cleanKey, entityType, entityId)
+        dao.upsertSyncTombstone(tombstone)
+        if (cleanKey.isNotBlank()) {
+            try {
+                firestore.collection("units").document(cleanKey)
+                    .collection("sync_tombstones").document(tombstone.id)
+                    .set(
+                        hashMapOf(
+                            "id" to tombstone.id,
+                            "unitKey" to cleanKey,
+                            "entityType" to tombstone.entityType,
+                            "entityId" to tombstone.entityId,
+                            "deletedAt" to tombstone.deletedAt,
+                            "deviceId" to deviceId
+                        ),
+                        SetOptions.merge()
+                    ).await()
+            } catch (e: Exception) {
+                Log.w(TAG, "Tombstone saved locally; cloud publish deferred", e)
+            }
+        }
+        tombstone
+    }
+
+    private suspend fun applyTombstone(tombstone: SyncTombstone) {
+        when (tombstone.entityType) {
+            TOMBSTONE_POINT -> {
+                if (tombstone.entityId != "base_sklad") {
+                    dao.deleteStockForPoint(tombstone.entityId)
+                    dao.deletePoint(tombstone.entityId)
+                }
+            }
+            TOMBSTONE_ITEM -> {
+                dao.deleteStockForItem(tombstone.entityId)
+                dao.deleteItem(tombstone.entityId)
+            }
+            TOMBSTONE_OPERATION -> dao.deleteOperation(tombstone.entityId)
+            TOMBSTONE_REQUISITION -> dao.deleteRequisition(tombstone.entityId)
+        }
+    }
+
+    private suspend fun syncTombstones(unitKey: String) {
+        if (unitKey.isBlank()) return
+        val unitRef = firestore.collection("units").document(unitKey)
+
+        for (local in dao.getSyncTombstonesForUnit(unitKey)) {
+            try {
+                unitRef.collection("sync_tombstones").document(local.id).set(
+                    hashMapOf(
+                        "id" to local.id,
+                        "unitKey" to local.unitKey,
+                        "entityType" to local.entityType,
+                        "entityId" to local.entityId,
+                        "deletedAt" to local.deletedAt,
+                        "deviceId" to deviceId
+                    ),
+                    SetOptions.merge()
+                ).await()
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed publishing local tombstone", e)
+            }
+        }
+
+        val cloud = unitRef.collection("sync_tombstones").get().await()
+        for (doc in cloud.documents) {
+            val type = doc.getString("entityType").orEmpty()
+            val entityId = doc.getString("entityId").orEmpty()
+            val deletedAt = doc.getLong("deletedAt") ?: 0L
+            if (type.isBlank() || entityId.isBlank() || deletedAt <= 0L) continue
+
+            val tombstone = SyncTombstone.create(
+                unitKey = unitKey,
+                entityType = type,
+                entityId = entityId,
+                deletedAt = deletedAt
+            )
+            val existing = dao.getSyncTombstoneById(tombstone.id)
+            if (existing == null || tombstone.deletedAt > existing.deletedAt) {
+                dao.upsertSyncTombstone(tombstone)
+            }
+            applyTombstone(tombstone)
+        }
+
+        dao.pruneOldSyncTombstones(System.currentTimeMillis() - TOMBSTONE_RETENTION_MS)
     }
 
     fun startSyncForUnit(unitKey: String, callsign: String, unitName: String) {
@@ -106,6 +204,23 @@ class FirebaseSyncManager(
         val db = firestore
         val unitRef = db.collection("units").document(unitKey)
 
+        val tombstoneReg = unitRef.collection("sync_tombstones").addSnapshotListener { snap, e ->
+            if (e != null || snap == null) return@addSnapshotListener
+            scope.launch(Dispatchers.IO) {
+                for (dc in snap.documentChanges) {
+                    if (dc.type == DocumentChange.Type.REMOVED) continue
+                    val type = dc.document.getString("entityType").orEmpty()
+                    val entityId = dc.document.getString("entityId").orEmpty()
+                    val deletedAt = dc.document.getLong("deletedAt") ?: 0L
+                    if (type.isBlank() || entityId.isBlank() || deletedAt <= 0L) continue
+                    val tombstone = SyncTombstone.create(unitKey, type, entityId, deletedAt)
+                    dao.upsertSyncTombstone(tombstone)
+                    applyTombstone(tombstone)
+                }
+            }
+        }
+        listeners.add(tombstoneReg)
+
         val pointsReg = unitRef.collection("warehouse_points").addSnapshotListener { snap, e ->
             if (e != null || snap == null) return@addSnapshotListener
             scope.launch(Dispatchers.IO) {
@@ -118,10 +233,7 @@ class FirebaseSyncManager(
                         orderIndex = dc.document.getLong("orderIndex")?.toInt() ?: 0,
                         createdAt = dc.document.getLong("createdAt") ?: 0L
                     )
-                    if (dc.type == DocumentChange.Type.REMOVED) {
-                        dao.deletePoint(p.id)
-                        dao.deleteStockForPoint(p.id)
-                    } else {
+                    if (dc.type != DocumentChange.Type.REMOVED) {
                         dao.insertPoint(p)
                     }
                 }
@@ -143,9 +255,7 @@ class FirebaseSyncManager(
                         standardCode = dc.document.getString("standardCode") ?: "",
                         isCustom = dc.document.getBoolean("isCustom") ?: false
                     )
-                    if (dc.type == DocumentChange.Type.REMOVED) {
-                        dao.deleteItem(item.id)
-                    } else {
+                    if (dc.type != DocumentChange.Type.REMOVED) {
                         dao.insertItem(item)
                     }
                 }
@@ -162,11 +272,7 @@ class FirebaseSyncManager(
                     val pId = dc.document.getString("pointId") ?: if (parts.size >= 2) parts[0] else ""
                     val iId = dc.document.getString("itemId") ?: if (parts.size >= 2) parts[1] else ""
 
-                    if (dc.type == DocumentChange.Type.REMOVED) {
-                        if (pId.isNotBlank() && iId.isNotBlank()) {
-                            dao.deleteStockRecord(pId, iId)
-                        }
-                    } else {
+                    if (dc.type != DocumentChange.Type.REMOVED) {
                         val s = StockRecord(
                             pointId = pId,
                             itemId = iId,
@@ -206,9 +312,7 @@ class FirebaseSyncManager(
                         itemsSummary = dc.document.getString("itemsSummary") ?: "",
                         itemsJson = dc.document.getString("itemsJson") ?: ""
                     )
-                    if (dc.type == DocumentChange.Type.REMOVED) {
-                        dao.deleteOperation(op.id)
-                    } else {
+                    if (dc.type != DocumentChange.Type.REMOVED) {
                         dao.insertOperation(op)
                         extractAndRegisterItemsFromOperation(unitKey, op)
                         if (!isFirstOpLoad && dc.type == DocumentChange.Type.ADDED) {
@@ -246,9 +350,7 @@ class FirebaseSyncManager(
                         itemsSummary = dc.document.getString("itemsSummary") ?: "",
                         itemsJson = dc.document.getString("itemsJson") ?: ""
                     )
-                    if (dc.type == DocumentChange.Type.REMOVED) {
-                        dao.deleteRequisition(req.id)
-                    } else {
+                    if (dc.type != DocumentChange.Type.REMOVED) {
                         dao.insertRequisition(req)
                     }
                 }
@@ -325,6 +427,8 @@ class FirebaseSyncManager(
         try {
             val db = firestore
             val unitRef = db.collection("units").document(cleanKey)
+
+            syncTombstones(cleanKey)
 
             // 1. Fetch Cloud Stock Records first to know which points have inventory
             val cloudStocksSnap = unitRef.collection("stock_records").get().await()
