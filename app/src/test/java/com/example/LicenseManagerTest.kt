@@ -27,6 +27,10 @@ class LicenseManagerTest {
     @Before
     fun setup() {
         context = ApplicationProvider.getApplicationContext<Context>()
+        context.getSharedPreferences("kapterka_fighter_license_prefs", Context.MODE_PRIVATE)
+            .edit().clear().commit()
+        context.getSharedPreferences("kapterka_license_permanent_vault", Context.MODE_PRIVATE)
+            .edit().clear().commit()
         db = Room.inMemoryDatabaseBuilder(context, KapterkaDatabase::class.java)
             .allowMainThreadQueries()
             .build()
@@ -108,6 +112,27 @@ class LicenseManagerTest {
                 paymentId = ""
             )
         )
+    }
+
+    @Test
+    fun testResetLicensePreservesIdentityAndDemoStart() {
+        val fighterIdBefore = licenseManager.getFighterPersonalId()
+        licenseManager.refreshLicenseStatus()
+
+        val prefs = context.getSharedPreferences(
+            "kapterka_fighter_license_prefs",
+            Context.MODE_PRIVATE
+        )
+        val demoStartBefore = prefs.getLong("demo_first_launch_time", 0L)
+        assertTrue(demoStartBefore > 0L)
+
+        licenseManager.resetLicense()
+
+        val fighterIdAfter = licenseManager.getFighterPersonalId()
+        val demoStartAfter = prefs.getLong("demo_first_launch_time", 0L)
+
+        assertEquals(fighterIdBefore, fighterIdAfter)
+        assertEquals(demoStartBefore, demoStartAfter)
     }
 
     @Test
