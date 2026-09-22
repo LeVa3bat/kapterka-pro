@@ -919,14 +919,18 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             val key = _issuedPaymentKey.value ?: licenseStatus.value.licenseKey.ifEmpty { licenseStatus.value.lastSavedKey }
             val callsign = profile?.callsign ?: "Боец"
             if (email.isNotBlank() && key.isNotBlank()) {
-                com.example.data.notification.EmailDeliveryService.sendLicenseKeyEmail(
+                val daysLeft = licenseStatus.value.daysRemaining.coerceAtLeast(1)
+                val sent = com.example.data.notification.EmailDeliveryService.sendLicenseKeyEmail(
                     context = getApplication(),
                     recipientEmail = email,
                     callsign = callsign,
                     licenseKey = key,
-                    days = 30
+                    days = daysLeft
                 )
-                _toastEvent.emit("✉️ Лицензионный ключ отправлен на $email")
+                _toastEvent.emit(
+                    if (sent) "✉️ Лицензионный ключ отправлен на $email"
+                    else "Не удалось отправить письмо. Проверьте Email и повторите позже."
+                )
             } else {
                 _toastEvent.emit("Укажите email для отправки ключа")
             }
