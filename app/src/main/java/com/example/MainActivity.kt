@@ -216,7 +216,7 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
         context.getSharedPreferences("sklad_pro_setup", android.content.Context.MODE_PRIVATE)
     }
     var warehouseProfileId by remember {
-        mutableStateOf(setupPrefs.getString("warehouse_profile_id", null))
+        mutableStateOf(setupPrefs.getString("warehouse_profile_id_v2", null))
     }
     val universalAuth = remember(context) { UniversalLocalAuth(context) }
     var universalAuthenticated by remember {
@@ -347,7 +347,7 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
         if (warehouseProfileId.isNullOrBlank()) {
             WarehouseProfileSetupScreen(
                 onProfileSelected = { profileId ->
-                    setupPrefs.edit().putString("warehouse_profile_id", profileId).apply()
+                    setupPrefs.edit().putString("warehouse_profile_id_v2", profileId).apply()
                     viewModel.applyWarehouseProfile(profileId)
                     warehouseProfileId = profileId
                 }
@@ -629,7 +629,7 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                                 userProfile = profile,
                                 warehouseProfileId = warehouseProfileId,
                                 onChangeProfile = {
-                                    setupPrefs.edit().remove("warehouse_profile_id").apply()
+                                    setupPrefs.edit().remove("warehouse_profile_id_v2").apply()
                                     warehouseProfileId = null
                                     currentDestination = AppDestination.HOME
                                 },
