@@ -80,6 +80,9 @@ secrets {
   propertiesFileName = ".env"
   defaultPropertiesFileName = ".env.example"
   ignoreList.add("FIREBASE_APPCHECK_DEBUG_TOKEN")
+  // PAYMENT_API_URL is supplied explicitly through BuildConfig from the environment.
+  // Do not let the Secrets plugin generate/override this field from .env files.
+  ignoreList.add("PAYMENT_API_URL")
 }
 
 googleServices { missingGoogleServicesStrategy = MissingGoogleServicesStrategy.WARN }
