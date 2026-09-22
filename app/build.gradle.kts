@@ -17,8 +17,10 @@ android {
     applicationId = "com.aistudio.kapterka.jmwqve"
     minSdk = 24
     targetSdk = 34
-    versionCode = 31
-    versionName = "3.4.9"
+    // Stable defaults remain identical to production 3.4.9/build 31.
+    // A release-candidate workflow may override them only in CI after all gates pass.
+    versionCode = System.getenv("NEXT_SAFE_VERSION_CODE")?.toIntOrNull() ?: 31
+    versionName = System.getenv("NEXT_SAFE_VERSION_NAME")?.takeIf { it.isNotBlank() } ?: "3.4.9"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -56,6 +58,16 @@ android {
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
       signingConfig = signingConfigs.getByName("debugConfig")
     }
+
+    // Never published automatically. This variant exists only for the gated manual
+    // release-candidate workflow and uses the recovered historical signer.
+    create("nextSafeRelease") {
+      initWith(getByName("release"))
+      signingConfig = signingConfigs.getByName("release")
+      matchingFallbacks += listOf("release")
+      isDebuggable = false
+    }
+
     debug { signingConfig = signingConfigs.getByName("debugConfig") }
   }
   compileOptions {
