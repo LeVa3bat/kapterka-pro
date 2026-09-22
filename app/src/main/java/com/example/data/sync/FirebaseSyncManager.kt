@@ -4,6 +4,7 @@ package com.example.data.sync
 import android.content.Context
 import android.os.Build
 import android.util.Log
+import com.example.BuildConfig
 import com.example.data.local.KapterkaDao
 import com.example.data.model.InventoryItem
 import com.example.data.model.OperationRecord
@@ -46,6 +47,9 @@ class FirebaseSyncManager(
     private val scope: CoroutineScope
 ) {
     private val TAG = "KapterkaSync"
+    private val productionCloudEnabled: Boolean
+        get() = !BuildConfig.IS_NEXT_SAFE_TEST
+
     private val firestore: FirebaseFirestore
         by lazy { FirebaseFirestore.getInstance() }
 
@@ -87,7 +91,7 @@ class FirebaseSyncManager(
         val cleanKey = unitKey.trim()
         val tombstone = SyncTombstone.create(cleanKey, entityType, entityId)
         dao.upsertSyncTombstone(tombstone)
-        if (cleanKey.isNotBlank()) {
+        if (cleanKey.isNotBlank() && productionCloudEnabled) {
             try {
                 firestore.collection("units").document(cleanKey)
                     .collection("sync_tombstones").document(tombstone.id)
@@ -187,6 +191,16 @@ class FirebaseSyncManager(
     }
 
     fun startSyncForUnit(unitKey: String, callsign: String, unitName: String) {
+        if (!productionCloudEnabled) {
+            stopSync()
+            _syncState.value = SyncState(
+                isSyncing = false,
+                isOnline = false,
+                connectedDevicesCount = 1,
+                syncMessage = "NEXT-SAFE: облачная синхронизация отключена"
+            )
+            return
+        }
         val cleanKey = unitKey.trim()
         if (cleanKey.isEmpty()) return
 
@@ -430,6 +444,14 @@ class FirebaseSyncManager(
     }
 
     suspend fun pushAllLocalData(unitKey: String) {
+        if (!productionCloudEnabled) {
+            _syncState.value = _syncState.value.copy(
+                isSyncing = false,
+                isOnline = false,
+                syncMessage = "NEXT-SAFE: отправка в рабочее облако отключена"
+            )
+            return
+        }
         if (unitKey.isEmpty()) return
         val db = firestore
         _syncState.value = _syncState.value.copy(isSyncing = true, syncMessage = "Отправка локальных данных в облако...")
@@ -447,6 +469,15 @@ class FirebaseSyncManager(
     }
 
     suspend fun syncAndReconcileAll(unitKey: String, callsign: String, unitName: String): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        if (!productionCloudEnabled) {
+            _syncState.value = SyncState(
+                isSyncing = false,
+                isOnline = false,
+                connectedDevicesCount = 1,
+                syncMessage = "NEXT-SAFE: рабочее облако изолировано"
+            )
+            return@withContext Pair(false, "NEXT-SAFE: синхронизация с рабочим облаком отключена")
+        }
         val cleanKey = unitKey.trim()
         if (cleanKey.isEmpty()) return@withContext Pair(false, "Не указан код подразделения")
 
@@ -642,6 +673,7 @@ class FirebaseSyncManager(
     }
 
     fun pushOperationAsync(unitKey: String, op: OperationRecord, updatedStocks: List<StockRecord>) {
+        if (!productionCloudEnabled) return
         if (unitKey.isEmpty()) return
         scope.launch(Dispatchers.IO) {
             try {
@@ -730,6 +762,7 @@ class FirebaseSyncManager(
     }
 
     fun pushStockRecordAsync(unitKey: String, s: StockRecord) {
+        if (!productionCloudEnabled) return
         if (unitKey.isEmpty()) return
         scope.launch(Dispatchers.IO) {
             try {
@@ -754,6 +787,7 @@ class FirebaseSyncManager(
     }
 
     fun pushRequisitionAsync(unitKey: String, r: RequisitionRequest) {
+        if (!productionCloudEnabled) return
         if (unitKey.isEmpty()) return
         scope.launch(Dispatchers.IO) {
             try {
@@ -779,6 +813,7 @@ class FirebaseSyncManager(
     }
 
     fun deleteRequisitionAsync(unitKey: String, reqId: String) {
+        if (!productionCloudEnabled) return
         if (unitKey.isEmpty()) return
         scope.launch(Dispatchers.IO) {
             try {
@@ -792,6 +827,7 @@ class FirebaseSyncManager(
     }
 
     fun deleteOperationAsync(unitKey: String, opId: String) {
+        if (!productionCloudEnabled) return
         if (unitKey.isEmpty()) return
         scope.launch(Dispatchers.IO) {
             try {
@@ -805,6 +841,7 @@ class FirebaseSyncManager(
     }
 
     fun pushWarehousePointAsync(unitKey: String, p: WarehousePoint) {
+        if (!productionCloudEnabled) return
         if (unitKey.isEmpty()) return
         scope.launch(Dispatchers.IO) {
             try {
@@ -828,6 +865,7 @@ class FirebaseSyncManager(
     }
 
     fun deleteWarehousePointAsync(unitKey: String, pointId: String) {
+        if (!productionCloudEnabled) return
         if (unitKey.isEmpty()) return
         scope.launch(Dispatchers.IO) {
             try {
@@ -854,6 +892,7 @@ class FirebaseSyncManager(
     }
 
     fun pushInventoryItemAsync(unitKey: String, item: InventoryItem) {
+        if (!productionCloudEnabled) return
         if (unitKey.isEmpty()) return
         scope.launch(Dispatchers.IO) {
             try {
@@ -879,6 +918,7 @@ class FirebaseSyncManager(
     }
 
     fun deleteInventoryItemAsync(unitKey: String, itemId: String) {
+        if (!productionCloudEnabled) return
         if (unitKey.isEmpty()) return
         scope.launch(Dispatchers.IO) {
             try {
@@ -1030,6 +1070,7 @@ class FirebaseSyncManager(
     }
 
     fun clearCloudDataAsync(unitKey: String) {
+        if (!productionCloudEnabled) return
         scope.launch(Dispatchers.IO) {
             try {
                 val cleanKey = unitKey.trim()
