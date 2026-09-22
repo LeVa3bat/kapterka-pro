@@ -63,10 +63,24 @@ class LicenseManagerTest {
         val id1 = licenseManager.getFighterPersonalId()
         assertNotNull(id1)
         assertTrue("Personal ID must start with БОЕЦ-", id1.startsWith("БОЕЦ-"))
+        assertTrue("New personal IDs need a large random suffix", id1.removePrefix("БОЕЦ-").length >= 20)
 
         // Second call must return the exact same persisted ID
         val id2 = licenseManager.getFighterPersonalId()
         assertEquals("Fighter personal ID must be idempotent", id1, id2)
+    }
+
+    @Test
+    fun testExistingLegacyFighterIdIsNeverRewritten() {
+        val prefs = context.getSharedPreferences(
+            "kapterka_fighter_license_prefs",
+            Context.MODE_PRIVATE
+        )
+        val legacy = "БОЕЦ-1234-ABCD"
+        prefs.edit().putString("fighter_personal_id", legacy).commit()
+
+        assertEquals(legacy, licenseManager.getFighterPersonalId())
+        assertEquals(legacy, licenseManager.getFighterPersonalId())
     }
 
     @Test
