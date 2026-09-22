@@ -67,9 +67,9 @@ class KapterkaDatabaseTest {
     @Test
     fun testInsertAndQueryInventoryItems() = runBlocking {
         val items = listOf(
-            InventoryItem("item_1", "АК-74М 5.45мм", "Служба РАВ", "Стрелковое оружие", "шт.", "Кат. 1"),
-            InventoryItem("item_2", "Патроны 5.45х39", "Служба РАВ", "Боеприпасы", "цинк", "Кат. 1"),
-            InventoryItem("item_3", "Сухпаек ИРП-П", "Вещевая и продслужба", "Продовольствие", "компл.", "Кат. 1")
+            InventoryItem("item_1", "Масло моторное", "Расходники", "Масла", "л.", "Основная"),
+            InventoryItem("item_2", "Фильтр воздушный", "Запчасти", "Фильтры", "шт.", "Основная"),
+            InventoryItem("item_3", "Набор инструмента", "Инструменты", "Ручной инструмент", "компл.", "Основная")
         )
 
         dao.insertItems(items)
@@ -77,31 +77,32 @@ class KapterkaDatabaseTest {
         val allItems = dao.getAllItems().first()
         assertEquals(3, allItems.size)
 
-        val ravItems = dao.getItemsByCategory("Служба РАВ").first()
-        assertEquals(2, ravItems.size)
-        assertTrue(ravItems.all { it.serviceCategory == "Служба РАВ" })
+        val parts = dao.getItemsByCategory("Запчасти").first()
+        assertEquals(1, parts.size)
+        assertTrue(parts.all { it.serviceCategory == "Запчасти" })
     }
 
     @Test
     fun testDefaultCatalogSeedingPreservesExistingEditedRow() = runBlocking {
         val edited = InventoryItem(
-            id = "rav_w_01",
+            id = "custom_01",
             name = "Пользовательское название",
-            serviceCategory = "Служба РАВ",
-            subType = "Автоматы",
+            serviceCategory = "Материалы",
+            subType = "Своя группа",
             unit = "шт.",
-            categoryClass = "Кат. 2"
+            categoryClass = "Основная"
         )
         dao.insertItem(edited)
 
         dao.insertItemsIfMissing(InitialData.getDefaultItems())
 
-        val stored = dao.getItemById("rav_w_01")
+        val stored = dao.getItemById("custom_01")
         assertNotNull(stored)
         assertEquals("Пользовательское название", stored!!.name)
-        assertTrue(
-            "New standard items must still be seeded",
-            dao.getAllItems().first().size > 1
+        assertEquals(
+            "Universal app must not inject forced starter inventory",
+            1,
+            dao.getAllItems().first().size
         )
     }
 
