@@ -48,7 +48,7 @@ class FirebaseSyncManager(
 ) {
     private val TAG = "KapterkaSync"
     private val productionCloudEnabled: Boolean
-        get() = !BuildConfig.IS_NEXT_SAFE_TEST
+        get() = !BuildConfig.IS_NEXT_SAFE_TEST && !BuildConfig.IS_UNIVERSAL_APP
 
     private val firestore: FirebaseFirestore
         by lazy { FirebaseFirestore.getInstance() }
@@ -305,7 +305,7 @@ class FirebaseSyncManager(
                 isSyncing = false,
                 isOnline = false,
                 connectedDevicesCount = 1,
-                syncMessage = "NEXT-SAFE: облачная синхронизация отключена"
+                syncMessage = "Alpha: облачная синхронизация отключена"
             )
             return
         }
@@ -558,7 +558,7 @@ class FirebaseSyncManager(
             _syncState.value = _syncState.value.copy(
                 isSyncing = false,
                 isOnline = false,
-                syncMessage = "NEXT-SAFE: отправка в рабочее облако отключена"
+                syncMessage = "Alpha: рабочее облако отключено"
             )
             return
         }
@@ -584,9 +584,9 @@ class FirebaseSyncManager(
                 isSyncing = false,
                 isOnline = false,
                 connectedDevicesCount = 1,
-                syncMessage = "NEXT-SAFE: рабочее облако изолировано"
+                syncMessage = "Alpha: рабочее облако изолировано"
             )
-            return@withContext Pair(false, "NEXT-SAFE: синхронизация с рабочим облаком отключена")
+            return@withContext Pair(false, "Alpha: синхронизация с рабочим облаком отключена")
         }
         val cleanKey = unitKey.trim()
         if (cleanKey.isEmpty()) return@withContext Pair(false, "Не указан код подразделения")
