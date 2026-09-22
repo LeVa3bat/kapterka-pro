@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import com.example.BuildConfig
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -168,7 +169,7 @@ fun RequestsScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "ПРЕДУПРЕЖДЕНИЕ: ОСТАТОК МЕНЬШЕ",
+                            text = "Недостаточный остаток",
                             color = TacticalRedText,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold
@@ -178,7 +179,7 @@ fun RequestsScreen(
                     Spacer(modifier = Modifier.height(10.dp))
 
                     Text(
-                        text = "На складе(ах) официально числится меньше имущества, чем указано в заявке:",
+                        text = "На выбранном складе остаток меньше количества, указанного в заявке:",
                         color = TacticalTextPrimary,
                         fontSize = 12.5.sp,
                         lineHeight = 17.sp
@@ -243,22 +244,22 @@ fun RequestsScreen(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(TacticalBg)
-            .padding(horizontal = 14.dp, vertical = 10.dp)
+            .background(if (BuildConfig.IS_UNIVERSAL_APP) Color(0xFFF5F7FB) else TacticalBg)
+            .padding(horizontal = if (BuildConfig.IS_UNIVERSAL_APP) 16.dp else 14.dp, vertical = 10.dp)
     ) {
         // Title & Description
         item {
             Column {
                 Text(
                     text = "Заявки",
-                    color = TacticalTextPrimary,
-                    fontSize = 22.sp,
+                    color = if (BuildConfig.IS_UNIVERSAL_APP) Color(0xFF111827) else TacticalTextPrimary,
+                    fontSize = if (BuildConfig.IS_UNIVERSAL_APP) 28.sp else 22.sp,
                     fontWeight = FontWeight.ExtraBold
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = "Создание, сборка и выдача заявок со склада",
-                    color = TacticalTextSecondary,
+                    color = if (BuildConfig.IS_UNIVERSAL_APP) Color(0xFF6B7280) else TacticalTextSecondary,
                     fontSize = 12.sp,
                     lineHeight = 16.sp
                 )
@@ -271,8 +272,10 @@ fun RequestsScreen(
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(18.dp),
-                colors = CardDefaults.cardColors(containerColor = TacticalSurface),
+                shape = RoundedCornerShape(if (BuildConfig.IS_UNIVERSAL_APP) 24.dp else 18.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (BuildConfig.IS_UNIVERSAL_APP) Color.White else TacticalSurface
+                ),
                 border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorderSubtle),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
@@ -288,21 +291,21 @@ fun RequestsScreen(
                             modifier = Modifier
                                 .size(26.dp)
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(SageGreenDark),
+                                .background(if (BuildConfig.IS_UNIVERSAL_APP) Color(0xFFEEEEFF) else SageGreenDark),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Assignment,
                                 contentDescription = null,
-                                tint = SageGreenBright,
+                                tint = if (BuildConfig.IS_UNIVERSAL_APP) Color(0xFF5B5CE2) else SageGreenBright,
                                 modifier = Modifier.size(16.dp)
                             )
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "Новая заявка",
-                            color = TacticalTextPrimary,
-                            fontSize = 16.sp,
+                            color = if (BuildConfig.IS_UNIVERSAL_APP) Color(0xFF111827) else TacticalTextPrimary,
+                            fontSize = if (BuildConfig.IS_UNIVERSAL_APP) 18.sp else 16.sp,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -487,7 +490,7 @@ fun RequestsScreen(
                                         )
                                         Spacer(modifier = Modifier.width(6.dp))
                                         Text(
-                                            text = "⚠️ На складе нет столько (официально)! В наличии: $totalAvail ${selected?.unit ?: "ед."}",
+                                            text = "⚠️ Недостаточный остаток. В наличии: $totalAvail ${selected?.unit ?: "ед."}",
                                             color = TacticalRedText,
                                             fontSize = 10.5.sp,
                                             fontWeight = FontWeight.Bold
