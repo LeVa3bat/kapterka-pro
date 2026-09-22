@@ -899,7 +899,7 @@ fun DeveloperAdminDialog(
             },
             text = {
                 Text(
-                    text = "Вы действительно хотите удалить бойца «${fighter.callsign}» из подразделения «${fighter.unitName}»? Он потеряет доступ к системе.",
+                    text = "Удалить запись «${fighter.callsign}» из служебного реестра? Лицензия и складские данные не удаляются; при следующей регистрации запись может появиться снова.",
                     color = TacticalTextSecondary,
                     fontSize = 12.sp
                 )
