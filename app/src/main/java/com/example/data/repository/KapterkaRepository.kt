@@ -147,11 +147,11 @@ class KapterkaRepository(
         val src = supplier.ifBlank { "Служба снабжения / Тыл" }
         val dest = toPointName.ifBlank { "Базовый склад" }
         val op = OperationRecord(java.util.UUID.randomUUID().toString(), OperationType.INCOME, src, dest, "", actor, comment, System.currentTimeMillis(), summary, itemsJson)
-        dao.insertOperation(op)
         val updatedStocks = mutableListOf<StockRecord>()
         for (item in items) {
-            updatedStocks.add(adjustStockQuantity(toPointId, item.itemId, item.quantity, isIncome = true))
+            updatedStocks.add(buildAdjustedStock(toPointId, item.itemId, item.quantity, isIncome = true))
         }
+        dao.commitOperationAndStocks(op, updatedStocks)
         syncManager?.pushOperationAsync(getCurrentUnitKey(), op, updatedStocks)
     }
 
@@ -159,12 +159,12 @@ class KapterkaRepository(
         val summary = items.joinToString(", ") { "${it.itemName} - ${it.quantity} ${it.unit}" }
         val itemsJson = serializeOperationItems(items)
         val op = OperationRecord(java.util.UUID.randomUUID().toString(), OperationType.TRANSFER, fromPointName, toPointName, "", actor, comment, System.currentTimeMillis(), summary, itemsJson)
-        dao.insertOperation(op)
         val updatedStocks = mutableListOf<StockRecord>()
         for (item in items) {
-            updatedStocks.add(adjustStockQuantity(fromPointId, item.itemId, -item.quantity, isIncome = false))
-            updatedStocks.add(adjustStockQuantity(toPointId, item.itemId, item.quantity, isIncome = true))
+            updatedStocks.add(buildAdjustedStock(fromPointId, item.itemId, -item.quantity, isIncome = false))
+            updatedStocks.add(buildAdjustedStock(toPointId, item.itemId, item.quantity, isIncome = true))
         }
+        dao.commitOperationAndStocks(op, updatedStocks)
         syncManager?.pushOperationAsync(getCurrentUnitKey(), op, updatedStocks)
     }
 
@@ -172,17 +172,16 @@ class KapterkaRepository(
         val summary = items.joinToString(", ") { "${it.itemName} - ${it.quantity} ${it.unit}" }
         val itemsJson = serializeOperationItems(items)
         val op = OperationRecord(java.util.UUID.randomUUID().toString(), OperationType.ISSUE, fromPointName, toPointName, "", actor, comment, System.currentTimeMillis(), summary, itemsJson)
-        dao.insertOperation(op)
         val updatedStocks = mutableListOf<StockRecord>()
         for (item in items) {
-            val adjustedStockFrom = adjustStockQuantity(fromPointId, item.itemId, -item.quantity, isIncome = false)
+            val adjustedStockFrom = buildAdjustedStock(fromPointId, item.itemId, -item.quantity, isIncome = false)
             updatedStocks.add(adjustedStockFrom)
-            
-            // For issue operations, we also want to record the income on the destination point
-            // so it appears in the tables and Excel reports for that point.
-            val adjustedStockTo = adjustStockQuantity(toPointId, item.itemId, item.quantity, isIncome = true)
+
+            // Issue also increases the destination point in the same local transaction.
+            val adjustedStockTo = buildAdjustedStock(toPointId, item.itemId, item.quantity, isIncome = true)
             updatedStocks.add(adjustedStockTo)
         }
+        dao.commitOperationAndStocks(op, updatedStocks)
         syncManager?.pushOperationAsync(getCurrentUnitKey(), op, updatedStocks)
     }
 
@@ -190,11 +189,11 @@ class KapterkaRepository(
         val summary = items.joinToString(", ") { "${it.itemName} - ${it.quantity} ${it.unit}" }
         val itemsJson = serializeOperationItems(items)
         val op = OperationRecord(java.util.UUID.randomUUID().toString(), OperationType.EXPENDITURE, pointName, "Списание (ф. 8)", docNumber, responsiblePerson, comment, System.currentTimeMillis(), summary, itemsJson)
-        dao.insertOperation(op)
         val updatedStocks = mutableListOf<StockRecord>()
         for (item in items) {
-            updatedStocks.add(adjustStockQuantity(fromPointId, item.itemId, -item.quantity, isIncome = false))
+            updatedStocks.add(buildAdjustedStock(fromPointId, item.itemId, -item.quantity, isIncome = false))
         }
+        dao.commitOperationAndStocks(op, updatedStocks)
         syncManager?.pushOperationAsync(getCurrentUnitKey(), op, updatedStocks)
     }
 
@@ -263,6 +262,32 @@ class KapterkaRepository(
     suspend fun deleteRequisition(id: String) {
         dao.deleteRequisition(id)
         syncManager?.deleteRequisitionAsync(getCurrentUnitKey(), id)
+    }
+
+    private suspend fun buildAdjustedStock(
+        pointId: String,
+        itemId: String,
+        change: Int,
+        isIncome: Boolean
+    ): StockRecord {
+        val current = dao.getStockItem(pointId, itemId)
+        return if (current != null) {
+            current.copy(
+                quantity = current.quantity + change,
+                incomeTotal = current.incomeTotal + if (isIncome && change > 0) change else 0,
+                expenseTotal = current.expenseTotal + if (!isIncome || change < 0) java.lang.Math.abs(change) else 0,
+                lastUpdated = System.currentTimeMillis()
+            )
+        } else {
+            StockRecord(
+                pointId = pointId,
+                itemId = itemId,
+                quantity = change,
+                incomeTotal = if (isIncome && change > 0) change else 0,
+                expenseTotal = if (!isIncome || change < 0) java.lang.Math.abs(change) else 0,
+                lastUpdated = System.currentTimeMillis()
+            )
+        }
     }
 
     suspend fun adjustStockQuantity(pointId: String, itemId: String, change: Int, isIncome: Boolean = true): StockRecord {
