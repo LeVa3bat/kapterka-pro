@@ -82,7 +82,7 @@ fun AddPointDialog(
             modifier = Modifier
                 .fillMaxWidth(0.95f)
                 .padding(vertical = 16.dp),
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(22.dp),
             colors = CardDefaults.cardColors(containerColor = TacticalSurface),
             border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorder)
         ) {
@@ -105,7 +105,7 @@ fun AddPointDialog(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "НОВАЯ ТОЧКА / СКЛАД",
+                            text = "Новый склад / точка",
                             color = SageGreenBright,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold
@@ -159,7 +159,7 @@ fun AddPointDialog(
                         containerColor = SageGreenPrimary,
                         contentColor = Color.White
                     ),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(14.dp)
                 ) {
                     Text("Создать точку", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
@@ -183,7 +183,7 @@ fun EditPointDialog(
             modifier = Modifier
                 .fillMaxWidth(0.95f)
                 .padding(vertical = 16.dp),
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(22.dp),
             colors = CardDefaults.cardColors(containerColor = TacticalSurface),
             border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorder)
         ) {
@@ -258,7 +258,7 @@ fun EditPointDialog(
                                 containerColor = TacticalRed.copy(alpha = 0.2f),
                                 contentColor = TacticalRed
                             ),
-                            shape = RoundedCornerShape(8.dp)
+                            shape = RoundedCornerShape(14.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Delete,
@@ -282,7 +282,7 @@ fun EditPointDialog(
                             containerColor = SageGreenPrimary,
                             contentColor = Color.White
                         ),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(14.dp)
                     ) {
                         Text("Сохранить", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     }
@@ -306,7 +306,7 @@ fun ReorderPointsDialog(
             modifier = Modifier
                 .fillMaxWidth(0.96f)
                 .padding(vertical = 12.dp),
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(22.dp),
             colors = CardDefaults.cardColors(containerColor = TacticalSurface),
             border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorder)
         ) {
@@ -370,9 +370,9 @@ fun ReorderPointsDialog(
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .clip(RoundedCornerShape(6.dp))
+                            .clip(RoundedCornerShape(12.dp))
                             .background(TacticalSurfaceLight)
-                            .border(1.dp, TacticalBorder, RoundedCornerShape(6.dp))
+                            .border(1.dp, TacticalBorder, RoundedCornerShape(12.dp))
                             .clickable {
                                 val base = workingList.filter { it.isBase }
                                 val others = workingList.filter { !it.isBase }.sortedBy { it.name.lowercase() }
@@ -391,9 +391,9 @@ fun ReorderPointsDialog(
                     // Reset / Default order button
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
+                            .clip(RoundedCornerShape(12.dp))
                             .background(TacticalSurfaceLight)
-                            .border(1.dp, TacticalBorder, RoundedCornerShape(6.dp))
+                            .border(1.dp, TacticalBorder, RoundedCornerShape(12.dp))
                             .clickable {
                                 val base = workingList.filter { it.isBase }
                                 val others = workingList.filter { !it.isBase }.sortedBy { it.createdAt }
@@ -415,9 +415,9 @@ fun ReorderPointsDialog(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(6.dp))
+                            .clip(RoundedCornerShape(12.dp))
                             .background(TacticalGoldDark.copy(alpha = 0.35f))
-                            .border(1.dp, TacticalGold.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
+                            .border(1.dp, TacticalGold.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
                             .padding(horizontal = 8.dp, vertical = 6.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
@@ -516,12 +516,12 @@ fun ReorderPointsDialog(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
+                                .clip(RoundedCornerShape(14.dp))
                                 .background(if (isSelected) TacticalGoldDark.copy(alpha = 0.25f) else TacticalSurfaceLight)
                                 .border(
                                     width = if (isSelected) 1.5.dp else 1.dp,
                                     color = if (isSelected) TacticalGold else TacticalBorder,
-                                    shape = RoundedCornerShape(8.dp)
+                                    shape = RoundedCornerShape(14.dp)
                                 )
                                 .clickable {
                                     selectedPointId = if (isSelected) null else pt.id
@@ -647,7 +647,7 @@ fun ReorderPointsDialog(
                             containerColor = TacticalSurfaceLight,
                             contentColor = TacticalTextSecondary
                         ),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(14.dp)
                     ) {
                         Text("Отмена", fontSize = 12.5.sp)
                     }
@@ -662,7 +662,7 @@ fun ReorderPointsDialog(
                             containerColor = SageGreenPrimary,
                             contentColor = Color.White
                         ),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(14.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Check,
@@ -697,7 +697,7 @@ fun AddCustomItemDialog(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 16.dp),
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(22.dp),
             colors = CardDefaults.cardColors(containerColor = TacticalSurface),
             border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorder)
         ) {
@@ -713,7 +713,7 @@ fun AddCustomItemDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "ДОБАВИТЬ НОМЕНКЛАТУРУ",
+                        text = "Добавить позицию",
                         color = SageGreenBright,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
@@ -787,7 +787,7 @@ fun AddCustomItemDialog(
                         containerColor = SageGreenPrimary,
                         contentColor = Color.White
                     ),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(14.dp)
                 ) {
                     Text("Внести в каталог", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
@@ -829,7 +829,7 @@ fun EditCatalogItemDialog(
             modifier = Modifier
                 .fillMaxWidth(0.96f)
                 .padding(vertical = 14.dp),
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(22.dp),
             colors = CardDefaults.cardColors(containerColor = TacticalSurface),
             border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorder)
         ) {
@@ -852,7 +852,7 @@ fun EditCatalogItemDialog(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "ИЗМЕНИТЬ ПОЗИЦИЮ",
+                            text = "Редактировать позицию",
                             color = SageGreenBright,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold
@@ -892,9 +892,9 @@ fun EditCatalogItemDialog(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
+                            .clip(RoundedCornerShape(14.dp))
                             .background(TacticalSurfaceLight)
-                            .border(1.dp, TacticalBorder, RoundedCornerShape(8.dp))
+                            .border(1.dp, TacticalBorder, RoundedCornerShape(14.dp))
                             .clickable { catExpanded = true }
                             .padding(horizontal = 12.dp, vertical = 10.dp)
                     ) {
@@ -980,7 +980,7 @@ fun EditCatalogItemDialog(
                             containerColor = TacticalRed.copy(alpha = 0.2f),
                             contentColor = TacticalRed
                         ),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(14.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Delete,
@@ -1011,7 +1011,7 @@ fun EditCatalogItemDialog(
                             containerColor = SageGreenPrimary,
                             contentColor = Color.White
                         ),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(14.dp)
                     ) {
                         Text("Сохранить", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     }
@@ -1039,7 +1039,7 @@ fun AdjustStockDialog(
             modifier = Modifier
                 .fillMaxWidth(0.95f)
                 .padding(vertical = 16.dp),
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(22.dp),
             colors = CardDefaults.cardColors(containerColor = TacticalSurface),
             border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorder)
         ) {
@@ -1099,9 +1099,9 @@ fun AdjustStockDialog(
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .clip(RoundedCornerShape(6.dp))
+                                .clip(RoundedCornerShape(12.dp))
                                 .background(if (delta > 0) SageGreenDark else TacticalSurfaceLight)
-                                .border(1.dp, TacticalBorder, RoundedCornerShape(6.dp))
+                                .border(1.dp, TacticalBorder, RoundedCornerShape(12.dp))
                                 .clickable {
                                     val cur = qtyText.toIntOrNull() ?: currentQuantity
                                     val next = (cur + delta).coerceAtLeast(0)
@@ -1144,7 +1144,7 @@ fun AdjustStockDialog(
                         containerColor = SageGreenPrimary,
                         contentColor = Color.White
                     ),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(14.dp)
                 ) {
                     Text("Обновить остаток", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
