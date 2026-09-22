@@ -162,7 +162,7 @@ fun MoreSettingsScreen(
             containerColor = TacticalSurface,
             title = {
                 Text(
-                    text = "Редактировать профиль бойца",
+                    text = "Редактировать профиль",
                     color = SageGreenBright,
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp
@@ -192,7 +192,7 @@ fun MoreSettingsScreen(
                     )
                     Spacer(modifier = Modifier.height(10.dp))
                     Text(
-                        text = "Подразделение:",
+                        text = "Организация / подразделение:",
                         color = TacticalTextSecondary,
                         fontSize = 12.sp
                     )
@@ -201,7 +201,7 @@ fun MoreSettingsScreen(
                         value = editUnitName,
                         onValueChange = { editUnitName = it },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Название подразделения", color = TacticalTextMuted) },
+                        placeholder = { Text("Название организации или подразделения", color = TacticalTextMuted) },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = SageGreenPrimary,
                             unfocusedBorderColor = TacticalBorder,
@@ -239,7 +239,7 @@ fun MoreSettingsScreen(
                     onClick = {
                         val updated = (profile ?: UserProfile()).copy(
                             callsign = editCallsign.trim().ifEmpty { profile?.callsign ?: "Боец" },
-                            unitName = editUnitName.trim().ifEmpty { profile?.unitName ?: "1-е Подразделение" },
+                            unitName = editUnitName.trim().ifEmpty { profile?.unitName ?: "Основной склад" },
                             email = editEmail.trim(),
                             isLoggedIn = true
                         )
@@ -275,7 +275,7 @@ fun MoreSettingsScreen(
             containerColor = TacticalSurface,
             title = {
                 Text(
-                    text = "Опасная очистка подразделения",
+                    text = "Опасная очистка данных",
                     color = TacticalRedText,
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp
@@ -284,13 +284,13 @@ fun MoreSettingsScreen(
             text = {
                 Column {
                     Text(
-                        text = "Будут удалены остатки, операции и заявки текущего подразделения локально и из облачной синхронизации. После синхронизации изменения затронут другие подключённые устройства. Точки учёта и каталог останутся.",
+                        text = "Будут удалены остатки, операции и заявки текущей группы учёта локально и из облачной синхронизации. После синхронизации изменения затронут другие подключённые устройства. Склады, точки учёта и каталог останутся.",
                         color = TacticalTextSecondary,
                         fontSize = 13.sp
                     )
                     Spacer(modifier = Modifier.height(10.dp))
                     Text(
-                        text = "Для подтверждения введите текущий ключ подразделения:",
+                        text = "Для подтверждения введите текущий код группы учёта:",
                         color = TacticalTextMuted,
                         fontSize = 11.sp
                     )
@@ -326,7 +326,7 @@ fun MoreSettingsScreen(
                         disabledContentColor = TacticalTextMuted
                     )
                 ) {
-                    Text("УДАЛИТЬ ДАННЫЕ ПОДРАЗДЕЛЕНИЯ", fontWeight = FontWeight.Bold)
+                    Text("УДАЛИТЬ ДАННЫЕ ГРУППЫ", fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -346,7 +346,7 @@ fun MoreSettingsScreen(
             containerColor = TacticalSurface,
             title = {
                 Text(
-                    text = "Удалить службу/группу?",
+                    text = "Удалить категорию?",
                     color = TacticalRedText,
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp
@@ -354,7 +354,7 @@ fun MoreSettingsScreen(
             },
             text = {
                 Text(
-                    text = "Вы уверены, что хотите удалить штатную группу «${categoryToDelete}»? Все закрепленные за ней позиции будут удалены из каталога.",
+                    text = "Вы уверены, что хотите удалить категорию «${categoryToDelete}»? Все закреплённые за ней позиции будут удалены из каталога.",
                     color = TacticalTextSecondary,
                     fontSize = 13.sp
                 )
@@ -387,7 +387,7 @@ fun MoreSettingsScreen(
             containerColor = TacticalSurface,
             title = {
                 Text(
-                    text = "Добавить штатную группу",
+                    text = "Добавить категорию",
                     color = SageGreenBright,
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp
@@ -396,7 +396,7 @@ fun MoreSettingsScreen(
             text = {
                 Column {
                     Text(
-                        text = "Введите название новой службы или группы снабжения:",
+                        text = "Введите название новой категории имущества:",
                         color = TacticalTextSecondary,
                         fontSize = 12.sp
                     )
@@ -405,7 +405,7 @@ fun MoreSettingsScreen(
                         value = newCategoryName,
                         onValueChange = { newCategoryName = it },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Название подразделения", color = TacticalTextMuted) },
+                        placeholder = { Text("Название организации или подразделения", color = TacticalTextMuted) },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = SageGreenPrimary,
                             unfocusedBorderColor = TacticalBorder,
@@ -458,7 +458,7 @@ fun MoreSettingsScreen(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Компактное меню управления подразделением и группами",
+                    text = "Профиль, синхронизация, отчёты и настройки",
                     color = TacticalTextMuted,
                     fontSize = 12.sp
                 )
@@ -553,7 +553,7 @@ fun MoreSettingsScreen(
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "Подразделение: ${profile?.unitName ?: "1-е Подразделение"}",
+                                text = "Организация / подразделение: ${profile?.unitName ?: "Основной склад"}",
                                 color = SageGreenBright,
                                 fontSize = 12.sp
                             )
@@ -643,7 +643,7 @@ fun MoreSettingsScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "Устройств в сети подразделения:",
+                                    text = "Устройств в синхронизации:",
                                     fontSize = 11.sp,
                                     color = TacticalTextMuted
                                 )
@@ -724,8 +724,8 @@ fun MoreSettingsScreen(
         // 2. COLLAPSIBLE ACCORDION: КОД ПОДКЛЮЧЕНИЯ ДРУГИХ ПОЛЬЗОВАТЕЛЕЙ (БЕЗ QR-КОДА)
         item {
             CollapsibleCard(
-                title = "Код подключения бойцов (без QR)",
-                subtitle = "Код склада/подразделения: $unitKeyDisplay",
+                title = "Код подключения пользователей",
+                subtitle = "Код группы учёта: $unitKeyDisplay",
                 icon = Icons.Default.Key,
                 iconColor = SageGreenBright,
                 isExpanded = expandedConnectCode,
@@ -733,7 +733,7 @@ fun MoreSettingsScreen(
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
                     Text(
-                        text = "Для подключения других пользователей передайте им этот код склада/подразделения. При входе на другом телефоне боец нажимает «Вход» и вводит данный код склада/подразделения.",
+                        text = "Для подключения других пользователей передайте им код группы учёта. На другом телефоне пользователь нажимает «Вход» и вводит этот код. После подключения общие данные синхронизируются.",
                         color = TacticalTextSecondary,
                         fontSize = 11.sp,
                         lineHeight = 15.sp
@@ -756,7 +756,7 @@ fun MoreSettingsScreen(
                     ) {
                         Column {
                             Text(
-                                text = "ЕДИНЫЙ КОД РОТЫ",
+                                text = "ЕДИНЫЙ КОД ГРУППЫ",
                                 color = TacticalGold,
                                 fontSize = 9.sp,
                                 fontWeight = FontWeight.Bold,
@@ -795,7 +795,7 @@ fun MoreSettingsScreen(
                     ) {
                         Icon(imageVector = Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(15.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Скопировать и показать код склада/подразделения", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Text("Скопировать и показать код группы", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -805,7 +805,7 @@ fun MoreSettingsScreen(
         // 3. COLLAPSIBLE ACCORDION: ПЕРСОНАЛЬНАЯ ЛИЦЕНЗИЯ БОЙЦА (30 ДНЕЙ)
         item {
             CollapsibleCard(
-                title = "Лицензия бойца (ЮKassa / 30 дней)",
+                title = "Лицензия PRO (ЮKassa / 30 дней)",
                 subtitle = if (profile?.isProActive == true) "Активна (Осталось ${profile.proDaysLeft} дн.) • Персональный ключ" else "Требуется продление (30 дней / 490 ₽)",
                 icon = Icons.Default.Star,
                 iconColor = TacticalGoldText,
@@ -814,7 +814,7 @@ fun MoreSettingsScreen(
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
                     Text(
-                        text = "Персональная лицензия закрепляется строго за вашим личным аккаунтом бойца. Срок действия выдается строго на 30 дней с момента оплаты через ЮKassa (СБП, карты МИР).",
+                        text = "Персональная лицензия закрепляется за вашим аккаунтом. Срок действия — 30 дней с момента оплаты через ЮKassa (СБП, карты МИР).",
                         color = TacticalTextSecondary,
                         fontSize = 11.sp,
                         lineHeight = 15.sp
@@ -848,7 +848,7 @@ fun MoreSettingsScreen(
         // 4. COLLAPSIBLE ACCORDION: АРМЕЙСКАЯ ОТЧЕТНОСТЬ И ВЕДОМОСТИ
         item {
             CollapsibleCard(
-                title = "Армейская отчетность и ведомости",
+                title = "Отчёты и ведомости",
                 subtitle = "Форма № 8, Форма № 18, Сводные отчеты в Excel",
                 icon = Icons.Default.TableChart,
                 iconColor = SageGreenBright,
@@ -887,8 +887,8 @@ fun MoreSettingsScreen(
         // 5. COLLAPSIBLE ACCORDION: УПРАВЛЕНИЕ ШТАТНЫМИ ГРУППАМИ (УДАЛЕНИЕ / ДОБАВЛЕНИЕ)
         item {
             CollapsibleCard(
-                title = "Управление штатными группами",
-                subtitle = "Активно служб: ${availableCategories.size} • Удаление ненужных",
+                title = "Категории имущества",
+                subtitle = "Активных категорий: ${availableCategories.size} • Настройка списка",
                 icon = Icons.Default.Category,
                 iconColor = SageGreenBright,
                 isExpanded = expandedCategories,
@@ -896,7 +896,7 @@ fun MoreSettingsScreen(
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
                     Text(
-                        text = "Если некоторые штатные группы не нужны в вашем подразделении, вы можете их удалить. Они исчезнут из списков и фильтров.",
+                        text = "Если некоторые категории не нужны для вашего учёта, их можно удалить. Они исчезнут из списков и фильтров.",
                         color = TacticalTextSecondary,
                         fontSize = 11.sp,
                         lineHeight = 15.sp
@@ -1020,11 +1020,11 @@ fun MoreSettingsScreen(
 
                     GuideItem(
                         q = "1. Как подключить других пользователей?",
-                        a = "Передайте коллегам или бойцам код склада/подразделения (вверху экрана). На другом телефоне при запуске выберите «Подключиться по код склада/подразделенияу» и введите код склада/подразделения. Все склады, остатки и номенклатура мгновенно синхронизируются."
+                        a = "Передайте коллегам код группы учёта. На другом телефоне при запуске выберите «Подключиться по коду» и введите этот код. Склады, остатки и каталог будут доступны после синхронизации."
                     )
                     GuideItem(
                         q = "2. Списание и акты расхода (Форма 8)",
-                        a = "Нажмите «Расход» на главном экране, выберите точку, количество и причину (например, «Боевой расход», «Списание на нужды службы»). Запись автоматически сформирует акт Формы № 8."
+                        a = "Нажмите «Списание» на главном экране, выберите склад или точку, количество и причину (например, «Списание по акту» или «Выдача в эксплуатацию»). При необходимости запись можно использовать для Формы № 8."
                     )
                     GuideItem(
                         q = "3. Автономный режим 100% без интернета",
@@ -1050,7 +1050,7 @@ fun MoreSettingsScreen(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Text(
-                        text = "Очистка удалит операции, заявки и остатки текущего подразделения локально и из облачной синхронизации. Для защиты потребуется ввести ключ подразделения.",
+                        text = "Очистка удалит операции, заявки и остатки текущей группы учёта локально и из облачной синхронизации. Для защиты потребуется ввести код группы.",
                         color = TacticalRedText,
                         fontSize = 11.sp,
                         lineHeight = 15.sp
@@ -1075,7 +1075,7 @@ fun MoreSettingsScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "ОЧИСТИТЬ ДАННЫЕ ПОДРАЗДЕЛЕНИЯ",
+                            text = "ОЧИСТИТЬ ДАННЫЕ ГРУППЫ",
                             fontWeight = FontWeight.Bold,
                             fontSize = 12.sp
                         )
@@ -1179,7 +1179,7 @@ fun MoreSettingsScreen(
                     shape = RoundedCornerShape(8.dp),
                     border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorder)
                 ) {
-                    Text("Сменить позывной / Выйти из подразделения", fontSize = 12.sp)
+                    Text("Изменить профиль / Выйти из группы", fontSize = 12.sp)
                 }
 
 
