@@ -1,6 +1,7 @@
 package com.example.data.model
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 /**
@@ -9,7 +10,7 @@ import androidx.room.PrimaryKey
  * Absence in Firestore is never treated as deletion. A record is removed on
  * another device only after an explicit tombstone is observed.
  */
-@Entity(tableName = "sync_tombstones")
+@Entity(tableName = "sync_tombstones", indices = [Index(value = ["unitKey"])])
 data class SyncTombstone(
     @PrimaryKey val id: String,
     val unitKey: String,
