@@ -8,7 +8,6 @@ on:
     paths:
       - 'server/yandex-cloud-function.js'
       - 'server/backend-selftest.js'
-      - 'server/backend-selftest.js'
       - 'server/firestore.next-safe.rules'
       - '.github/workflows/payment-backend-safety.yml'
   pull_request:
