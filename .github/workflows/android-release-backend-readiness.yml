@@ -7,6 +7,14 @@ on:
         description: Public HTTPS PAYMENT_API_URL to verify
         required: true
         type: string
+  push:
+    branches:
+      - android/next-safe
+    paths:
+      - '.github/workflows/android-release-backend-readiness.yml'
+
+env:
+  CURRENT_SITE_BACKEND_URL: https://script.google.com/macros/s/AKfycbwuwY74vD9El1R6ZVvO3DDpJ7BkY-wX0ljRphWRSA-jgB33-duUAqEp0g03D_7oFzjqmA/exec
 
 permissions:
   contents: read
@@ -18,7 +26,7 @@ jobs:
     steps:
       - name: Require HTTPS endpoint
         env:
-          BACKEND_URL: ${{ inputs.backend_url }}
+          BACKEND_URL: ${{ inputs.backend_url || env.CURRENT_SITE_BACKEND_URL }}
         shell: bash
         run: |
           case "$BACKEND_URL" in
@@ -28,7 +36,7 @@ jobs:
 
       - name: Check backend health
         env:
-          BACKEND_URL: ${{ inputs.backend_url }}
+          BACKEND_URL: ${{ inputs.backend_url || env.CURRENT_SITE_BACKEND_URL }}
         shell: bash
         run: |
           URL="${BACKEND_URL%/}?action=health"
@@ -67,7 +75,7 @@ jobs:
 
       - name: Reject invalid admin session
         env:
-          BACKEND_URL: ${{ inputs.backend_url }}
+          BACKEND_URL: ${{ inputs.backend_url || env.CURRENT_SITE_BACKEND_URL }}
         shell: bash
         run: |
           URL="${BACKEND_URL%/}?action=admin_list_fighters"
