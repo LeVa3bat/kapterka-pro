@@ -6,8 +6,6 @@ import android.util.Log
 import com.example.data.local.KapterkaDao
 import com.example.data.model.PersonalLicense
 import com.example.data.model.UserProfile
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,7 +13,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.security.SecureRandom
 import java.text.SimpleDateFormat
@@ -42,8 +39,7 @@ class LicenseManager(
     private val scope: CoroutineScope
 ) {
     private val TAG = "LicenseManager"
-    private val firestore: FirebaseFirestore
-        by lazy { FirebaseFirestore.getInstance() }
+    private val backend = LicenseBackendService()
     private val PREFS_NAME = "kapterka_fighter_license_prefs"
     private val PERMANENT_VAULT = "kapterka_license_permanent_vault"
 
@@ -281,86 +277,40 @@ class LicenseManager(
         unitKey: String = ""
     ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
         val cleanEmail = email.trim().lowercase(Locale.ROOT)
-        val cleanCallsign = callsign.trim()
-        val currentFighterId = getFighterPersonalId()
+        @Suppress("UNUSED_VARIABLE")
+        val compatibilityArgs = Pair(callsign, unitKey)
+
+        if (cleanEmail.isBlank()) {
+            return@withContext Pair(false, "Укажите Email, который использовался при оплате.")
+        }
+
+        val result = backend.restoreByEmail(cleanEmail)
+        if (!result.success) {
+            return@withContext Pair(false, result.errorMessage)
+        }
+
         val now = System.currentTimeMillis()
-
-        var foundKey = ""
-        var foundExpiresAt = 0L
-
-        // 1. Поиск в реестре лицензий Firestore по email
-        if (cleanEmail.isNotBlank()) {
-            try {
-                val db = firestore
-                if (db != null) {
-                    val byEmail = db.collection("licenses")
-                        .whereEqualTo("email", cleanEmail)
-                        .get()
-                        .await()
-                    for (doc in byEmail.documents) {
-                        val key = doc.getString("licenseKey") ?: doc.id
-                        val exp = doc.getLong("expiresAt") ?: 0L
-                        val status = doc.getString("status") ?: "ACTIVE"
-                        if (key.isNotBlank() && status == "ACTIVE") {
-                            foundKey = key
-                            foundExpiresAt = exp
-                            break
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed searching licenses by email", e)
-            }
+        if (result.licenseKey.isBlank() || result.expiresAt <= now) {
+            return@withContext Pair(false, "Сервер не вернул действующую лицензию.")
         }
 
-        // 2. Поиск по оригинальному регистру email
-        if (foundKey.isBlank() && email.isNotBlank() && email.trim() != cleanEmail) {
-            try {
-                val db = firestore
-                if (db != null) {
-                    val byEmailOrig = db.collection("licenses")
-                        .whereEqualTo("email", email.trim())
-                        .get()
-                        .await()
-                    for (doc in byEmailOrig.documents) {
-                        val key = doc.getString("licenseKey") ?: doc.id
-                        val exp = doc.getLong("expiresAt") ?: 0L
-                        val status = doc.getString("status") ?: "ACTIVE"
-                        if (key.isNotBlank() && status == "ACTIVE") {
-                            foundKey = key
-                            foundExpiresAt = exp
-                            break
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed searching licenses by orig email", e)
-            }
-        }
+        val sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        sp.edit()
+            .putString("active_license_key", result.licenseKey)
+            .putLong("license_expires_at", result.expiresAt)
+            .apply()
+        saveToPermanentVault(result.licenseKey, result.expiresAt)
 
-        // 3. (REMOVED: Поиск по позывному) - Это небезопасно, так как позывные могут совпадать. Лицензия привязывается только к email.
+        val daysLeft = ((result.expiresAt - now) / (1000L * 60 * 60 * 24))
+            .toInt()
+            .coerceAtLeast(1)
+        updateRoomProfilePro(daysLeft)
+        refreshLicenseStatus()
 
-        // Восстановление по общему реестру бойцов намеренно отключено:
-        // только запись из коллекции licenses с реальным expiresAt считается источником истины.
-
-        // 5. Применение найденного в облаке ключа
-        if (foundKey.isNotBlank() && foundExpiresAt > now) {
-            val finalExpires = foundExpiresAt
-            val sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            sp.edit()
-                .putString("active_license_key", foundKey)
-                .putLong("license_expires_at", finalExpires)
-                .apply()
-            saveToPermanentVault(foundKey, finalExpires)
-
-            val daysLeft = ((finalExpires - now) / (1000L * 60 * 60 * 24)).toInt().coerceAtLeast(1)
-            updateRoomProfilePro(daysLeft)
-            refreshLicenseStatus()
-
-            Pair(true, "Лицензия бойца успешно восстановлена из базы! Ключ: $foundKey (на $daysLeft дн.)")
-        } else {
-            Pair(false, "Оплаченная лицензия для «$cleanEmail» не найдена в реестре.")
-        }
+        Pair(
+            true,
+            "Лицензия восстановлена сервером: ${result.licenseKey} (ещё $daysLeft дн.)"
+        )
     }
 
     /**
@@ -469,82 +419,74 @@ class LicenseManager(
     /**
      * Ручная активация существующего ключа (если боец получил ключ с сайта или от командира)
      */
-    suspend fun activateKeyManually(enteredKey: String, fighterCallsign: String): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+    suspend fun activateKeyManually(
+        enteredKey: String,
+        fighterCallsign: String
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
         val cleanKey = enteredKey.uppercase(Locale.ROOT)
             .replace(Regex("[^A-Z0-9-]"), "")
 
-        if (cleanKey.length < 12 || (!cleanKey.startsWith("KAPT-") && !cleanKey.startsWith("KPT-"))) {
-            return@withContext Pair(false, "Неверный формат ключа. Формат: KAPT-XXXX-XXXX-ZZZZ или KPT-XXXX-XXXX-ZZZZ")
-        }
-
-        val now = System.currentTimeMillis()
-        val currentFighterId = getFighterPersonalId()
-
-        try {
-            val doc = firestore.collection("licenses").document(cleanKey).get().await()
-            if (!doc.exists()) {
-                return@withContext Pair(
-                    false,
-                    "Ключ не найден в реестре лицензий. Для новой активации требуется подтверждение сервера."
-                )
-            }
-
-            val expiresAt = doc.getLong("expiresAt") ?: 0L
-            val status = doc.getString("status") ?: "ACTIVE"
-            val boundFighter = doc.getString("fighterId")
-
-            if (expiresAt <= now) {
-                return@withContext Pair(false, "Срок действия данного ключа уже истек.")
-            }
-            if (status != "ACTIVE") {
-                return@withContext Pair(false, "Данный ключ лицензии деактивирован.")
-            }
-            if (!boundFighter.isNullOrBlank() && boundFighter != currentFighterId) {
-                return@withContext Pair(false, "Ключ уже привязан к другому пользователю.")
-            }
-
-            val sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            sp.edit()
-                .putString("active_license_key", cleanKey)
-                .putLong("license_expires_at", expiresAt)
-                .apply()
-
-            saveToPermanentVault(cleanKey, expiresAt)
-            val daysLeft = ((expiresAt - now) / (1000L * 60 * 60 * 24)).toInt().coerceAtLeast(1)
-            updateRoomProfilePro(daysLeft)
-            refreshLicenseStatus()
-
-            Pair(true, "Лицензия подтверждена сервером и активирована на $daysLeft дн.")
-        } catch (e: Exception) {
-            Log.w(TAG, "Network exception verifying manual license", e)
-
-            // Backward compatibility: an already-confirmed, still-active license that is
-            // present in the local vault may continue to work offline until its stored expiry.
-            // A new 30-day period is never minted locally.
-            val vault = context.getSharedPreferences(PERMANENT_VAULT, Context.MODE_PRIVATE)
-            val vaultKey = vault.getString("vault_active_key", "") ?: ""
-            val vaultExpires = vault.getLong("vault_expires_at", 0L)
-
-            if (vaultKey.equals(cleanKey, ignoreCase = true) && vaultExpires > now) {
-                val sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                sp.edit()
-                    .putString("active_license_key", vaultKey)
-                    .putLong("license_expires_at", vaultExpires)
-                    .apply()
-
-                val daysLeft = ((vaultExpires - now) / (1000L * 60 * 60 * 24)).toInt().coerceAtLeast(1)
-                updateRoomProfilePro(daysLeft)
-                refreshLicenseStatus()
-                return@withContext Pair(
-                    true,
-                    "Сохранённая ранее лицензия восстановлена офлайн до её текущего срока."
-                )
-            }
-
-            Pair(
+        if (cleanKey.length < 12 ||
+            (!cleanKey.startsWith("KAPT-") && !cleanKey.startsWith("KPT-"))
+        ) {
+            return@withContext Pair(
                 false,
-                "Для первой активации этого ключа нужен интернет и подтверждение сервера. Существующие активные лицензии продолжают работать офлайн до своего срока."
+                "Неверный формат ключа. Формат: KAPT-XXXX-XXXX-ZZZZ или KPT-XXXX-XXXX-ZZZZ"
             )
         }
+
+        @Suppress("UNUSED_VARIABLE")
+        val compatibilityCallsign = fighterCallsign
+        val now = System.currentTimeMillis()
+        val currentFighterId = getFighterPersonalId()
+        val result = backend.verifyKey(cleanKey, currentFighterId)
+
+        if (result.success) {
+            val sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            sp.edit()
+                .putString("active_license_key", result.licenseKey)
+                .putLong("license_expires_at", result.expiresAt)
+                .apply()
+
+            saveToPermanentVault(result.licenseKey, result.expiresAt)
+            val daysLeft = ((result.expiresAt - now) / (1000L * 60 * 60 * 24))
+                .toInt()
+                .coerceAtLeast(1)
+            updateRoomProfilePro(daysLeft)
+            refreshLicenseStatus()
+            return@withContext Pair(
+                true,
+                "Лицензия подтверждена сервером и активирована на $daysLeft дн."
+            )
+        }
+
+        val vault = context.getSharedPreferences(PERMANENT_VAULT, Context.MODE_PRIVATE)
+        val vaultKey = vault.getString("vault_active_key", "") ?: ""
+        val vaultExpires = vault.getLong("vault_expires_at", 0L)
+
+        if (vaultKey.equals(cleanKey, ignoreCase = true) && vaultExpires > now) {
+            val sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            sp.edit()
+                .putString("active_license_key", vaultKey)
+                .putLong("license_expires_at", vaultExpires)
+                .apply()
+
+            val daysLeft = ((vaultExpires - now) / (1000L * 60 * 60 * 24))
+                .toInt()
+                .coerceAtLeast(1)
+            updateRoomProfilePro(daysLeft)
+            refreshLicenseStatus()
+            return@withContext Pair(
+                true,
+                "Сохранённая ранее лицензия восстановлена офлайн до её текущего срока."
+            )
+        }
+
+        Pair(
+            false,
+            result.errorMessage.ifBlank {
+                "Для первой активации нужен интернет и подтверждение сервера."
+            }
+        )
     }
 }
