@@ -699,26 +699,6 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    /**
-     * Сброс текущей лицензии и профиля для проверки регистрации нового бойца с нуля
-     */
-    fun resetProfileAndLicenseForTesting() {
-        viewModelScope.launch {
-            licenseManager.resetLicense()
-            val freshProfile = UserProfile(
-                callsign = "",
-                unitName = "1-е Подразделение",
-                unitKey = "kapt_" + UUID.randomUUID().toString().take(6),
-                email = "",
-                isLoggedIn = false,
-                isProActive = false,
-                proDaysLeft = 0,
-                demoDaysLeft = 0
-            )
-            repository.saveUserProfile(freshProfile)
-            _toastEvent.emit("Сессия и лицензия сброшены. Войдите как новый пользователь.")
-        }
-    }
 
     // Excel exports
     fun getForm8ExcelText(): String {
