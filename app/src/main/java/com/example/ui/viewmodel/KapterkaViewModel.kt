@@ -985,7 +985,16 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
     suspend fun authenticateDeveloper(secret: String): Pair<Boolean, String> {
         val result = adminBackendService.authenticate(secret)
         adminSessionToken = if (result.success) result.token else ""
-        return Pair(result.success, if (result.success) "Доступ подтверждён сервером." else result.errorMessage)
+        if (result.success) {
+            val registry = adminBackendService.listFighters(adminSessionToken)
+            if (registry.success) {
+                fighterRegistryManager.replaceCachedFighters(registry.fighters)
+            }
+        }
+        return Pair(
+            result.success,
+            if (result.success) "Доступ подтверждён сервером." else result.errorMessage
+        )
     }
 
     fun deleteFighterFromRegistry(fighterId: String) {
@@ -1005,7 +1014,10 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             val result = adminBackendService.grantLicense(adminSessionToken, fighterId, days)
             if (result.success) {
-                fighterRegistryManager.fetchFightersFromCloud()
+                val registry = adminBackendService.listFighters(adminSessionToken)
+                if (registry.success) {
+                    fighterRegistryManager.replaceCachedFighters(registry.fighters)
+                }
                 _toastEvent.emit("Сервер выдал ключ: ${result.licenseKey} на $days дней")
             } else {
                 if (result.errorMessage.contains("сессия", ignoreCase = true)) adminSessionToken = ""
@@ -1016,8 +1028,16 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
 
     fun refreshFightersRegistry() {
         viewModelScope.launch {
-            fighterRegistryManager.fetchFightersFromCloud()
-            _toastEvent.emit("Реестр бойцов обновлен")
+            val result = adminBackendService.listFighters(adminSessionToken)
+            if (result.success) {
+                fighterRegistryManager.replaceCachedFighters(result.fighters)
+                _toastEvent.emit("Реестр бойцов обновлен")
+            } else {
+                if (result.errorMessage.contains("сессия", ignoreCase = true)) {
+                    adminSessionToken = ""
+                }
+                _toastEvent.emit(result.errorMessage)
+            }
         }
     }
 
