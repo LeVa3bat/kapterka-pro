@@ -646,7 +646,14 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             val (success, msg) = licenseManager.restoreLicenseFromCloud(emailToUse, callsignToUse, unitKeyToUse)
             if (success) {
                 val curProfile = userProfile.value ?: UserProfile()
-                repository.saveUserProfile(curProfile.copy(isProActive = true, proDaysLeft = 30, demoDaysLeft = 0))
+                val daysLeft = licenseManager.licenseStatus.value.daysRemaining.coerceAtLeast(1)
+                repository.saveUserProfile(
+                    curProfile.copy(
+                        isProActive = true,
+                        proDaysLeft = daysLeft,
+                        demoDaysLeft = 0
+                    )
+                )
             }
             _toastEvent.emit(msg)
         }
@@ -750,7 +757,12 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             val profile = userProfile.value
             val callsign = profile?.callsign?.ifBlank { "Боец" } ?: "Боец"
-            val email = profile?.email?.trim().orEmpty()
+            val email = profile?.email?.trim()?.lowercase().orEmpty()
+
+            if (email.isBlank() || !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                _toastEvent.emit("Для оплаты укажите корректный Email в профиле. На него придёт информация о лицензии.")
+                return@launch
+            }
 
             _toastEvent.emit("Формирование счета ЮKassa на 30 дней...")
             val fighterId = licenseManager.getFighterPersonalId()
@@ -928,23 +940,33 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             val (success, message) = licenseManager.activateKeyManually(enteredKey, callsign)
             if (success) {
                 val curProfile = userProfile.value ?: UserProfile()
-                repository.saveUserProfile(curProfile.copy(isProActive = true, proDaysLeft = 30, demoDaysLeft = 0))
+                val currentLicense = licenseManager.licenseStatus.value
+                val daysLeft = currentLicense.daysRemaining.coerceAtLeast(1)
+                val activeKey = currentLicense.licenseKey.ifBlank { enteredKey.trim().uppercase() }
+
+                repository.saveUserProfile(
+                    curProfile.copy(
+                        isProActive = true,
+                        proDaysLeft = daysLeft,
+                        demoDaysLeft = 0
+                    )
+                )
                 fighterRegistryManager.registerOrUpdateFighter(
                     fighterId = licenseManager.getFighterPersonalId(),
                     callsign = callsign,
                     unitName = curProfile.unitName,
                     unitKey = curProfile.unitKey,
                     email = curProfile.email,
-                    licenseKey = enteredKey.trim().uppercase(),
+                    licenseKey = activeKey,
                     isProActive = true,
-                    expiresAt = System.currentTimeMillis() + 30L * 86400000L
+                    expiresAt = System.currentTimeMillis() + daysLeft.toLong() * 86400000L
                 )
 
                 // Уведомление в Telegram
                 com.example.data.notification.TelegramNotifier.notifyKeyActivated(
                     callsign = callsign,
-                    licenseKey = enteredKey.trim().uppercase(),
-                    days = 30
+                    licenseKey = activeKey,
+                    days = daysLeft
                 )
             }
             _toastEvent.emit(message)
@@ -959,7 +981,14 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             val (success, msg) = licenseManager.restoreSavedLicense()
             if (success) {
                 val curProfile = userProfile.value ?: UserProfile()
-                repository.saveUserProfile(curProfile.copy(isProActive = true, proDaysLeft = 30))
+                val daysLeft = licenseManager.licenseStatus.value.daysRemaining.coerceAtLeast(1)
+                repository.saveUserProfile(
+                    curProfile.copy(
+                        isProActive = true,
+                        proDaysLeft = daysLeft,
+                        demoDaysLeft = 0
+                    )
+                )
             }
             _toastEvent.emit(msg)
         }
@@ -976,8 +1005,13 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             prefs.edit().remove("last_yookassa_payment_id").apply()
             licenseManager.resetLicense()
             val curProfile = userProfile.value ?: UserProfile()
-            repository.saveUserProfile(curProfile.copy(isProActive = false, proDaysLeft = 0, demoDaysLeft = 3))
-            _toastEvent.emit("Лицензия сброшена в исходное состояние (демо-доступ)")
+            repository.saveUserProfile(curProfile.copy(isProActive = false, proDaysLeft = 0))
+            licenseManager.refreshLicenseStatus()
+            val demoLeft = licenseManager.licenseStatus.value.demoDaysLeft
+            _toastEvent.emit(
+                if (demoLeft > 0) "Лицензия сброшена. Остаток демо-периода: $demoLeft дн."
+                else "Лицензия сброшена. Демо-период уже завершён."
+            )
         }
     }
 
