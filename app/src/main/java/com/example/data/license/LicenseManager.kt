@@ -393,66 +393,60 @@ class LicenseManager(
     /**
      * Активирует 30-дневную персональную лицензию после успешной оплаты в ЮKassa
      */
+    @Deprecated("Новая лицензия должна выдаваться только сервером оплаты")
     suspend fun activateLicenseAfterPayment(
         fighterCallsign: String,
         fighterEmail: String,
         paymentId: String
     ): String = withContext(Dispatchers.IO) {
-        val newKey = generateLicenseKey()
-        val now = System.currentTimeMillis()
-        val durationMillis = 30L * 24L * 60L * 60L * 1000L // ровно 30 дней
-        val expiresAt = now + durationMillis
-        val fighterId = getFighterPersonalId()
+        @Suppress("UNUSED_VARIABLE")
+        val legacyArgs = Triple(fighterCallsign, fighterEmail, paymentId)
+        Log.w(TAG, "Blocked legacy client-side license issuance")
+        ""
+    }
 
-        // 1. Сохраняем локально на устройстве бойца
+    /**
+     * Сохраняет лицензию, которая уже подтверждена и выдана сервером.
+     * Этот метод никогда не генерирует новый срок или ключ локально.
+     */
+    suspend fun activateServerVerifiedLicense(
+        licenseKey: String,
+        expiresAt: Long,
+        paymentId: String
+    ): Boolean = withContext(Dispatchers.IO) {
+        val cleanKey = licenseKey.uppercase(Locale.ROOT)
+            .replace(Regex("[^A-Z0-9-]"), "")
+        val now = System.currentTimeMillis()
+
+        if (!verifyKeyChecksum(cleanKey)) {
+            Log.e(TAG, "Server returned malformed license key")
+            return@withContext false
+        }
+        if (expiresAt <= now) {
+            Log.e(TAG, "Server returned expired license")
+            return@withContext false
+        }
+        if (paymentId.isBlank()) {
+            Log.e(TAG, "Server verified license without payment id")
+            return@withContext false
+        }
+
         val sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         sp.edit()
-            .putString("active_license_key", newKey)
+            .putString("active_license_key", cleanKey)
             .putLong("license_expires_at", expiresAt)
             .putLong("license_activated_at", now)
             .putString("license_payment_id", paymentId)
             .apply()
 
-        saveToPermanentVault(newKey, expiresAt)
+        saveToPermanentVault(cleanKey, expiresAt)
 
-        // 2. Обновляем статус в профиле бойца Room
-        try {
-            val profile = dao.getUserProfile().first()
-            if (profile != null) {
-                dao.saveUserProfile(
-                    profile.copy(
-                        isProActive = true,
-                        proDaysLeft = 30,
-                        demoDaysLeft = 0
-                    )
-                )
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error updating profile with new license", e)
-        }
-
-        // 3. Записываем в общую защищенную коллекцию Firebase Firestore
-        try {
-            val licenseData = hashMapOf(
-                "licenseKey" to newKey,
-                "fighterId" to fighterId,
-                "callsign" to fighterCallsign,
-                "email" to fighterEmail,
-                "paymentId" to paymentId,
-                "activatedAt" to now,
-                "expiresAt" to expiresAt,
-                "durationDays" to 30,
-                "status" to "ACTIVE"
-            )
-            firestore.collection("licenses").document(newKey)
-                .set(licenseData, SetOptions.merge())
-                .await()
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to upload license to Firestore immediately, saved locally", e)
-        }
-
+        val daysLeft = ((expiresAt - now) / (1000L * 60L * 60L * 24L))
+            .toInt()
+            .coerceAtLeast(1)
+        updateRoomProfilePro(daysLeft)
         refreshLicenseStatus()
-        newKey
+        true
     }
 
     private suspend fun updateRoomProfilePro(days: Int) {
