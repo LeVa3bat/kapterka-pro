@@ -118,6 +118,37 @@ if (reconcileSource.includes('dao.clearAllStockRecords()') ||
   ok('sync reconcile preserves local data when cloud data is absent');
 }
 
+const tombstoneModel = read('app/src/main/java/com/example/data/model/SyncTombstone.kt');
+if (roomVersion < 3) {
+  fail('Room v3 is required for persistent sync tombstones');
+} else if (!db.includes('SyncTombstone::class') || !db.includes('MIGRATION_2_3')) {
+  fail('Room v2 -> v3 tombstone migration is missing');
+} else if (!tombstoneModel.includes('tableName = "sync_tombstones"')) {
+  fail('sync_tombstones entity is missing');
+} else {
+  ok('Room v3 adds persistent sync tombstones with explicit migration');
+}
+
+if (!syncSource.includes('collection("sync_tombstones")') ||
+    !syncSource.includes('prepareDeletionTombstone') ||
+    !syncSource.includes('applyTombstone')) {
+  fail('explicit tombstone sync protocol is incomplete');
+} else {
+  ok('explicit tombstone sync protocol is present');
+}
+
+const destructiveRemovedPatterns = [
+  /DocumentChange\.Type\.REMOVED[\s\S]{0,180}dao\.deletePoint/,
+  /DocumentChange\.Type\.REMOVED[\s\S]{0,180}dao\.deleteItem/,
+  /DocumentChange\.Type\.REMOVED[\s\S]{0,180}dao\.deleteOperation/,
+  /DocumentChange\.Type\.REMOVED[\s\S]{0,180}dao\.deleteRequisition/
+];
+if (destructiveRemovedPatterns.some((pattern) => pattern.test(syncSource))) {
+  fail('raw Firestore REMOVED event can still delete local user data without tombstone');
+} else {
+  ok('raw Firestore REMOVED events are non-destructive');
+}
+
 const backupRules = read('app/src/main/res/xml/backup_rules.xml');
 const extractionRules = read('app/src/main/res/xml/data_extraction_rules.xml');
 if (!backupRules.includes('kapterka_sync_prefs.xml') ||
