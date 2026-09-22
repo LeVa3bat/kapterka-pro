@@ -9,6 +9,7 @@ import com.example.data.model.InventoryItem
 import com.example.data.model.OperationRecord
 import com.example.data.model.RequisitionRequest
 import com.example.data.model.StockRecord
+import com.example.data.model.SyncTombstone
 import com.example.data.model.UserProfile
 import com.example.data.model.WarehousePoint
 import androidx.room.TypeConverters
@@ -23,9 +24,10 @@ import kotlinx.coroutines.launch
         StockRecord::class,
         OperationRecord::class,
         RequisitionRequest::class,
-        UserProfile::class
+        UserProfile::class,
+        SyncTombstone::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -42,6 +44,26 @@ abstract class KapterkaDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_2_3 = object : androidx.room.migration.Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Add-only migration. Existing user tables/data remain untouched.
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS sync_tombstones (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        unitKey TEXT NOT NULL,
+                        entityType TEXT NOT NULL,
+                        entityId TEXT NOT NULL,
+                        deletedAt INTEGER NOT NULL
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_sync_tombstones_unitKey ON sync_tombstones(unitKey)"
+                )
+            }
+        }
+
         fun getDatabase(context: Context, scope: CoroutineScope): KapterkaDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -49,7 +71,7 @@ abstract class KapterkaDatabase : RoomDatabase() {
                     KapterkaDatabase::class.java,
                     "kapterka_database"
                 )
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .addCallback(DatabaseCallback(scope))
                     .build()
                 INSTANCE = instance
