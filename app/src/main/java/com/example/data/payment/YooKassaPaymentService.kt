@@ -29,16 +29,21 @@ data class PaymentInitResult(
     val errorMessage: String? = null
 )
 
+data class PaymentVerificationResult(
+    val success: Boolean,
+    val paid: Boolean = false,
+    val status: String = "unknown",
+    val licenseKey: String = "",
+    val expiresAt: Long = 0L,
+    val errorMessage: String? = null
+)
+
 /**
  * Future-safe payment client.
  *
- * IMPORTANT:
- * - YooKassa shop secret must never be stored in the APK or SharedPreferences.
- * - Android talks only to the Kapterka payment backend.
- * - The backend is responsible for creating and verifying YooKassa payments.
- *
- * The public method signatures intentionally stay compatible with 3.4.9 ViewModel code,
- * so this migration can be developed without touching the production release.
+ * YooKassa credentials never belong in the APK. Android talks only to the
+ * Kapterka payment backend, which creates/verifies the payment and issues the
+ * authoritative license.
  */
 class YooKassaPaymentService(private val context: Context) {
     private val tag = "YooKassaService"
@@ -55,16 +60,13 @@ class YooKassaPaymentService(private val context: Context) {
     fun getConfig(): YooKassaConfig {
         val sp = context.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
         return YooKassaConfig(
-            shopId = "",
-            secretKey = "",
-            isTestMode = false,
             priceRubles = sp.getInt("price_rubles", DEFAULT_PRICE_RUBLES)
         )
     }
 
     /**
-     * Kept only for source compatibility with the current developer UI.
-     * Secret material is deliberately ignored and never persisted.
+     * Retained only for source compatibility with the old developer UI.
+     * Secret material is deliberately ignored and removed instead of stored.
      */
     fun saveConfig(
         shopId: String,
@@ -86,10 +88,10 @@ class YooKassaPaymentService(private val context: Context) {
     suspend fun createPayment(
         fighterCallsign: String,
         fighterEmail: String,
-        returnUrl: String = "kapterka://payment_success"
+        returnUrl: String = "kapterka://payment_success",
+        fighterId: String = ""
     ): PaymentInitResult = withContext(Dispatchers.IO) {
-        val baseUrl = backendBaseUrl()
-        if (baseUrl.isBlank()) {
+        if (backendBaseUrl().isBlank()) {
             return@withContext PaymentInitResult(
                 success = false,
                 errorMessage = "Сервер оплаты пока не настроен для этой тестовой сборки."
@@ -102,6 +104,7 @@ class YooKassaPaymentService(private val context: Context) {
                 payload = JSONObject().apply {
                     put("callsign", fighterCallsign)
                     put("email", fighterEmail.trim())
+                    put("fighter_id", fighterId.trim())
                     put("return_url", returnUrl)
                     put("idempotence_key", UUID.randomUUID().toString())
                 }
@@ -110,7 +113,7 @@ class YooKassaPaymentService(private val context: Context) {
             val paymentId = response.optString("payment_id")
             val confirmationUrl = response.optString("confirmation_url")
 
-            if (ok && paymentId.isNotBlank() && confirmationUrl.isNotBlank()) {
+            if (ok && paymentId.isNotBlank() && confirmationUrl.startsWith("https://")) {
                 PaymentInitResult(
                     success = true,
                     paymentId = paymentId,
@@ -148,52 +151,93 @@ class YooKassaPaymentService(private val context: Context) {
         }
     }
 
-    suspend fun verifyPaymentStatus(paymentId: String): Pair<Boolean, String> =
-        withContext(Dispatchers.IO) {
-            if (paymentId.isBlank()) {
-                return@withContext Pair(
-                    false,
-                    "Счёт на оплату не найден. Сначала нажмите «Оплатить через ЮKassa»."
-                )
-            }
-
-            if (!paymentId.matches(Regex("^[A-Za-z0-9_-]{6,100}$"))) {
-                return@withContext Pair(false, "Некорректный идентификатор платежа.")
-            }
-
-            val baseUrl = backendBaseUrl()
-            if (baseUrl.isBlank()) {
-                return@withContext Pair(
-                    false,
-                    "Сервер проверки оплаты пока не настроен для этой тестовой сборки."
-                )
-            }
-
-            try {
-                val response = requestBackend(
-                    action = "check",
-                    payload = JSONObject().apply { put("payment_id", paymentId) }
-                )
-                val paid = response.optBoolean("paid", false)
-                val status = response.optString("status", "unknown")
-
-                when {
-                    paid && status == "succeeded" ->
-                        Pair(true, "Оплата подтверждена сервером.")
-                    status == "pending" ->
-                        Pair(false, "Платёж ожидает оплаты.")
-                    status == "waiting_for_capture" ->
-                        Pair(false, "Платёж авторизован, но ещё не завершён.")
-                    status == "canceled" ->
-                        Pair(false, "Платёж отменён без активации.")
-                    else ->
-                        Pair(false, backendErrorMessage(response))
-                }
-            } catch (e: Exception) {
-                Log.e(tag, "Payment backend check error", e)
-                Pair(false, "Не удалось проверить оплату через сервер. Попробуйте позже.")
-            }
+    suspend fun verifyPaymentLicense(
+        paymentId: String,
+        fighterId: String = ""
+    ): PaymentVerificationResult = withContext(Dispatchers.IO) {
+        if (paymentId.isBlank()) {
+            return@withContext PaymentVerificationResult(
+                success = false,
+                errorMessage = "Счёт на оплату не найден."
+            )
         }
+        if (!paymentId.matches(Regex("^[A-Za-z0-9_-]{6,100}$"))) {
+            return@withContext PaymentVerificationResult(
+                success = false,
+                errorMessage = "Некорректный идентификатор платежа."
+            )
+        }
+        if (backendBaseUrl().isBlank()) {
+            return@withContext PaymentVerificationResult(
+                success = false,
+                errorMessage = "Сервер проверки оплаты пока не настроен для этой тестовой сборки."
+            )
+        }
+
+        try {
+            val response = requestBackend(
+                action = "check",
+                payload = JSONObject().apply {
+                    put("payment_id", paymentId)
+                    put("fighter_id", fighterId.trim())
+                }
+            )
+            val ok = response.optBoolean("ok", false)
+            val paid = response.optBoolean("paid", false)
+            val status = response.optString("status", "unknown")
+            val licenseKey = response.optString("license_key")
+            val expiresAt = response.optLong("expires_at", 0L)
+
+            if (!ok) {
+                return@withContext PaymentVerificationResult(
+                    success = false,
+                    paid = false,
+                    status = status,
+                    errorMessage = backendErrorMessage(response)
+                )
+            }
+
+            if (paid) {
+                val validKey = licenseKey.matches(Regex("^KAPT-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$"))
+                if (!validKey || expiresAt <= System.currentTimeMillis()) {
+                    return@withContext PaymentVerificationResult(
+                        success = false,
+                        paid = true,
+                        status = status,
+                        errorMessage = "Сервер подтвердил платёж, но не выдал действующую лицензию."
+                    )
+                }
+            }
+
+            PaymentVerificationResult(
+                success = true,
+                paid = paid,
+                status = status,
+                licenseKey = licenseKey,
+                expiresAt = expiresAt,
+                errorMessage = if (paid) null else statusMessage(status)
+            )
+        } catch (e: Exception) {
+            Log.e(tag, "Payment backend check error", e)
+            PaymentVerificationResult(
+                success = false,
+                errorMessage = "Не удалось проверить оплату через сервер. Попробуйте позже."
+            )
+        }
+    }
+
+    /**
+     * Compatibility wrapper for older call sites. It never grants a license;
+     * authoritative license data is available only through verifyPaymentLicense().
+     */
+    suspend fun verifyPaymentStatus(paymentId: String): Pair<Boolean, String> {
+        val result = verifyPaymentLicense(paymentId)
+        return Pair(
+            result.success && result.paid,
+            if (result.success && result.paid) "Оплата подтверждена сервером."
+            else result.errorMessage ?: statusMessage(result.status)
+        )
+    }
 
     private fun requestBackend(action: String, payload: JSONObject): JSONObject {
         val endpoint = URL(backendBaseUrl() + "?action=" + Uri.encode(action))
@@ -213,11 +257,7 @@ class YooKassaPaymentService(private val context: Context) {
             }
 
             val responseCode = connection.responseCode
-            val stream = if (responseCode in 200..299) {
-                connection.inputStream
-            } else {
-                connection.errorStream
-            }
+            val stream = if (responseCode in 200..299) connection.inputStream else connection.errorStream
             val text = stream?.let {
                 BufferedReader(InputStreamReader(it, Charsets.UTF_8)).use { reader ->
                     reader.readText()
@@ -235,11 +275,22 @@ class YooKassaPaymentService(private val context: Context) {
         }
     }
 
+    private fun statusMessage(status: String): String = when (status) {
+        "pending" -> "Платёж ожидает оплаты."
+        "waiting_for_capture" -> "Платёж авторизован, но ещё не завершён."
+        "canceled" -> "Платёж отменён без активации."
+        "expired" -> "Срок лицензии по этому платежу уже истёк."
+        else -> "Оплата пока не подтверждена сервером."
+    }
+
     private fun backendErrorMessage(response: JSONObject): String {
         return when (response.optString("error")) {
             "INVALID_EMAIL" -> "Укажите корректный Email для оплаты."
             "MISSING_PAYMENT_ID" -> "Не найден идентификатор платежа."
             "PAYMENT_NOT_CONFIRMED" -> "Оплата ещё не подтверждена."
+            "PAYMENT_AMOUNT_MISMATCH" -> "Сумма платежа не соответствует тарифу."
+            "FIGHTER_MISMATCH" -> "Платёж привязан к другому пользователю."
+            "LICENSE_REGISTRY_UNAVAILABLE" -> "Сервер лицензий временно недоступен."
             "UPSTREAM_ERROR" -> "Сервис оплаты временно недоступен."
             else -> "Оплата не подтверждена сервером."
         }
