@@ -1057,7 +1057,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                 if (registry.success) {
                     fighterRegistryManager.replaceCachedFighters(registry.fighters)
                 }
-                _toastEvent.emit("Сервер выдал ключ: ${result.licenseKey} на $days дней")
+                _toastEvent.emit("Лицензия обновлена: ${result.licenseKey} (+$days дн.)")
             } else {
                 if (result.errorMessage.contains("сессия", ignoreCase = true)) adminSessionToken = ""
                 _toastEvent.emit(result.errorMessage)
