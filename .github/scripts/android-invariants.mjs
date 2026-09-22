@@ -200,6 +200,16 @@ if (!syncSource.includes('collection("sync_tombstones")') ||
   ok('explicit tombstone sync protocol is present');
 }
 
+if (!syncSource.includes('shouldAcceptStockRecord') ||
+    !syncSource.includes('isSupersededBy(stock.lastUpdated)') ||
+    !syncSource.includes('deleteSyncTombstoneById') ||
+    !syncSource.includes('publishTombstoneIfNewer') ||
+    !syncSource.includes('cloudDeletedAt')) {
+  fail('tombstone conflict resolution can regress or block legitimate stock recreation');
+} else {
+  ok('tombstone conflict ordering is monotonic and permits newer stock recreation');
+}
+
 const destructiveRemovedPatterns = [
   /DocumentChange\.Type\.REMOVED[\s\S]{0,180}dao\.deletePoint/,
   /DocumentChange\.Type\.REMOVED[\s\S]{0,180}dao\.deleteItem/,
