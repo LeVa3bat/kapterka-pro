@@ -874,18 +874,30 @@ module.exports.handler = async function handler(event) {
 
     if (action === 'license_restore') {
       const email = cleanEmail(body.email);
+      const fighterId = cleanText(body.fighter_id, 100);
       if (!email) return json(400, { ok: false, error: 'INVALID_EMAIL' });
+      if (!fighterId) return json(400, { ok: false, error: 'MISSING_FIGHTER_ID' });
 
       const license = await queryActiveLicenseByEmail(email);
       if (!license) {
         return json(404, { ok: false, error: 'LICENSE_NOT_FOUND' });
       }
 
+      // Email alone is not enough to disclose a reusable license key.
+      // Normal backup/device transfer preserves fighter_personal_id, so a legitimate
+      // restored installation can be matched without weakening the trust boundary.
+      if (!license.fighterId || license.fighterId !== fighterId) {
+        return json(403, {
+          ok: false,
+          error: 'LICENSE_RESTORE_IDENTITY_MISMATCH'
+        });
+      }
+
       return json(200, {
         ok: true,
         license_key: license.licenseKey,
         expires_at: license.expiresAt,
-        fighter_id: license.fighterId || ''
+        fighter_id: license.fighterId
       });
     }
 
