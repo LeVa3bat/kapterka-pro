@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import com.example.BuildConfig
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -926,16 +927,21 @@ private fun TacticalOperationModalLayout(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 16.dp),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = TacticalSurface),
-            border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorderSubtle),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                .padding(
+                    horizontal = if (BuildConfig.IS_UNIVERSAL_APP) 10.dp else 12.dp,
+                    vertical = if (BuildConfig.IS_UNIVERSAL_APP) 12.dp else 16.dp
+                ),
+            shape = RoundedCornerShape(if (BuildConfig.IS_UNIVERSAL_APP) 28.dp else 24.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = if (BuildConfig.IS_UNIVERSAL_APP) Color.White else TacticalSurface
+            ),
+            border = if (BuildConfig.IS_UNIVERSAL_APP) null else androidx.compose.foundation.BorderStroke(1.dp, TacticalBorderSubtle),
+            elevation = CardDefaults.cardElevation(defaultElevation = if (BuildConfig.IS_UNIVERSAL_APP) 3.dp else 8.dp)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(18.dp)
+                    .padding(if (BuildConfig.IS_UNIVERSAL_APP) 20.dp else 18.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -952,8 +958,8 @@ private fun TacticalOperationModalLayout(
                         Spacer(modifier = Modifier.width(9.dp))
                         Text(
                             text = title,
-                            color = TacticalTextPrimary,
-                            fontSize = 20.sp,
+                            color = if (BuildConfig.IS_UNIVERSAL_APP) Color(0xFF111827) else TacticalTextPrimary,
+                            fontSize = if (BuildConfig.IS_UNIVERSAL_APP) 22.sp else 20.sp,
                             fontWeight = FontWeight.ExtraBold
                         )
                     }
@@ -962,7 +968,7 @@ private fun TacticalOperationModalLayout(
                         modifier = Modifier
                             .size(34.dp)
                             .clip(RoundedCornerShape(12.dp))
-                            .background(TacticalSurfaceLight),
+                            .background(if (BuildConfig.IS_UNIVERSAL_APP) Color(0xFFF3F4F6) else TacticalSurfaceLight),
                         contentAlignment = Alignment.Center
                     ) {
                         IconButton(
