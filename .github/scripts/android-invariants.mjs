@@ -36,10 +36,12 @@ const targetSdk = Number((gradle.match(/targetSdk\s*=\s*(\d+)/) || [])[1] || 0);
 if (targetSdk < 34) fail(`targetSdk unexpectedly decreased: ${targetSdk}`);
 else ok(`targetSdk is not below release baseline: ${targetSdk}`);
 
-if (!/release\s*\{[\s\S]*?signingConfig\s*=\s*signingConfigs\.getByName\("debugConfig"\)/.test(gradle)) {
-  fail('release signing configuration changed; published signature continuity must be reviewed before release');
+if (!/release\s*\{[\s\S]*?signingConfig\s*=\s*signingConfigs\.getByName\("release"\)/.test(gradle)) {
+  fail('production release must use the explicit recovered-signer configuration');
+} else if (gradle.includes('my-upload-key.jks') || gradle.includes('?: "upload"')) {
+  fail('production signing must not fall back to a generic upload/debug key');
 } else {
-  ok('release signing configuration still matches published-signature baseline');
+  ok('production release requires the explicit recovered historical signer');
 }
 
 const roomVersion = Number((db.match(/version\s*=\s*(\d+)/) || [])[1] || 0);
