@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "Kapterka"
+rootProject.name = "SkladPro"
 
 include(":app")
