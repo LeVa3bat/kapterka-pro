@@ -94,3 +94,21 @@ Only the registry record is deleted; unit data and license records are preserved
 
 Do not enable the new Android payment flow in production until the deployed endpoint has passed the live checks above.
 Current public Android 3.4.9 / build 31 remains unchanged.
+
+## Standalone Node / Railway
+
+The same trusted handler can run without changing payment/license logic:
+
+- adapter: `server/railway-server.js`
+- package: `server/package.json`
+- deployment config: `railway.json`
+
+The adapter converts ordinary HTTP requests into the same event shape used by
+`server/yandex-cloud-function.js`. Secrets remain environment variables and are
+never committed.
+
+Before assigning its URL to Android, the deployment must pass
+`.github/workflows/android-release-backend-readiness.yml`.
+
+Do not set `PAYMENT_API_URL` in a release APK merely because the process starts:
+health, admin rejection and all backend readiness checks must pass first.
