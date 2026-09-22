@@ -27,6 +27,8 @@ android {
     // Future payment client talks only to our backend; YooKassa secret never enters the APK.
     val paymentApiUrl = System.getenv("PAYMENT_API_URL") ?: ""
     buildConfigField("String", "PAYMENT_API_URL", "\"$paymentApiUrl\"")
+    buildConfigField("String", "PAYMENT_CALLBACK_SCHEME", "\"kapterka\"")
+    manifestPlaceholders["paymentScheme"] = "kapterka"
   }
 
   signingConfigs {
@@ -77,6 +79,8 @@ android {
       matchingFallbacks += listOf("debug")
       signingConfig = signingConfigs.getByName("debugConfig")
       resValue("string", "app_name", "Каптёрка PRO NEXT-SAFE")
+      buildConfigField("String", "PAYMENT_CALLBACK_SCHEME", "\"kapterka-nextsafe\"")
+      manifestPlaceholders["paymentScheme"] = "kapterka-nextsafe"
     }
 
     debug { signingConfig = signingConfigs.getByName("debugConfig") }
