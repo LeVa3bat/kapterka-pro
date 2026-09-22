@@ -2,6 +2,11 @@ name: Android release signer readiness
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - android/next-safe
+    paths:
+      - '.github/workflows/android-release-signer-readiness.yml'
 
 permissions:
   contents: read
