@@ -66,6 +66,9 @@ jobs:
           "$SDKMANAGER" "platform-tools" "build-tools;36.0.0" "platforms;android-36"
           "$SDKMANAGER" "platforms;android-36.1"
 
+      - name: Compile debug unit tests
+        run: gradle :app:compileDebugUnitTestKotlin --no-daemon --stacktrace
+
       - name: Run debug unit tests
         id: unit_tests
         continue-on-error: true
