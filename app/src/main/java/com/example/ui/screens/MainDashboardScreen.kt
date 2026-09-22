@@ -1120,233 +1120,189 @@ private fun PointStockTableView(
     showPointColumn: Boolean = false,
     onAdjustClick: (TableInventoryRow) -> Unit
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(containerColor = TacticalSurface),
-        border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorder)
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            // Table Header with visible borders
-            Row(
+    if (rows.isEmpty()) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = TacticalSurface),
+            border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorderSubtle)
+        ) {
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFFDDE5DC))
-                    .border(androidx.compose.foundation.BorderStroke(0.8.dp, TacticalBorder))
-                    .height(IntrinsicSize.Min),
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(horizontal = 20.dp, vertical = 28.dp),
+                contentAlignment = Alignment.Center
             ) {
-                TableHeaderCell(text = "№", width = 30.dp)
-                TableVerticalDivider()
-                TableHeaderCell(text = "НАИМЕНОВАНИЕ / СЛУЖБА", modifier = Modifier.weight(2.6f))
-                TableVerticalDivider()
-                if (showPointColumn) {
-                    TableHeaderCell(text = "ТОЧКА", modifier = Modifier.weight(1.1f))
-                    TableVerticalDivider()
-                } else {
-                    TableHeaderCell(text = "ЕД.", modifier = Modifier.weight(0.6f))
-                    TableVerticalDivider()
-                }
-                TableHeaderCell(text = "ПРИХ.", modifier = Modifier.weight(0.7f))
-                TableVerticalDivider()
-                TableHeaderCell(text = "РАСХ.", modifier = Modifier.weight(0.7f))
-                TableVerticalDivider()
-                TableHeaderCell(text = "ОСТАТОК", modifier = Modifier.weight(1.0f), color = SageGreenBright)
-                TableVerticalDivider()
-                TableHeaderCell(text = "ИЗМ.", modifier = Modifier.weight(0.55f))
+                Text(
+                    text = if (searchQuery.isNotEmpty()) {
+                        "По запросу «$searchQuery» ничего не найдено"
+                    } else {
+                        "На этом складе пока нет имущества на остатке"
+                    },
+                    color = TacticalTextMuted,
+                    fontSize = 12.sp,
+                    textAlign = TextAlign.Center
+                )
             }
+        }
+        return
+    }
 
-            if (rows.isEmpty()) {
-                Box(
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        rows.forEach { rowData ->
+            val isZero = rowData.quantity <= 0
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = TacticalSurface),
+                border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorderSubtle),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            ) {
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center
+                        .padding(13.dp)
                 ) {
-                    Text(
-                        text = if (searchQuery.isNotEmpty()) "По запросу «$searchQuery» ничего не найдено" else "На этой точке пока нет имущества на остатке",
-                        color = TacticalTextMuted,
-                        fontSize = 11.5.sp,
-                        textAlign = TextAlign.Center
-                    )
-                }
-            } else {
-                rows.forEachIndexed { index, rowData ->
-                    val isEven = index % 2 == 0
-                    val isZero = rowData.quantity <= 0
-
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(if (isEven) TacticalSurface else TacticalSurfaceLight)
-                            .border(androidx.compose.foundation.BorderStroke(0.5.dp, TacticalBorderSubtle))
-                            .height(IntrinsicSize.Min),
-                        verticalAlignment = Alignment.CenterVertically
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Top
                     ) {
-                        // Cell 1: Index №
-                        Box(
-                            modifier = Modifier
-                                .width(30.dp)
-                                .padding(vertical = 7.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "${index + 1}",
-                                color = TacticalTextMuted,
-                                fontSize = 9.5.sp,
-                                fontFamily = FontFamily.Monospace
-                            )
-                        }
-                        TableVerticalDivider()
-
-                        // Cell 2: Item Name & Service Category
-                        Column(
-                            modifier = Modifier
-                                .weight(2.6f)
-                                .padding(horizontal = 6.dp, vertical = 5.dp)
-                        ) {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = rowData.item.name,
                                 color = TacticalTextPrimary,
-                                fontSize = 11.5.sp,
+                                fontSize = 13.5.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis
                             )
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = rowData.item.subType.uppercase(),
-                                    color = TacticalTextMuted,
-                                    fontSize = 8.5.sp,
-                                    fontWeight = FontWeight.Medium
-                                )
+
+                            Spacer(modifier = Modifier.height(3.dp))
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(5.dp)
+                            ) {
+                                if (rowData.item.subType.isNotBlank()) {
+                                    Text(
+                                        text = rowData.item.subType,
+                                        color = TacticalTextMuted,
+                                        fontSize = 10.5.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
                                 if (rowData.item.standardCode.isNotBlank()) {
                                     Text(
-                                        text = " • ${rowData.item.standardCode}",
-                                        color = SageGreenBright,
-                                        fontSize = 8.5.sp,
-                                        fontWeight = FontWeight.Bold
+                                        text = "• ${rowData.item.standardCode}",
+                                        color = TacticalTextMuted,
+                                        fontSize = 10.5.sp,
+                                        maxLines = 1
                                     )
                                 }
                             }
-                        }
-                        TableVerticalDivider()
 
-                        // Cell 3: Unit or Point
-                        if (showPointColumn) {
-                            Box(
-                                modifier = Modifier
-                                    .weight(1.1f)
-                                    .padding(horizontal = 4.dp, vertical = 5.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
+                            if (showPointColumn) {
+                                Spacer(modifier = Modifier.height(4.dp))
                                 Text(
                                     text = rowData.pointName,
-                                    color = TacticalTextSecondary,
-                                    fontSize = 9.sp,
-                                    textAlign = TextAlign.Center,
-                                    maxLines = 2,
+                                    color = SageGreenPrimary,
+                                    fontSize = 10.5.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
                             }
-                            TableVerticalDivider()
-                        } else {
-                            Box(
-                                modifier = Modifier
-                                    .weight(0.6f)
-                                    .padding(horizontal = 2.dp, vertical = 5.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
+                        }
+
+                        Spacer(modifier = Modifier.width(10.dp))
+
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(
+                                text = "Остаток",
+                                color = TacticalTextMuted,
+                                fontSize = 9.5.sp
+                            )
+                            Row(verticalAlignment = Alignment.Bottom) {
+                                Text(
+                                    text = rowData.quantity.toString(),
+                                    color = if (isZero) TacticalRedText else TacticalTextPrimary,
+                                    fontSize = 22.sp,
+                                    fontWeight = FontWeight.ExtraBold
+                                )
+                                Spacer(modifier = Modifier.width(3.dp))
                                 Text(
                                     text = rowData.item.unit,
-                                    color = TacticalTextSecondary,
-                                    fontSize = 9.5.sp,
-                                    textAlign = TextAlign.Center
-                                )
-                            }
-                            TableVerticalDivider()
-                        }
-
-                        // Cell 4: Income
-                        Box(
-                            modifier = Modifier
-                                .weight(0.7f)
-                                .padding(horizontal = 2.dp, vertical = 5.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = if (rowData.incomeTotal > 0) "+${rowData.incomeTotal}" else "-",
-                                color = if (rowData.incomeTotal > 0) SageGreenBright else TacticalTextDim,
-                                fontSize = 10.5.sp,
-                                fontWeight = if (rowData.incomeTotal > 0) FontWeight.Bold else FontWeight.Normal,
-                                fontFamily = FontFamily.Monospace,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                        TableVerticalDivider()
-
-                        // Cell 5: Expense
-                        Box(
-                            modifier = Modifier
-                                .weight(0.7f)
-                                .padding(horizontal = 2.dp, vertical = 5.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = if (rowData.expenseTotal > 0) "-${rowData.expenseTotal}" else "-",
-                                color = if (rowData.expenseTotal > 0) TacticalGoldText else TacticalTextDim,
-                                fontSize = 10.5.sp,
-                                fontWeight = if (rowData.expenseTotal > 0) FontWeight.Bold else FontWeight.Normal,
-                                fontFamily = FontFamily.Monospace,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                        TableVerticalDivider()
-
-                        // Cell 6: Remaining Stock Quantity Badge
-                        Box(
-                            modifier = Modifier
-                                .weight(1.0f)
-                                .padding(horizontal = 4.dp, vertical = 5.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(5.dp))
-                                    .background(if (isZero) TacticalRedDark else SageGreenDark)
-                                    .border(
-                                        0.8.dp,
-                                        if (isZero) TacticalRed.copy(alpha = 0.5f) else SageGreenPrimary.copy(alpha = 0.5f),
-                                        RoundedCornerShape(5.dp)
-                                    )
-                                    .padding(vertical = 2.5.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "${rowData.quantity}",
-                                    color = if (isZero) TacticalRedText else SageGreenBright,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    fontFamily = FontFamily.Monospace
+                                    color = TacticalTextMuted,
+                                    fontSize = 10.sp,
+                                    modifier = Modifier.padding(bottom = 3.dp)
                                 )
                             }
                         }
-                        TableVerticalDivider()
+                    }
 
-                        // Cell 7: Adjust Action Button
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(7.dp)
+                    ) {
                         Box(
                             modifier = Modifier
-                                .weight(0.55f)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(SageGreenDark)
+                                .padding(horizontal = 9.dp, vertical = 6.dp)
+                        ) {
+                            Text(
+                                text = "Приход +${rowData.incomeTotal}",
+                                color = SageGreenBright,
+                                fontSize = 10.5.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(if (rowData.expenseTotal > 0) TacticalRedDark else TacticalSurfaceLight)
+                                .padding(horizontal = 9.dp, vertical = 6.dp)
+                        ) {
+                            Text(
+                                text = "Расход −${rowData.expenseTotal}",
+                                color = if (rowData.expenseTotal > 0) TacticalRedText else TacticalTextMuted,
+                                fontSize = 10.5.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.weight(1f))
+
+                        Row(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(TacticalSurfaceLight)
                                 .clickable { onAdjustClick(rowData) }
-                                .padding(vertical = 6.dp),
-                            contentAlignment = Alignment.Center
+                                .padding(horizontal = 9.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Tune,
-                                contentDescription = "Корректировка",
+                                contentDescription = "Изменить остаток",
                                 tint = SageGreenPrimary,
-                                modifier = Modifier.size(15.dp)
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Изменить",
+                                color = TacticalTextSecondary,
+                                fontSize = 10.5.sp,
+                                fontWeight = FontWeight.Medium
                             )
                         }
                     }
