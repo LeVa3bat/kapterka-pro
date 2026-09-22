@@ -126,10 +126,35 @@ class KapterkaRepository(
     }
 
     suspend fun clearAllData() {
+        val unitKey = getCurrentUnitKey()
+
+        // Full reset is an explicit synchronized deletion, not an inference from absence.
+        // Persist tombstones first so another device cannot resurrect stale rows later.
+        val stocks = dao.getAllStockRecords().first()
+        val operations = dao.getAllOperations().first()
+        val requisitions = dao.getAllRequisitions().first()
+
+        for (stock in stocks) {
+            syncManager?.prepareDeletionTombstone(
+                unitKey,
+                "stock_record",
+                "${stock.pointId}:::${stock.itemId}"
+            )
+        }
+        for (operation in operations) {
+            syncManager?.prepareDeletionTombstone(unitKey, "operation", operation.id)
+        }
+        for (requisition in requisitions) {
+            syncManager?.prepareDeletionTombstone(unitKey, "requisition", requisition.id)
+        }
+
         dao.clearAllStockRecords()
         dao.clearAllOperations()
         dao.clearAllRequisitions()
-        syncManager?.clearCloudDataAsync(getCurrentUnitKey())
+
+        // Physical cloud cleanup is best-effort; tombstones remain authoritative even
+        // if the network disappears before this asynchronous cleanup completes.
+        syncManager?.clearCloudDataAsync(unitKey)
     }
 
     suspend fun clearLocalUnitData() {
