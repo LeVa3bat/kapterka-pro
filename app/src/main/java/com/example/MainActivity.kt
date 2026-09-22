@@ -569,7 +569,7 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                                 onToggleTheme = { viewModel.toggleTheme() }
                             )
                         }
-                    }}
+                    }
                 }
             }
         }
