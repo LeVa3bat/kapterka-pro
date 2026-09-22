@@ -52,9 +52,9 @@ fun DemoBanner(
             modifier = modifier
                 .fillMaxWidth()
                 .padding(horizontal = 14.dp, vertical = 6.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(16.dp))
                 .background(TacticalProBanner)
-                .border(1.dp, TacticalProBannerBorder, RoundedCornerShape(8.dp))
+                .border(1.dp, TacticalProBannerBorder, RoundedCornerShape(16.dp))
                 .clickable { onBannerClick() }
                 .padding(horizontal = 12.dp, vertical = 9.dp)
                 .testTag("pro_active_banner"),
@@ -74,14 +74,14 @@ fun DemoBanner(
                 Spacer(modifier = Modifier.width(10.dp))
                 Column {
                     Text(
-                        text = "ТАРИФ «КАПТЁРКА ПРО» АКТИВЕН",
+                        text = "Каптёрка ПРО активна",
                         color = TacticalProBannerText,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 0.5.sp
                     )
                     Text(
-                        text = "Полный безлимит. До окончания: ${profile.proDaysLeft} дн.",
+                        text = "Полный доступ • осталось ${profile.proDaysLeft} дн.",
                         color = TacticalProBannerText.copy(alpha = 0.85f),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Normal
@@ -105,12 +105,12 @@ fun DemoBanner(
             modifier = modifier
                 .fillMaxWidth()
                 .padding(horizontal = 14.dp, vertical = 6.dp)
-                .clip(RoundedCornerShape(10.dp))
+                .clip(RoundedCornerShape(16.dp))
                 .background(if (isExpired) Color(0x33FF5252) else TacticalDemoBanner)
                 .border(
                     1.dp, 
                     if (isExpired) Color(0xFFFF5252).copy(alpha = 0.6f) else TacticalDemoBannerBorder, 
-                    RoundedCornerShape(10.dp)
+                    RoundedCornerShape(16.dp)
                 )
                 .clickable { onBannerClick() }
                 .padding(horizontal = 12.dp, vertical = 9.dp)
@@ -131,7 +131,7 @@ fun DemoBanner(
                 Spacer(modifier = Modifier.width(10.dp))
                 Column {
                     Text(
-                        text = if (isExpired) "ДЕМО-РЕЖИМ ЗАВЕРШЁН" else "ДЕМО-РЕЖИМ (3 ДНЯ)",
+                        text = if (isExpired) "Демо-период завершён" else "Демо-доступ",
                         color = if (isExpired) Color(0xFFFF8B8B) else TacticalDemoBannerText,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
@@ -141,7 +141,7 @@ fun DemoBanner(
                         text = if (isExpired) {
                             "Для списания и выгрузки отчетов введите ключ PRO"
                         } else {
-                            "Осталось: $daysLeft дн. Все функции и учет доступны."
+                            "Осталось $daysLeft дн. • все функции доступны"
                         },
                         color = if (isExpired) Color(0xFFFFD1D1) else TacticalDemoBannerText.copy(alpha = 0.9f),
                         fontSize = 11.sp,
