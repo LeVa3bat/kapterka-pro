@@ -483,103 +483,74 @@ class LicenseManager(
             return@withContext Pair(false, "Неверный формат ключа. Формат: KAPT-XXXX-XXXX-ZZZZ или KPT-XXXX-XXXX-ZZZZ")
         }
 
-        val isLocalValid = verifyKeyChecksum(cleanKey)
+        val now = System.currentTimeMillis()
+        val currentFighterId = getFighterPersonalId()
 
         try {
-            val db = firestore
-            val doc = db.collection("licenses").document(cleanKey).get().await()
-            if (doc != null && doc.exists()) {
-                val expiresAt = doc.getLong("expiresAt") ?: 0L
-                val status = doc.getString("status") ?: "ACTIVE"
-                val boundFighter = doc.getString("fighterId")
-
-                val now = System.currentTimeMillis()
-                if (expiresAt < now) {
-                    return@withContext Pair(false, "Срок действия данного ключа уже истек.")
-                }
-                if (status != "ACTIVE") {
-                    return@withContext Pair(false, "Данный ключ лицензии деактивирован.")
-                }
-                val currentFighterId = getFighterPersonalId()
-                if (!boundFighter.isNullOrEmpty() && boundFighter != currentFighterId) {
-                    return@withContext Pair(false, "Ключ уже привязан к другому бойцу ($boundFighter).")
-                }
-
-                // Успешно активируем
-                val sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                sp.edit()
-                    .putString("active_license_key", cleanKey)
-                    .putLong("license_expires_at", expiresAt)
-                    .apply()
-                saveToPermanentVault(cleanKey, expiresAt)
-
-                val daysLeft = ((expiresAt - now) / (1000L * 60 * 60 * 24)).toInt().coerceAtLeast(1)
-                updateRoomProfilePro(daysLeft)
-
-                // Привязываем к текущему бойцу в Firestore
-                try {
-                    db.collection("licenses").document(cleanKey).set(
-                        hashMapOf(
-                            "fighterId" to currentFighterId,
-                            "callsign" to fighterCallsign
-                        ),
-                        SetOptions.merge()
-                    )
-                } catch (_: Exception) {}
-
-                refreshLicenseStatus()
-                Pair(true, "Лицензия успешно активирована на $daysLeft дн.!")
-            } else {
-                if (!isLocalValid) {
-                    return@withContext Pair(false, "❌ Недействительный ключ! Не найден в базе и не прошел проверку подлинности.")
-                }
-                // Ключ имеет верную подпись, но еще не зарегистрирован в облаке (выдан оффлайн)
-                val now = System.currentTimeMillis()
-                val expiresAt = now + (30L * 24L * 60L * 60L * 1000L)
-                val sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                sp.edit()
-                    .putString("active_license_key", cleanKey)
-                    .putLong("license_expires_at", expiresAt)
-                    .apply()
-                saveToPermanentVault(cleanKey, expiresAt)
-                updateRoomProfilePro(30)
-                refreshLicenseStatus()
-
-                // Фоновая регистрация ключа в облаке
-                try {
-                    val currentFighterId = getFighterPersonalId()
-                    val licenseData = hashMapOf(
-                        "licenseKey" to cleanKey,
-                        "fighterId" to currentFighterId,
-                        "callsign" to fighterCallsign,
-                        "activatedAt" to now,
-                        "expiresAt" to expiresAt,
-                        "durationDays" to 30,
-                        "status" to "ACTIVE",
-                        "source" to "Активация проверенного военного ключа"
-                    )
-                    db.collection("licenses").document(cleanKey)
-                        .set(licenseData, SetOptions.merge())
-                } catch (_: Exception) {}
-
-                Pair(true, "Ключ успешно активирован! Доступ открыт на 30 дней.")
+            val doc = firestore.collection("licenses").document(cleanKey).get().await()
+            if (!doc.exists()) {
+                return@withContext Pair(
+                    false,
+                    "Ключ не найден в реестре лицензий. Для новой активации требуется подтверждение сервера."
+                )
             }
-        } catch (e: Exception) {
-            Log.w(TAG, "Network exception verifying key in Firestore, falling back to offline validation", e)
-            if (!isLocalValid) {
-                return@withContext Pair(false, "❌ Недействительный ключ (отсутствует сеть для проверки в базе)!")
+
+            val expiresAt = doc.getLong("expiresAt") ?: 0L
+            val status = doc.getString("status") ?: "ACTIVE"
+            val boundFighter = doc.getString("fighterId")
+
+            if (expiresAt <= now) {
+                return@withContext Pair(false, "Срок действия данного ключа уже истек.")
             }
-            val now = System.currentTimeMillis()
-            val expiresAt = now + (30L * 24L * 60L * 60L * 1000L)
+            if (status != "ACTIVE") {
+                return@withContext Pair(false, "Данный ключ лицензии деактивирован.")
+            }
+            if (!boundFighter.isNullOrBlank() && boundFighter != currentFighterId) {
+                return@withContext Pair(false, "Ключ уже привязан к другому пользователю.")
+            }
+
             val sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             sp.edit()
                 .putString("active_license_key", cleanKey)
                 .putLong("license_expires_at", expiresAt)
                 .apply()
+
             saveToPermanentVault(cleanKey, expiresAt)
-            updateRoomProfilePro(30)
+            val daysLeft = ((expiresAt - now) / (1000L * 60 * 60 * 24)).toInt().coerceAtLeast(1)
+            updateRoomProfilePro(daysLeft)
             refreshLicenseStatus()
-            Pair(true, "Ключ подтвержден цифровой подписью в оффлайн-режиме (активен 30 дней)")
+
+            Pair(true, "Лицензия подтверждена сервером и активирована на $daysLeft дн.")
+        } catch (e: Exception) {
+            Log.w(TAG, "Network exception verifying manual license", e)
+
+            // Backward compatibility: an already-confirmed, still-active license that is
+            // present in the local vault may continue to work offline until its stored expiry.
+            // A new 30-day period is never minted locally.
+            val vault = context.getSharedPreferences(PERMANENT_VAULT, Context.MODE_PRIVATE)
+            val vaultKey = vault.getString("vault_active_key", "") ?: ""
+            val vaultExpires = vault.getLong("vault_expires_at", 0L)
+
+            if (vaultKey.equals(cleanKey, ignoreCase = true) && vaultExpires > now) {
+                val sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                sp.edit()
+                    .putString("active_license_key", vaultKey)
+                    .putLong("license_expires_at", vaultExpires)
+                    .apply()
+
+                val daysLeft = ((vaultExpires - now) / (1000L * 60 * 60 * 24)).toInt().coerceAtLeast(1)
+                updateRoomProfilePro(daysLeft)
+                refreshLicenseStatus()
+                return@withContext Pair(
+                    true,
+                    "Сохранённая ранее лицензия восстановлена офлайн до её текущего срока."
+                )
+            }
+
+            Pair(
+                false,
+                "Для первой активации этого ключа нужен интернет и подтверждение сервера. Существующие активные лицензии продолжают работать офлайн до своего срока."
+            )
         }
     }
 }
