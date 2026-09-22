@@ -1069,6 +1069,11 @@ module.exports.handler = async function handler(event) {
       const days = Math.min(365, Math.max(1, Number.parseInt(body.days, 10) || 30));
       if (!fighterId) return json(400, { ok: false, error: 'MISSING_FIGHTER_ID' });
 
+      const fighter = await getFighterById(fighterId);
+      if (!fighter) {
+        return json(404, { ok: false, error: 'FIGHTER_NOT_FOUND' });
+      }
+
       const now = Date.now();
       const expiresAt = now + days * 24 * 60 * 60 * 1000;
       const licenseKey = generateAdminLicenseKey();
@@ -1076,8 +1081,8 @@ module.exports.handler = async function handler(event) {
       await registerLicenseInFirestore({
         licenseKey,
         fighterId,
-        callsign: '',
-        email: '',
+        callsign: cleanText(fighter.callsign || '', 80),
+        email: cleanEmail(fighter.email),
         paymentId: '',
         amount: 0,
         activatedAt: now,
@@ -1228,7 +1233,37 @@ module.exports.handler = async function handler(event) {
       const expiresAt = activatedAt + LICENSE_DURATION_MS;
       const email = cleanEmail(payment.metadata?.email);
       const callsign = cleanText(payment.metadata?.callsign || 'Пользователь', 80);
-      const fighterId = paymentFighterId || requestedFighterId;
+
+      // The same succeeded payment always maps to the same license. Once that
+      // license has been bound to a fighter, a repeated status check must never
+      // move it to another fighter.
+      let existingLicense = null;
+      try {
+        existingLicense = await getFirestoreDocument('licenses', licenseKey);
+      } catch (existingReadError) {
+        console.error('Existing license read error:', existingReadError?.message || existingReadError);
+        return jsonpOrJson(503, {
+          ok: false,
+          paid: true,
+          status,
+          error: 'LICENSE_REGISTRY_UNAVAILABLE'
+        }, callback);
+      }
+
+      const existingFighterId = cleanText(existingLicense?.fighterId, 100);
+      if (existingFighterId &&
+          requestedFighterId &&
+          existingFighterId !== requestedFighterId
+      ) {
+        return jsonpOrJson(403, {
+          ok: false,
+          paid: false,
+          status,
+          error: 'LICENSE_FIGHTER_MISMATCH'
+        }, callback);
+      }
+
+      const fighterId = existingFighterId || paymentFighterId || requestedFighterId;
 
       try {
         await registerLicenseInFirestore({
