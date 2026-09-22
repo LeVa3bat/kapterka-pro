@@ -56,6 +56,15 @@ Target design:
 - Exclude ephemeral device identity from device/cloud restore.
 - Test Android device transfer and restore behavior before release.
 
+### P1 — Privileged notification/admin actions originate from the client
+Android can call a public notification endpoint, and developer/admin code can write license/fighter records directly to Firestore. Email provider credentials can also be stored in client SharedPreferences if configured.
+
+Target design:
+- Payment/license issuance and administrative license grants must be server-authoritative.
+- Notification endpoints must require server-side authorization/rate limiting and must not accept arbitrary privileged messages from any unauthenticated client.
+- Email provider/API credentials must stay on the server, not in the APK or Android SharedPreferences.
+- Firestore rules must prevent an ordinary client from minting/changing licenses or reading global fighter records.
+
 ### P1 — Local operation + stock updates are not a single Room transaction
 Repository operations write history and stock in several DAO calls. A process death between calls can leave history and balances inconsistent.
 
