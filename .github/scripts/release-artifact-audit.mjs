@@ -15,8 +15,12 @@ const baseline = JSON.parse(read('.github/release-apk-baseline.json'));
 const release = JSON.parse(read('docs/release.json'));
 
 const appId = (gradle.match(/applicationId\s*=\s*"([^"]+)"/) || [])[1] || '';
-const versionCode = String((gradle.match(/versionCode\s*=\s*(\d+)/) || [])[1] || '');
-const versionName = (gradle.match(/versionName\s*=\s*"([^"]+)"/) || [])[1] || '';
+const directVersionCode = (gradle.match(/versionCode\s*=\s*(\d+)/) || [])[1] || '';
+const fallbackVersionCode = (gradle.match(/versionCode\s*=\s*System\.getenv\([^\n]+?\?\:\s*(\d+)/) || [])[1] || '';
+const versionCode = String(directVersionCode || fallbackVersionCode);
+const directVersionName = (gradle.match(/versionName\s*=\s*"([^"]+)"/) || [])[1] || '';
+const fallbackVersionName = (gradle.match(/versionName\s*=\s*System\.getenv\([^\n]+?\?\:\s*"([^"]+)"/) || [])[1] || '';
+const versionName = directVersionName || fallbackVersionName;
 const minSdk = String((gradle.match(/minSdk\s*=\s*(\d+)/) || [])[1] || '');
 
 const pkg = badging.match(/package:\s+name='([^']+)'\s+versionCode='([^']+)'\s+versionName='([^']+)'/);
