@@ -81,16 +81,16 @@ fun InventoryCatalogScreen(
     onDeleteItem: (String, String) -> Unit = { _, _ -> }
 ) {
     var searchQuery by remember { mutableStateOf("") }
-    var selectedService by remember { mutableStateOf("Все службы") }
+    var selectedService by remember { mutableStateOf("Все категории") }
     val expandedCategoriesMap = remember { mutableStateMapOf<String, Boolean>() }
     var editingItem by remember { mutableStateOf<InventoryItem?>(null) }
 
     val services = remember(availableCategories) {
         if (availableCategories.isNotEmpty()) {
-            listOf("Все службы") + availableCategories
+            listOf("Все категории") + availableCategories
         } else {
             listOf(
-                "Все службы",
+                "Все категории",
                 "Служба РАВ",
                 "Служба БПЛА и робототехники",
                 "Служба связи и РЭБ",
@@ -107,7 +107,7 @@ fun InventoryCatalogScreen(
     }
 
     val filteredItems = items.filter { item ->
-        val matchesService = selectedService == "Все службы" || item.serviceCategory == selectedService
+        val matchesService = selectedService == "Все категории" || item.serviceCategory == selectedService
         val matchesQuery = if (searchQuery.trim().isEmpty()) true
         else {
             val q = searchQuery.trim().lowercase()
@@ -230,7 +230,7 @@ fun InventoryCatalogScreen(
             ) {
                 services.forEach { srv ->
                     val isSelected = srv == selectedService
-                    val count = if (srv == "Все службы") items.size else items.count { it.serviceCategory == srv }
+                    val count = if (srv == "Все категории") items.size else items.count { it.serviceCategory == srv }
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(6.dp))
@@ -266,7 +266,7 @@ fun InventoryCatalogScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "СПИСКИ ПО СЛУЖБАМ ОБЕСПЕЧЕНИЯ",
+                    text = "КАТЕГОРИИ ИМУЩЕСТВА",
                     color = TacticalTextMuted,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
