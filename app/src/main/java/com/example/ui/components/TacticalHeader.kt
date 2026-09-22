@@ -85,7 +85,7 @@ fun TacticalHeader(
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "Каптёрка",
+                        text = "Склад",
                         color = TacticalTextPrimary,
                         fontSize = 24.sp,
                         fontWeight = FontWeight.ExtraBold,
@@ -129,7 +129,7 @@ fun TacticalHeader(
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = if (profile?.isProActive == true) "PRO активно" else "Профиль",
+                        text = "Рабочий профиль",
                         color = if (profile?.isProActive == true) SageGreenPrimary else TacticalTextMuted,
                         fontSize = 9.5.sp,
                         maxLines = 1
@@ -253,7 +253,7 @@ fun TacticalHeader(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = if (profile?.isProActive == true) "Лицензия PRO" else "Проверить лицензию",
+                text = "ALPHA • локальный режим",
                 color = if (profile?.isProActive == true) SageGreenPrimary else TacticalGold,
                 fontSize = 10.5.sp,
                 fontWeight = FontWeight.SemiBold,
