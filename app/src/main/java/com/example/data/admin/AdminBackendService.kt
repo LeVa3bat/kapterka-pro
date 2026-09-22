@@ -203,6 +203,7 @@ class AdminBackendService {
 
     private fun errorText(response: JSONObject): String = when (response.optString("error")) {
         "ADMIN_AUTH_FAILED" -> "Неверный служебный ключ."
+        "ADMIN_AUTH_RATE_LIMITED" -> "Слишком много попыток входа. Повторите позже."
         "ADMIN_SESSION_INVALID" -> "Служебная сессия истекла. Войдите заново."
         "ADMIN_SESSION_NOT_CONFIGURED" -> "Серверная админ-сессия не настроена."
         "MISSING_FIGHTER_ID" -> "Не выбран пользователь."
