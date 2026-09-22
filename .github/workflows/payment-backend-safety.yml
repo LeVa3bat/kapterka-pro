@@ -7,10 +7,12 @@ on:
       - 'android/**'
     paths:
       - 'server/yandex-cloud-function.js'
+      - 'server/firestore.next-safe.rules'
       - '.github/workflows/payment-backend-safety.yml'
   pull_request:
     paths:
       - 'server/yandex-cloud-function.js'
+      - 'server/firestore.next-safe.rules'
       - '.github/workflows/payment-backend-safety.yml'
 
 permissions:
@@ -44,6 +46,13 @@ jobs:
             'PAYMENT_AMOUNT_MISMATCH',
             'LICENSE_REGISTRY_UNAVAILABLE',
             'registerLicenseInFirestore',
+            'license_verify',
+            'license_restore',
+            'fighter_upsert',
+            'fighter_lookup',
+            'admin_list_fighters',
+            'admin_grant_license',
+            'send_license_email',
             'license_key',
             'expires_at'
           ];
@@ -53,5 +62,29 @@ jobs:
           if (/live_[A-Za-z0-9_-]{20,}/.test(s)) {
             throw new Error('Live YooKassa secret must never be committed to server source');
           }
-          console.log('Payment backend safety checks PASSED.');
+          const fighterUpsertStart = s.indexOf("action === 'fighter_upsert'");
+          const fighterLookupStart = s.indexOf("action === 'fighter_lookup'");
+          if (fighterUpsertStart < 0 || fighterLookupStart < 0) {
+            throw new Error('Fighter backend actions are missing');
+          }
+          const fighterUpsertBlock = s.slice(fighterUpsertStart, fighterLookupStart);
+          if (/body\.(license|expires|isPro)|license_key|expires_at/.test(fighterUpsertBlock)) {
+            throw new Error('fighter_upsert must not trust client-supplied license state');
+          }
+          const adminListStart = s.indexOf("action === 'admin_list_fighters'");
+          const adminGrantStart = s.indexOf("action === 'admin_grant_license'");
+          if (adminListStart < 0 || adminGrantStart < 0 ||
+              !s.slice(adminListStart, adminGrantStart).includes('verifyAdminToken')) {
+            throw new Error('admin_list_fighters must require admin token');
+          }
+
+          const rules = fs.readFileSync('server/firestore.next-safe.rules', 'utf8');
+          for (const collection of ['licenses', 'fighters']) {
+            const marker = 'match /' + collection + '/';
+            const start = rules.indexOf(marker);
+            if (start < 0 || !rules.slice(start, start + 180).includes('allow read, write: if false')) {
+              throw new Error(collection + ' is not client-denied in next-safe rules preview');
+            }
+          }
+          console.log('Payment/backend trust-boundary checks PASSED.');
           NODE
