@@ -1,15 +1,20 @@
 const https = require('https');
 const crypto = require('crypto');
 
-// KAPTERKA PRO — secure payment/notification backend template.
-// Secrets are read only from environment variables and must never be committed.
+// KAPTERKA PRO — server-authoritative payment/license backend.
+// All privileged credentials live only in the cloud-function environment.
 const YOOKASSA_SHOP_ID = process.env.YOOKASSA_SHOP_ID || '1450722';
 const YOOKASSA_SECRET_KEY = process.env.YOOKASSA_SECRET_KEY || '';
 const TG_BOT_TOKEN = process.env.TG_BOT_TOKEN || '';
 const TG_ADMIN_CHAT_ID = process.env.TG_ADMIN_CHAT_ID || '';
 const PAYMENT_AMOUNT_RUB = Number(process.env.PAYMENT_AMOUNT_RUB || 490);
+const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || 'kapterka-pro';
+const FIREBASE_SERVICE_ACCOUNT_JSON = process.env.FIREBASE_SERVICE_ACCOUNT_JSON || '';
+const FIREBASE_SERVICE_ACCOUNT_B64 = process.env.FIREBASE_SERVICE_ACCOUNT_B64 || '';
 
 const CHECKSUM_CHARS = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+const LICENSE_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
+let cachedGoogleToken = { value: '', expiresAt: 0 };
 
 function json(statusCode, body, headers = {}) {
   return {
@@ -167,6 +172,155 @@ function requestYooKassa(method, apiPath, data = null, idempotenceKey = null) {
   });
 }
 
+function base64url(input) {
+  return Buffer.from(input)
+    .toString('base64')
+    .replace(/=/g, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
+}
+
+function readFirebaseServiceAccount() {
+  const raw = FIREBASE_SERVICE_ACCOUNT_JSON ||
+    (FIREBASE_SERVICE_ACCOUNT_B64
+      ? Buffer.from(FIREBASE_SERVICE_ACCOUNT_B64, 'base64').toString('utf8')
+      : '');
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (!parsed.client_email || !parsed.private_key) return null;
+    return parsed;
+  } catch (_) {
+    return null;
+  }
+}
+
+function requestGoogleAccessToken() {
+  return new Promise((resolve, reject) => {
+    const nowMs = Date.now();
+    if (cachedGoogleToken.value && cachedGoogleToken.expiresAt > nowMs + 60000) {
+      resolve(cachedGoogleToken.value);
+      return;
+    }
+
+    const account = readFirebaseServiceAccount();
+    if (!account) {
+      reject(new Error('Firebase service account is not configured'));
+      return;
+    }
+
+    const now = Math.floor(nowMs / 1000);
+    const header = base64url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
+    const claims = base64url(JSON.stringify({
+      iss: account.client_email,
+      scope: 'https://www.googleapis.com/auth/datastore',
+      aud: 'https://oauth2.googleapis.com/token',
+      iat: now,
+      exp: now + 3600
+    }));
+    const unsigned = `${header}.${claims}`;
+    const signer = crypto.createSign('RSA-SHA256');
+    signer.update(unsigned);
+    signer.end();
+    const signature = signer.sign(account.private_key);
+    const assertion = `${unsigned}.${base64url(signature)}`;
+    const body = new URLSearchParams({
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion
+    }).toString();
+
+    const req = https.request({
+      hostname: 'oauth2.googleapis.com',
+      port: 443,
+      path: '/token',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Length': Buffer.byteLength(body)
+      },
+      timeout: 10000
+    }, (res) => {
+      let responseBody = '';
+      res.on('data', (chunk) => { responseBody += chunk; });
+      res.on('end', () => {
+        let parsed = {};
+        try { parsed = JSON.parse(responseBody); } catch (_) {}
+        if (res.statusCode >= 200 && res.statusCode < 300 && parsed.access_token) {
+          cachedGoogleToken = {
+            value: parsed.access_token,
+            expiresAt: nowMs + Math.max(300, Number(parsed.expires_in || 3600) - 60) * 1000
+          };
+          resolve(cachedGoogleToken.value);
+        } else {
+          reject(new Error('Google OAuth token request failed'));
+        }
+      });
+    });
+
+    req.on('timeout', () => req.destroy(new Error('Google OAuth timeout')));
+    req.on('error', reject);
+    req.write(body);
+    req.end();
+  });
+}
+
+function firestoreValue(value) {
+  if (typeof value === 'number') return { integerValue: String(Math.trunc(value)) };
+  if (typeof value === 'boolean') return { booleanValue: value };
+  return { stringValue: String(value ?? '') };
+}
+
+async function registerLicenseInFirestore(data) {
+  const token = await requestGoogleAccessToken();
+  const fields = {};
+  for (const [key, value] of Object.entries(data)) {
+    fields[key] = firestoreValue(value);
+  }
+
+  const payload = JSON.stringify({ fields });
+  const docId = encodeURIComponent(data.licenseKey);
+  const path = `/v1/projects/${encodeURIComponent(FIREBASE_PROJECT_ID)}/databases/(default)/documents/licenses/${docId}`;
+
+  return new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname: 'firestore.googleapis.com',
+      port: 443,
+      path,
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload)
+      },
+      timeout: 10000
+    }, (res) => {
+      let responseBody = '';
+      res.on('data', (chunk) => { responseBody += chunk; });
+      res.on('end', () => {
+        if (res.statusCode >= 200 && res.statusCode < 300) resolve(true);
+        else reject(new Error(`Firestore license write failed: HTTP ${res.statusCode}`));
+      });
+    });
+
+    req.on('timeout', () => req.destroy(new Error('Firestore timeout')));
+    req.on('error', reject);
+    req.write(payload);
+    req.end();
+  });
+}
+
+function paymentTimestampMillis(payment) {
+  const raw = payment?.captured_at || payment?.created_at || '';
+  const parsed = Date.parse(raw);
+  return Number.isFinite(parsed) ? parsed : Date.now();
+}
+
+function amountMatchesTariff(payment) {
+  const currency = String(payment?.amount?.currency || '').toUpperCase();
+  const value = Number(payment?.amount?.value || 0);
+  return currency === 'RUB' && Math.abs(value - PAYMENT_AMOUNT_RUB) < 0.001;
+}
+
 module.exports.handler = async function handler(event) {
   const method = String(event?.httpMethod || 'GET').toUpperCase();
   if (method === 'OPTIONS') return json(200, { ok: true });
@@ -191,10 +345,13 @@ module.exports.handler = async function handler(event) {
         ok: true,
         service: 'kapterka-payment-api',
         shopId: YOOKASSA_SHOP_ID,
-        secretConfigured: Boolean(YOOKASSA_SECRET_KEY)
+        secretConfigured: Boolean(YOOKASSA_SECRET_KEY),
+        licenseRegistryConfigured: Boolean(readFirebaseServiceAccount())
       }, callback);
     }
 
+    // Compatibility endpoint used by the current public site/app notifications.
+    // It sends only to the server-configured admin chat; caller-supplied chat_id is ignored.
     if (action === 'send_telegram') {
       const text = cleanText(body.text || query.text, 3500);
       if (!text) return jsonpOrJson(400, { ok: false, error: 'EMPTY_TEXT' }, callback);
@@ -205,18 +362,29 @@ module.exports.handler = async function handler(event) {
     if (action === 'create' || action === 'pay') {
       const email = cleanEmail(query.email || body.email);
       const callsign = cleanText(query.callsign || body.callsign || 'Пользователь', 80);
+      const fighterId = cleanText(query.fighter_id || body.fighter_id, 100);
       if (!email) return jsonpOrJson(400, { ok: false, error: 'INVALID_EMAIL' }, callback);
 
       const returnUrlRaw = cleanText(query.return_url || body.return_url, 300);
       const allowedReturnUrl =
         returnUrlRaw.startsWith('kapterka://payment_success') ||
         returnUrlRaw.startsWith('https://kapterka-pro.ru/');
-      const returnUrl = allowedReturnUrl ? returnUrlRaw : 'https://kapterka-pro.ru/?payment=check#tabPayment';
+      const returnUrl = allowedReturnUrl
+        ? returnUrlRaw
+        : 'https://kapterka-pro.ru/?payment=check#tabPayment';
 
       const idempotenceKey = cleanText(
         query.idempotence_key || body.idempotence_key || crypto.randomUUID(),
         100
       );
+
+      const metadata = {
+        callsign,
+        email,
+        duration_days: '30',
+        product: 'kapterka_pro_30d'
+      };
+      if (fighterId) metadata.fighter_id = fighterId;
 
       const payment = await requestYooKassa(
         'POST',
@@ -232,11 +400,7 @@ module.exports.handler = async function handler(event) {
           },
           capture: true,
           description: 'Каптёрка PRO — 30 дней',
-          metadata: {
-            callsign,
-            email,
-            duration_days: '30'
-          }
+          metadata
         },
         idempotenceKey
       );
@@ -250,17 +414,86 @@ module.exports.handler = async function handler(event) {
 
     if (action === 'check') {
       const paymentId = cleanText(query.payment_id || body.payment_id, 100);
-      if (!paymentId) return jsonpOrJson(400, { ok: false, error: 'MISSING_PAYMENT_ID' }, callback);
+      const requestedFighterId = cleanText(query.fighter_id || body.fighter_id, 100);
+      if (!paymentId) {
+        return jsonpOrJson(400, { ok: false, error: 'MISSING_PAYMENT_ID' }, callback);
+      }
 
-      const payment = await requestYooKassa('GET', `/v3/payments/${encodeURIComponent(paymentId)}`);
-      const paid = payment.status === 'succeeded' && payment.paid === true;
+      const payment = await requestYooKassa(
+        'GET',
+        `/v3/payments/${encodeURIComponent(paymentId)}`
+      );
+      const status = payment.status || 'unknown';
+      const paid = status === 'succeeded' && payment.paid === true;
+
+      if (!paid) {
+        return jsonpOrJson(200, {
+          ok: true,
+          paid: false,
+          status
+        }, callback);
+      }
+
+      if (!amountMatchesTariff(payment)) {
+        return jsonpOrJson(409, {
+          ok: false,
+          paid: false,
+          status,
+          error: 'PAYMENT_AMOUNT_MISMATCH'
+        }, callback);
+      }
+
+      const paymentFighterId = cleanText(payment.metadata?.fighter_id, 100);
+      if (requestedFighterId && paymentFighterId && requestedFighterId !== paymentFighterId) {
+        return jsonpOrJson(403, {
+          ok: false,
+          paid: false,
+          status,
+          error: 'FIGHTER_MISMATCH'
+        }, callback);
+      }
+
+      const licenseKey = keyForPayment(paymentId);
+      const activatedAt = paymentTimestampMillis(payment);
+      const expiresAt = activatedAt + LICENSE_DURATION_MS;
+      const email = cleanEmail(payment.metadata?.email);
+      const callsign = cleanText(payment.metadata?.callsign || 'Пользователь', 80);
+      const fighterId = paymentFighterId || requestedFighterId;
+
+      try {
+        await registerLicenseInFirestore({
+          licenseKey,
+          fighterId,
+          callsign,
+          email,
+          paymentId,
+          amount: PAYMENT_AMOUNT_RUB,
+          activatedAt,
+          expiresAt,
+          durationDays: 30,
+          status: 'ACTIVE',
+          source: 'YooKassa server verification'
+        });
+      } catch (registryError) {
+        console.error('License registry error:', registryError?.message || registryError);
+        return jsonpOrJson(503, {
+          ok: false,
+          paid: true,
+          status,
+          error: 'LICENSE_REGISTRY_UNAVAILABLE'
+        }, callback);
+      }
+
+      const responseStatus = expiresAt > Date.now() ? status : 'expired';
       const response = {
         ok: true,
-        status: payment.status || 'unknown',
-        paid
+        paid: true,
+        status: responseStatus,
+        license_key: licenseKey,
+        // Legacy website compatibility:
+        key: licenseKey,
+        expires_at: expiresAt
       };
-
-      if (paid) response.key = keyForPayment(paymentId);
       return jsonpOrJson(200, response, callback);
     }
 
