@@ -775,7 +775,10 @@ module.exports.handler = async function handler(event) {
         service: 'kapterka-payment-api',
         shopId: YOOKASSA_SHOP_ID,
         secretConfigured: Boolean(YOOKASSA_SECRET_KEY),
-        licenseRegistryConfigured: Boolean(readFirebaseServiceAccount())
+        licenseRegistryConfigured: Boolean(readFirebaseServiceAccount()),
+        adminAuthConfigured: Boolean(ADMIN_API_SECRET_SHA256),
+        adminSessionConfigured: Boolean(ADMIN_SESSION_SECRET),
+        emailConfigured: Boolean(BREVO_API_KEY && EMAIL_SENDER_EMAIL)
       }, callback);
     }
 
