@@ -497,14 +497,22 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                 resolvedUnitName = "1-е Подразделение"
             }
 
-            // Сохраняем в постоянный сейф, чтобы никогда не потерять при миграциях
-            licenseManager.saveUnitKeyToVault(resolvedKey)
-
             val current = userProfile.value ?: UserProfile()
             val oldKey = current.unitKey.trim()
-            if (oldKey.isNotBlank() && !oldKey.equals(resolvedKey, ignoreCase = true)) {
-                repository.clearLocalUnitData()
+            val isUnitSwitch = oldKey.isNotBlank() &&
+                resolvedKey.isNotBlank() &&
+                !oldKey.equals(resolvedKey, ignoreCase = true)
+
+            if (isUnitSwitch && repository.hasLocalUnitData()) {
+                _toastEvent.emit(
+                    "Ключ подразделения не изменён: на телефоне есть рабочие данные. " +
+                        "Автоматическая очистка запрещена для защиты остатков и истории."
+                )
+                return@launch
             }
+
+            // Persist a unit key only after the switch is proven safe.
+            licenseManager.saveUnitKeyToVault(resolvedKey)
 
             val updatedProfile = profile.copy(
                 unitKey = resolvedKey,
@@ -553,13 +561,22 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
     fun updateUnitKey(newKey: String) {
         val clean = newKey.trim()
         if (clean.isBlank()) return
-        licenseManager.saveUnitKeyToVault(clean)
         viewModelScope.launch {
             val current = userProfile.value ?: UserProfile()
             val oldKey = current.unitKey.trim()
-            if (oldKey.isNotBlank() && !oldKey.equals(clean, ignoreCase = true)) {
-                repository.clearLocalUnitData()
+            if (oldKey.equals(clean, ignoreCase = true)) {
+                _toastEvent.emit("Ключ подразделения уже используется")
+                return@launch
             }
+            if (oldKey.isNotBlank() && repository.hasLocalUnitData()) {
+                _toastEvent.emit(
+                    "Смена ключа заблокирована: на телефоне есть остатки, история, заявки " +
+                        "или пользовательские данные. Ничего не удалено."
+                )
+                return@launch
+            }
+
+            licenseManager.saveUnitKeyToVault(clean)
             val updated = current.copy(unitKey = clean)
             repository.saveUserProfile(updated)
             
@@ -583,14 +600,31 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
 
     fun updateProfile(profile: UserProfile) {
         viewModelScope.launch {
-            repository.saveUserProfile(profile)
+            val current = userProfile.value ?: UserProfile()
+            val oldKey = current.unitKey.trim()
+            val requestedKey = profile.unitKey.trim().ifBlank { oldKey }
+            val wantsUnitSwitch = oldKey.isNotBlank() &&
+                requestedKey.isNotBlank() &&
+                !oldKey.equals(requestedKey, ignoreCase = true)
+
+            val safeProfile = if (wantsUnitSwitch && repository.hasLocalUnitData()) {
+                _toastEvent.emit(
+                    "Профиль сохранён без смены ключа подразделения: локальные складские данные защищены."
+                )
+                profile.copy(unitKey = current.unitKey)
+            } else {
+                if (requestedKey.isNotBlank()) licenseManager.saveUnitKeyToVault(requestedKey)
+                profile.copy(unitKey = requestedKey)
+            }
+
+            repository.saveUserProfile(safeProfile)
             val curLicense = licenseManager.licenseStatus.value
             fighterRegistryManager.registerOrUpdateFighter(
                 fighterId = licenseManager.getFighterPersonalId(),
-                callsign = profile.callsign,
-                unitName = profile.unitName,
-                unitKey = profile.unitKey,
-                email = profile.email,
+                callsign = safeProfile.callsign,
+                unitName = safeProfile.unitName,
+                unitKey = safeProfile.unitKey,
+                email = safeProfile.email,
                 licenseKey = curLicense.licenseKey.ifEmpty { curLicense.lastSavedKey },
                 isProActive = curLicense.isProActive,
                 expiresAt = System.currentTimeMillis() + (curLicense.daysRemaining.toLong() * 86400000L)
@@ -628,6 +662,13 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         val newKey = "kapt_" + UUID.randomUUID().toString().take(6)
         viewModelScope.launch {
             val current = userProfile.value ?: UserProfile()
+            if (current.unitKey.isNotBlank() && repository.hasLocalUnitData()) {
+                _toastEvent.emit(
+                    "Новый ключ не создан: на телефоне есть данные текущего подразделения. Ничего не удалено."
+                )
+                return@launch
+            }
+            licenseManager.saveUnitKeyToVault(newKey)
             repository.saveUserProfile(current.copy(unitKey = newKey))
             _toastEvent.emit("Новый ключ подразделения: $newKey")
         }
