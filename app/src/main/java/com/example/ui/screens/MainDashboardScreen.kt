@@ -156,22 +156,8 @@ fun MainDashboardScreen(
     val expandedPointIds = remember { mutableStateMapOf<String, Boolean>() }
 
     val categories = remember(availableCategories) {
-        if (availableCategories.isNotEmpty()) {
-            listOf("Все виды") + availableCategories
-        } else {
-            listOf(
-                "Все виды",
-                "Служба РАВ",
-                "Служба БПЛА и робототехники",
-                "Служба связи и РЭБ",
-                "Вещевая служба и СИБЗ",
-                "Медицинская служба",
-                "Инженерная служба",
-                "Служба ГСМ",
-                "Продовольственная служба",
-                "Автомобильная и БТ служба",
-                "Служба РХБЗ"
-            )
+        listOf("Все виды") + availableCategories.ifEmpty {
+            com.example.data.local.InitialData.getDefaultCategories()
         }
     }
 
@@ -224,35 +210,16 @@ fun MainDashboardScreen(
                     catalogMap[st.itemId] = defaultItem
                 } else {
                     val fromOp = operationItemsMap[st.itemId]
-                    val friendlyName = when {
-                        fromOp != null && fromOp.itemName.isNotBlank() -> fromOp.itemName
-                        st.itemId == "auto_01" -> "Комплект фильтров УАЗ Патриот Пикап"
-                        st.itemId == "auto_02" -> "Масло моторное 10W-40 (Канистра 5л)"
-                        st.itemId == "auto_03" -> "Антифриз G12 (Канистра 5л)"
-                        st.itemId == "rav_27" -> "Мина 120-мм дымовая Д-843А"
-                        st.itemId == "rav_28" -> "Мина 120-мм осветительная С-843"
-                        st.itemId == "rav_29" -> "Мина 82-мм дымовая Д-832ДУ"
-                        st.itemId == "rav_30" -> "Мина 82-мм осветительная С-832С"
-                        else -> "Имущество (${st.itemId})"
-                    }
-                    val resolvedCat = when {
-                        st.itemId.startsWith("rav_") -> "Служба РАВ"
-                        st.itemId.startsWith("auto_") -> "Автомобильная и БТ служба"
-                        st.itemId.startsWith("med_") -> "Медицинская служба"
-                        st.itemId.startsWith("vesh_") -> "Вещевая служба и СИБЗ"
-                        st.itemId.startsWith("ing_") -> "Инженерная служба"
-                        st.itemId.startsWith("prod_") -> "Продовольственная служба"
-                        st.itemId.startsWith("gsm_") -> "Служба ГСМ"
-                        st.itemId.startsWith("rhbz_") -> "Служба РХБЗ"
-                        st.itemId.startsWith("svyaz_") || st.itemId.startsWith("bpla_") -> "Служба связи и РЭБ"
-                        friendlyName.contains("Мина", ignoreCase = true) || friendlyName.contains("Снаряд", ignoreCase = true) || friendlyName.contains("Патрон", ignoreCase = true) -> "Служба РАВ"
-                        friendlyName.contains("Дизель", ignoreCase = true) || friendlyName.contains("Бензин", ignoreCase = true) || friendlyName.contains("Масло", ignoreCase = true) -> "Служба ГСМ"
-                        friendlyName.contains("Аптечка", ignoreCase = true) || friendlyName.contains("Бинт", ignoreCase = true) || friendlyName.contains("Жгут", ignoreCase = true) -> "Медицинская служба"
-                        else -> "Служба РАВ"
-                    }
+                    val fromOp = operationItemsMap[st.itemId]
+                    val friendlyName = fromOp?.itemName?.takeIf { it.isNotBlank() }
+                        ?: existing?.name?.takeIf { it.isNotBlank() }
+                        ?: "Позиция ${st.itemId.take(8)}"
+                    val resolvedCat = existing?.serviceCategory?.takeIf { it.isNotBlank() }
+                        ?: availableCategories.firstOrNull()
+                        ?: "Прочее"
                     val unit = fromOp?.unit?.takeIf { it.isNotBlank() }
                         ?: existing?.unit?.takeIf { it.isNotBlank() }
-                        ?: if (st.itemId.startsWith("vesh_") || st.itemId.startsWith("auto_")) "компл." else if (st.itemId.startsWith("gsm_")) "л." else if (st.itemId.startsWith("prod_")) "кг." else "шт."
+                        ?: "шт."
                     catalogMap[st.itemId] = InventoryItem(
                         id = st.itemId,
                         name = friendlyName,
