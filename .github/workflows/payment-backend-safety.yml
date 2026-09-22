@@ -7,6 +7,8 @@ on:
       - 'android/**'
     paths:
       - 'server/yandex-cloud-function.js'
+      - 'server/backend-selftest.js'
+      - 'server/backend-selftest.js'
       - 'server/firestore.next-safe.rules'
       - '.github/workflows/payment-backend-safety.yml'
   pull_request:
@@ -33,6 +35,9 @@ jobs:
 
       - name: Check backend syntax
         run: node --check server/yandex-cloud-function.js
+
+      - name: Run backend self-test
+        run: node server/backend-selftest.js
 
       - name: Enforce server trust boundary
         shell: bash
