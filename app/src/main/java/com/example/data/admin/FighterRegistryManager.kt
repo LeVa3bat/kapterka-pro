@@ -294,69 +294,28 @@ class FighterRegistryManager(
         }
     }
 
-    /**
-     * Удаляет бойца из всех подразделений
-     */
-    fun deleteFighter(fighterId: String) {
+    fun removeCachedFighter(fighterId: String) {
         val current = _fighters.value.toMutableList()
         current.removeAll { it.id == fighterId }
         _fighters.value = current
         saveFightersToCache(current)
+    }
 
-        scope.launch(Dispatchers.IO) {
-            try {
-                firestore.collection("fighters").document(fighterId).delete().await()
-            } catch (e: Exception) {
-                Log.w(TAG, "Error deleting fighter from Firestore", e)
-            }
-        }
+    /**
+     * Удаляет бойца из всех подразделений
+     */
+    @Deprecated("Privileged deletes must go through AdminBackendService")
+    fun deleteFighter(fighterId: String) {
+        Log.w(TAG, "Blocked client-side fighter deletion for $fighterId")
     }
 
     /**
      * Выдает бойцу новую лицензию на 30 дней прямо из панели разработчика
      */
+    @Deprecated("Privileged license grants must go through AdminBackendService")
     fun grantLicense(fighterId: String, days: Int = 30): String {
-        val chars = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
-        fun part(): String = (1..4).map { chars.random() }.joinToString("")
-        val newKey = "KAPT-${part()}-${part()}-${part()}"
-        val now = System.currentTimeMillis()
-        val expiresAt = now + (days.toLong() * 86400000L)
-        val sdf = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
-
-        val current = _fighters.value.toMutableList()
-        val idx = current.indexOfFirst { it.id == fighterId }
-        if (idx >= 0) {
-            val old = current[idx]
-            current[idx] = old.copy(
-                licenseKey = newKey,
-                isProActive = true,
-                licenseDaysLeft = days,
-                licenseExpiresFormatted = sdf.format(Date(expiresAt))
-            )
-            _fighters.value = current
-            saveFightersToCache(current)
-        }
-
-        scope.launch(Dispatchers.IO) {
-            try {
-                val db = firestore
-                val data = hashMapOf(
-                    "licenseKey" to newKey,
-                    "fighterId" to fighterId,
-                    "expiresAt" to expiresAt,
-                    "activatedAt" to now,
-                    "durationDays" to days,
-                    "status" to "ACTIVE"
-                )
-                db.collection("licenses").document(newKey).set(data).await()
-                db.collection("fighters").document(fighterId)
-                    .set(hashMapOf("licenseKey" to newKey, "expiresAt" to expiresAt), SetOptions.merge())
-                    .await()
-            } catch (e: Exception) {
-                Log.w(TAG, "Error granting license in Firestore", e)
-            }
-        }
-        return newKey
+        Log.w(TAG, "Blocked client-side license grant for $fighterId / $days days")
+        return ""
     }
 
     suspend fun lookupFighter(
