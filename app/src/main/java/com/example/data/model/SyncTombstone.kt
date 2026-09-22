@@ -18,6 +18,9 @@ data class SyncTombstone(
     val entityId: String,
     val deletedAt: Long
 ) {
+    /** A newer entity revision explicitly supersedes this deletion marker. */
+    fun isSupersededBy(entityUpdatedAt: Long): Boolean = entityUpdatedAt > deletedAt
+
     companion object {
         fun create(
             unitKey: String,
