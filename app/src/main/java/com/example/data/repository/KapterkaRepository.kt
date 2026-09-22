@@ -86,15 +86,15 @@ class KapterkaRepository(
             syncManager?.syncAndReconcileAll(activeProfile.unitKey, activeProfile.callsign, activeProfile.unitName)
         }
 
-        // Always try to insert default items to ensure updates like new ammo are present (ConflictStrategy is REPLACE/IGNORE)
-        dao.insertItems(InitialData.getDefaultItems())
+        // Add newly introduced standard items without overwriting existing user-edited rows.
+        dao.insertItemsIfMissing(InitialData.getDefaultItems())
 
         val currentPoints = dao.getAllPoints().first()
 
         if (currentPoints.isEmpty()) {
             val defaults = InitialData.getDefaultPoints()
             dao.insertPoints(defaults)
-            dao.insertItems(InitialData.getDefaultItems())
+            dao.insertItemsIfMissing(InitialData.getDefaultItems())
             if (activeProfile.unitKey.isNotBlank()) {
                 defaults.forEach { p -> syncManager?.pushWarehousePointAsync(activeProfile.unitKey, p) }
             }
