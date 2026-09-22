@@ -98,7 +98,7 @@ fun AuthScreen(
     }
     var email by remember { mutableStateOf(currentProfile?.email?.ifBlank { "" } ?: "") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-    var consentAgreed by remember { mutableStateOf(true) }
+    var consentAgreed by remember { mutableStateOf(false) }
     var showLegalDialog by remember { mutableStateOf(false) }
     var legalDialogTab by remember { mutableStateOf(LegalDocumentTab.PRIVACY) }
 
@@ -174,73 +174,12 @@ fun AuthScreen(
                         .fillMaxWidth()
                         .padding(16.dp)
                 ) {
-                    // Quick Google Account Sign-In Button
-                    Button(
-                        onClick = {
-                            if (!consentAgreed) {
-                                errorMessage = "Пожалуйста, подтвердите согласие с Политикой конфиденциальности и Соглашением!"
-                                return@Button
-                            }
-                            val finalCallsign = callsign.trim().ifEmpty { "Командир" }
-                            val finalUnit = unitName.trim().ifEmpty { "1-е Подразделение" }
-                            val finalKey = unitKey.trim()
-                            val prof = (currentProfile ?: UserProfile()).copy(
-                                callsign = finalCallsign,
-                                unitName = finalUnit,
-                                unitKey = finalKey,
-                                email = email.trim(),
-                                isLoggedIn = true
-                            )
-                            onCompleteAuth(prof)
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(44.dp)
-                            .testTag("google_login_button"),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = TacticalSurfaceLight,
-                            contentColor = TacticalTextPrimary
-                        ),
-                        shape = RoundedCornerShape(8.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorder)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.AccountCircle,
-                            contentDescription = "Google",
-                            tint = SageGreenBright,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Войти через Google аккаунт", fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                    }
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    // "ИЛИ ПО ПОЧТЕ" Divider
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(1.dp)
-                                .background(TacticalBorder)
-                        )
-                        Text(
-                            text = "  ИЛИ ПО ПОЧТЕ И КЛЮЧУ  ",
-                            color = TacticalTextMuted,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Monospace
-                        )
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(1.dp)
-                                .background(TacticalBorder)
-                        )
-                    }
+                    Text(
+                        text = "Создайте новое подразделение или подключитесь к существующему.",
+                        color = TacticalTextSecondary,
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp
+                    )
 
                     Spacer(modifier = Modifier.height(14.dp))
 
@@ -317,7 +256,7 @@ fun AuthScreen(
                         value = unitKey,
                         onValueChange = { unitKey = it },
                         label = { Text("Код подразделения", color = TacticalTextSecondary, fontSize = 12.sp) },
-                        placeholder = { Text("Оставьте пустым для автогенерации, либо введите код", color = TacticalTextDim, fontSize = 12.sp) },
+                        placeholder = { Text(if (selectedTab == 0) "Пусто = создать новый код" else "Введите код существующего подразделения", color = TacticalTextDim, fontSize = 12.sp) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(8.dp),
@@ -349,7 +288,7 @@ fun AuthScreen(
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = if (selectedTab == 0)
-                                "Ключ связывает все телефоны роты. Введите одинаковый ключ на всех устройствах."
+                                "Оставьте поле пустым — приложение безопасно создаст новый код. Для других телефонов используйте этот же код."
                             else
                                 "Введите ключ, выданный старшиной или командиром роты.",
                             color = TacticalTextMuted,
@@ -483,15 +422,33 @@ fun AuthScreen(
                                 errorMessage = "Пожалуйста, введите ваш позывной или имя!"
                                 return@Button
                             }
-                            errorMessage = null
-                            val cleanUnitName = unitName.trim().ifEmpty { "1-е Подразделение" }
-                            val cleanKey = unitKey.trim()
-                            val cleanEmail = email.trim()
 
+                            val cleanEmail = email.trim().lowercase()
+                            if (cleanEmail.isBlank() ||
+                                !android.util.Patterns.EMAIL_ADDRESS.matcher(cleanEmail).matches()
+                            ) {
+                                errorMessage = "Укажите корректный Email. Он нужен для лицензии и восстановления доступа."
+                                return@Button
+                            }
+
+                            val cleanUnitName = unitName.trim().ifEmpty { "1-е Подразделение" }
+                            val enteredKey = unitKey.trim()
+                            if (selectedTab == 1 && enteredKey.isBlank()) {
+                                errorMessage = "Для входа в существующее подразделение укажите его код."
+                                return@Button
+                            }
+
+                            val resolvedKey = if (selectedTab == 0 && enteredKey.isBlank()) {
+                                com.example.data.sync.SyncIdentityGenerator.newUnitKey()
+                            } else {
+                                enteredKey
+                            }
+
+                            errorMessage = null
                             val prof = (currentProfile ?: UserProfile()).copy(
                                 callsign = cleanCallsign,
                                 unitName = cleanUnitName,
-                                unitKey = cleanKey,
+                                unitKey = resolvedKey,
                                 email = cleanEmail,
                                 isLoggedIn = true
                             )
