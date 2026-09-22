@@ -167,6 +167,14 @@ Target design:
 - Release readiness now requires only the recovered keystore bytes in the GitHub secret `KAPTERKA_RELEASE_KEYSTORE_B64`; workflows verify the certificate fingerprint before any candidate can be built.
 - A new/generated debug keystore is **not** compatible with existing installations.
 
+### Release-process hardening
+- A side-by-side `nextSafeTest` APK workflow builds `com.aistudio.kapterka.jmwqve.nextsafe` with an isolated temporary signer, so functional testing cannot overwrite production 3.4.9.
+- A gated `nextSafeRelease` workflow requires: branch `android/next-safe`, HTTPS backend, versionCode > 31, valid versionName, exact recovered production signer, live backend health, invalid-admin rejection, safety invariants and unit tests.
+- The release-candidate workflow verifies the finished APK package/version and exact signer SHA-256 before exposing it as an artifact.
+- The backend now has a standalone Node HTTP adapter and Railway deployment config while keeping the same server-authoritative handler.
+- Admin authentication has server-side brute-force throttling; repeated failures return HTTP 429.
+- Backend CI syntax-checks and smoke-tests the standalone HTTP adapter in addition to the core handler.
+
 ### Remaining hard blockers before any APK release
 1. Deploy the prepared backend and pass all live payment/license/admin/email health checks.
 2. Recover the exact original `debug.keystore` from the build machine/profile and pass the signer-readiness fingerprint gate.
