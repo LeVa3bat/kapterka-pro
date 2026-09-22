@@ -570,6 +570,40 @@ function parseFighterDocument(doc) {
   };
 }
 
+async function getFighterById(fighterId) {
+  const token = await requestGoogleAccessToken();
+  const path =
+    `/v1/projects/${encodeURIComponent(FIREBASE_PROJECT_ID)}/databases/(default)/documents/fighters/${encodeURIComponent(fighterId)}`;
+
+  return new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname: 'firestore.googleapis.com',
+      port: 443,
+      path,
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` },
+      timeout: 10000
+    }, (res) => {
+      let responseBody = '';
+      res.on('data', (chunk) => { responseBody += chunk; });
+      res.on('end', () => {
+        if (res.statusCode === 404) return resolve(null);
+        if (res.statusCode < 200 || res.statusCode >= 300) {
+          return reject(new Error(`Firestore fighter read failed: HTTP ${res.statusCode}`));
+        }
+        try {
+          resolve(parseFighterDocument(JSON.parse(responseBody || '{}')));
+        } catch (error) {
+          reject(error);
+        }
+      });
+    });
+    req.on('timeout', () => req.destroy(new Error('Firestore fighter read timeout')));
+    req.on('error', reject);
+    req.end();
+  });
+}
+
 async function queryFighterByEmail(email) {
   const token = await requestGoogleAccessToken();
   const path = `/v1/projects/${encodeURIComponent(FIREBASE_PROJECT_ID)}/databases/(default)/documents:runQuery`;
@@ -755,12 +789,24 @@ module.exports.handler = async function handler(event) {
 
       if (!fighterId) return json(400, { ok: false, error: 'MISSING_FIGHTER_ID' });
 
+      const now = Date.now();
+      const existing = await getFighterById(fighterId);
+
+      if (existing) {
+        // An unauthenticated heartbeat must never overwrite identity, unit key,
+        // email or license state of an existing profile.
+        await patchFirestoreDocument('fighters', fighterId, {
+          lastSeenAt: now,
+          deviceModel
+        });
+        return json(200, { ok: true, existing: true });
+      }
+
       let activeLicense = null;
       if (email) {
         try { activeLicense = await queryActiveLicenseByEmail(email); } catch (_) {}
       }
 
-      const now = Date.now();
       await patchFirestoreDocument('fighters', fighterId, {
         fighterId,
         callsign,
@@ -769,13 +815,14 @@ module.exports.handler = async function handler(event) {
         unitKey,
         email,
         deviceModel,
+        registeredAt: now,
         lastSeenAt: now,
         licenseKey: activeLicense?.licenseKey || '',
         expiresAt: activeLicense?.expiresAt || 0,
         isProActive: Boolean(activeLicense && activeLicense.expiresAt > now)
       });
 
-      return json(200, { ok: true });
+      return json(200, { ok: true, existing: false });
     }
 
     if (action === 'fighter_lookup') {
@@ -784,38 +831,7 @@ module.exports.handler = async function handler(event) {
         return json(400, { ok: false, error: 'MISSING_FIGHTER_ID' });
       }
 
-      const token = await requestGoogleAccessToken();
-      const path =
-        `/v1/projects/${encodeURIComponent(FIREBASE_PROJECT_ID)}/databases/(default)/documents/fighters/${encodeURIComponent(fighterId)}`;
-
-      const fighter = await new Promise((resolve, reject) => {
-        const req = https.request({
-          hostname: 'firestore.googleapis.com',
-          port: 443,
-          path,
-          method: 'GET',
-          headers: { Authorization: `Bearer ${token}` },
-          timeout: 10000
-        }, (res) => {
-          let responseBody = '';
-          res.on('data', (chunk) => { responseBody += chunk; });
-          res.on('end', () => {
-            if (res.statusCode === 404) return resolve(null);
-            if (res.statusCode < 200 || res.statusCode >= 300) {
-              return reject(new Error(`Firestore fighter read failed: HTTP ${res.statusCode}`));
-            }
-            try {
-              resolve(parseFighterDocument(JSON.parse(responseBody || '{}')));
-            } catch (error) {
-              reject(error);
-            }
-          });
-        });
-        req.on('timeout', () => req.destroy(new Error('Firestore fighter read timeout')));
-        req.on('error', reject);
-        req.end();
-      });
-
+      const fighter = await getFighterById(fighterId);
       if (!fighter || fighter.id !== fighterId) {
         return json(404, { ok: false, error: 'FIGHTER_NOT_FOUND' });
       }
