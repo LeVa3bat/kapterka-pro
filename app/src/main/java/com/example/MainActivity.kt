@@ -98,6 +98,7 @@ import com.example.ui.screens.MoreSettingsScreen
 import com.example.ui.screens.RequestsScreen
 import com.example.ui.screens.SplashScreen
 import com.example.ui.screens.WarehouseProfileSetupScreen
+import com.example.ui.screens.UniversalMoreScreen
 import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.theme.SageGreenBright
 import com.example.ui.theme.SageGreenDark
@@ -433,7 +434,7 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                             onTransferClick = { showTransferDialog = true },
                             onIssueClick = { showIssueDialog = true },
                             onExpenditureClick = {
-                                checkProAccess("списания по Форме № 8") {
+                                checkProAccess("списания имущества") {
                                     showExpenditureDialog = true
                                 }
                             },
@@ -446,9 +447,17 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                             onSyncClick = { viewModel.simulateCloudSync() },
                             onSecondPhoneClick = { showUnitKeySyncDialog = true },
                             onExportClick = {
-                                checkProAccess("выгрузки отчетов в Excel") {
-                                    excelReportInitialTab = 0
-                                    showExcelReportDialog = true
+                                if (BuildConfig.IS_UNIVERSAL_APP) {
+                                    Toast.makeText(
+                                        context,
+                                        "Универсальные отчёты готовятся для следующей Alpha.",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                } else {
+                                    checkProAccess("выгрузки отчетов в Excel") {
+                                        excelReportInitialTab = 0
+                                        showExcelReportDialog = true
+                                    }
                                 }
                             },
                             onBannerClick = { showPaymentProDialog = true },
@@ -502,59 +511,65 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                     }
 
                     AppDestination.MORE -> {
-                        MoreSettingsScreen(
-                            profile = profile,
-                            availableCategories = availableCategories,
-                            syncState = syncState,
-                            onDeleteCategory = { viewModel.deleteCategory(it) },
-                            onAddCategory = { viewModel.addCategory(it) },
-                            onResetCategories = { viewModel.resetCategoriesToDefault() },
-                            onSyncClick = { viewModel.simulateCloudSync() },
-                            onOpenConnectCodeDialog = { showUnitKeySyncDialog = true },
-                            onOpenPaymentPro = { showPaymentProDialog = true },
-                            onExportFullConsolidatedClick = {
-                                checkProAccess("выгрузки сводной ведомости") {
-                                    excelReportInitialTab = 0
-                                    showExcelReportDialog = true
+                        if (BuildConfig.IS_UNIVERSAL_APP) {
+                            UniversalMoreScreen(
+                                warehouseProfileId = warehouseProfileId,
+                                isDarkTheme = isDarkTheme,
+                                onToggleTheme = { viewModel.toggleTheme() },
+                                onChangeProfile = {
+                                    setupPrefs.edit().remove("warehouse_profile_id").apply()
+                                    warehouseProfileId = null
                                 }
-                            },
-                            onExportPointSummaryClick = {
-                                checkProAccess("выгрузки ведомости остатков") {
-                                    excelReportInitialTab = 1.coerceAtMost(points.size)
-                                    showExcelReportDialog = true
-                                }
-                            },
-                            onExportForm8Click = {
-                                checkProAccess("выгрузки Формы № 8") {
-                                    excelReportInitialTab = points.size + 1
-                                    showExcelReportDialog = true
-                                }
-                            },
-                            onExportForm18Click = {
-                                checkProAccess("выгрузки Формы № 18") {
-                                    excelReportInitialTab = points.size + 2
-                                    showExcelReportDialog = true
-                                }
-                            },
-                            onLogoutClick = {
-                                val current = profile ?: com.example.data.model.UserProfile()
-                                // Logging out / changing the profile must not revoke a paid license
-                                // or replace the stable fighter identity used for server restore.
-                                viewModel.updateProfile(current.copy(isLoggedIn = false))
-                            },
-                            onUpdateProfile = { updated ->
-                                viewModel.updateProfile(updated)
-                            },
-                            onRestoreLicenseFromCloud = {
-                                viewModel.restoreLicenseFromCloud()
-                            },
-                            onResetDataClick = { viewModel.clearAllData() },
-                            onOpenManualClick = { showUserManualDialog = true },
-                            onOpenDeveloperBackdoor = { showDevAuthPrompt = true },
-                            isDarkTheme = isDarkTheme,
-                            onToggleTheme = { viewModel.toggleTheme() }
-                        )
-                    }
+                            )
+                        } else {
+                            MoreSettingsScreen(
+                                profile = profile,
+                                availableCategories = availableCategories,
+                                syncState = syncState,
+                                onDeleteCategory = { viewModel.deleteCategory(it) },
+                                onAddCategory = { viewModel.addCategory(it) },
+                                onResetCategories = { viewModel.resetCategoriesToDefault() },
+                                onSyncClick = { viewModel.simulateCloudSync() },
+                                onOpenConnectCodeDialog = { showUnitKeySyncDialog = true },
+                                onOpenPaymentPro = { showPaymentProDialog = true },
+                                onExportFullConsolidatedClick = {
+                                    checkProAccess("выгрузки сводной ведомости") {
+                                        excelReportInitialTab = 0
+                                        showExcelReportDialog = true
+                                    }
+                                },
+                                onExportPointSummaryClick = {
+                                    checkProAccess("выгрузки ведомости остатков") {
+                                        excelReportInitialTab = 1.coerceAtMost(points.size)
+                                        showExcelReportDialog = true
+                                    }
+                                },
+                                onExportForm8Click = {
+                                    checkProAccess("выгрузки Формы № 8") {
+                                        excelReportInitialTab = points.size + 1
+                                        showExcelReportDialog = true
+                                    }
+                                },
+                                onExportForm18Click = {
+                                    checkProAccess("выгрузки Формы № 18") {
+                                        excelReportInitialTab = points.size + 2
+                                        showExcelReportDialog = true
+                                    }
+                                },
+                                onLogoutClick = {
+                                    val current = profile ?: com.example.data.model.UserProfile()
+                                    viewModel.updateProfile(current.copy(isLoggedIn = false))
+                                },
+                                onUpdateProfile = { updated -> viewModel.updateProfile(updated) },
+                                onRestoreLicenseFromCloud = { viewModel.restoreLicenseFromCloud() },
+                                onResetDataClick = { viewModel.clearAllData() },
+                                onOpenManualClick = { showUserManualDialog = true },
+                                onOpenDeveloperBackdoor = { showDevAuthPrompt = true },
+                                isDarkTheme = isDarkTheme,
+                                onToggleTheme = { viewModel.toggleTheme() }
+                            )
+                        }
+                    }}
                 }
             }
         }
