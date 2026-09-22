@@ -407,7 +407,7 @@ for (const file of seoGrowthPages) {
   if (!/rel=["']canonical["']/.test(source)) fail(`${file}: canonical missing`);
   if (!/name=["']robots["'][^>]*index/.test(source)) fail(`${file}: robots index missing`);
 }
-for (const url of ['guides.html','prihod-rashod-sklad-android.html','inventarizaciya-na-android.html','uchet-vydachi-imushchestva-android.html','peremeshchenie-mezhdu-skladami-android.html']) {
+for (const url of ['guides.html','prihod-rashod-sklad-android.html','inventarizaciya-na-android.html','uchet-vydachi-imushchestva-android.html','peremeshchenie-mezhdu-skladami-android.html','uchet-tmc-android.html','uchet-instrumenta-android.html','uchet-oborudovaniya-android.html','uchet-inventarya-android.html','skladskoy-uchet-dlya-nebolshogo-sklada.html','sklad-bez-1c-na-telefone.html','zhurnal-dvizheniya-imushchestva-android.html','uchet-neskolkih-skladov-android.html']) {
   if (!sitemap.includes(url)) fail(`sitemap missing ${url}`);
 }
 if (!index.includes('href="guides.html">Материалы</a>')) fail('homepage footer does not link to SEO content hub');
@@ -416,11 +416,15 @@ else ok('SEO growth pages are indexed and internally linked');
 const guideAnalytics = read('docs/guide-analytics.js');
 if (!guideAnalytics.includes("webvisor: false") || !guideAnalytics.includes("guide_action")) fail('guide analytics privacy/config guard is missing');
 if (/(email|callsign|licenseKey|unitKey|paymentId)\s*:/i.test(guideAnalytics)) fail('guide analytics must not send personal/sensitive fields');
+let guideAnalyticsMissing = false;
 for (const file of seoGrowthPages) {
   const source = read(file);
-  if (!source.includes('guide-analytics.js')) fail(`${file}: guide analytics is not connected`);
+  if (!source.includes('guide-analytics.js')) {
+    fail(`${file}: guide analytics is not connected`);
+    guideAnalyticsMissing = true;
+  }
 }
-else ok('guide pages use privacy-safe analytics');
+if (!guideAnalyticsMissing) ok('guide pages use privacy-safe analytics');
 
 if (!index.includes('class="neo-guides"') ||
     !index.includes('href="guides.html"') ||
