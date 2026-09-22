@@ -379,14 +379,9 @@ class FirebaseSyncManager(
                 pushWarehousePointAsync(cleanKey, base)
             }
 
-            // Reconcile local points with resolved points
-            val targetPointIds = existingPointsMap.keys
-            val localPoints = dao.getAllPoints().first()
-            for (lp in localPoints) {
-                if (!targetPointIds.contains(lp.id)) {
-                    dao.deletePoint(lp.id)
-                }
-            }
+            // Safety rule for next-safe:
+            // absence in a cloud snapshot is NOT proof that a local point was intentionally deleted.
+            // Merge cloud points locally without deleting existing local points.
             dao.insertPoints(existingPointsMap.values.toList())
 
             // 3. Reconcile Stock Records
@@ -421,34 +416,23 @@ class FirebaseSyncManager(
                     }
                 }
 
-                // Delete any local stock records that are NOT present in the cloud for this unit
-                val localStocks = dao.getAllStockRecords().first()
-                for (ls in localStocks) {
-                    if (!cloudStockKeys.contains("${ls.pointId}:::${ls.itemId}")) {
-                        dao.deleteStockRecord(ls.pointId, ls.itemId)
-                    }
-                }
-
-                // Upsert all authoritative cloud stock records
+                // Never delete local stock merely because a cloud snapshot does not contain it.
+                // Explicit tombstones/versioned deletes will be introduced before release.
+                // For now, cloud records are merged over local records.
+                // Upsert cloud stock records
                 for (s in recordsToInsert) {
                     dao.insertOrUpdateStock(s)
                     // ensureItemExists will be handled with real names during operation reconciliation below
                 }
             } else {
-                // Cloud has no stock records for this unit.
-                // Clear any local stock records so empty unit doesn't inherit leftover records from other units.
-                dao.clearAllStockRecords()
+                // Empty cloud must never erase local stock.
+                // Keep local records until an explicit, verifiable deletion model exists.
+                Log.i(TAG, "Cloud stock is empty; preserving local stock in next-safe mode")
             }
 
             // 4. Reconcile Operation Records
             val cloudOpsSnap = unitRef.collection("operation_records").get().await()
-            val cloudOpIds = cloudOpsSnap.documents.map { it.id }.toSet()
-            val localOps = dao.getAllOperations().first()
-            for (lo in localOps) {
-                if (!cloudOpIds.contains(lo.id)) {
-                    dao.deleteOperation(lo.id)
-                }
-            }
+            // Merge cloud history locally. Do not delete local history by absence alone.
             for (doc in cloudOpsSnap.documents) {
                 val opTypeStr = doc.getString("type") ?: "INCOME"
                 val type = try { OperationType.valueOf(opTypeStr) } catch (ex: Exception) { OperationType.INCOME }
@@ -470,13 +454,7 @@ class FirebaseSyncManager(
 
             // 5. Reconcile Requisitions
             val cloudReqSnap = unitRef.collection("requisitions").get().await()
-            val cloudReqIds = cloudReqSnap.documents.map { it.id }.toSet()
-            val localReqs = dao.getAllRequisitions().first()
-            for (lr in localReqs) {
-                if (!cloudReqIds.contains(lr.id)) {
-                    dao.deleteRequisition(lr.id)
-                }
-            }
+            // Merge cloud requisitions locally. Do not delete local data by absence alone.
             for (doc in cloudReqSnap.documents) {
                 val statusStr = doc.getString("status") ?: "PENDING"
                 val status = try { RequestStatus.valueOf(statusStr) } catch (ex: Exception) { RequestStatus.PENDING }
