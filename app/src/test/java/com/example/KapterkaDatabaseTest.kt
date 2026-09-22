@@ -139,6 +139,36 @@ class KapterkaDatabaseTest {
     }
 
     @Test
+    fun testOperationAndStocksCommitTogether() = runBlocking {
+        val op = OperationRecord(
+            id = "op_atomic_1",
+            type = OperationType.INCOME,
+            fromPointName = "Снабжение",
+            toPointName = "Базовый склад",
+            docNumber = "",
+            responsiblePerson = "Тест",
+            comment = "atomic",
+            timestamp = System.currentTimeMillis(),
+            itemsSummary = "Тест — 7 шт."
+        )
+        val stock = StockRecord(
+            pointId = "base_sklad",
+            itemId = "atomic_item",
+            quantity = 7,
+            incomeTotal = 7,
+            expenseTotal = 0
+        )
+
+        dao.commitOperationAndStocks(op, listOf(stock))
+
+        val operations = dao.getAllOperations().first()
+        val savedStock = dao.getStockItem("base_sklad", "atomic_item")
+        assertTrue(operations.any { it.id == "op_atomic_1" })
+        assertNotNull(savedStock)
+        assertEquals(7, savedStock!!.quantity)
+    }
+
+    @Test
     fun testInitialDataPopulateCompleteness() {
         assertTrue("Initial default points must not be empty", InitialData.getDefaultPoints().isNotEmpty())
         assertTrue("Initial default items must not be empty", InitialData.getDefaultItems().isNotEmpty())
