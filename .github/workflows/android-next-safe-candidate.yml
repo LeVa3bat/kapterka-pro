@@ -31,8 +31,10 @@ jobs:
       PAYMENT_API_URL: ${{ inputs.backend_url }}
       NEXT_SAFE_VERSION_CODE: ${{ inputs.version_code }}
       NEXT_SAFE_VERSION_NAME: ${{ inputs.version_name }}
-      STORE_PASSWORD: ${{ secrets.KAPTERKA_RELEASE_STORE_PASSWORD }}
-      KEY_PASSWORD: ${{ secrets.KAPTERKA_RELEASE_KEY_PASSWORD }}
+      # 3.4.9 uses the standard debug keystore credentials; the private file itself
+      # remains the only secret required for signer continuity.
+      STORE_PASSWORD: android
+      KEY_PASSWORD: android
 
     steps:
       - name: Checkout
@@ -151,8 +153,8 @@ jobs:
         shell: bash
         run: |
           test -n "$KEYSTORE_B64" || { echo "Missing KAPTERKA_RELEASE_KEYSTORE_B64"; exit 1; }
-          test -n "$STORE_PASSWORD" || { echo "Missing KAPTERKA_RELEASE_STORE_PASSWORD"; exit 1; }
-          test -n "$KEY_PASSWORD" || { echo "Missing KAPTERKA_RELEASE_KEY_PASSWORD"; exit 1; }
+          test "$STORE_PASSWORD" = "android" || { echo "Unexpected store password configuration"; exit 1; }
+          test "$KEY_PASSWORD" = "android" || { echo "Unexpected key password configuration"; exit 1; }
 
           printf '%s' "$KEYSTORE_B64" | base64 -d > /tmp/kapterka-release.jks
           chmod 600 /tmp/kapterka-release.jks
