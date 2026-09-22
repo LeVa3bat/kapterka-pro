@@ -98,7 +98,7 @@ abstract class KapterkaDatabase : RoomDatabase() {
                         id = 1,
                         callsign = "",
                         unitName = "",
-                        unitKey = "kapt_" + java.util.UUID.randomUUID().toString().take(6),
+                        unitKey = com.example.data.sync.SyncIdentityGenerator.newUnitKey(),
                         email = "",
                         isLoggedIn = false,
                         isProActive = false,
