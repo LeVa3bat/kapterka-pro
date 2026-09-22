@@ -171,7 +171,7 @@ fun MoreSettingsScreen(
             text = {
                 Column {
                     Text(
-                        text = "Позывной:",
+                        text = "Имя пользователя:",
                         color = TacticalTextSecondary,
                         fontSize = 12.sp
                     )
@@ -180,7 +180,7 @@ fun MoreSettingsScreen(
                         value = editCallsign,
                         onValueChange = { editCallsign = it },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Ваш позывной", color = TacticalTextMuted) },
+                        placeholder = { Text("Имя или короткое обозначение", color = TacticalTextMuted) },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = SageGreenPrimary,
                             unfocusedBorderColor = TacticalBorder,
@@ -201,7 +201,7 @@ fun MoreSettingsScreen(
                         value = editUnitName,
                         onValueChange = { editUnitName = it },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Название организации или подразделения", color = TacticalTextMuted) },
+                        placeholder = { Text("Например: Инструменты / ГСМ / Оборудование", color = TacticalTextMuted) },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = SageGreenPrimary,
                             unfocusedBorderColor = TacticalBorder,
@@ -547,7 +547,7 @@ fun MoreSettingsScreen(
                     ) {
                         Column {
                             Text(
-                                text = "Позывной: ${profile?.callsign ?: "Старшина"}",
+                                text = "Пользователь: ${profile?.callsign ?: "Пользователь"}",
                                 color = TacticalTextPrimary,
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold
@@ -861,7 +861,7 @@ fun MoreSettingsScreen(
                 ) {
                     ReportCompactRow(
                         title = "Полная сводная ведомость (Все позиции)",
-                        docType = "Все склады и службы",
+                        docType = "Все склады и категории",
                         onClick = onExportFullConsolidatedClick
                     )
                     ReportCompactRow(
