@@ -48,7 +48,7 @@
   document.addEventListener('click', function(e) {
     const link = e.target.closest('a');
     if (!link) return;
-    if (!link.closest('.cta,.related,.release-list,.back')) return;
+    if (!link.closest('.cta,.related,.release-list,.back,.page-links')) return;
     const dest = destination(link);
     const params = {
       destination: dest,
