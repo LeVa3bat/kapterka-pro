@@ -1,6 +1,6 @@
 {
   "firestore": {
-    "rules": "server/firestore.next-safe.rules"
+    "rules": "firestore.next-safe.rules"
   },
   "emulators": {
     "firestore": {
