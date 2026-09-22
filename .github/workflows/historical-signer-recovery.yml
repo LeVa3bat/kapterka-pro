@@ -1,0 +1,76 @@
+name: Historical signer recovery check
+
+on:
+  push:
+    branches:
+      - recovery/historical-signer-2026-09-22
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  recover-signer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      EXPECTED_SIGNER_SHA256: 843a7e883914f3a7a5a7665ff07b2e8c43da87a24ee4dc35e1600758aee73cb9
+    steps:
+      - name: Checkout historical commit
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Require historical key files
+        shell: bash
+        run: |
+          test -f my-upload-key.jks || { echo "Historical my-upload-key.jks is missing"; exit 1; }
+          test -f docs/kapterka-release.apk || { echo "Historical release APK is missing"; exit 1; }
+
+      - name: Verify historical APK signer
+        shell: bash
+        run: |
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -1)"
+          test -x "$APKSIGNER" || { echo "apksigner not found"; exit 1; }
+          "$APKSIGNER" verify --print-certs docs/kapterka-release.apk | tee /tmp/apk-certs.txt
+          ACTUAL="$(grep -i 'Signer #1 certificate SHA-256 digest:' /tmp/apk-certs.txt | head -1 | awk '{print $NF}' | tr '[:upper:]' '[:lower:]')"
+          EXPECTED="$(echo "$EXPECTED_SIGNER_SHA256" | tr '[:upper:]' '[:lower:]')"
+          echo "Expected: $EXPECTED"
+          echo "Historical APK: $ACTUAL"
+          test "$ACTUAL" = "$EXPECTED" || {
+            echo "Historical APK signer differs from current published signer."
+            exit 1
+          }
+
+      - name: Verify legacy signing secrets and certificate
+        env:
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        shell: bash
+        run: |
+          test -n "$STORE_PASSWORD" || { echo "Legacy STORE_PASSWORD secret is unavailable"; exit 1; }
+          test -n "$KEY_PASSWORD" || { echo "Legacy KEY_PASSWORD secret is unavailable"; exit 1; }
+
+          keytool -list -v             -keystore my-upload-key.jks             -storepass "$STORE_PASSWORD"             -alias upload | tee /tmp/keytool.txt
+
+          ACTUAL="$(grep -m1 'SHA256:' /tmp/keytool.txt | sed 's/.*SHA256:[[:space:]]*//' | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+          EXPECTED="$(echo "$EXPECTED_SIGNER_SHA256" | tr '[:upper:]' '[:lower:]')"
+          echo "Expected: $EXPECTED"
+          echo "Keystore:  $ACTUAL"
+          test "$ACTUAL" = "$EXPECTED" || {
+            echo "Historical JKS certificate differs from current published signer."
+            exit 1
+          }
+
+          mkdir -p /tmp/signcheck && cd /tmp/signcheck
+          echo signer-check > marker.txt
+          jar --create --file marker.jar marker.txt
+          jarsigner             -keystore "$GITHUB_WORKSPACE/my-upload-key.jks"             -storepass "$STORE_PASSWORD"             -keypass "$KEY_PASSWORD"             marker.jar upload
+          jarsigner -verify marker.jar
+
+      - name: Historical signer recovered
+        run: echo "Historical JKS + existing Actions secrets can sign with the current published identity."
