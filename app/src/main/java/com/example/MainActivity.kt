@@ -121,6 +121,7 @@ import com.example.ui.components.UniversalBottomNavigationBar
 import com.example.ui.screens.UniversalAuthScreen
 import com.example.ui.screens.UniversalDashboardScreen
 import com.example.ui.screens.UniversalOperationsScreen
+import com.example.ui.screens.UniversalCatalogScreen
 import com.example.ui.screens.UniversalSplashScreen
 import com.example.universal.UniversalLocalAuth
 import com.example.ui.viewmodel.KapterkaViewModel
@@ -602,13 +603,24 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                     }
 
                     AppDestination.CATALOG -> {
-                        InventoryCatalogScreen(
-                            items = catalogItems,
-                            availableCategories = availableCategories,
-                            onAddNewItemClick = { showAddCustomItemDialog = true },
-                            onUpdateItem = { viewModel.updateCatalogItem(it) },
-                            onDeleteItem = { id, name -> viewModel.deleteCatalogItem(id, name) }
-                        )
+                        if (BuildConfig.IS_UNIVERSAL_APP) {
+                            UniversalCatalogScreen(
+                                items = catalogItems,
+                                stockRecords = stockRecords,
+                                availableCategories = availableCategories,
+                                onAddItem = { showAddCustomItemDialog = true },
+                                onUpdateItem = { viewModel.updateCatalogItem(it) },
+                                onDeleteItem = { id, name -> viewModel.deleteCatalogItem(id, name) }
+                            )
+                        } else {
+                            InventoryCatalogScreen(
+                                items = catalogItems,
+                                availableCategories = availableCategories,
+                                onAddNewItemClick = { showAddCustomItemDialog = true },
+                                onUpdateItem = { viewModel.updateCatalogItem(it) },
+                                onDeleteItem = { id, name -> viewModel.deleteCatalogItem(id, name) }
+                            )
+                        }
                     }
 
                     AppDestination.MORE -> {
