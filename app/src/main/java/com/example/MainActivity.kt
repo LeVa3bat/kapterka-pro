@@ -120,6 +120,7 @@ import com.example.ui.theme.TacticalTextPrimary
 import com.example.ui.components.UniversalBottomNavigationBar
 import com.example.ui.screens.UniversalAuthScreen
 import com.example.ui.screens.UniversalDashboardScreen
+import com.example.ui.screens.UniversalOperationsScreen
 import com.example.ui.screens.UniversalSplashScreen
 import com.example.universal.UniversalLocalAuth
 import com.example.ui.viewmodel.KapterkaViewModel
@@ -563,16 +564,23 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                     }
 
                     AppDestination.HISTORY -> {
-                        HistoryScreen(
-                            operations = operations,
-                            filterType = historyFilterType,
-                            searchQuery = historySearchQuery,
-                            catalogItems = catalogItems,
-                            availableCategories = availableCategories,
-                            onFilterChange = { viewModel.setHistoryFilterType(it) },
-                            onSearchChange = { viewModel.setHistorySearchQuery(it) },
-                            parseItems = { viewModel.parseOperationItems(it) }
-                        )
+                        if (BuildConfig.IS_UNIVERSAL_APP) {
+                            UniversalOperationsScreen(
+                                warehouseProfileId = warehouseProfileId,
+                                operations = operations
+                            )
+                        } else {
+                            HistoryScreen(
+                                operations = operations,
+                                filterType = historyFilterType,
+                                searchQuery = historySearchQuery,
+                                catalogItems = catalogItems,
+                                availableCategories = availableCategories,
+                                onFilterChange = { viewModel.setHistoryFilterType(it) },
+                                onSearchChange = { viewModel.setHistorySearchQuery(it) },
+                                parseItems = { viewModel.parseOperationItems(it) }
+                            )
+                        }
                     }
 
                     AppDestination.REQUESTS -> {
