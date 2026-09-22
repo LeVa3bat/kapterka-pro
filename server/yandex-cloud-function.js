@@ -22,6 +22,7 @@ const LICENSE_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
 const ADMIN_TOKEN_TTL_MS = 15 * 60 * 1000;
 const ADMIN_AUTH_WINDOW_MS = 5 * 60 * 1000;
 const ADMIN_AUTH_MAX_FAILURES = 5;
+const MAX_REQUEST_BODY_BYTES = 64 * 1024;
 let cachedGoogleToken = { value: '', expiresAt: 0 };
 const adminAuthFailures = new Map();
 
@@ -809,6 +810,9 @@ async function deleteFirestoreDocument(collection, docId) {
 module.exports.handler = async function handler(event) {
   const method = String(event?.httpMethod || 'GET').toUpperCase();
   if (method === 'OPTIONS') return json(200, { ok: true });
+  if (method !== 'GET' && method !== 'POST') {
+    return json(405, { ok: false, error: 'METHOD_NOT_ALLOWED' }, { Allow: 'GET, POST, OPTIONS' });
+  }
 
   const query = event?.queryStringParameters || {};
   let body = {};
@@ -816,6 +820,11 @@ module.exports.handler = async function handler(event) {
     const raw = event?.isBase64Encoded
       ? Buffer.from(event.body || '', 'base64').toString('utf8')
       : event?.body;
+
+    if (typeof raw === 'string' && Buffer.byteLength(raw, 'utf8') > MAX_REQUEST_BODY_BYTES) {
+      return json(413, { ok: false, error: 'PAYLOAD_TOO_LARGE' });
+    }
+
     body = typeof raw === 'string' && raw ? JSON.parse(raw) : (raw || {});
   } catch (_) {
     body = {};
