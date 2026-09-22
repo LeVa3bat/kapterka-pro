@@ -231,10 +231,13 @@ class FighterRegistryManager(
         val cleanCallsign = callsign.trim().lowercase(Locale.ROOT)
         val cleanId = fighterId.trim()
 
-        val local = _fighters.value.firstOrNull {
-            (cleanId.isNotBlank() && it.id == cleanId) ||
-                (cleanEmail.isNotBlank() && it.email.lowercase(Locale.ROOT) == cleanEmail) ||
-                (cleanCallsign.isNotBlank() && it.callsign.lowercase(Locale.ROOT) == cleanCallsign)
+        // Local admin cache must never act as a weaker identity-recovery path.
+        // Unit-key recovery from cache is allowed only for the exact persistent
+        // fighter id. Email/callsign alone are not sufficient.
+        val local = if (cleanId.isNotBlank()) {
+            _fighters.value.firstOrNull { it.id == cleanId }
+        } else {
+            null
         }
         if (local != null && local.unitKey.isNotBlank()) {
             return@withContext local
