@@ -709,7 +709,12 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             val email = profile?.email?.trim().orEmpty()
 
             _toastEvent.emit("Формирование счета ЮKassa на 30 дней...")
-            val result = yooKassaService.createPayment(callsign, email)
+            val fighterId = licenseManager.getFighterPersonalId()
+            val result = yooKassaService.createPayment(
+                fighterCallsign = callsign,
+                fighterEmail = email,
+                fighterId = fighterId
+            )
             if (result.success && result.confirmationUrl.isNotEmpty()) {
                 lastPaymentId = result.paymentId
                 prefs.edit().putString("last_yookassa_payment_id", result.paymentId).apply()
@@ -730,8 +735,11 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                     while (attempts < 60) {
                         kotlinx.coroutines.delay(3500)
                         attempts++
-                        val (isPaid, _) = yooKassaService.verifyPaymentStatus(result.paymentId)
-                        if (isPaid && !result.paymentId.startsWith("yk_direct_") && !result.paymentId.startsWith("yk_order_")) {
+                        val verification = yooKassaService.verifyPaymentLicense(
+                            paymentId = result.paymentId,
+                            fighterId = fighterId
+                        )
+                        if (verification.success && verification.paid) {
                             confirmPaymentAndActivateLicense()
                             break
                         }
@@ -777,22 +785,39 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
 
                 _toastEvent.emit("Проверка статуса оплаты в ЮKassa...")
 
-                val (isPaid, statusMsg) = yooKassaService.verifyPaymentStatus(paymentIdToVerify)
-                if (!isPaid) {
-                    _toastEvent.emit("❌ ПЛАТЕЖ НЕ ОПЛАЧЕН!\n$statusMsg")
+                val verification = yooKassaService.verifyPaymentLicense(
+                    paymentId = paymentIdToVerify,
+                    fighterId = licenseManager.getFighterPersonalId()
+                )
+                if (!verification.success || !verification.paid) {
+                    val msg = verification.errorMessage ?: "Платёж ещё не подтверждён сервером."
+                    _toastEvent.emit("❌ ЛИЦЕНЗИЯ НЕ АКТИВИРОВАНА!\n$msg")
                     return@launch
                 }
 
-                // Ключ выдаётся только один раз на конкретный paymentId на этом устройстве.
-                val newKey = licenseManager.activateLicenseAfterPayment(callsign, email, paymentIdToVerify)
+                val newKey = verification.licenseKey
+                val activated = licenseManager.activateServerVerifiedLicense(
+                    licenseKey = newKey,
+                    expiresAt = verification.expiresAt,
+                    paymentId = paymentIdToVerify
+                )
+                if (!activated) {
+                    _toastEvent.emit("❌ Сервер подтвердил оплату, но данные лицензии не прошли проверку.")
+                    return@launch
+                }
+
+                val daysLeft = ((verification.expiresAt - System.currentTimeMillis()) / 86400000L)
+                    .toInt()
+                    .coerceAtLeast(1)
+
                 _issuedPaymentKey.value = newKey
                 prefs.edit()
                     .putString("last_activated_yookassa_payment_id", paymentIdToVerify)
                     .apply()
 
-                // Мгновенно обновляем профиль в репозитории и БД Room
+                // Локальный профиль отражает только уже подтверждённую сервером лицензию.
                 repository.saveUserProfile(
-                    profile.copy(isProActive = true, proDaysLeft = 30, demoDaysLeft = 0)
+                    profile.copy(isProActive = true, proDaysLeft = daysLeft, demoDaysLeft = 0)
                 )
 
                 // Заносим пользователя в реестр без фиктивного unit key.
@@ -804,14 +829,14 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                     email = email,
                     licenseKey = newKey,
                     isProActive = true,
-                    expiresAt = System.currentTimeMillis() + 30L * 86400000L
+                    expiresAt = verification.expiresAt
                 )
 
                 com.example.data.notification.TelegramNotifier.notifyPaymentConfirmed(
                     callsign = callsign,
                     email = email,
                     licenseKey = newKey,
-                    days = 30
+                    days = daysLeft
                 )
 
                 if (email.isNotBlank()) {
@@ -820,7 +845,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                         recipientEmail = email,
                         callsign = callsign,
                         licenseKey = newKey,
-                        days = 30
+                        days = daysLeft
                     )
                 }
 
