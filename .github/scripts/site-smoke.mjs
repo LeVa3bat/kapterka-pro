@@ -31,6 +31,10 @@ const requiredFiles = [
   'docs/uchet-imushchestva-offline.html',
   'docs/skladskoy-uchet-android.html',
   'docs/inventarizaciya-na-android.html',
+  'docs/guides.html',
+  'docs/prihod-rashod-sklad-android.html',
+  'docs/uchet-vydachi-imushchestva-android.html',
+  'docs/peremeshchenie-mezhdu-skladami-android.html',
   'docs/robots.txt',
   'docs/google3271685078741b10.html',
   'docs/sitemap.xml',
@@ -54,6 +58,11 @@ const guideFiles = [
   'docs/skladskoy-uchet-android.html',
   'docs/uchet-imushchestva-offline.html',
   'docs/uchet-ostatkov-na-telefone.html',
+  'docs/guides.html',
+  'docs/prihod-rashod-sklad-android.html',
+  'docs/inventarizaciya-na-android.html',
+  'docs/uchet-vydachi-imushchestva-android.html',
+  'docs/peremeshchenie-mezhdu-skladami-android.html',
   'docs/security.html',
   'docs/updates.html',
   'docs/help.html'
@@ -166,7 +175,7 @@ if (!index.includes('v3.4.9') && !index.includes('3.4.9')) fail('site version 3.
 if (!index.includes('сборка 31') && !index.includes('Сборка 31') && !index.includes('data-release-code>31</span>')) fail('site build 31 marker is missing');
 
 
-const htmlFiles = ['docs/index.html', 'docs/privacy.html', 'docs/terms.html', 'docs/security.html', 'docs/updates.html', 'docs/help.html', 'docs/skladskoy-uchet-android.html', 'docs/uchet-imushchestva-offline.html', 'docs/uchet-ostatkov-na-telefone.html', 'docs/404.html'];
+const htmlFiles = ['docs/index.html', 'docs/privacy.html', 'docs/terms.html', 'docs/security.html', 'docs/updates.html', 'docs/help.html', 'docs/skladskoy-uchet-android.html', 'docs/uchet-imushchestva-offline.html', 'docs/uchet-ostatkov-na-telefone.html', 'docs/guides.html', 'docs/prihod-rashod-sklad-android.html', 'docs/inventarizaciya-na-android.html', 'docs/uchet-vydachi-imushchestva-android.html', 'docs/peremeshchenie-mezhdu-skladami-android.html', 'docs/404.html'];
 const missingLocalTargets = [];
 for (const htmlFile of htmlFiles) {
   const source = read(htmlFile);
@@ -263,7 +272,12 @@ const requiredSitemapUrls = [
   'https://kapterka-pro.ru/help.html',
   'https://kapterka-pro.ru/skladskoy-uchet-android.html',
   'https://kapterka-pro.ru/uchet-imushchestva-offline.html',
-  'https://kapterka-pro.ru/uchet-ostatkov-na-telefone.html'
+  'https://kapterka-pro.ru/uchet-ostatkov-na-telefone.html',
+  'https://kapterka-pro.ru/guides.html',
+  'https://kapterka-pro.ru/prihod-rashod-sklad-android.html',
+  'https://kapterka-pro.ru/inventarizaciya-na-android.html',
+  'https://kapterka-pro.ru/uchet-vydachi-imushchestva-android.html',
+  'https://kapterka-pro.ru/peremeshchenie-mezhdu-skladami-android.html'
 ];
 const missingSitemapUrls = requiredSitemapUrls.filter(url => !sitemap.includes('<loc>' + url + '</loc>'));
 if (missingSitemapUrls.length) fail('sitemap is missing URLs: ' + missingSitemapUrls.join(', '));
@@ -309,7 +323,9 @@ else ok('release manifest and professional gallery are consistent');
 const publicHtmlForA11y = [
   'docs/index.html','docs/help.html','docs/security.html','docs/updates.html',
   'docs/privacy.html','docs/terms.html','docs/skladskoy-uchet-android.html',
-  'docs/uchet-imushchestva-offline.html','docs/uchet-ostatkov-na-telefone.html'
+  'docs/uchet-imushchestva-offline.html','docs/uchet-ostatkov-na-telefone.html',
+  'docs/guides.html','docs/prihod-rashod-sklad-android.html','docs/inventarizaciya-na-android.html',
+  'docs/uchet-vydachi-imushchestva-android.html','docs/peremeshchenie-mezhdu-skladami-android.html'
 ];
 for (const file of publicHtmlForA11y) {
   const source = read(file);
@@ -345,7 +361,9 @@ else ok('analytics is queued and deferred for initial-render performance');
 const seoGrowthPages = [
   'docs/guides.html',
   'docs/prihod-rashod-sklad-android.html',
-  'docs/inventarizaciya-na-android.html'
+  'docs/inventarizaciya-na-android.html',
+  'docs/uchet-vydachi-imushchestva-android.html',
+  'docs/peremeshchenie-mezhdu-skladami-android.html'
 ];
 for (const file of seoGrowthPages) {
   if (!fs.existsSync(file)) fail(`${file}: SEO growth page missing`);
@@ -355,7 +373,7 @@ for (const file of seoGrowthPages) {
   if (!/rel=["']canonical["']/.test(source)) fail(`${file}: canonical missing`);
   if (!/name=["']robots["'][^>]*index/.test(source)) fail(`${file}: robots index missing`);
 }
-for (const url of ['guides.html','prihod-rashod-sklad-android.html','inventarizaciya-na-android.html']) {
+for (const url of ['guides.html','prihod-rashod-sklad-android.html','inventarizaciya-na-android.html','uchet-vydachi-imushchestva-android.html','peremeshchenie-mezhdu-skladami-android.html']) {
   if (!sitemap.includes(url)) fail(`sitemap missing ${url}`);
 }
 if (!index.includes('href="guides.html">Материалы</a>')) fail('homepage footer does not link to SEO content hub');
