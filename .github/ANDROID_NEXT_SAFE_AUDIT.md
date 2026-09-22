@@ -196,6 +196,19 @@ Target design:
 9. Verify test APK installs over 3.4.9 and preserves data, license, device count and sync.
 10. Never merge/release until all safety gates pass.
 
+## Verification update — 2026-09-22 current pass
+
+- Code checkpoint `4af9671181a42b739d650faf08d80bc841b97378` passed all ordinary PR checks: Android compile, unit tests, Android invariants, payment-backend safety, Firestore rules safety and release APK audit.
+- Ordinary fighter lookup is now identity-bound: recovering `unit_key` requires the exact `fighter_id` plus the registered Email. A guessed/known fighter id alone is insufficient.
+- Bound license verification and succeeded-payment checks now require the exact fighter identity; omitting `fighter_id` cannot bypass an existing binding.
+- Stock tombstones now resolve recreation conflicts deterministically using existing `StockRecord.lastUpdated` versus `SyncTombstone.deletedAt`: a newer stock revision supersedes an older stock tombstone, while an equal/newer tombstone blocks the stock revision.
+- Tombstone publication is monotonic in Firestore: an offline device cannot overwrite a newer deletion timestamp with an older one.
+- The release-candidate workflow protects the privileged Firestore boundary while deliberately preserving the existing `units/**` compatibility surface until a backward-compatible authenticated sync migration exists.
+- The current Firestore rules file remains marked preview-only and therefore the release-candidate workflow refuses to treat it as production-deployed rules.
+- Backend readiness run `35759099098` failed at the live health check against the current Apps Script endpoint. This gate is **not closed**; the prepared trusted backend must be deployed and pass live readiness.
+- Signer readiness run `35758662904` failed at **Require signing secrets**. The uploaded project ZIP contains the production APK and its certificate matches the expected SHA-256 exactly, but the private `debug.keystore` is not present in the ZIP. This gate is **not closed**.
+- PR #4 must remain DRAFT; do not merge to `main` and do not build/publish an update-compatible release APK until both external gates above and production Firestore deployment checks are green.
+
 ## Explicit non-goals for the audit stage
 
 - Do not change package name.
