@@ -890,13 +890,29 @@ module.exports.handler = async function handler(event) {
       const existing = await getFighterById(fighterId);
 
       if (existing) {
-        // An unauthenticated heartbeat must never overwrite identity, unit key,
-        // email or license state of an existing profile.
+        const storedEmail = cleanEmail(existing.email);
+
+        if (storedEmail && email && storedEmail === email) {
+          // The same identity boundary used for lookup (fighter id + registered
+          // email) may update ordinary profile metadata. License fields remain
+          // server-authoritative and are never accepted from Android.
+          await patchFirestoreDocument('fighters', fighterId, {
+            callsign,
+            unitName,
+            unitKey,
+            lastSeenAt: now,
+            deviceModel
+          });
+          return json(200, { ok: true, existing: true, profile_updated: true });
+        }
+
+        // Identity mismatch/legacy blank email: heartbeat only. Do not overwrite
+        // identity, unit key, email or license state.
         await patchFirestoreDocument('fighters', fighterId, {
           lastSeenAt: now,
           deviceModel
         });
-        return json(200, { ok: true, existing: true });
+        return json(200, { ok: true, existing: true, profile_updated: false });
       }
 
       let activeLicense = null;
