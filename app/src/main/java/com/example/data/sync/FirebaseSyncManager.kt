@@ -83,6 +83,37 @@ class FirebaseSyncManager(
         const val TOMBSTONE_REQUISITION = "requisition"
     }
 
+    /**
+     * Tombstone timestamps are monotonic per entity. An older/offline device must
+     * never overwrite a newer deletion marker already stored in Firestore.
+     */
+    private suspend fun publishTombstoneIfNewer(tombstone: SyncTombstone) {
+        val cleanKey = tombstone.unitKey.trim()
+        if (cleanKey.isBlank() || !productionCloudEnabled) return
+
+        val ref = firestore.collection("units").document(cleanKey)
+            .collection("sync_tombstones").document(tombstone.id)
+
+        firestore.runTransaction { transaction ->
+            val current = transaction.get(ref)
+            val cloudDeletedAt = current.getLong("deletedAt") ?: 0L
+            if (tombstone.deletedAt >= cloudDeletedAt) {
+                transaction.set(
+                    ref,
+                    hashMapOf(
+                        "id" to tombstone.id,
+                        "unitKey" to cleanKey,
+                        "entityType" to tombstone.entityType,
+                        "entityId" to tombstone.entityId,
+                        "deletedAt" to tombstone.deletedAt,
+                        "deviceId" to deviceId
+                    ),
+                    SetOptions.merge()
+                )
+            }
+        }.await()
+    }
+
     suspend fun prepareDeletionTombstone(
         unitKey: String,
         entityType: String,
@@ -93,19 +124,7 @@ class FirebaseSyncManager(
         dao.upsertSyncTombstone(tombstone)
         if (cleanKey.isNotBlank() && productionCloudEnabled) {
             try {
-                firestore.collection("units").document(cleanKey)
-                    .collection("sync_tombstones").document(tombstone.id)
-                    .set(
-                        hashMapOf(
-                            "id" to tombstone.id,
-                            "unitKey" to cleanKey,
-                            "entityType" to tombstone.entityType,
-                            "entityId" to tombstone.entityId,
-                            "deletedAt" to tombstone.deletedAt,
-                            "deviceId" to deviceId
-                        ),
-                        SetOptions.merge()
-                    ).await()
+                publishTombstoneIfNewer(tombstone)
             } catch (e: Exception) {
                 Log.w(TAG, "Tombstone saved locally; cloud publish deferred", e)
             }
@@ -205,17 +224,7 @@ class FirebaseSyncManager(
 
         for (local in dao.getSyncTombstonesForUnit(unitKey)) {
             try {
-                unitRef.collection("sync_tombstones").document(local.id).set(
-                    hashMapOf(
-                        "id" to local.id,
-                        "unitKey" to local.unitKey,
-                        "entityType" to local.entityType,
-                        "entityId" to local.entityId,
-                        "deletedAt" to local.deletedAt,
-                        "deviceId" to deviceId
-                    ),
-                    SetOptions.merge()
-                ).await()
+                publishTombstoneIfNewer(local)
             } catch (e: Exception) {
                 Log.w(TAG, "Failed publishing local tombstone", e)
             }
@@ -235,10 +244,13 @@ class FirebaseSyncManager(
                 deletedAt = deletedAt
             )
             val existing = dao.getSyncTombstoneById(tombstone.id)
-            if (existing == null || tombstone.deletedAt > existing.deletedAt) {
+            val authoritative = if (existing == null || tombstone.deletedAt > existing.deletedAt) {
                 dao.upsertSyncTombstone(tombstone)
+                tombstone
+            } else {
+                existing
             }
-            applyTombstone(tombstone)
+            applyTombstone(authoritative)
         }
 
     }
@@ -296,8 +308,14 @@ class FirebaseSyncManager(
                     val deletedAt = dc.document.getLong("deletedAt") ?: 0L
                     if (type.isBlank() || entityId.isBlank() || deletedAt <= 0L) continue
                     val tombstone = SyncTombstone.create(unitKey, type, entityId, deletedAt)
-                    dao.upsertSyncTombstone(tombstone)
-                    applyTombstone(tombstone)
+                    val existing = dao.getSyncTombstoneById(tombstone.id)
+                    val authoritative = if (existing == null || tombstone.deletedAt > existing.deletedAt) {
+                        dao.upsertSyncTombstone(tombstone)
+                        tombstone
+                    } else {
+                        existing
+                    }
+                    applyTombstone(authoritative)
                 }
             }
         }
