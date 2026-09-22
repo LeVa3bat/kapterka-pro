@@ -349,22 +349,15 @@ class FirebaseSyncManager(
                 }
             }
 
-            // If a warehouse point was deleted from cloud, also clean up any orphaned stock records for it
+            // A broken/incomplete cloud snapshot must never trigger destructive cleanup.
+            // Orphaned cloud stock is logged and ignored until explicit tombstone semantics exist.
             val orphanedPointIds = stockPointIds.filter { !existingPointsMap.containsKey(it) && it != "base_sklad" }
             if (orphanedPointIds.isNotEmpty()) {
-                for (orphanId in orphanedPointIds) {
-                    dao.deleteStockForPoint(orphanId)
-                    try {
-                        val orphanDocs = unitRef.collection("stock_records")
-                            .whereEqualTo("pointId", orphanId)
-                            .get().await()
-                        for (doc in orphanDocs.documents) {
-                            doc.reference.delete().await()
-                        }
-                    } catch (e: Exception) {
-                        Log.w(TAG, "Failed deleting orphaned cloud stock records for $orphanId", e)
-                    }
-                }
+                Log.w(
+                    TAG,
+                    "Cloud contains stock for missing points; preserving local/cloud data: " +
+                        orphanedPointIds.joinToString()
+                )
             }
 
             // Always ensure the root base warehouse exists (only base_sklad is protected)
