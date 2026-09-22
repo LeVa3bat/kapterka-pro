@@ -43,6 +43,18 @@ Target design:
 - Before any destructive reconciliation, create a recoverable local snapshot.
 - Add tests for: first sync, empty cloud, stale cloud, two-device edit, delete on one device, offline edits, reconnect.
 
+### P0 — Exact signing private key must be recovered before an update-compatible APK can be built
+The APK contained in the user-provided project archive was inspected locally. Its signer certificate SHA-256 matches the published baseline exactly:
+`843a7e883914f3a7a5a7665ff07b2e8c43da87a24ee4dc35e1600758aee73cb9`.
+
+The certificate subject is Android Debug, confirming that existing installs depend on that signing identity. However, the corresponding private `debug.keystore` / JKS file is not present in the uploaded project archive or tracked repository.
+
+This is a hard release gate:
+- development and source refactoring may continue safely in this branch;
+- do not claim an APK is update-compatible until it is signed with the exact matching private key;
+- recover the original keystore from the build machine / secure backup before release testing;
+- never replace it with a newly generated debug key.
+
 ### P1 — Release signing is intentionally pinned to the published baseline
 Gradle release currently uses debugConfig. This looks unusual, but the repository invariant explicitly protects it because the published 3.4.9 signer must remain identical.
 
