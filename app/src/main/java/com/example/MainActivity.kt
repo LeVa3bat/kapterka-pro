@@ -186,7 +186,7 @@ class MainActivity : ComponentActivity() {
 
     private fun handlePaymentReturn(sourceIntent: Intent?) {
         val data = sourceIntent?.data ?: return
-        if (data.scheme == "kapterka" && data.host == "payment_success") {
+        if (data.scheme == BuildConfig.PAYMENT_CALLBACK_SCHEME && data.host == "payment_success") {
             viewModel.confirmPaymentAndActivateLicense()
         }
     }
