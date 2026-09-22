@@ -554,9 +554,9 @@ fun MainDashboardScreen(
                     // Add Point button
                     Row(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
+                            .clip(RoundedCornerShape(12.dp))
                             .background(SageGreenDark)
-                            .border(1.dp, SageGreenPrimary, RoundedCornerShape(6.dp))
+                            .border(1.dp, SageGreenPrimary, RoundedCornerShape(12.dp))
                             .clickable { onAddPointClick() }
                             .padding(horizontal = 8.dp, vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -590,12 +590,12 @@ fun MainDashboardScreen(
                     val isAllSelected = selectedPointFilterId == null
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
+                            .clip(RoundedCornerShape(12.dp))
                             .background(if (isAllSelected) SageGreenDark else TacticalSurface)
                             .border(
                                 1.dp,
                                 if (isAllSelected) SageGreenPrimary else TacticalBorder,
-                                RoundedCornerShape(6.dp)
+                                RoundedCornerShape(12.dp)
                             )
                             .clickable { selectedPointFilterId = null }
                             .padding(horizontal = 9.dp, vertical = 5.dp)
@@ -614,12 +614,12 @@ fun MainDashboardScreen(
 
                         Row(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(6.dp))
+                                .clip(RoundedCornerShape(12.dp))
                                 .background(if (isPtSelected) SageGreenDark else TacticalSurface)
                                 .border(
                                     1.dp,
                                     if (isPtSelected) SageGreenPrimary else TacticalBorder,
-                                    RoundedCornerShape(6.dp)
+                                    RoundedCornerShape(12.dp)
                                 )
                                 .clickable { selectedPointFilterId = pt.id }
                                 .padding(horizontal = 8.dp, vertical = 5.dp),
@@ -662,9 +662,9 @@ fun MainDashboardScreen(
                     if (points.size > 1) {
                         Row(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(6.dp))
+                                .clip(RoundedCornerShape(12.dp))
                                 .background(TacticalSurface)
-                                .border(1.dp, TacticalBorder, RoundedCornerShape(6.dp))
+                                .border(1.dp, TacticalBorder, RoundedCornerShape(12.dp))
                                 .clickable { showReorderPointsDialog = true }
                                 .padding(horizontal = 8.dp, vertical = 5.dp),
                             verticalAlignment = Alignment.CenterVertically
@@ -705,9 +705,10 @@ fun MainDashboardScreen(
                         // Point Summary Card
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(10.dp),
+                            shape = RoundedCornerShape(18.dp),
                             colors = CardDefaults.cardColors(containerColor = TacticalSurface),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorder)
+                            border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorderSubtle),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                         ) {
                             Row(
                                 modifier = Modifier
@@ -728,7 +729,7 @@ fun MainDashboardScreen(
                                             Spacer(modifier = Modifier.width(6.dp))
                                             Box(
                                                 modifier = Modifier
-                                                    .clip(RoundedCornerShape(4.dp))
+                                                    .clip(RoundedCornerShape(10.dp))
                                                     .background(TacticalGoldDark)
                                                     .padding(horizontal = 5.dp, vertical = 2.dp)
                                             ) {
@@ -752,14 +753,14 @@ fun MainDashboardScreen(
 
                                 Column(horizontalAlignment = Alignment.End) {
                                     Text(
-                                        text = "ОСТАТОК НА ТОЧКЕ",
+                                        text = "Остаток на точке",
                                         color = TacticalTextMuted,
                                         fontSize = 9.5.sp,
                                         fontWeight = FontWeight.Bold,
                                         letterSpacing = 0.5.sp
                                     )
                                     Text(
-                                        text = "$pointStockSum ЕД.",
+                                        text = "$pointStockSum ед.",
                                         color = SageGreenBright,
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.Black,
@@ -801,7 +802,7 @@ fun MainDashboardScreen(
                             .padding(horizontal = 14.dp, vertical = 4.dp)
                     ) {
                         Text(
-                            text = "РЕЗУЛЬТАТЫ ПОИСКА: ${allStockRows.size} ПОЗ.",
+                            text = "Результаты поиска: ${allStockRows.size}",
                             color = SageGreenBright,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
@@ -836,7 +837,7 @@ fun MainDashboardScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "ТОЧКИ И СКЛАДЫ (${points.size})",
+                            text = "Склады и точки (${points.size})",
                             color = TacticalTextMuted,
                             fontSize = 10.5.sp,
                             fontWeight = FontWeight.Bold,
@@ -846,9 +847,9 @@ fun MainDashboardScreen(
                             if (points.size > 1) {
                                 Box(
                                     modifier = Modifier
-                                        .clip(RoundedCornerShape(4.dp))
+                                        .clip(RoundedCornerShape(10.dp))
                                         .background(TacticalGoldDark.copy(alpha = 0.25f))
-                                        .border(1.dp, TacticalGold.copy(alpha = 0.45f), RoundedCornerShape(4.dp))
+                                        .border(1.dp, TacticalGold.copy(alpha = 0.45f), RoundedCornerShape(10.dp))
                                         .clickable {
                                             showReorderPointsDialog = true
                                         }
@@ -873,7 +874,7 @@ fun MainDashboardScreen(
                             }
                             Box(
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(4.dp))
+                                    .clip(RoundedCornerShape(10.dp))
                                     .background(TacticalSurfaceLight)
                                     .clickable {
                                         points.forEach { pt -> expandedPointIds[pt.id] = false }
@@ -888,7 +889,7 @@ fun MainDashboardScreen(
                             }
                             Box(
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(4.dp))
+                                    .clip(RoundedCornerShape(10.dp))
                                     .background(TacticalSurfaceLight)
                                     .clickable {
                                         points.forEach { pt -> expandedPointIds[pt.id] = true }
@@ -916,9 +917,10 @@ fun MainDashboardScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 14.dp, vertical = 4.dp),
-                        shape = RoundedCornerShape(10.dp),
+                        shape = RoundedCornerShape(18.dp),
                         colors = CardDefaults.cardColors(containerColor = TacticalSurface),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorder)
+                        border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorderSubtle),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                     ) {
                         Column(modifier = Modifier.fillMaxWidth()) {
                             // Point Header Row (Tappable to expand / collapse)
@@ -939,7 +941,7 @@ fun MainDashboardScreen(
                                     Box(
                                         modifier = Modifier
                                             .size(32.dp)
-                                            .clip(RoundedCornerShape(6.dp))
+                                            .clip(RoundedCornerShape(12.dp))
                                             .background(if (point.isBase) TacticalGoldDark else SageGreenDark),
                                         contentAlignment = Alignment.Center
                                     ) {
@@ -982,9 +984,9 @@ fun MainDashboardScreen(
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Box(
                                         modifier = Modifier
-                                            .clip(RoundedCornerShape(6.dp))
+                                            .clip(RoundedCornerShape(12.dp))
                                             .background(SageGreenDark)
-                                            .border(1.dp, SageGreenPrimary.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
+                                            .border(1.dp, SageGreenPrimary.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
                                             .padding(horizontal = 8.dp, vertical = 4.dp)
                                     ) {
                                         Text(
@@ -1046,9 +1048,10 @@ fun MainDashboardScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 14.dp, vertical = 6.dp),
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RoundedCornerShape(16.dp),
                         colors = CardDefaults.cardColors(containerColor = TacticalSurface),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorderSubtle)
+                        border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorderSubtle),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                     ) {
                         Row(
                             modifier = Modifier
@@ -1058,13 +1061,13 @@ fun MainDashboardScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "ВСЕГО: $overallPositionsCount ПОЗ.",
+                                text = "$overallPositionsCount активных позиций",
                                 color = TacticalTextSecondary,
                                 fontSize = 10.5.sp,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "ОСТАТОК: $overallStockSum ЕД.",
+                                text = "$overallStockSum ед. на учёте",
                                 color = SageGreenBright,
                                 fontSize = 11.5.sp,
                                 fontWeight = FontWeight.Black,
