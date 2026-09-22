@@ -97,6 +97,7 @@ import com.example.ui.screens.MainDashboardScreen
 import com.example.ui.screens.MoreSettingsScreen
 import com.example.ui.screens.RequestsScreen
 import com.example.ui.screens.SplashScreen
+import com.example.ui.screens.WarehouseProfileSetupScreen
 import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.theme.SageGreenBright
 import com.example.ui.theme.SageGreenDark
@@ -202,6 +203,12 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
     var isSplashVisible by remember { mutableStateOf(true) }
     var currentDestination by remember { mutableStateOf(AppDestination.HOME) }
     val context = LocalContext.current
+    val setupPrefs = remember(context) {
+        context.getSharedPreferences("sklad_pro_setup", android.content.Context.MODE_PRIVATE)
+    }
+    var warehouseProfileId by remember {
+        mutableStateOf(setupPrefs.getString("warehouse_profile_id", null))
+    }
 
     // Request notification permission for Android 13+
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -268,6 +275,17 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
     if (isSplashVisible) {
         SplashScreen(
             onInitializationComplete = { isSplashVisible = false }
+        )
+        return
+    }
+
+    if (BuildConfig.IS_UNIVERSAL_APP && warehouseProfileId.isNullOrBlank()) {
+        WarehouseProfileSetupScreen(
+            onProfileSelected = { profileId ->
+                setupPrefs.edit().putString("warehouse_profile_id", profileId).apply()
+                viewModel.applyWarehouseProfile(profileId)
+                warehouseProfileId = profileId
+            }
         )
         return
     }
@@ -374,9 +392,10 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                     }
                 }
             }
-            val isProOrDemoActive = (profile?.isProActive == true) || 
-                                    licenseStatus.isProActive || 
-                                    ((profile?.demoDaysLeft ?: 0) > 0) || 
+            val isProOrDemoActive = BuildConfig.IS_UNIVERSAL_APP ||
+                                    (profile?.isProActive == true) ||
+                                    licenseStatus.isProActive ||
+                                    ((profile?.demoDaysLeft ?: 0) > 0) ||
                                     licenseStatus.isDemoActive
 
             val checkProAccess: (String, () -> Unit) -> Unit = { actionName, onGranted ->
@@ -638,7 +657,7 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
         )
     }
 
-    if (showPaymentProDialog) {
+    if (showPaymentProDialog && !BuildConfig.IS_UNIVERSAL_APP) {
         PersonalLicenseDialog(
             profile = profile,
             licenseStatus = licenseStatus,
