@@ -53,6 +53,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.example.data.model.WarehousePoint
 import com.example.ui.theme.SageGreenBright
 import com.example.ui.theme.SageGreenDark
@@ -688,11 +689,14 @@ fun AddCustomItemDialog(
     var subType by remember { mutableStateOf("") }
     var unit by remember { mutableStateOf("шт.") }
 
-    Dialog(onDismissRequest = onDismiss) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
         Card(
             modifier = Modifier
-                .fillMaxWidth(0.95f)
-                .padding(vertical = 16.dp),
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 16.dp),
             shape = RoundedCornerShape(12.dp),
             colors = CardDefaults.cardColors(containerColor = TacticalSurface),
             border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorder)
@@ -700,6 +704,7 @@ fun AddCustomItemDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
                     .padding(16.dp)
             ) {
                 Row(
