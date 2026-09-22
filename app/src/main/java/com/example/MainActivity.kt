@@ -99,6 +99,7 @@ import com.example.ui.screens.RequestsScreen
 import com.example.ui.screens.SplashScreen
 import com.example.ui.screens.WarehouseProfileSetupScreen
 import com.example.ui.screens.UniversalMoreScreen
+import com.example.ui.screens.UniversalWorkspaceSetupScreen
 import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.theme.SageGreenBright
 import com.example.ui.theme.SageGreenDark
@@ -291,14 +292,24 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
         return
     }
 
-    // AUTH SCREEN (if not logged in)
+    // WORKSPACE SETUP / AUTH
     if (profile?.isLoggedIn != true) {
-        AuthScreen(
-            currentProfile = profile,
-            onCompleteAuth = { newProfile ->
-                viewModel.registerOrLoginProfile(newProfile)
-            }
-        )
+        if (BuildConfig.IS_UNIVERSAL_APP) {
+            UniversalWorkspaceSetupScreen(
+                currentProfile = profile,
+                warehouseProfileId = warehouseProfileId,
+                onComplete = { newProfile ->
+                    viewModel.registerOrLoginProfile(newProfile)
+                }
+            )
+        } else {
+            AuthScreen(
+                currentProfile = profile,
+                onCompleteAuth = { newProfile ->
+                    viewModel.registerOrLoginProfile(newProfile)
+                }
+            )
+        }
         return
     }
 
