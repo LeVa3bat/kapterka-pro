@@ -9,6 +9,7 @@ on:
       - 'docs/terms.html'
       - 'docs/security.html'
       - 'docs/updates.html'
+      - 'docs/help.html'
       - 'docs/sitemap.xml'
       - 'docs/robots.txt'
       - 'docs/site.webmanifest'
@@ -60,6 +61,7 @@ jobs:
               "https://kapterka-pro.ru/terms.html",
               "https://kapterka-pro.ru/security.html",
               "https://kapterka-pro.ru/updates.html",
+              "https://kapterka-pro.ru/help.html",
               "https://kapterka-pro.ru/uchet-ostatkov-na-telefone.html",
               "https://kapterka-pro.ru/uchet-imushchestva-offline.html",
               "https://kapterka-pro.ru/skladskoy-uchet-android.html",

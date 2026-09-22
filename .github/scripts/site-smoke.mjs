@@ -30,6 +30,7 @@ const requiredFiles = [
   'docs/uchet-ostatkov-na-telefone.html',
   'docs/uchet-imushchestva-offline.html',
   'docs/skladskoy-uchet-android.html',
+  'docs/inventarizaciya-na-android.html',
   'docs/robots.txt',
   'docs/google3271685078741b10.html',
   'docs/sitemap.xml',
@@ -359,3 +360,15 @@ for (const url of ['guides.html','prihod-rashod-sklad-android.html','inventariza
 }
 if (!index.includes('href="guides.html">Материалы</a>')) fail('homepage footer does not link to SEO content hub');
 else ok('SEO growth pages are indexed and internally linked');
+
+if (!index.includes('class="neo-guides"') ||
+    !index.includes('href="guides.html"') ||
+    !index.includes('href="prihod-rashod-sklad-android.html"') ||
+    !index.includes('href="inventarizaciya-na-android.html"')) {
+  fail('homepage SEO content hub is incomplete');
+}
+if (!index.includes('"@id": "https://kapterka-pro.ru/#website"') ||
+    !index.includes('"@id": "https://kapterka-pro.ru/#organization"')) {
+  fail('homepage WebSite/Organization structured data is missing');
+}
+else ok('visible SEO content hub and entity structured data are present');
