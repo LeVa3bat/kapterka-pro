@@ -25,19 +25,17 @@ jobs:
       - name: Require signing secrets
         env:
           KEYSTORE_B64: ${{ secrets.KAPTERKA_RELEASE_KEYSTORE_B64 }}
-          STORE_PASSWORD: ${{ secrets.KAPTERKA_RELEASE_STORE_PASSWORD }}
-          KEY_PASSWORD: ${{ secrets.KAPTERKA_RELEASE_KEY_PASSWORD }}
         shell: bash
         run: |
           test -n "$KEYSTORE_B64" || { echo "Missing KAPTERKA_RELEASE_KEYSTORE_B64"; exit 1; }
-          test -n "$STORE_PASSWORD" || { echo "Missing KAPTERKA_RELEASE_STORE_PASSWORD"; exit 1; }
-          test -n "$KEY_PASSWORD" || { echo "Missing KAPTERKA_RELEASE_KEY_PASSWORD"; exit 1; }
+          # Production 3.4.9 was built with debugConfig:
+          # store/key password = android, expected alias = androiddebugkey.
+          STORE_PASSWORD="android"
           printf '%s' "$KEYSTORE_B64" | base64 -d > /tmp/kapterka-release.jks
+          echo "STORE_PASSWORD=$STORE_PASSWORD" >> "$GITHUB_ENV"
           chmod 600 /tmp/kapterka-release.jks
 
       - name: Verify private keystore certificate
-        env:
-          STORE_PASSWORD: ${{ secrets.KAPTERKA_RELEASE_STORE_PASSWORD }}
         shell: bash
         run: |
           # Do not assume an alias. The published app was signed with an Android Debug
