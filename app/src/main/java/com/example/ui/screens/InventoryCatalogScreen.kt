@@ -147,13 +147,13 @@ fun InventoryCatalogScreen(
             ) {
                 Column {
                     Text(
-                        text = "НОМЕНКЛАТУРА ИМУЩЕСТВА",
-                        color = SageGreenBright,
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.Bold
+                        text = "Имущество",
+                        color = TacticalTextPrimary,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.ExtraBold
                     )
                     Text(
-                        text = "Справочник и категории (${items.size} позиций)",
+                        text = "Каталог • ${items.size} позиций",
                         color = TacticalTextMuted,
                         fontSize = 11.sp
                     )
@@ -161,9 +161,8 @@ fun InventoryCatalogScreen(
 
                 Row(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(SageGreenDark)
-                        .border(1.dp, SageGreenPrimary, RoundedCornerShape(6.dp))
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(SageGreenPrimary)
                         .clickable { onAddNewItemClick() }
                         .padding(horizontal = 10.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -171,14 +170,14 @@ fun InventoryCatalogScreen(
                     Icon(
                         imageVector = Icons.Default.Add,
                         contentDescription = "Добавить",
-                        tint = SageGreenBright,
-                        modifier = Modifier.size(15.dp)
+                        tint = Color.White,
+                        modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "+ Позиция",
-                        color = SageGreenBright,
-                        fontSize = 11.5.sp,
+                        text = "Добавить",
+                        color = Color.White,
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1
                     )
@@ -206,7 +205,7 @@ fun InventoryCatalogScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("catalog_search_input"),
-                shape = RoundedCornerShape(8.dp),
+                shape = RoundedCornerShape(14.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = TacticalSurface,
                     unfocusedContainerColor = TacticalSurface,
@@ -233,12 +232,12 @@ fun InventoryCatalogScreen(
                     val count = if (srv == "Все категории") items.size else items.count { it.serviceCategory == srv }
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
+                            .clip(RoundedCornerShape(12.dp))
                             .background(if (isSelected) SageGreenPrimary else TacticalSurfaceLight)
                             .border(
                                 1.dp,
                                 if (isSelected) SageGreenBright else TacticalBorder,
-                                RoundedCornerShape(6.dp)
+                                RoundedCornerShape(12.dp)
                             )
                             .clickable { selectedService = srv }
                             .padding(horizontal = 10.dp, vertical = 6.dp)
@@ -266,19 +265,19 @@ fun InventoryCatalogScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "КАТЕГОРИИ ИМУЩЕСТВА",
+                    text = "Категории",
                     color = TacticalTextMuted,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.8.sp
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 0.2.sp
                 )
 
                 val allExpanded = groupedByService.keys.all { expandedCategoriesMap[it] == true }
                 Row(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
+                        .clip(RoundedCornerShape(12.dp))
                         .background(TacticalSurfaceLight)
-                        .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(6.dp))
+                        .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(12.dp))
                         .clickable {
                             val target = !allExpanded
                             groupedByService.keys.forEach { expandedCategoriesMap[it] = target }
@@ -336,8 +335,9 @@ fun InventoryCatalogScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 4.dp),
-                        shape = RoundedCornerShape(10.dp),
+                        shape = RoundedCornerShape(16.dp),
                         colors = CardDefaults.cardColors(containerColor = TacticalSurface),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
                         border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorderSubtle)
                     ) {
                         Column(modifier = Modifier.fillMaxWidth()) {
@@ -345,7 +345,7 @@ fun InventoryCatalogScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(10.dp))
+                                    .clip(RoundedCornerShape(16.dp))
                                     .background(if (isExpanded) TacticalSurfaceLight else TacticalSurface)
                                     .clickable { expandedCategoriesMap[serviceCategory] = !isExpanded }
                                     .padding(horizontal = 12.dp, vertical = 10.dp),
@@ -401,9 +401,9 @@ fun InventoryCatalogScreen(
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .padding(vertical = 3.dp)
-                                                .clip(RoundedCornerShape(6.dp))
+                                                .clip(RoundedCornerShape(12.dp))
                                                 .background(TacticalSurfaceLight)
-                                                .border(0.5.dp, TacticalBorderSubtle, RoundedCornerShape(6.dp))
+                                                .border(0.5.dp, TacticalBorderSubtle, RoundedCornerShape(12.dp))
                                                 .padding(horizontal = 10.dp, vertical = 8.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
                                             verticalAlignment = Alignment.CenterVertically
