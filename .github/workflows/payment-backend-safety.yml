@@ -7,6 +7,9 @@ on:
       - 'android/**'
     paths:
       - 'server/yandex-cloud-function.js'
+      - 'railway.json'
+      - 'server/package.json'
+      - 'server/railway-server.js'
       - 'server/backend-selftest.js'
       - 'server/firestore.next-safe.rules'
       - '.github/workflows/payment-backend-safety.yml'
@@ -35,8 +38,35 @@ jobs:
       - name: Check backend syntax
         run: node --check server/yandex-cloud-function.js
 
+      - name: Check standalone HTTP adapter syntax
+        run: node --check server/railway-server.js
+
       - name: Run backend self-test
         run: node server/backend-selftest.js
+
+      - name: Smoke-test standalone HTTP adapter
+        shell: bash
+        env:
+          PORT: 18080
+          YOOKASSA_SHOP_ID: test-shop
+          YOOKASSA_SECRET_KEY: test-secret
+          FIREBASE_SERVICE_ACCOUNT_JSON: '{"client_email":"test@example.invalid","private_key":"test"}'
+          ADMIN_API_SECRET_SHA256: 4e738ca5563c06cfd0018299933d58db1dd8bf97f6973dc99bf6cdc64b5550bd
+          ADMIN_SESSION_SECRET: test-admin-session-secret
+          BREVO_API_KEY: test-brevo
+          EMAIL_SENDER_EMAIL: test@example.invalid
+        run: |
+          node server/railway-server.js >/tmp/kapterka-backend.log 2>&1 &
+          PID=$!
+          trap 'kill "$PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 20); do
+            if curl --fail --silent "http://127.0.0.1:18080/?action=health" -o /tmp/http-health.json; then
+              break
+            fi
+            sleep 0.25
+          done
+          cat /tmp/http-health.json
+          node -e "const h=require('/tmp/http-health.json'); if(!h.ok || h.service!=='kapterka-payment-api') process.exit(1)"
 
       - name: Enforce server trust boundary
         shell: bash
