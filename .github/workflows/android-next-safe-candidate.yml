@@ -240,6 +240,59 @@ jobs:
 
           sha256sum "$CANDIDATE_APK" | tee /tmp/candidate-sha256.txt
 
+      - name: Compare candidate upgrade surface with production 3.4.9
+        shell: bash
+        run: |
+          STABLE_APK="docs/kapterka-pro.apk"
+          test -f "$STABLE_APK" || { echo "Stable APK baseline is missing"; exit 1; }
+
+          aapt dump badging "$STABLE_APK" > /tmp/stable-badging.txt
+          aapt dump badging "$CANDIDATE_APK" > /tmp/candidate-badging-upgrade.txt
+
+          STABLE_PACKAGE="$(grep -m1 '^package:' /tmp/stable-badging.txt)"
+          CANDIDATE_PACKAGE="$(grep -m1 '^package:' /tmp/candidate-badging-upgrade.txt)"
+          echo "$STABLE_PACKAGE" | grep -q "name='$EXPECTED_APPLICATION_ID'" || exit 1
+          echo "$CANDIDATE_PACKAGE" | grep -q "name='$EXPECTED_APPLICATION_ID'" || exit 1
+
+          STABLE_CODE="$(echo "$STABLE_PACKAGE" | sed -n "s/.*versionCode='\([^']*\)'.*/\1/p")"
+          CANDIDATE_CODE="$(echo "$CANDIDATE_PACKAGE" | sed -n "s/.*versionCode='\([^']*\)'.*/\1/p")"
+          test "$CANDIDATE_CODE" -gt "$STABLE_CODE" || {
+            echo "Candidate is not an upgrade: $CANDIDATE_CODE <= $STABLE_CODE"
+            exit 1
+          }
+
+          STABLE_MIN="$(grep -m1 "^sdkVersion:" /tmp/stable-badging.txt | sed -n "s/.*'\([^']*\)'.*/\1/p")"
+          CANDIDATE_MIN="$(grep -m1 "^sdkVersion:" /tmp/candidate-badging-upgrade.txt | sed -n "s/.*'\([^']*\)'.*/\1/p")"
+          test "$CANDIDATE_MIN" = "$STABLE_MIN" || {
+            echo "minSdk changed: stable=$STABLE_MIN candidate=$CANDIDATE_MIN"
+            exit 1
+          }
+
+          STABLE_TARGET="$(grep -m1 "^targetSdkVersion:" /tmp/stable-badging.txt | sed -n "s/.*'\([^']*\)'.*/\1/p")"
+          CANDIDATE_TARGET="$(grep -m1 "^targetSdkVersion:" /tmp/candidate-badging-upgrade.txt | sed -n "s/.*'\([^']*\)'.*/\1/p")"
+          test "$CANDIDATE_TARGET" -ge "$STABLE_TARGET" || {
+            echo "targetSdk regressed: stable=$STABLE_TARGET candidate=$CANDIDATE_TARGET"
+            exit 1
+          }
+
+          aapt dump permissions "$STABLE_APK" \
+            | grep '^uses-permission' \
+            | sed "s/.*name='\([^']*\)'.*/\1/" \
+            | sort -u > /tmp/stable-permissions.txt || true
+          aapt dump permissions "$CANDIDATE_APK" \
+            | grep '^uses-permission' \
+            | sed "s/.*name='\([^']*\)'.*/\1/" \
+            | sort -u > /tmp/candidate-permissions.txt || true
+
+          NEW_PERMISSIONS="$(comm -13 /tmp/stable-permissions.txt /tmp/candidate-permissions.txt)"
+          if test -n "$NEW_PERMISSIONS"; then
+            echo "Candidate requests new Android permissions:"
+            echo "$NEW_PERMISSIONS"
+            exit 1
+          fi
+
+          echo "Upgrade surface is compatible with production baseline."
+
       - name: Upload candidate for controlled testing only
         uses: actions/upload-artifact@v4
         with:
