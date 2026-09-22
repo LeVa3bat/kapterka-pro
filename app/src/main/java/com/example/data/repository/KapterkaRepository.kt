@@ -134,6 +134,22 @@ class KapterkaRepository(
         dao.clearAllRequisitions()
     }
 
+    /**
+     * A unit-key change is safe only when this installation has no unit-specific
+     * working data. Default catalog/points do not count as user data.
+     */
+    suspend fun hasLocalUnitData(): Boolean {
+        if (dao.getAllStockRecords().first().isNotEmpty()) return true
+        if (dao.getAllOperations().first().isNotEmpty()) return true
+        if (dao.getAllRequisitions().first().isNotEmpty()) return true
+
+        val defaultPointIds = InitialData.getDefaultPoints().map { it.id }.toSet()
+        if (dao.getAllPoints().first().any { it.id !in defaultPointIds }) return true
+
+        if (dao.getAllItems().first().any { it.isCustom }) return true
+        return false
+    }
+
     suspend fun saveUserProfile(profile: UserProfile) {
         dao.saveUserProfile(profile)
         if (profile.unitKey.isNotBlank()) {
