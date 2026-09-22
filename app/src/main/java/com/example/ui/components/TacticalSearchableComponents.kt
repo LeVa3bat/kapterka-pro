@@ -243,7 +243,7 @@ fun TacticalSearchableItemDropdown(
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(10.dp),
+                    shape = RoundedCornerShape(14.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedContainerColor = TacticalSurfaceLight,
                         unfocusedContainerColor = TacticalSurfaceLight,
@@ -266,8 +266,8 @@ fun TacticalSearchableItemDropdown(
                         .fillMaxWidth()
                         .padding(top = 4.dp)
                         .heightIn(max = 250.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .border(1.dp, SageGreenPrimary.copy(alpha = 0.5f), RoundedCornerShape(12.dp)),
+                        .clip(RoundedCornerShape(16.dp))
+                        .border(1.dp, SageGreenPrimary.copy(alpha = 0.5f), RoundedCornerShape(16.dp)),
                     color = TacticalSurfaceElevated,
                     shadowElevation = 8.dp
                 ) {
@@ -282,14 +282,14 @@ fun TacticalSearchableItemDropdown(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "НАЙДЕНО: ${filteredItems.size}",
+                                    text = "Найдено: ${filteredItems.size}",
                                     color = TacticalTextMuted,
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,
                                     letterSpacing = 0.8.sp
                                 )
                                 Text(
-                                    text = "Нажмите для выбора",
+                                    text = "Выберите позицию",
                                     color = SageGreenBright,
                                     fontSize = 10.sp
                                 )
@@ -362,9 +362,9 @@ fun TacticalSearchableItemDropdown(
 
                                             Box(
                                                 modifier = Modifier
-                                                    .clip(RoundedCornerShape(6.dp))
+                                                    .clip(RoundedCornerShape(12.dp))
                                                     .background(TacticalSurfaceLight)
-                                                    .border(0.5.dp, TacticalBorderSubtle, RoundedCornerShape(6.dp))
+                                                    .border(0.5.dp, TacticalBorderSubtle, RoundedCornerShape(12.dp))
                                                     .padding(horizontal = 6.dp, vertical = 2.dp)
                                             ) {
                                                 Text(
@@ -474,7 +474,7 @@ fun TacticalSearchablePointDropdown(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { isExpanded = true },
-                shape = RoundedCornerShape(10.dp),
+                shape = RoundedCornerShape(14.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = TacticalSurfaceLight,
                     unfocusedContainerColor = TacticalSurfaceLight,
@@ -491,9 +491,9 @@ fun TacticalSearchablePointDropdown(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(6.dp))
+                        .clip(RoundedCornerShape(12.dp))
                         .background(TacticalBg)
-                        .border(0.5.dp, SageGreenPrimary.copy(alpha = 0.3f), RoundedCornerShape(6.dp))
+                        .border(0.5.dp, SageGreenPrimary.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
                         .padding(horizontal = 8.dp, vertical = 6.dp)
                 ) {
                     if (pointStocks.isEmpty()) {
@@ -548,8 +548,8 @@ fun TacticalSearchablePointDropdown(
                         .fillMaxWidth()
                         .padding(top = 4.dp)
                         .heightIn(max = 240.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .border(1.dp, SageGreenPrimary.copy(alpha = 0.5f), RoundedCornerShape(12.dp)),
+                        .clip(RoundedCornerShape(16.dp))
+                        .border(1.dp, SageGreenPrimary.copy(alpha = 0.5f), RoundedCornerShape(16.dp)),
                     color = TacticalSurfaceElevated,
                     shadowElevation = 8.dp
                 ) {
@@ -589,9 +589,9 @@ fun TacticalSearchablePointDropdown(
                                     if (stockRecords.isNotEmpty()) {
                                         Box(
                                             modifier = Modifier
-                                                .clip(RoundedCornerShape(6.dp))
+                                                .clip(RoundedCornerShape(12.dp))
                                                 .background(if (ptUnits > 0) SageGreenDark else TacticalSurfaceLight)
-                                                .border(0.5.dp, if (ptUnits > 0) SageGreenPrimary else TacticalBorderSubtle, RoundedCornerShape(6.dp))
+                                                .border(0.5.dp, if (ptUnits > 0) SageGreenPrimary else TacticalBorderSubtle, RoundedCornerShape(12.dp))
                                                 .padding(horizontal = 6.dp, vertical = 3.dp)
                                         ) {
                                             Text(
@@ -672,7 +672,7 @@ fun TacticalSearchableTextDropdown(
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(10.dp),
+                shape = RoundedCornerShape(14.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = TacticalSurfaceLight,
                     unfocusedContainerColor = TacticalSurfaceLight,
@@ -693,8 +693,8 @@ fun TacticalSearchableTextDropdown(
                         .fillMaxWidth()
                         .padding(top = 4.dp)
                         .heightIn(max = 200.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .border(1.dp, SageGreenPrimary.copy(alpha = 0.4f), RoundedCornerShape(10.dp)),
+                        .clip(RoundedCornerShape(14.dp))
+                        .border(1.dp, SageGreenPrimary.copy(alpha = 0.4f), RoundedCornerShape(14.dp)),
                     color = TacticalSurfaceElevated,
                     shadowElevation = 6.dp
                 ) {
@@ -746,7 +746,7 @@ fun TacticalFitButton(
         enabled = enabled,
         modifier = modifier
             .height(46.dp)
-            .clip(RoundedCornerShape(12.dp)),
+            .clip(RoundedCornerShape(16.dp)),
         colors = ButtonDefaults.buttonColors(
             containerColor = containerColor,
             contentColor = contentColor,
@@ -754,7 +754,7 @@ fun TacticalFitButton(
             disabledContentColor = TacticalTextDim
         ),
         border = if (borderColor != Color.Transparent) androidx.compose.foundation.BorderStroke(1.dp, borderColor) else null,
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(16.dp),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 14.dp, vertical = 8.dp)
     ) {
         Row(
