@@ -22,6 +22,9 @@ const targets = [
   { name: 'Журнал движения', url: 'https://kapterka-pro.ru/zhurnal-dvizheniya-imushchestva-android.html', own: true },
   { name: 'Несколько складов', url: 'https://kapterka-pro.ru/uchet-neskolkih-skladov-android.html', own: true },
   { name: 'Безопасное обновление', url: 'https://kapterka-pro.ru/bezopasnoe-obnovlenie-kapterka-pro.html', own: true },
+  { name: 'Быстрый старт', url: 'https://kapterka-pro.ru/kak-nachat-rabotu-kapterka-pro.html', own: true },
+  { name: 'Резервная копия', url: 'https://kapterka-pro.ru/rezervnaya-kopiya-kapterka-pro.html', own: true },
+  { name: 'Перенос на новый телефон', url: 'https://kapterka-pro.ru/perenos-kapterka-pro-na-novyy-telefon.html', own: true },
   { name: 'RuStore', url: 'https://apps.rustore.ru/app/com.aistudio.kapterka.jmwqve', own: false },
   { name: 'Telegram канал', url: 'https://t.me/kapterka_pro', own: false },
   { name: 'Telegram поддержка', url: 'https://t.me/kapterka_help_bot', own: false }
