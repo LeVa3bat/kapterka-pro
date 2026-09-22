@@ -290,6 +290,7 @@ class YooKassaPaymentService(private val context: Context) {
             "PAYMENT_NOT_CONFIRMED" -> "Оплата ещё не подтверждена."
             "PAYMENT_AMOUNT_MISMATCH" -> "Сумма платежа не соответствует тарифу."
             "FIGHTER_MISMATCH" -> "Платёж привязан к другому пользователю."
+            "LICENSE_FIGHTER_MISMATCH" -> "Лицензия по этому платежу уже привязана к другому пользователю."
             "LICENSE_REGISTRY_UNAVAILABLE" -> "Сервер лицензий временно недоступен."
             "UPSTREAM_ERROR" -> "Сервис оплаты временно недоступен."
             else -> "Оплата не подтверждена сервером."
