@@ -34,12 +34,14 @@ android {
 
   signingConfigs {
     create("release") {
-      val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
-      storeFile = file(keystorePath)
+      val keystorePath = System.getenv("KEYSTORE_PATH")?.takeIf { it.isNotBlank() }
+      if (keystorePath != null) {
+        storeFile = file(keystorePath)
+      }
       storePassword = System.getenv("STORE_PASSWORD")
-      // The historical signer may use androiddebugkey rather than upload.
-      // Never guess at release time: provide KEY_ALIAS from the recovered keystore.
-      keyAlias = System.getenv("KEY_ALIAS") ?: "upload"
+      // Never fall back to a generic upload/debug alias for a production APK.
+      // Release workflows must provide the exact recovered historical signer.
+      keyAlias = System.getenv("KEY_ALIAS")?.takeIf { it.isNotBlank() }
       keyPassword = System.getenv("KEY_PASSWORD")
       enableV1Signing = true
       enableV2Signing = true
@@ -59,7 +61,7 @@ android {
       isCrunchPngs = false
       isMinifyEnabled = false
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-      signingConfig = signingConfigs.getByName("debugConfig")
+      signingConfig = signingConfigs.getByName("release")
     }
 
     // Never published automatically. This variant exists only for the gated manual
