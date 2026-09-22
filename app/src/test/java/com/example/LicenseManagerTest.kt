@@ -7,6 +7,7 @@ import com.example.data.license.LicenseManager
 import com.example.data.local.KapterkaDatabase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
@@ -62,6 +63,51 @@ class LicenseManagerTest {
         // Second call must return the exact same persisted ID
         val id2 = licenseManager.getFighterPersonalId()
         assertEquals("Fighter personal ID must be idempotent", id1, id2)
+    }
+
+    @Test
+    fun testServerVerifiedLicenseUsesServerExpiry() = runBlocking {
+        val key = licenseManager.generateLicenseKey()
+        val expiresAt = System.currentTimeMillis() + 2L * 24L * 60L * 60L * 1000L
+
+        val activated = licenseManager.activateServerVerifiedLicense(
+            licenseKey = key,
+            expiresAt = expiresAt,
+            paymentId = "payment_test_123"
+        )
+
+        assertTrue(activated)
+        val status = licenseManager.licenseStatus.value
+        assertTrue(status.isProActive)
+        assertEquals(key, status.licenseKey)
+        assertTrue(status.daysRemaining in 1..2)
+    }
+
+    @Test
+    fun testServerVerifiedLicenseRejectsExpiredOrMalformedData() = runBlocking {
+        val validKey = licenseManager.generateLicenseKey()
+
+        assertFalse(
+            licenseManager.activateServerVerifiedLicense(
+                licenseKey = validKey,
+                expiresAt = System.currentTimeMillis() - 1000L,
+                paymentId = "payment_expired"
+            )
+        )
+        assertFalse(
+            licenseManager.activateServerVerifiedLicense(
+                licenseKey = "KAPT-FAKE-FAKE-FAKE",
+                expiresAt = System.currentTimeMillis() + 86400000L,
+                paymentId = "payment_bad_key"
+            )
+        )
+        assertFalse(
+            licenseManager.activateServerVerifiedLicense(
+                licenseKey = validKey,
+                expiresAt = System.currentTimeMillis() + 86400000L,
+                paymentId = ""
+            )
+        )
     }
 
     @Test
