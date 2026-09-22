@@ -61,6 +61,9 @@ jobs:
         run: |
           keytool -genkeypair -v             -keystore "$GITHUB_WORKSPACE/debug.keystore"             -storepass android             -alias androiddebugkey             -keypass android             -keyalg RSA             -keysize 2048             -validity 10000             -dname "CN=Kapterka NEXT-SAFE Test,O=Test,C=US"
 
+      - name: Run unit tests
+        run: gradle :app:testDebugUnitTest --no-daemon --stacktrace
+
       - name: Build side-by-side NEXT-SAFE APK
         env:
           PAYMENT_API_URL: ''
@@ -76,6 +79,13 @@ jobs:
           echo "$BADGING"
           echo "$BADGING" | grep -q "name='com.aistudio.kapterka.jmwqve.nextsafe'"
           ! echo "$BADGING" | grep -q "name='com.aistudio.kapterka.jmwqve' versionCode"
+
+      - name: Verify APK signature
+        shell: bash
+        run: |
+          APK="$(find app/build/outputs/apk/nextSafeTest -name '*.apk' | head -n 1)"
+          test -f "$APK"
+          "$ANDROID_SDK_ROOT/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$APK"
 
       - name: Rename APK
         shell: bash
