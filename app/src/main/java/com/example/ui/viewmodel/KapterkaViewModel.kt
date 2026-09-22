@@ -662,7 +662,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun regenerateUnitKey() {
-        val newKey = "kapt_" + UUID.randomUUID().toString().take(6)
+        val newKey = com.example.data.sync.SyncIdentityGenerator.newUnitKey()
         viewModelScope.launch {
             val current = userProfile.value ?: UserProfile()
             if (current.unitKey.isNotBlank() && repository.hasLocalUnitData()) {
