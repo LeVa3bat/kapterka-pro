@@ -210,7 +210,6 @@ fun MainDashboardScreen(
                     catalogMap[st.itemId] = defaultItem
                 } else {
                     val fromOp = operationItemsMap[st.itemId]
-                    val fromOp = operationItemsMap[st.itemId]
                     val friendlyName = fromOp?.itemName?.takeIf { it.isNotBlank() }
                         ?: existing?.name?.takeIf { it.isNotBlank() }
                         ?: "Позиция ${st.itemId.take(8)}"
@@ -224,9 +223,9 @@ fun MainDashboardScreen(
                         id = st.itemId,
                         name = friendlyName,
                         serviceCategory = resolvedCat,
-                        subType = "Снабжение",
+                        subType = "Без группы",
                         unit = unit,
-                        categoryClass = fromOp?.categoryClass?.takeIf { it.isNotBlank() } ?: existing?.categoryClass ?: "Кат. 1",
+                        categoryClass = fromOp?.categoryClass?.takeIf { it.isNotBlank() } ?: existing?.categoryClass ?: "Основная",
                         isCustom = true
                     )
                 }
