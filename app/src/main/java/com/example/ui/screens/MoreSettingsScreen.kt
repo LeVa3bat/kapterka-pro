@@ -121,7 +121,6 @@ fun MoreSettingsScreen(
     onLogoutClick: () -> Unit,
     onUpdateProfile: (UserProfile) -> Unit = {},
     onRestoreLicenseFromCloud: () -> Unit = {},
-    onResetProfileAndLicense: () -> Unit = {},
     onResetDataClick: () -> Unit,
     onOpenManualClick: () -> Unit = {},
     onOpenDeveloperBackdoor: () -> Unit = {},
