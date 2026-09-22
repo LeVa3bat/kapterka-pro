@@ -62,6 +62,18 @@ if (!process.exitCode) ok('Room migration chain is explicit');
 
 if (!/android:allowBackup="true"/.test(manifest)) warn('android:allowBackup is no longer true; verify backup/restore impact deliberately');
 
+if (!/android:usesCleartextTraffic="false"/.test(manifest) ||
+    !manifest.includes('android:networkSecurityConfig="@xml/network_security_config"')) {
+  fail('Android network security must explicitly disable cleartext HTTP');
+} else {
+  const networkSecurity = read('app/src/main/res/xml/network_security_config.xml');
+  if (!networkSecurity.includes('cleartextTrafficPermitted="false"')) {
+    fail('network_security_config does not deny cleartext traffic');
+  } else {
+    ok('cleartext HTTP is disabled for Android');
+  }
+}
+
 const paymentSource = read('app/src/main/java/com/example/data/payment/YooKassaPaymentService.kt');
 if (/DEFAULT_LIVE_KEY|live_[A-Za-z0-9_-]{20,}/.test(paymentSource)) {
   fail('YooKassa secret material must never be present in Android source');
