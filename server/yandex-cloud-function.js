@@ -934,7 +934,7 @@ module.exports.handler = async function handler(event) {
       if (!license || license.status !== 'ACTIVE' || license.expiresAt <= Date.now()) {
         return json(404, { ok: false, error: 'LICENSE_NOT_ACTIVE' });
       }
-      if (license.fighterId && fighterId && license.fighterId !== fighterId) {
+      if (license.fighterId && license.fighterId !== fighterId) {
         return json(403, { ok: false, error: 'FIGHTER_MISMATCH' });
       }
 
@@ -1214,7 +1214,7 @@ module.exports.handler = async function handler(event) {
       }
 
       const paymentFighterId = cleanText(payment.metadata?.fighter_id, 100);
-      if (requestedFighterId && paymentFighterId && requestedFighterId !== paymentFighterId) {
+      if (paymentFighterId && requestedFighterId !== paymentFighterId) {
         return jsonpOrJson(403, {
           ok: false,
           paid: false,
