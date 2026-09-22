@@ -529,9 +529,6 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                             onRestoreLicenseFromCloud = {
                                 viewModel.restoreLicenseFromCloud()
                             },
-                            onResetProfileAndLicense = {
-                                viewModel.resetProfileAndLicenseForTesting()
-                            },
                             onResetDataClick = { viewModel.clearAllData() },
                             onOpenManualClick = { showUserManualDialog = true },
                             onOpenDeveloperBackdoor = { showDevAuthPrompt = true },
