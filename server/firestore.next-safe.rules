@@ -1,0 +1,38 @@
+// NEXT-SAFE PREVIEW ONLY — DO NOT DEPLOY until backend live checks pass.
+//
+// Goal: privileged license/global-registry collections become server-only.
+// Existing direct unit synchronization is intentionally left compatible here
+// because the current app does not use Firebase Auth for unit data yet.
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Server service-account only. Client SDK access is denied.
+    match /licenses/{licenseId} {
+      allow read, write: if false;
+    }
+
+    // Server service-account only. Ordinary profile lookup/upsert and all
+    // global admin reads are routed through the trusted backend.
+    match /fighters/{fighterId} {
+      allow read, write: if false;
+    }
+
+    // Direct multi-device sync remains unchanged for this migration stage.
+    // These permissions MUST be reconciled with the currently deployed rules
+    // before this file is ever published.
+    match /units/{unitKey} {
+      allow read, write: if true;
+
+      match /{document=**} {
+        allow read, write: if true;
+      }
+    }
+
+    // Deny anything not explicitly covered above.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
