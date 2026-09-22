@@ -8,6 +8,8 @@ const read = (p) => fs.readFileSync(p, 'utf8');
 const gradle = read('app/build.gradle.kts');
 const db = read('app/src/main/java/com/example/data/local/KapterkaDatabase.kt');
 const manifest = read('app/src/main/AndroidManifest.xml');
+const applicationSource = read('app/src/main/java/com/example/KapterkaApplication.kt');
+const mainActivitySource = read('app/src/main/java/com/example/MainActivity.kt');
 
 const appId = (gradle.match(/applicationId\s*=\s*"([^"]+)"/) || [])[1];
 if (appId !== 'com.aistudio.kapterka.jmwqve') fail(`applicationId changed: ${appId || 'missing'}`);
@@ -61,6 +63,20 @@ for (let from = 1; from < roomVersion; from++) {
 if (!process.exitCode) ok('Room migration chain is explicit');
 
 if (!/android:allowBackup="true"/.test(manifest)) warn('android:allowBackup is no longer true; verify backup/restore impact deliberately');
+
+if (!applicationSource.includes('!BuildConfig.IS_NEXT_SAFE_TEST') ||
+    !mainActivitySource.includes('!BuildConfig.IS_NEXT_SAFE_TEST')) {
+  fail('NEXT-SAFE test build can initialize production Firebase');
+} else {
+  ok('NEXT-SAFE test build is isolated from production Firebase initialization');
+}
+
+if (/implementation\(libs\.firebase\.appcheck\.debug\)/.test(gradle) &&
+    !/debugImplementation\(libs\.firebase\.appcheck\.debug\)/.test(gradle)) {
+  fail('Firebase App Check debug provider is packaged in release implementation');
+} else {
+  ok('Firebase App Check debug provider is excluded from release implementation');
+}
 
 if (!/android:usesCleartextTraffic="false"/.test(manifest) ||
     !manifest.includes('android:networkSecurityConfig="@xml/network_security_config"')) {
