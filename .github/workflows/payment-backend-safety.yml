@@ -111,6 +111,9 @@ jobs:
               !fighterUpsertBlock.includes('profile_updated: true')) {
             throw new Error('Existing fighter profile updates must require the registered email identity');
           }
+          if (!fighterUpsertBlock.includes('candidate.fighterId === fighterId')) {
+            throw new Error('New fighter registration must not mirror a license owned by another fighter');
+          }
           const licenseVerifyStart = s.indexOf("action === 'license_verify'");
           const licenseRestoreStart = s.indexOf("action === 'license_restore'");
           if (fighterLookupStart < 0 || licenseVerifyStart < 0 || licenseRestoreStart < 0) {
