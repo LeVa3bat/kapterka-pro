@@ -895,13 +895,22 @@ module.exports.handler = async function handler(event) {
 
     if (action === 'fighter_lookup') {
       const fighterId = cleanText(body.fighter_id, 100);
+      const email = cleanEmail(body.email);
       if (!fighterId) {
         return json(400, { ok: false, error: 'MISSING_FIGHTER_ID' });
+      }
+      if (!email) {
+        return json(400, { ok: false, error: 'INVALID_EMAIL' });
       }
 
       const fighter = await getFighterById(fighterId);
       if (!fighter || fighter.id !== fighterId) {
         return json(404, { ok: false, error: 'FIGHTER_NOT_FOUND' });
+      }
+
+      const storedEmail = cleanEmail(fighter.email);
+      if (!storedEmail || storedEmail !== email) {
+        return json(403, { ok: false, error: 'FIGHTER_IDENTITY_MISMATCH' });
       }
 
       return json(200, {
