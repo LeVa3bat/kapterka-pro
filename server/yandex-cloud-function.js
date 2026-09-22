@@ -466,6 +466,81 @@ function sendLicenseEmailViaBrevo({ toEmail, callsign, licenseKey, days }) {
   });
 }
 
+async function queryActiveLicenseByEmail(email) {
+  const token = await requestGoogleAccessToken();
+  const path = `/v1/projects/${encodeURIComponent(FIREBASE_PROJECT_ID)}/databases/(default)/documents:runQuery`;
+  const payload = JSON.stringify({
+    structuredQuery: {
+      from: [{ collectionId: 'licenses' }],
+      where: {
+        fieldFilter: {
+          field: { fieldPath: 'email' },
+          op: 'EQUAL',
+          value: { stringValue: email }
+        }
+      },
+      limit: 20
+    }
+  });
+
+  return new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname: 'firestore.googleapis.com',
+      port: 443,
+      path,
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload)
+      },
+      timeout: 10000
+    }, (res) => {
+      let responseBody = '';
+      res.on('data', (chunk) => { responseBody += chunk; });
+      res.on('end', () => {
+        if (res.statusCode < 200 || res.statusCode >= 300) {
+          return reject(new Error(`Firestore query failed: HTTP ${res.statusCode}`));
+        }
+        try {
+          const rows = JSON.parse(responseBody || '[]');
+          const parsed = rows
+            .map((row) => row.document)
+            .filter(Boolean)
+            .map((doc) => {
+              const fields = doc.fields || {};
+              const value = (name) => {
+                const field = fields[name] || {};
+                if (Object.prototype.hasOwnProperty.call(field, 'stringValue')) return field.stringValue;
+                if (Object.prototype.hasOwnProperty.call(field, 'integerValue')) return Number(field.integerValue);
+                if (Object.prototype.hasOwnProperty.call(field, 'booleanValue')) return Boolean(field.booleanValue);
+                return null;
+              };
+              const name = String(doc.name || '');
+              return {
+                licenseKey: value('licenseKey') || decodeURIComponent(name.split('/').pop() || ''),
+                fighterId: value('fighterId') || '',
+                callsign: value('callsign') || '',
+                email: value('email') || '',
+                expiresAt: Number(value('expiresAt') || 0),
+                status: value('status') || ''
+              };
+            })
+            .filter((item) => item.status === 'ACTIVE' && item.expiresAt > Date.now())
+            .sort((a, b) => b.expiresAt - a.expiresAt);
+          resolve(parsed[0] || null);
+        } catch (error) {
+          reject(error);
+        }
+      });
+    });
+    req.on('timeout', () => req.destroy(new Error('Firestore query timeout')));
+    req.on('error', reject);
+    req.write(payload);
+    req.end();
+  });
+}
+
 async function patchFirestoreDocument(collection, docId, data) {
   const token = await requestGoogleAccessToken();
   const fields = {};
@@ -554,6 +629,46 @@ module.exports.handler = async function handler(event) {
         secretConfigured: Boolean(YOOKASSA_SECRET_KEY),
         licenseRegistryConfigured: Boolean(readFirebaseServiceAccount())
       }, callback);
+    }
+
+    if (action === 'license_verify') {
+      const licenseKey = cleanText(body.license_key, 40).toUpperCase();
+      const fighterId = cleanText(body.fighter_id, 100);
+      if (!/^(KAPT|KPT)-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(licenseKey)) {
+        return json(400, { ok: false, error: 'INVALID_LICENSE_KEY' });
+      }
+
+      const license = await getFirestoreDocument('licenses', licenseKey);
+      if (!license || license.status !== 'ACTIVE' || license.expiresAt <= Date.now()) {
+        return json(404, { ok: false, error: 'LICENSE_NOT_ACTIVE' });
+      }
+      if (license.fighterId && fighterId && license.fighterId !== fighterId) {
+        return json(403, { ok: false, error: 'FIGHTER_MISMATCH' });
+      }
+
+      return json(200, {
+        ok: true,
+        license_key: license.licenseKey,
+        expires_at: license.expiresAt,
+        fighter_id: license.fighterId || ''
+      });
+    }
+
+    if (action === 'license_restore') {
+      const email = cleanEmail(body.email);
+      if (!email) return json(400, { ok: false, error: 'INVALID_EMAIL' });
+
+      const license = await queryActiveLicenseByEmail(email);
+      if (!license) {
+        return json(404, { ok: false, error: 'LICENSE_NOT_FOUND' });
+      }
+
+      return json(200, {
+        ok: true,
+        license_key: license.licenseKey,
+        expires_at: license.expiresAt,
+        fighter_id: license.fighterId || ''
+      });
     }
 
     if (action === 'send_license_email') {
