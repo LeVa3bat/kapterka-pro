@@ -144,6 +144,15 @@ Target design:
 - A manual GitHub workflow now verifies a recovered keystore certificate against the exact published signer before any future release work.
 - Never generate a replacement debug key and call it compatible.
 
+### Additional hardening — current pass
+- Signing readiness no longer assumes the keystore alias is `upload`; every certificate in the recovered keystore is checked against the exact published SHA-256 signer.
+- Gradle's dormant release signing config accepts `KEY_ALIAS` so the recovered historical alias can be used explicitly.
+- Room migration 2 -> 3 now has a preservation test that verifies pre-existing rows survive and the tombstone table is added.
+- License restore no longer discloses a reusable license key from Email alone; automatic restore is bound to the existing `fighterId`.
+- The legacy local `activateProSubscription()` path is blocked and cannot grant PRO.
+- Full unit-data reset creates explicit tombstones for stock, operation history and requisitions before local/cloud cleanup.
+- Stock records now have their own tombstone type so a stale second device cannot resurrect balances after a full reset.
+
 ### Remaining hard blockers before any APK release
 1. Deploy the prepared backend and pass all live payment/license/admin/email health checks.
 2. Recover the exact private signing keystore matching the published certificate.
