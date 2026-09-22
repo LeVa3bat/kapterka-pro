@@ -138,7 +138,7 @@ fun AuthScreen(
                 Spacer(modifier = Modifier.width(10.dp))
                 Column {
                     Text(
-                        text = "КАПТЁРКА",
+                        text = "СКЛАД",
                         color = TacticalTextPrimary,
                         fontSize = 24.sp,
                         fontWeight = FontWeight.ExtraBold,
@@ -427,7 +427,7 @@ fun AuthScreen(
                             if (cleanEmail.isBlank() ||
                                 !android.util.Patterns.EMAIL_ADDRESS.matcher(cleanEmail).matches()
                             ) {
-                                errorMessage = "Укажите корректный Email. Он нужен для лицензии и восстановления доступа."
+                                errorMessage = "Укажите корректный Email. Он нужен для восстановления доступа и уведомлений."
                                 return@Button
                             }
 
@@ -510,7 +510,7 @@ fun AuthScreen(
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Автономный вход (Офлайн в поле)", fontSize = 12.sp)
+                        Text("Продолжить офлайн", fontSize = 12.sp)
                     }
                 }
             }
