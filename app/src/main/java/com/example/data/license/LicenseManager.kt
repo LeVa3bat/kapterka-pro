@@ -54,9 +54,15 @@ class LicenseManager(
         val sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         var id = sp.getString("fighter_personal_id", null)
         if (id == null) {
-            val randomDigits = (1000..9999).random()
-            val randomChars = UUID.randomUUID().toString().take(4).uppercase(Locale.ROOT)
-            id = "БОЕЦ-$randomDigits-$randomChars"
+            // Existing installations keep their historical ID unchanged. New
+            // installations use a much larger random namespace to make identity
+            // pre-claim/guessing impractical.
+            val randomPart = UUID.randomUUID()
+                .toString()
+                .replace("-", "")
+                .take(20)
+                .uppercase(Locale.ROOT)
+            id = "БОЕЦ-$randomPart"
             sp.edit().putString("fighter_personal_id", id).apply()
         }
         return id
