@@ -1143,6 +1143,18 @@ module.exports.handler = async function handler(event) {
           status: 'ACTIVE',
           source: 'YooKassa server verification'
         });
+        if (fighterId) {
+          try {
+            await patchFirestoreDocument('fighters', fighterId, {
+              licenseKey,
+              expiresAt,
+              isProActive: expiresAt > Date.now(),
+              lastSeenAt: Date.now()
+            });
+          } catch (fighterPatchError) {
+            console.error('Fighter license mirror error:', fighterPatchError?.message || fighterPatchError);
+          }
+        }
       } catch (registryError) {
         console.error('License registry error:', registryError?.message || registryError);
         return jsonpOrJson(503, {
