@@ -22,7 +22,7 @@ class KapterkaApplication : Application() {
 
         // Safe Firebase initialization.
         // Side-by-side NEXT-SAFE test builds must never connect to production Firebase.
-        if (!BuildConfig.IS_NEXT_SAFE_TEST) {
+        if (!BuildConfig.IS_NEXT_SAFE_TEST && !BuildConfig.IS_UNIVERSAL_APP) {
             try {
                 if (FirebaseApp.getApps(this).isEmpty()) {
                     val options = FirebaseOptions.Builder()
@@ -40,7 +40,7 @@ class KapterkaApplication : Application() {
                 Log.w("KapterkaApp", "Firebase init warning: ${e.message}")
             }
         } else {
-            Log.i("KapterkaApp", "NEXT-SAFE test: production Firebase disabled")
+            Log.i("KapterkaApp", "Isolated build: production Firebase disabled")
         }
 
         // Safe notification channel setup
