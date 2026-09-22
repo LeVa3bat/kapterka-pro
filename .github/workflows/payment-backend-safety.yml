@@ -1,0 +1,57 @@
+name: Payment backend safety
+
+on:
+  push:
+    branches:
+      - main
+      - 'android/**'
+    paths:
+      - 'server/yandex-cloud-function.js'
+      - '.github/workflows/payment-backend-safety.yml'
+  pull_request:
+    paths:
+      - 'server/yandex-cloud-function.js'
+      - '.github/workflows/payment-backend-safety.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  payment-backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Check backend syntax
+        run: node --check server/yandex-cloud-function.js
+
+      - name: Enforce server trust boundary
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const s = fs.readFileSync('server/yandex-cloud-function.js', 'utf8');
+          const required = [
+            'YOOKASSA_SECRET_KEY',
+            'FIREBASE_SERVICE_ACCOUNT_JSON',
+            'PAYMENT_AMOUNT_MISMATCH',
+            'LICENSE_REGISTRY_UNAVAILABLE',
+            'registerLicenseInFirestore',
+            'license_key',
+            'expires_at'
+          ];
+          for (const token of required) {
+            if (!s.includes(token)) throw new Error('Missing payment safety token: ' + token);
+          }
+          if (/live_[A-Za-z0-9_-]{20,}/.test(s)) {
+            throw new Error('Live YooKassa secret must never be committed to server source');
+          }
+          console.log('Payment backend safety checks PASSED.');
+          NODE
