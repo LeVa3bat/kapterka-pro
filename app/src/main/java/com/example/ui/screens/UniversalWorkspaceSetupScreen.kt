@@ -1,7 +1,6 @@
 package com.example.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,7 +15,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Warehouse
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -39,15 +37,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.UserProfile
-import com.example.ui.theme.SageGreenDark
-import com.example.ui.theme.SageGreenPrimary
-import com.example.ui.theme.TacticalBg
-import com.example.ui.theme.TacticalBorderSubtle
-import com.example.ui.theme.TacticalSurface
-import com.example.ui.theme.TacticalSurfaceLight
-import com.example.ui.theme.TacticalTextMuted
-import com.example.ui.theme.TacticalTextPrimary
-import com.example.ui.theme.TacticalTextSecondary
 import com.example.universal.WarehouseProfileCatalog
 
 @Composable
@@ -57,56 +46,55 @@ fun UniversalWorkspaceSetupScreen(
     onComplete: (UserProfile) -> Unit
 ) {
     val template = WarehouseProfileCatalog.find(warehouseProfileId)
-    var userName by remember { mutableStateOf(currentProfile?.callsign.orEmpty()) }
-    var warehouseName by remember { mutableStateOf(currentProfile?.unitName?.takeIf { it.isNotBlank() } ?: "") }
+    var warehouseName by remember {
+        mutableStateOf(currentProfile?.unitName?.takeIf { it.isNotBlank() } ?: "")
+    }
     var error by remember { mutableStateOf<String?>(null) }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(TacticalBg)
+            .background(Color(0xFFF5F7FB))
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 18.dp, vertical = 28.dp)
+                .padding(horizontal = 20.dp, vertical = 30.dp)
         ) {
             Text(
-                text = "Почти готово",
-                color = TacticalTextPrimary,
-                fontSize = 28.sp,
+                text = "Последний шаг",
+                color = Color(0xFF111827),
+                fontSize = 29.sp,
                 fontWeight = FontWeight.ExtraBold
             )
-            Spacer(modifier = Modifier.height(5.dp))
+            Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = "Настроим ваше рабочее пространство",
-                color = TacticalTextMuted,
-                fontSize = 13.sp
+                text = "Назовите рабочее пространство. Позже вы сможете добавить дополнительные склады и точки хранения.",
+                color = Color(0xFF6B7280),
+                fontSize = 13.sp,
+                lineHeight = 19.sp
             )
 
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(22.dp))
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(22.dp),
-                colors = CardDefaults.cardColors(containerColor = SageGreenDark),
-                border = androidx.compose.foundation.BorderStroke(
-                    1.dp,
-                    SageGreenPrimary.copy(alpha = 0.35f)
-                )
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFEEEEFF)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFD8DAFF))
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(15.dp),
+                        .padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(46.dp)
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(TacticalSurface),
+                            .size(48.dp)
+                            .clip(RoundedCornerShape(15.dp))
+                            .background(Color.White),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(text = template.emoji, fontSize = 24.sp)
@@ -115,137 +103,109 @@ fun UniversalWorkspaceSetupScreen(
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = template.title,
-                            color = TacticalTextPrimary,
+                            color = Color(0xFF111827),
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "${template.categories.size} стартовых категорий",
-                            color = TacticalTextMuted,
-                            fontSize = 11.sp
+                            text = "${template.categories.size} стартовых категорий • ${template.operations.income} • ${template.operations.issue}",
+                            color = Color(0xFF6B7280),
+                            fontSize = 10.5.sp,
+                            maxLines = 2
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(22.dp))
-
-            Text(
-                text = "Как к вам обращаться?",
-                color = TacticalTextPrimary,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-            Spacer(modifier = Modifier.height(7.dp))
-            OutlinedTextField(
-                value = userName,
-                onValueChange = {
-                    userName = it
-                    error = null
-                },
-                placeholder = { Text("Например: Алексей", color = TacticalTextMuted) },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = null,
-                        tint = SageGreenPrimary
-                    )
-                },
-                singleLine = true,
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = TacticalSurface,
-                    unfocusedContainerColor = TacticalSurface,
-                    focusedBorderColor = SageGreenPrimary,
-                    unfocusedBorderColor = TacticalBorderSubtle,
-                    focusedTextColor = TacticalTextPrimary,
-                    unfocusedTextColor = TacticalTextPrimary
-                )
-            )
-
-            Spacer(modifier = Modifier.height(17.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             Text(
                 text = "Название склада или организации",
-                color = TacticalTextPrimary,
+                color = Color(0xFF111827),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold
             )
-            Spacer(modifier = Modifier.height(7.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+
             OutlinedTextField(
                 value = warehouseName,
                 onValueChange = {
                     warehouseName = it
                     error = null
                 },
-                placeholder = { Text("Например: Склад №1", color = TacticalTextMuted) },
+                placeholder = { Text("Например: Центральный склад", color = Color(0xFF9CA3AF)) },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Warehouse,
                         contentDescription = null,
-                        tint = SageGreenPrimary
+                        tint = Color(0xFF5B5CE2)
                     )
                 },
                 singleLine = true,
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.fillMaxWidth(),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = TacticalSurface,
-                    unfocusedContainerColor = TacticalSurface,
-                    focusedBorderColor = SageGreenPrimary,
-                    unfocusedBorderColor = TacticalBorderSubtle,
-                    focusedTextColor = TacticalTextPrimary,
-                    unfocusedTextColor = TacticalTextPrimary
+                    focusedContainerColor = Color.White,
+                    unfocusedContainerColor = Color.White,
+                    focusedBorderColor = Color(0xFF5B5CE2),
+                    unfocusedBorderColor = Color(0xFFE1E5EC),
+                    focusedTextColor = Color(0xFF111827),
+                    unfocusedTextColor = Color(0xFF111827)
                 )
             )
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = TacticalSurfaceLight)
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
-                Text(
-                    text = "Alpha работает локально: ваши данные остаются на этом устройстве. Облачную синхронизацию подключим отдельно после тестирования.",
-                    color = TacticalTextSecondary,
-                    fontSize = 11.sp,
-                    lineHeight = 15.sp,
-                    modifier = Modifier.padding(13.dp)
-                )
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Text(
+                        text = if (template.id == "military")
+                            "Военный профиль: камера и фотографии отключены."
+                        else
+                            "Alpha работает локально и не использует серверы «Каптёрки ПРО».",
+                        color = Color(0xFF505A6B),
+                        fontSize = 11.sp,
+                        lineHeight = 16.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Облачную синхронизацию нового приложения подключим отдельным безопасным этапом.",
+                        color = Color(0xFF858D9B),
+                        fontSize = 10.sp,
+                        lineHeight = 14.sp
+                    )
+                }
             }
 
             if (error != null) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
                     text = error!!,
-                    color = Color(0xFFD84A4A),
+                    color = Color(0xFFB42318),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold
                 )
             }
 
-            Spacer(modifier = Modifier.height(22.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             Button(
                 onClick = {
-                    val cleanName = userName.trim()
                     val cleanWarehouse = warehouseName.trim()
-                    if (cleanName.isBlank()) {
-                        error = "Укажите ваше имя"
-                        return@Button
-                    }
                     if (cleanWarehouse.isBlank()) {
-                        error = "Укажите название склада"
+                        error = "Укажите название склада или организации"
                         return@Button
                     }
+
                     onComplete(
                         (currentProfile ?: UserProfile()).copy(
-                            callsign = cleanName,
                             unitName = cleanWarehouse,
                             unitKey = "",
-                            email = "",
                             isLoggedIn = true,
                             isOnline = false
                         )
@@ -253,15 +213,15 @@ fun UniversalWorkspaceSetupScreen(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(54.dp),
+                    .height(55.dp),
                 shape = RoundedCornerShape(17.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = SageGreenPrimary,
+                    containerColor = Color(0xFF5B5CE2),
                     contentColor = Color.White
                 )
             ) {
                 Text(
-                    text = "Открыть мой склад",
+                    text = "Открыть Склад ПРО",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold
                 )
