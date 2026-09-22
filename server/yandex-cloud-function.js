@@ -13,6 +13,9 @@ const FIREBASE_SERVICE_ACCOUNT_JSON = process.env.FIREBASE_SERVICE_ACCOUNT_JSON 
 const FIREBASE_SERVICE_ACCOUNT_B64 = process.env.FIREBASE_SERVICE_ACCOUNT_B64 || '';
 const ADMIN_API_SECRET_SHA256 = String(process.env.ADMIN_API_SECRET_SHA256 || '').trim().toLowerCase();
 const ADMIN_SESSION_SECRET = process.env.ADMIN_SESSION_SECRET || '';
+const BREVO_API_KEY = process.env.BREVO_API_KEY || '';
+const EMAIL_SENDER_NAME = process.env.EMAIL_SENDER_NAME || 'Каптёрка ПРО';
+const EMAIL_SENDER_EMAIL = process.env.EMAIL_SENDER_EMAIL || '';
 
 const CHECKSUM_CHARS = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 const LICENSE_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
@@ -361,6 +364,108 @@ function generateAdminLicenseKey() {
   return `KAPT-${p1}-${p2}-${computeKeyChecksum(p1, p2)}`;
 }
 
+async function getFirestoreDocument(collection, docId) {
+  const token = await requestGoogleAccessToken();
+  const path =
+    `/v1/projects/${encodeURIComponent(FIREBASE_PROJECT_ID)}/databases/(default)/documents/` +
+    `${encodeURIComponent(collection)}/${encodeURIComponent(docId)}`;
+
+  return new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname: 'firestore.googleapis.com',
+      port: 443,
+      path,
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` },
+      timeout: 10000
+    }, (res) => {
+      let responseBody = '';
+      res.on('data', (chunk) => { responseBody += chunk; });
+      res.on('end', () => {
+        if (res.statusCode === 404) return resolve(null);
+        if (res.statusCode < 200 || res.statusCode >= 300) {
+          return reject(new Error(`Firestore read failed: HTTP ${res.statusCode}`));
+        }
+        try {
+          const parsed = JSON.parse(responseBody || '{}');
+          const fields = parsed.fields || {};
+          const value = (name) => {
+            const field = fields[name] || {};
+            if (Object.prototype.hasOwnProperty.call(field, 'stringValue')) return field.stringValue;
+            if (Object.prototype.hasOwnProperty.call(field, 'integerValue')) return Number(field.integerValue);
+            if (Object.prototype.hasOwnProperty.call(field, 'booleanValue')) return Boolean(field.booleanValue);
+            return null;
+          };
+          resolve({
+            licenseKey: value('licenseKey') || docId,
+            fighterId: value('fighterId') || '',
+            callsign: value('callsign') || '',
+            email: value('email') || '',
+            expiresAt: Number(value('expiresAt') || 0),
+            status: value('status') || ''
+          });
+        } catch (error) {
+          reject(error);
+        }
+      });
+    });
+    req.on('timeout', () => req.destroy(new Error('Firestore timeout')));
+    req.on('error', reject);
+    req.end();
+  });
+}
+
+function sendLicenseEmailViaBrevo({ toEmail, callsign, licenseKey, days }) {
+  return new Promise((resolve, reject) => {
+    if (!BREVO_API_KEY || !EMAIL_SENDER_EMAIL) {
+      reject(new Error('Email provider is not configured'));
+      return;
+    }
+
+    const subject = `Ваш лицензионный ключ «Каптёрка ПРО» (${days} дней)`;
+    const text = [
+      `Здравствуйте, ${callsign || 'пользователь'}!`,
+      '',
+      'Ваш лицензионный ключ Каптёрка ПРО:',
+      licenseKey,
+      '',
+      `Срок действия: ${days} суток.`,
+      'Официальный сайт: https://kapterka-pro.ru/'
+    ].join('\n');
+
+    const body = JSON.stringify({
+      sender: { name: EMAIL_SENDER_NAME, email: EMAIL_SENDER_EMAIL },
+      to: [{ email: toEmail, name: callsign || 'Пользователь' }],
+      subject,
+      textContent: text
+    });
+
+    const req = https.request({
+      hostname: 'api.brevo.com',
+      port: 443,
+      path: '/v3/smtp/email',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+        'api-key': BREVO_API_KEY
+      },
+      timeout: 10000
+    }, (res) => {
+      let responseBody = '';
+      res.on('data', (chunk) => { responseBody += chunk; });
+      res.on('end', () => {
+        if (res.statusCode >= 200 && res.statusCode < 300) resolve(true);
+        else reject(new Error(`Brevo returned HTTP ${res.statusCode}`));
+      });
+    });
+    req.on('timeout', () => req.destroy(new Error('Brevo timeout')));
+    req.on('error', reject);
+    req.write(body);
+    req.end();
+  });
+}
+
 async function patchFirestoreDocument(collection, docId, data) {
   const token = await requestGoogleAccessToken();
   const fields = {};
@@ -449,6 +554,36 @@ module.exports.handler = async function handler(event) {
         secretConfigured: Boolean(YOOKASSA_SECRET_KEY),
         licenseRegistryConfigured: Boolean(readFirebaseServiceAccount())
       }, callback);
+    }
+
+    if (action === 'send_license_email') {
+      const licenseKey = cleanText(body.license_key, 40).toUpperCase();
+      const requestedEmail = cleanEmail(body.email);
+      if (!/^KAPT-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(licenseKey) || !requestedEmail) {
+        return json(400, { ok: false, error: 'INVALID_LICENSE_EMAIL_REQUEST' });
+      }
+
+      const license = await getFirestoreDocument('licenses', licenseKey);
+      if (!license || license.status !== 'ACTIVE' || license.expiresAt <= Date.now()) {
+        return json(404, { ok: false, error: 'LICENSE_NOT_ACTIVE' });
+      }
+      if (!license.email || license.email.toLowerCase() !== requestedEmail) {
+        return json(403, { ok: false, error: 'LICENSE_EMAIL_MISMATCH' });
+      }
+
+      const daysLeft = Math.max(1, Math.ceil((license.expiresAt - Date.now()) / (24 * 60 * 60 * 1000)));
+      try {
+        await sendLicenseEmailViaBrevo({
+          toEmail: license.email,
+          callsign: license.callsign,
+          licenseKey,
+          days: daysLeft
+        });
+        return json(200, { ok: true });
+      } catch (emailError) {
+        console.error('License email error:', emailError?.message || emailError);
+        return json(503, { ok: false, error: 'EMAIL_PROVIDER_UNAVAILABLE' });
+      }
     }
 
     if (action === 'admin_auth') {
