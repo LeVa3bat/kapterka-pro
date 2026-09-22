@@ -9,8 +9,10 @@ import com.example.data.local.KapterkaDatabase
 import com.example.data.model.InventoryItem
 import com.example.data.model.OperationRecord
 import com.example.data.model.OperationType
+import com.example.data.model.OperationItemEntry
 import com.example.data.model.StockRecord
 import com.example.data.model.WarehousePoint
+import com.example.data.repository.KapterkaRepository
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -166,6 +168,77 @@ class KapterkaDatabaseTest {
         assertTrue(operations.any { it.id == "op_atomic_1" })
         assertNotNull(savedStock)
         assertEquals(7, savedStock!!.quantity)
+    }
+
+    @Test
+    fun testDuplicateIncomeItemsAreAccumulatedBeforeAtomicCommit() = runBlocking {
+        val repository = KapterkaRepository(dao, null)
+        val repeated = listOf(
+            OperationItemEntry("dup_item", "Повтор", "шт.", 3),
+            OperationItemEntry("dup_item", "Повтор", "шт.", 4)
+        )
+
+        repository.recordIncome(
+            toPointId = "base_sklad",
+            toPointName = "Базовый склад",
+            supplier = "Снабжение",
+            items = repeated,
+            comment = "duplicate aggregation",
+            actor = "Тест"
+        )
+
+        val stock = dao.getStockItem("base_sklad", "dup_item")
+        assertNotNull(stock)
+        assertEquals(7, stock!!.quantity)
+        assertEquals(7, stock.incomeTotal)
+        assertEquals(1, dao.getAllOperations().first().size)
+    }
+
+    @Test
+    fun testDuplicateTransferItemsAccumulateOnBothSides() = runBlocking {
+        val repository = KapterkaRepository(dao, null)
+        dao.insertOrUpdateStock(
+            StockRecord(
+                pointId = "from_point",
+                itemId = "transfer_item",
+                quantity = 20,
+                incomeTotal = 20,
+                expenseTotal = 0
+            )
+        )
+        dao.insertOrUpdateStock(
+            StockRecord(
+                pointId = "to_point",
+                itemId = "transfer_item",
+                quantity = 5,
+                incomeTotal = 5,
+                expenseTotal = 0
+            )
+        )
+
+        val repeated = listOf(
+            OperationItemEntry("transfer_item", "Перемещение", "шт.", 3),
+            OperationItemEntry("transfer_item", "Перемещение", "шт.", 2)
+        )
+
+        repository.recordTransfer(
+            fromPointId = "from_point",
+            fromPointName = "Склад А",
+            toPointId = "to_point",
+            toPointName = "Склад Б",
+            items = repeated,
+            comment = "duplicate transfer",
+            actor = "Тест"
+        )
+
+        val from = dao.getStockItem("from_point", "transfer_item")
+        val to = dao.getStockItem("to_point", "transfer_item")
+        assertNotNull(from)
+        assertNotNull(to)
+        assertEquals(15, from!!.quantity)
+        assertEquals(5, from.expenseTotal)
+        assertEquals(10, to!!.quantity)
+        assertEquals(10, to.incomeTotal)
     }
 
     @Test
