@@ -1,0 +1,14 @@
+{
+  "name": "kapterka-pro-backend",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Server-authoritative payment, license and admin backend for Kapterka PRO",
+  "main": "railway-server.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node railway-server.js",
+    "check": "node --check yandex-cloud-function.js && node --check railway-server.js && node backend-selftest.js"
+  }
+}
