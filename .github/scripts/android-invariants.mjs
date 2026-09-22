@@ -203,6 +203,16 @@ if (outdatedReferenceHits.length) {
   ok('cabinet/support references use current destinations');
 }
 
+const telegramNotifierSource = read('app/src/main/java/com/example/data/notification/TelegramNotifier.kt');
+if (telegramNotifierSource.includes('script.google.com') ||
+    telegramNotifierSource.includes('send_telegram') ||
+    telegramNotifierSource.includes('HttpURLConnection') ||
+    telegramNotifierSource.includes('api.telegram.org')) {
+  fail('future Android must not call a public/direct Telegram relay');
+} else {
+  ok('future Android Telegram notifications are backend-owned');
+}
+
 const directTelegramCredentialHits = sourceFiles.filter((file) => {
   try {
     const text = read(file);
