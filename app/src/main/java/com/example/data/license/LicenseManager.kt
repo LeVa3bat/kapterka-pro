@@ -284,7 +284,7 @@ class LicenseManager(
             return@withContext Pair(false, "Укажите Email, который использовался при оплате.")
         }
 
-        val result = backend.restoreByEmail(cleanEmail)
+        val result = backend.restoreByEmail(cleanEmail, getFighterPersonalId())
         if (!result.success) {
             return@withContext Pair(false, result.errorMessage)
         }
