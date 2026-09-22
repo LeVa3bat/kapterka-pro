@@ -29,7 +29,27 @@ service cloud.firestore {
       allow get, create, update, delete: if true;
       allow list: if false;
 
-      match /{document=**} {
+      // Explicit legacy/new sync surfaces. Avoid a recursive wildcard here:
+      // in rules v2 it can also match the unit root and would defeat list denial.
+      match /warehouse_points/{docId} {
+        allow read, write: if true;
+      }
+      match /inventory_items/{docId} {
+        allow read, write: if true;
+      }
+      match /stock_records/{docId} {
+        allow read, write: if true;
+      }
+      match /operation_records/{docId} {
+        allow read, write: if true;
+      }
+      match /requisitions/{docId} {
+        allow read, write: if true;
+      }
+      match /devices/{docId} {
+        allow read, write: if true;
+      }
+      match /sync_tombstones/{docId} {
         allow read, write: if true;
       }
     }
