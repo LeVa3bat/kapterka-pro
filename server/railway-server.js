@@ -3,7 +3,7 @@ const { URL } = require('url');
 const { handler } = require('./yandex-cloud-function.js');
 
 const PORT = Number(process.env.PORT || 8080);
-const MAX_BODY_BYTES = 1024 * 1024;
+const MAX_BODY_BYTES = 64 * 1024;
 
 function queryObject(searchParams) {
   const out = {};
@@ -37,6 +37,11 @@ const server = http.createServer((req, res) => {
     try {
       const origin = 'http://' + (req.headers.host || 'localhost');
       const url = new URL(req.url || '/', origin);
+      const forwardedFor = String(req.headers['x-forwarded-for'] || '')
+        .split(',')[0]
+        .trim();
+      const sourceIp = forwardedFor || req.socket.remoteAddress || '';
+
       const event = {
         httpMethod: String(req.method || 'GET').toUpperCase(),
         queryStringParameters: queryObject(url.searchParams),
@@ -44,12 +49,8 @@ const server = http.createServer((req, res) => {
         body: Buffer.concat(chunks).toString('utf8'),
         isBase64Encoded: false,
         requestContext: {
-          identity: {
-            sourceIp: req.socket.remoteAddress || ''
-          },
-          http: {
-            sourceIp: req.socket.remoteAddress || ''
-          }
+          identity: { sourceIp },
+          http: { sourceIp }
         }
       };
 
