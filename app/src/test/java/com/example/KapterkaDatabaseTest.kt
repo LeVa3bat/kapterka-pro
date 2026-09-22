@@ -2,6 +2,8 @@ package com.example
 
 import android.content.Context
 import androidx.room.Room
+import androidx.sqlite.db.SupportSQLiteOpenHelper
+import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
 import androidx.test.core.app.ApplicationProvider
 import com.example.data.local.InitialData
 import com.example.data.local.KapterkaDao
@@ -259,6 +261,54 @@ class KapterkaDatabaseTest {
         assertEquals("inventory_item", stored.entityType)
         assertEquals("item_deleted", stored.entityId)
         assertEquals(123456789L, stored.deletedAt)
+    }
+
+    @Test
+    fun testMigration2To3PreservesExistingRows() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val dbName = "migration_2_3_test.db"
+        context.deleteDatabase(dbName)
+
+        val helper = FrameworkSQLiteOpenHelperFactory().create(
+            SupportSQLiteOpenHelper.Configuration.builder(context)
+                .name(dbName)
+                .callback(object : SupportSQLiteOpenHelper.Callback(2) {
+                    override fun onCreate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                        // Representative pre-existing user data. Migration 2 -> 3 must be add-only.
+                        db.execSQL("CREATE TABLE legacy_user_data (id TEXT NOT NULL PRIMARY KEY, payload TEXT NOT NULL)")
+                        db.execSQL("INSERT INTO legacy_user_data(id, payload) VALUES ('row-1', 'must-survive')")
+                    }
+
+                    override fun onUpgrade(
+                        db: androidx.sqlite.db.SupportSQLiteDatabase,
+                        oldVersion: Int,
+                        newVersion: Int
+                    ) = Unit
+                })
+                .build()
+        )
+
+        val sqlite = helper.writableDatabase
+        KapterkaDatabase.MIGRATION_2_3.migrate(sqlite)
+
+        sqlite.query("SELECT payload FROM legacy_user_data WHERE id='row-1'").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("must-survive", cursor.getString(0))
+        }
+
+        sqlite.query("SELECT name FROM sqlite_master WHERE type='table' AND name='sync_tombstones'").use { cursor ->
+            assertTrue("Migration must add sync_tombstones", cursor.moveToFirst())
+        }
+
+        sqlite.query("PRAGMA table_info(sync_tombstones)").use { cursor ->
+            val names = mutableSetOf<String>()
+            val nameIndex = cursor.getColumnIndex("name")
+            while (cursor.moveToNext()) names.add(cursor.getString(nameIndex))
+            assertTrue(names.containsAll(setOf("id", "unitKey", "entityType", "entityId", "deletedAt")))
+        }
+
+        helper.close()
+        context.deleteDatabase(dbName)
     }
 
     @Test
