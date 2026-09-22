@@ -40,16 +40,21 @@ jobs:
           STORE_PASSWORD: ${{ secrets.KAPTERKA_RELEASE_STORE_PASSWORD }}
         shell: bash
         run: |
-          keytool -list -v             -keystore /tmp/kapterka-release.jks             -storepass "$STORE_PASSWORD"             -alias upload | tee /tmp/keytool.txt
+          # Do not assume an alias. The published app was signed with an Android Debug
+          # certificate, so the recovered keystore may use androiddebugkey rather than upload.
+          keytool -list -v             -keystore /tmp/kapterka-release.jks             -storepass "$STORE_PASSWORD" | tee /tmp/keytool.txt
 
-          ACTUAL="$(grep -m1 'SHA256:' /tmp/keytool.txt | sed 's/.*SHA256:[[:space:]]*//' | tr -d ':' | tr '[:upper:]' '[:lower:]')"
           EXPECTED="$(echo "$EXPECTED_SIGNER_SHA256" | tr '[:upper:]' '[:lower:]')"
-          echo "Expected: $EXPECTED"
-          echo "Actual:   $ACTUAL"
-          test "$ACTUAL" = "$EXPECTED" || {
-            echo "Signing key does NOT match the installed/public APK."
+          echo "Expected signer: $EXPECTED"
+
+          MATCHED="$(grep 'SHA256:' /tmp/keytool.txt             | sed 's/.*SHA256:[[:space:]]*//'             | tr -d ':'             | tr '[:upper:]' '[:lower:]'             | grep -Fx "$EXPECTED" || true)"
+
+          test -n "$MATCHED" || {
+            echo "No certificate in this keystore matches the installed/public APK."
             exit 1
           }
 
+          echo "Matching signer certificate found."
+
       - name: Signer is update-compatible
-        run: echo "Release signing key matches current APK certificate."
+        run: echo "Recovered keystore contains the exact current APK signer certificate."
