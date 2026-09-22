@@ -4,7 +4,7 @@ import {
   assertFails,
   assertSucceeds
 } from '@firebase/rules-unit-testing';
-import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, setDoc, deleteDoc } from 'firebase/firestore';
 
 const projectId = 'kapterka-next-safe-rules-test';
 const rules = fs.readFileSync('server/firestore.next-safe.rules', 'utf8');
@@ -26,8 +26,14 @@ try {
     await assertFails(setDoc(doc(db, 'fighters', 'fighter-1'), { isProActive: true }));
   }
 
-  // Current compatibility stage intentionally keeps unit sync open.
-  // This test makes that exception explicit so a future change cannot be accidental.
+  // Current compatibility stage intentionally keeps direct unit sync open.
+  // Root unit enumeration is denied so high-entropy unit keys are not discoverable
+  // through a simple unauthenticated list query.
+  const unitRoot = doc(anon, 'units', 'unit-test');
+  await assertSucceeds(setDoc(unitRoot, { unitKey: 'unit-test' }));
+  await assertSucceeds(getDoc(unitRoot));
+  await assertFails(getDocs(collection(anon, 'units')));
+
   const unitStock = doc(anon, 'units', 'unit-test', 'stock_records', 'base___item');
   await assertSucceeds(setDoc(unitStock, { pointId: 'base', itemId: 'item', quantity: 1 }));
   await assertSucceeds(getDoc(unitStock));
