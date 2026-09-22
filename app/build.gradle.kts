@@ -22,9 +22,6 @@ android {
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-    // Developer access: only a SHA-256 fingerprint is embedded in the APK.
-    // The actual key is never stored in app source or resources.
-    buildConfigField("String", "DEV_ADMIN_KEY_SHA256", "\"621e801ca063883242a6a22131a5a4b06cf2b07daca53d805e885615a614845b\"")
     // Future payment client talks only to our backend; YooKassa secret never enters the APK.
     val paymentApiUrl = System.getenv("PAYMENT_API_URL") ?: ""
     buildConfigField("String", "PAYMENT_API_URL", "\"$paymentApiUrl\"")
