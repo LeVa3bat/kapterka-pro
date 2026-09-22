@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import com.example.BuildConfig
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -213,34 +214,59 @@ fun TacticalHeader(
 
                 Spacer(modifier = Modifier.height(11.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    ModernHeaderAction(
-                        label = "Синхр.",
-                        icon = Icons.Default.Sync,
-                        onClick = onSyncClick,
-                        modifier = Modifier.weight(1f).testTag("header_sync_button")
-                    )
-                    ModernHeaderAction(
-                        label = "Подключить",
-                        icon = Icons.Default.QrCode,
-                        onClick = onSecondPhoneClick,
-                        modifier = Modifier.weight(1f)
-                    )
-                    ModernHeaderAction(
-                        label = "Отчёты",
-                        icon = Icons.Default.FileDownload,
-                        onClick = onExportClick,
-                        modifier = Modifier.weight(1f).testTag("header_export_button")
-                    )
-                    ModernHeaderAction(
-                        label = "Помощь",
-                        icon = Icons.Default.HelpOutline,
-                        onClick = onHelpClick,
-                        modifier = Modifier.weight(1f)
-                    )
+                if (BuildConfig.IS_UNIVERSAL_APP) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(TacticalSurfaceLight)
+                            .padding(horizontal = 11.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(SageGreenPrimary)
+                        )
+                        Spacer(modifier = Modifier.width(7.dp))
+                        Text(
+                            text = "Локальный режим Alpha • данные хранятся на этом устройстве",
+                            color = TacticalTextMuted,
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        ModernHeaderAction(
+                            label = "Синхр.",
+                            icon = Icons.Default.Sync,
+                            onClick = onSyncClick,
+                            modifier = Modifier.weight(1f).testTag("header_sync_button")
+                        )
+                        ModernHeaderAction(
+                            label = "Подключить",
+                            icon = Icons.Default.QrCode,
+                            onClick = onSecondPhoneClick,
+                            modifier = Modifier.weight(1f)
+                        )
+                        ModernHeaderAction(
+                            label = "Отчёты",
+                            icon = Icons.Default.FileDownload,
+                            onClick = onExportClick,
+                            modifier = Modifier.weight(1f).testTag("header_export_button")
+                        )
+                        ModernHeaderAction(
+                            label = "Помощь",
+                            icon = Icons.Default.HelpOutline,
+                            onClick = onHelpClick,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
             }
         }
