@@ -1,12 +1,9 @@
-import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy
-
 plugins {
   alias(libs.plugins.android.application)
   alias(libs.plugins.kotlin.compose)
   alias(libs.plugins.google.devtools.ksp)
   alias(libs.plugins.roborazzi)
   alias(libs.plugins.secrets)
-  alias(libs.plugins.google.services)
 }
 
 android {
@@ -14,35 +11,35 @@ android {
   compileSdk { version = release(36) { minorApiLevel = 1 } }
 
   defaultConfig {
-    applicationId = "com.aistudio.kapterka.jmwqve"
+    applicationId = "com.aistudio.skladpro"
     minSdk = 24
     targetSdk = 34
-    // Stable defaults remain identical to production 3.4.9/build 31.
-    // A release-candidate workflow may override them only in CI after all gates pass.
-    versionCode = System.getenv("NEXT_SAFE_VERSION_CODE")?.toIntOrNull() ?: 31
-    versionName = System.getenv("NEXT_SAFE_VERSION_NAME")?.takeIf { it.isNotBlank() } ?: "3.4.9"
+    // Standalone universal product. It never updates/replaces "Каптёрка ПРО".
+    versionCode = 1
+    versionName = "0.1.0-alpha1"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
     // Future payment client talks only to our backend; YooKassa secret never enters the APK.
-    val paymentApiUrl = System.getenv("PAYMENT_API_URL") ?: ""
+    val paymentApiUrl = "" // Universal alpha never calls the production payment backend.
     buildConfigField("String", "PAYMENT_API_URL", "\"$paymentApiUrl\"")
-    buildConfigField("String", "PAYMENT_CALLBACK_SCHEME", "\"kapterka\"")
+    buildConfigField("String", "PAYMENT_CALLBACK_SCHEME", "\"skladpro\"")
     buildConfigField("boolean", "IS_NEXT_SAFE_TEST", "false")
-    manifestPlaceholders["paymentScheme"] = "kapterka"
+    buildConfigField("boolean", "IS_UNIVERSAL_APP", "true")
+    manifestPlaceholders["paymentScheme"] = "skladpro"
   }
 
   signingConfigs {
     create("release") {
-      val keystorePath = System.getenv("KEYSTORE_PATH")?.takeIf { it.isNotBlank() }
+      val keystorePath = System.getenv("SKLADPRO_KEYSTORE_PATH")?.takeIf { it.isNotBlank() }
       if (keystorePath != null) {
         storeFile = file(keystorePath)
       }
-      storePassword = System.getenv("STORE_PASSWORD")
+      storePassword = System.getenv("SKLADPRO_STORE_PASSWORD")
       // Never fall back to a generic upload/debug alias for a production APK.
       // Release workflows must provide the exact recovered historical signer.
-      keyAlias = System.getenv("KEY_ALIAS")?.takeIf { it.isNotBlank() }
-      keyPassword = System.getenv("KEY_PASSWORD")
+      keyAlias = System.getenv("SKLADPRO_KEY_ALIAS")?.takeIf { it.isNotBlank() }
+      keyPassword = System.getenv("SKLADPRO_KEY_PASSWORD")
       enableV1Signing = true
       enableV2Signing = true
     }
@@ -61,33 +58,14 @@ android {
       isCrunchPngs = false
       isMinifyEnabled = false
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+      // A future public release gets its own Sklad PRO signer.
       signingConfig = signingConfigs.getByName("release")
     }
 
-    // Never published automatically. This variant exists only for the gated manual
-    // release-candidate workflow and uses the recovered historical signer.
-    create("nextSafeRelease") {
-      initWith(getByName("release"))
-      signingConfig = signingConfigs.getByName("release")
-      matchingFallbacks += listOf("release")
-      isDebuggable = false
-    }
-
-    // Side-by-side test build. It has a different applicationId and app label, so it
-    // cannot replace or modify the installed production 3.4.9 application.
-    create("nextSafeTest") {
-      initWith(getByName("debug"))
-      applicationIdSuffix = ".nextsafe"
-      versionNameSuffix = "-nextsafe"
-      matchingFallbacks += listOf("debug")
+    debug {
       signingConfig = signingConfigs.getByName("debugConfig")
-      resValue("string", "app_name", "Каптёрка PRO NEXT-SAFE")
-      buildConfigField("String", "PAYMENT_CALLBACK_SCHEME", "\"kapterka-nextsafe\"")
-      buildConfigField("boolean", "IS_NEXT_SAFE_TEST", "true")
-      manifestPlaceholders["paymentScheme"] = "kapterka-nextsafe"
+      resValue("string", "app_name", "Склад ПРО • Alpha")
     }
-
-    debug { signingConfig = signingConfigs.getByName("debugConfig") }
   }
   compileOptions {
     sourceCompatibility = JavaVersion.VERSION_11
@@ -116,7 +94,6 @@ secrets {
   ignoreList.add("PAYMENT_API_URL")
 }
 
-googleServices { missingGoogleServicesStrategy = MissingGoogleServicesStrategy.WARN }
 
 // Some unused dependencies are commented out below instead of being removed.
 // This makes it easy to add them back in the future if needed.
