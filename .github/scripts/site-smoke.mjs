@@ -340,3 +340,22 @@ if (!index.includes('scheduleAnalyticsLoad') || !index.includes("setTimeout(star
 if (!index.includes("gtag('config', 'G-RYV6TP63D3')") || !index.includes("ym(112482290, 'init'")) fail('analytics queues/IDs are missing');
 if (/aria-label="Открыть экран (Главная|Каталог)"/.test(index)) fail('gallery aria-label overrides visible text');
 else ok('analytics is queued and deferred for initial-render performance');
+
+const seoGrowthPages = [
+  'docs/guides.html',
+  'docs/prihod-rashod-sklad-android.html',
+  'docs/inventarizaciya-na-android.html'
+];
+for (const file of seoGrowthPages) {
+  if (!fs.existsSync(file)) fail(`${file}: SEO growth page missing`);
+  const source = read(file);
+  if (!/<h1>[^<]+<\/h1>/.test(source)) fail(`${file}: H1 missing`);
+  if (!/name=["']description["']/.test(source)) fail(`${file}: meta description missing`);
+  if (!/rel=["']canonical["']/.test(source)) fail(`${file}: canonical missing`);
+  if (!/name=["']robots["'][^>]*index/.test(source)) fail(`${file}: robots index missing`);
+}
+for (const url of ['guides.html','prihod-rashod-sklad-android.html','inventarizaciya-na-android.html']) {
+  if (!sitemap.includes(url)) fail(`sitemap missing ${url}`);
+}
+if (!index.includes('href="guides.html">Материалы</a>')) fail('homepage footer does not link to SEO content hub');
+else ok('SEO growth pages are indexed and internally linked');

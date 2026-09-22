@@ -8,6 +8,9 @@ const targets = [
   { name: 'Конфиденциальность', url: 'https://kapterka-pro.ru/privacy.html', own: true },
   { name: 'Оферта', url: 'https://kapterka-pro.ru/terms.html', own: true },
   { name: 'Release manifest', url: 'https://kapterka-pro.ru/release.json', own: true },
+  { name: 'Материалы', url: 'https://kapterka-pro.ru/guides.html', own: true },
+  { name: 'Приход и расход', url: 'https://kapterka-pro.ru/prihod-rashod-sklad-android.html', own: true },
+  { name: 'Инвентаризация', url: 'https://kapterka-pro.ru/inventarizaciya-na-android.html', own: true },
   { name: 'RuStore', url: 'https://apps.rustore.ru/app/com.aistudio.kapterka.jmwqve', own: false },
   { name: 'Telegram канал', url: 'https://t.me/kapterka_pro', own: false },
   { name: 'Telegram поддержка', url: 'https://t.me/kapterka_help_bot', own: false }

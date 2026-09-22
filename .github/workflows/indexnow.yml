@@ -15,6 +15,9 @@ on:
       - 'docs/uchet-ostatkov-na-telefone.html'
       - 'docs/uchet-imushchestva-offline.html'
       - 'docs/skladskoy-uchet-android.html'
+      - 'docs/guides.html'
+      - 'docs/prihod-rashod-sklad-android.html'
+      - 'docs/inventarizaciya-na-android.html'
       - '.github/workflows/indexnow.yml'
 
 permissions:
@@ -59,7 +62,10 @@ jobs:
               "https://kapterka-pro.ru/updates.html",
               "https://kapterka-pro.ru/uchet-ostatkov-na-telefone.html",
               "https://kapterka-pro.ru/uchet-imushchestva-offline.html",
-              "https://kapterka-pro.ru/skladskoy-uchet-android.html"
+              "https://kapterka-pro.ru/skladskoy-uchet-android.html",
+              "https://kapterka-pro.ru/inventarizaciya-na-android.html",
+              "https://kapterka-pro.ru/prihod-rashod-sklad-android.html",
+              "https://kapterka-pro.ru/guides.html"
             ]
           }
           JSON
