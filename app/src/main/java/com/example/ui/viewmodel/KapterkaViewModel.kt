@@ -652,11 +652,12 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    @Deprecated("PRO activation is server-authoritative in next-safe")
     fun activateProSubscription() {
         viewModelScope.launch {
-            val current = userProfile.value ?: UserProfile()
-            repository.saveUserProfile(current.copy(isProActive = true, proDaysLeft = 30))
-            _toastEvent.emit("Подписка «Каптёрка ПРО» успешно активирована на 30 дней!")
+            _toastEvent.emit(
+                "Локальная активация PRO отключена. Лицензия активируется только после подтверждения сервера."
+            )
         }
     }
 
