@@ -4074,3 +4074,12 @@ a.neo-trust-item:hover{transform:translateY(-1px);background:#111b15;border-colo
   .neo-guide-card strong{font-size:.78rem}
   .neo-guide-card small{font-size:.74rem;line-height:1.42}
 }
+
+
+/* SEO HUB TOUCH TARGET FIX 2026-09-22 */
+.neo-guides .neo-section-title-split>a{
+  display:inline-flex;
+  align-items:center;
+  min-height:28px;
+  padding:4px 0;
+}
