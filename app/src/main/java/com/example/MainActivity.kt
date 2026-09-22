@@ -606,12 +606,22 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                     AppDestination.MORE -> {
                         if (BuildConfig.IS_UNIVERSAL_APP) {
                             UniversalMoreScreen(
+                                userProfile = profile,
                                 warehouseProfileId = warehouseProfileId,
-                                isDarkTheme = isDarkTheme,
-                                onToggleTheme = { viewModel.toggleTheme() },
                                 onChangeProfile = {
                                     setupPrefs.edit().remove("warehouse_profile_id").apply()
                                     warehouseProfileId = null
+                                    currentDestination = AppDestination.HOME
+                                },
+                                onLogout = {
+                                    viewModel.updateProfile(
+                                        (profile ?: com.example.data.model.UserProfile()).copy(isLoggedIn = false)
+                                    )
+                                    setupPrefs.edit()
+                                        .putBoolean("universal_authenticated_v2", false)
+                                        .apply()
+                                    universalAuthenticated = false
+                                    currentDestination = AppDestination.HOME
                                 }
                             )
                         } else {
