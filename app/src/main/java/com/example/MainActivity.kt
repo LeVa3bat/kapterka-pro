@@ -150,7 +150,7 @@ class MainActivity : ComponentActivity() {
             // KapterkaApplication owns Firebase initialization. Keep this fallback
             // only for production builds; NEXT-SAFE test APKs must never connect
             // to the production Firebase project.
-            if (!BuildConfig.IS_NEXT_SAFE_TEST &&
+            if (!BuildConfig.IS_NEXT_SAFE_TEST && !BuildConfig.IS_UNIVERSAL_APP &&
                 com.google.firebase.FirebaseApp.getApps(this).isEmpty()
             ) {
                 val options = com.google.firebase.FirebaseOptions.Builder()
