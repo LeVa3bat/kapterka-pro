@@ -80,7 +80,7 @@ fun SplashScreen(
 ) {
     // 6.0 seconds total animation
     var progress by remember { mutableFloatStateOf(0.0f) }
-    var statusText by remember { mutableStateOf("ИНИЦИАЛИЗАЦИЯ ТАКТИЧЕСКОГО МОДУЛЯ АСУ...") }
+    var statusText by remember { mutableStateOf("ЗАПУСК СИСТЕМЫ УЧЁТА...") }
     var statusCode by remember { mutableStateOf("SYS_BOOT_INIT_01") }
     var timeRemainingMs by remember { mutableLongStateOf(6000L) }
 
@@ -130,7 +130,7 @@ fun SplashScreen(
 
             when {
                 elapsed < 1200L -> {
-                    statusText = "ИНИЦИАЛИЗАЦИЯ ТАКТИЧЕСКОГО МОДУЛЯ АСУ..."
+                    statusText = "ЗАПУСК СИСТЕМЫ УЧЁТА..."
                     statusCode = "SYS_BOOT_CORE // OK"
                 }
                 elapsed < 2400L -> {
@@ -138,15 +138,15 @@ fun SplashScreen(
                     statusCode = "SEC_CRYPTO_256 // VERIFIED"
                 }
                 elapsed < 3600L -> {
-                    statusText = "СКАНИРОВАНИЕ ОПОРНЫХ ПУНКТОВ И СКЛАДОВ РАВ..."
+                    statusText = "ПРОВЕРКА СКЛАДОВ И ТОЧЕК УЧЁТА..."
                     statusCode = "GRID_SCAN_POINTS // 3 ACTIVE"
                 }
                 elapsed < 4800L -> {
-                    statusText = "СИНХРОНИЗАЦИЯ НОМЕНКЛАТУРЫ И СЛУЖБ ТЫЛА..."
+                    statusText = "СИНХРОНИЗАЦИЯ КАТАЛОГА И ДАННЫХ..."
                     statusCode = "CATALOG_SYNC // COMPLETE"
                 }
                 else -> {
-                    statusText = "СИСТЕМА БОЕВОГО УЧЕТА ГОТОВА К РАБОТЕ"
+                    statusText = "СИСТЕМА УЧЁТА ГОТОВА К РАБОТЕ"
                     statusCode = "ONLINE // OFFLINE-READY 100%"
                 }
             }
@@ -185,7 +185,7 @@ fun SplashScreen(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "АСУ «КАПТЁРКА» PRO",
+                        text = "«КАПТЁРКА ПРО»",
                         color = SageGreenBright,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
@@ -267,7 +267,7 @@ fun SplashScreen(
                 }
 
                 Text(
-                    text = "Автоматизированный воинский учет и снабжение",
+                    text = "Учёт склада, имущества и снабжения",
                     color = TacticalTextSecondary,
                     fontSize = 12.sp,
                     textAlign = TextAlign.Center
