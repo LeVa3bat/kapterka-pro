@@ -97,6 +97,24 @@ async function call(action, body = {}, method = 'POST', sourceIp = '127.0.0.1') 
   const options = await handler({ httpMethod: 'OPTIONS' });
   assert.strictEqual(options.statusCode, 200);
 
+  const unsupported = await handler({
+    httpMethod: 'PUT',
+    queryStringParameters: { action: 'health' },
+    body: '',
+    isBase64Encoded: false
+  });
+  assert.strictEqual(unsupported.statusCode, 405);
+  assert.strictEqual(JSON.parse(unsupported.body).error, 'METHOD_NOT_ALLOWED');
+
+  const oversized = await handler({
+    httpMethod: 'POST',
+    queryStringParameters: {},
+    body: JSON.stringify({ action: 'admin_auth', padding: 'x'.repeat(70 * 1024) }),
+    isBase64Encoded: false
+  });
+  assert.strictEqual(oversized.statusCode, 413);
+  assert.strictEqual(JSON.parse(oversized.body).error, 'PAYLOAD_TOO_LARGE');
+
   console.log('Backend self-test PASSED.');
 })().catch((error) => {
   console.error(error);
