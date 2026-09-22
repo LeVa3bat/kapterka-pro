@@ -13,11 +13,15 @@ const appId = (gradle.match(/applicationId\s*=\s*"([^"]+)"/) || [])[1];
 if (appId !== 'com.aistudio.kapterka.jmwqve') fail(`applicationId changed: ${appId || 'missing'}`);
 else ok('applicationId preserved');
 
-const versionCode = Number((gradle.match(/versionCode\s*=\s*(\d+)/) || [])[1] || 0);
+const directVersionCode = (gradle.match(/versionCode\s*=\s*(\d+)/) || [])[1] || '';
+const fallbackVersionCode = (gradle.match(/versionCode\s*=\s*System\.getenv\([^\n]+?\?\:\s*(\d+)/) || [])[1] || '';
+const versionCode = Number(directVersionCode || fallbackVersionCode || 0);
 if (versionCode < 31) fail(`versionCode must never go backwards (found ${versionCode})`);
 else ok(`versionCode is monotonic-safe: ${versionCode}`);
 
-const versionName = (gradle.match(/versionName\s*=\s*"([^"]+)"/) || [])[1] || '';
+const directVersionName = (gradle.match(/versionName\s*=\s*"([^"]+)"/) || [])[1] || '';
+const fallbackVersionName = (gradle.match(/versionName\s*=\s*System\.getenv\([^\n]+?\?\:\s*"([^"]+)"/) || [])[1] || '';
+const versionName = directVersionName || fallbackVersionName;
 if (!/^\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?$/.test(versionName)) fail(`invalid versionName: ${versionName || 'missing'}`);
 else ok(`versionName format is valid: ${versionName}`);
 
