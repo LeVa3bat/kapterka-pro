@@ -56,6 +56,13 @@ interface KapterkaDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertItems(items: List<InventoryItem>)
 
+    /**
+     * Seed/update catalog safely: add only new standard IDs and preserve any
+     * existing user-edited row with the same ID.
+     */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertItemsIfMissing(items: List<InventoryItem>)
+
     @Query("DELETE FROM inventory_items WHERE id = :itemId")
     suspend fun deleteItem(itemId: String)
 
