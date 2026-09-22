@@ -158,6 +158,19 @@ if (!backupRules.includes('kapterka_sync_prefs.xml') ||
   ok('device UUID is excluded from cloud/device restore');
 }
 
+const emailSource = read('app/src/main/java/com/example/data/notification/EmailDeliveryService.kt');
+if (emailSource.includes('api.brevo.com') ||
+    emailSource.includes('api.resend.com') ||
+    emailSource.includes('"brevo_api_key"') && emailSource.includes('.putString("brevo_api_key"') ||
+    emailSource.includes('.putString("smtp_pass"')) {
+  fail('email provider credentials/API must not be handled directly by Android');
+} else if (!emailSource.includes('BuildConfig.PAYMENT_API_URL') ||
+           !emailSource.includes('send_license_email')) {
+  fail('license email delivery is not routed through the backend');
+} else {
+  ok('license email delivery is server-authoritative');
+}
+
 const sourceFiles = [];
 const walk = (dir) => {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
