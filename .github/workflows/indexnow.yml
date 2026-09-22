@@ -11,6 +11,9 @@ on:
       - 'docs/updates.html'
       - 'docs/help.html'
       - 'docs/bezopasnoe-obnovlenie-kapterka-pro.html'
+      - 'docs/kak-nachat-rabotu-kapterka-pro.html'
+      - 'docs/rezervnaya-kopiya-kapterka-pro.html'
+      - 'docs/perenos-kapterka-pro-na-novyy-telefon.html'
       - 'docs/sitemap.xml'
       - 'docs/robots.txt'
       - 'docs/site.webmanifest'
@@ -74,6 +77,9 @@ jobs:
               "https://kapterka-pro.ru/updates.html",
               "https://kapterka-pro.ru/help.html",
               "https://kapterka-pro.ru/bezopasnoe-obnovlenie-kapterka-pro.html",
+              "https://kapterka-pro.ru/kak-nachat-rabotu-kapterka-pro.html",
+              "https://kapterka-pro.ru/rezervnaya-kopiya-kapterka-pro.html",
+              "https://kapterka-pro.ru/perenos-kapterka-pro-na-novyy-telefon.html",
               "https://kapterka-pro.ru/uchet-ostatkov-na-telefone.html",
               "https://kapterka-pro.ru/uchet-imushchestva-offline.html",
               "https://kapterka-pro.ru/skladskoy-uchet-android.html",

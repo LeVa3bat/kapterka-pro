@@ -28,6 +28,9 @@ const requiredFiles = [
   'docs/updates.html',
   'docs/help.html',
   'docs/bezopasnoe-obnovlenie-kapterka-pro.html',
+  'docs/kak-nachat-rabotu-kapterka-pro.html',
+  'docs/rezervnaya-kopiya-kapterka-pro.html',
+  'docs/perenos-kapterka-pro-na-novyy-telefon.html',
   'docs/security.html',
   'docs/uchet-ostatkov-na-telefone.html',
   'docs/uchet-imushchestva-offline.html',
@@ -84,7 +87,10 @@ const guideFiles = [
   'docs/security.html',
   'docs/updates.html',
   'docs/help.html',
-  'docs/bezopasnoe-obnovlenie-kapterka-pro.html'
+  'docs/bezopasnoe-obnovlenie-kapterka-pro.html',
+  'docs/kak-nachat-rabotu-kapterka-pro.html',
+  'docs/rezervnaya-kopiya-kapterka-pro.html',
+  'docs/perenos-kapterka-pro-na-novyy-telefon.html'
 ];
 for (const file of guideFiles) {
   const source = read(file);
@@ -412,7 +418,7 @@ for (const file of seoGrowthPages) {
   if (!/rel=["']canonical["']/.test(source)) fail(`${file}: canonical missing`);
   if (!/name=["']robots["'][^>]*index/.test(source)) fail(`${file}: robots index missing`);
 }
-for (const url of ['guides.html','prihod-rashod-sklad-android.html','inventarizaciya-na-android.html','uchet-vydachi-imushchestva-android.html','peremeshchenie-mezhdu-skladami-android.html','uchet-tmc-android.html','uchet-instrumenta-android.html','uchet-oborudovaniya-android.html','uchet-inventarya-android.html','skladskoy-uchet-dlya-nebolshogo-sklada.html','sklad-bez-1c-na-telefone.html','zhurnal-dvizheniya-imushchestva-android.html','uchet-neskolkih-skladov-android.html','bezopasnoe-obnovlenie-kapterka-pro.html']) {
+for (const url of ['guides.html','prihod-rashod-sklad-android.html','inventarizaciya-na-android.html','uchet-vydachi-imushchestva-android.html','peremeshchenie-mezhdu-skladami-android.html','uchet-tmc-android.html','uchet-instrumenta-android.html','uchet-oborudovaniya-android.html','uchet-inventarya-android.html','skladskoy-uchet-dlya-nebolshogo-sklada.html','sklad-bez-1c-na-telefone.html','zhurnal-dvizheniya-imushchestva-android.html','uchet-neskolkih-skladov-android.html','bezopasnoe-obnovlenie-kapterka-pro.html','kak-nachat-rabotu-kapterka-pro.html','rezervnaya-kopiya-kapterka-pro.html','perenos-kapterka-pro-na-novyy-telefon.html']) {
   if (!sitemap.includes(url)) fail(`sitemap missing ${url}`);
 }
 if (!index.includes('href="guides.html">Материалы</a>')) fail('homepage footer does not link to SEO content hub');
