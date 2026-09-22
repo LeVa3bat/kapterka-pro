@@ -32,7 +32,9 @@ android {
       val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
       storeFile = file(keystorePath)
       storePassword = System.getenv("STORE_PASSWORD")
-      keyAlias = "upload"
+      // The historical signer may use androiddebugkey rather than upload.
+      // Never guess at release time: provide KEY_ALIAS from the recovered keystore.
+      keyAlias = System.getenv("KEY_ALIAS") ?: "upload"
       keyPassword = System.getenv("KEY_PASSWORD")
       enableV1Signing = true
       enableV2Signing = true
