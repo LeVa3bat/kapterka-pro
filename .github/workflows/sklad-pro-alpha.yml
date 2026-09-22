@@ -78,12 +78,12 @@ jobs:
             echo "Old Kapterka package leaked into Sklad PRO APK" >&2
             exit 1
           fi
-          cp "$APK" "Sklad-PRO-0.1.0-alpha1.apk"
+          cp "$APK" "Sklad-PRO-0.2.0-alpha2.apk"
 
       - name: Upload alpha APK
         uses: actions/upload-artifact@v4
         with:
           name: sklad-pro-alpha
-          path: Sklad-PRO-0.1.0-alpha1.apk
+          path: Sklad-PRO-0.2.0-alpha2.apk
           if-no-files-found: error
           retention-days: 14
