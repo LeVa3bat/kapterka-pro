@@ -52,6 +52,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Require production-safe Firestore rules
+        shell: bash
+        run: |
+          RULES="server/firestore.next-safe.rules"
+          test -f "$RULES" || {
+            echo "Missing $RULES"
+            exit 1
+          }
+
+          if grep -Eq 'allow[[:space:]]+read,[[:space:]]*write:[[:space:]]*if[[:space:]]+true[[:space:]]*;' "$RULES"; then
+            echo "Release blocked: Firestore unit sync still allows unrestricted client read/write."
+            echo "Protect unit sync first without breaking existing user data or multi-device synchronization."
+            exit 1
+          fi
+
+          if grep -Fq 'NEXT-SAFE PREVIEW ONLY' "$RULES"; then
+            echo "Release blocked: Firestore rules are still marked preview-only."
+            exit 1
+          fi
+
+          echo "Firestore rules release gate PASSED."
+
       - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
