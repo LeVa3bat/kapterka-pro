@@ -54,6 +54,8 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
     // Registry of all fighters across units (Developer Mode)
     val fighterRegistryManager: com.example.data.admin.FighterRegistryManager
     val allFighters: StateFlow<List<com.example.data.admin.FighterAdminRecord>>
+    private val adminBackendService = com.example.data.admin.AdminBackendService()
+    private var adminSessionToken: String = ""
 
     private val prefs = application.getSharedPreferences("kapterka_app_prefs", android.content.Context.MODE_PRIVATE)
 
@@ -980,17 +982,35 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
 
     // --- DEVELOPER BACKDOOR ACTIONS ---
 
+    suspend fun authenticateDeveloper(secret: String): Pair<Boolean, String> {
+        val result = adminBackendService.authenticate(secret)
+        adminSessionToken = if (result.success) result.token else ""
+        return Pair(result.success, if (result.success) "Доступ подтверждён сервером." else result.errorMessage)
+    }
+
     fun deleteFighterFromRegistry(fighterId: String) {
-        fighterRegistryManager.deleteFighter(fighterId)
         viewModelScope.launch {
-            _toastEvent.emit("Боец удален из реестра подразделений")
+            val result = adminBackendService.deleteFighter(adminSessionToken, fighterId)
+            if (result.success) {
+                fighterRegistryManager.removeCachedFighter(fighterId)
+                _toastEvent.emit("Запись пользователя удалена из реестра. Лицензии и складские данные сохранены.")
+            } else {
+                if (result.errorMessage.contains("сессия", ignoreCase = true)) adminSessionToken = ""
+                _toastEvent.emit(result.errorMessage)
+            }
         }
     }
 
     fun grantLicenseFromDevMenu(fighterId: String, days: Int = 30) {
-        val newKey = fighterRegistryManager.grantLicense(fighterId, days)
         viewModelScope.launch {
-            _toastEvent.emit("Выдан ключ: $newKey на $days дней")
+            val result = adminBackendService.grantLicense(adminSessionToken, fighterId, days)
+            if (result.success) {
+                fighterRegistryManager.fetchFightersFromCloud()
+                _toastEvent.emit("Сервер выдал ключ: ${result.licenseKey} на $days дней")
+            } else {
+                if (result.errorMessage.contains("сессия", ignoreCase = true)) adminSessionToken = ""
+                _toastEvent.emit(result.errorMessage)
+            }
         }
     }
 
