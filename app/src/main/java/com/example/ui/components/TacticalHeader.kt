@@ -4,12 +4,6 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -26,34 +20,31 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.FileDownload
+import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.sp
 import com.example.data.model.UserProfile
 import com.example.ui.theme.SageGreenBright
 import com.example.ui.theme.SageGreenDark
 import com.example.ui.theme.SageGreenPrimary
 import com.example.ui.theme.TacticalBg
-import com.example.ui.theme.TacticalBorder
 import com.example.ui.theme.TacticalBorderSubtle
 import com.example.ui.theme.TacticalGold
 import com.example.ui.theme.TacticalSurface
@@ -77,18 +68,8 @@ fun TacticalHeader(
 ) {
     val context = LocalContext.current
     val unitKey = profile?.unitKey?.trim().orEmpty()
-    val unitKeyDisplay = unitKey.ifBlank { "не настроен" }
-
-    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-    val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.4f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(900, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulseAlpha"
-    )
+    val workspaceName = profile?.unitName?.takeIf { it.isNotBlank() } ?: "Основной склад"
+    val userName = profile?.callsign?.takeIf { it.isNotBlank() } ?: "Пользователь"
 
     Column(
         modifier = modifier
@@ -96,285 +77,233 @@ fun TacticalHeader(
             .background(TacticalBg)
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
-        // TOP STATUS BAR & DEMO BADGE + GUIDE BUTTON
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Unit & Callsign summary
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .weight(1f, fill = false)
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(TacticalSurfaceLight)
-                    .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(20.dp))
-                    .clickable { onProfileClick() }
-                    .padding(horizontal = 10.dp, vertical = 4.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(6.dp)
-                        .clip(CircleShape)
-                        .background(SageGreenPrimary)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = profile?.callsign ?: "Пользователь",
-                    color = TacticalTextPrimary,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                )
-                Text(
-                    text = " • ${profile?.unitName ?: "Основной склад"} [v${com.example.BuildConfig.VERSION_NAME} (сб.${com.example.BuildConfig.VERSION_CODE}) PRO]",
-                    color = TacticalTextSecondary,
-                    fontSize = 11.sp,
-                    maxLines = 1,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                )
-            }
-            
-            Spacer(modifier = Modifier.width(6.dp))
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                // Theme Toggle Pill (Day / Tactical Night)
-                Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(100.dp))
-                        .background(TacticalSurfaceLight)
-                        .border(1.dp, TacticalBorder, RoundedCornerShape(100.dp))
-                        .clickable { onToggleTheme() }
-                        .padding(horizontal = 8.dp, vertical = 5.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = if (isDarkTheme) "☀️" else "🌙",
-                        fontSize = 12.sp
-                    )
-                    Spacer(modifier = Modifier.width(3.dp))
-                    Text(
-                        text = if (isDarkTheme) "СВЕТ" else "ТЬМА",
-                        color = TacticalTextPrimary,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                // Interactive Guide Pill
-                Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(100.dp))
-                        .background(SageGreenDark)
-                        .border(1.dp, SageGreenPrimary, RoundedCornerShape(100.dp))
-                        .clickable { onHelpClick() }
-                        .padding(horizontal = 10.dp, vertical = 5.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.HelpOutline,
-                        contentDescription = "Инструкция",
-                        tint = SageGreenBright,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "ИНСТРУКЦИЯ",
-                        color = SageGreenBright,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                // Sleek Demo Tag or PRO Tag
-                if (profile?.isProActive == true) {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(100.dp))
-                            .background(SageGreenDark)
-                            .border(1.dp, SageGreenPrimary.copy(alpha = 0.5f), RoundedCornerShape(100.dp))
-                            .clickable { onBannerClick() }
-                            .padding(horizontal = 10.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            text = "ТАРИФ PRO",
-                            color = SageGreenBright,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Black,
-                            letterSpacing = 0.5.sp
-                        )
-                    }
-                } else {
-                    val daysLeft = profile?.demoDaysLeft ?: 3
-                    val isExpired = daysLeft <= 0
-                    val badgeText = when {
-                        isExpired -> "ДЕМО ИСТЕКЛО"
-                        daysLeft == 1 -> "ДЕМО: 1 ДЕНЬ"
-                        else -> "ДЕМО: $daysLeft ДН."
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(100.dp))
-                            .background(if (isExpired) Color(0xFFFF5252) else TacticalGold)
-                            .clickable { onBannerClick() }
-                            .padding(horizontal = 10.dp, vertical = 5.dp)
-                    ) {
-                        Text(
-                            text = badgeText,
-                            color = if (isExpired) Color.White else Color(0xFF0D0E10),
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Black,
-                            letterSpacing = 0.5.sp,
-                            maxLines = 1,
-                            overflow = androidx.compose.ui.text.style.TextOverflow.Visible
-                        )
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // MAIN HEADER ROW: КАПТЁРКА ПРО + UNIT KEY PILL
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Bottom
-        ) {
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "КАПТЁРКА",
+                        text = "Каптёрка",
                         color = TacticalTextPrimary,
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = (-0.5).sp
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = (-0.4).sp
                     )
+                    Spacer(modifier = Modifier.width(5.dp))
                     Text(
                         text = "ПРО",
                         color = SageGreenPrimary,
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = (-0.5).sp
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(7.dp))
+                            .background(SageGreenDark)
+                            .padding(horizontal = 7.dp, vertical = 3.dp)
                     )
                 }
                 Text(
-                    text = "СКЛАД • ИМУЩЕСТВО • УЧЁТ",
+                    text = "Учёт склада и имущества",
                     color = TacticalTextMuted,
-                    fontSize = 9.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.2.sp
+                    fontSize = 12.sp
                 )
             }
 
-            // Unit Key Pill with quick copy
-            Column(
-                horizontalAlignment = Alignment.End
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(TacticalSurface)
+                    .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(18.dp))
+                    .clickable { onProfileClick() }
+                    .padding(start = 10.dp, end = 7.dp, top = 6.dp, bottom = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(TacticalSurfaceLight)
-                        .border(1.dp, TacticalBorder, RoundedCornerShape(12.dp))
-                        .clickable(enabled = unitKey.isNotBlank()) {
-                            val clipManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                            clipManager.setPrimaryClip(ClipData.newPlainText("UnitKey", unitKey))
-                            Toast.makeText(context, "Код склада / группы скопирован", Toast.LENGTH_SHORT).show()
-                        }
-                        .padding(horizontal = 10.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(7.dp)
-                            .clip(CircleShape)
-                            .background(SageGreenPrimary)
-                            .alpha(pulseAlpha)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
+                Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        text = unitKeyDisplay,
-                        color = SageGreenPrimary,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily.Monospace
+                        text = userName,
+                        color = TacticalTextPrimary,
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = if (profile?.isProActive == true) "PRO активно" else "Профиль",
+                        color = if (profile?.isProActive == true) SageGreenPrimary else TacticalTextMuted,
+                        fontSize = 9.5.sp,
+                        maxLines = 1
                     )
                 }
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = "КОД СКЛАДА / ГРУППЫ",
-                    color = TacticalTextMuted,
-                    fontSize = 7.5.sp,
-                    fontWeight = FontWeight.Medium,
-                    letterSpacing = 0.5.sp
-                )
+                Spacer(modifier = Modifier.width(7.dp))
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clip(CircleShape)
+                        .background(SageGreenDark),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = "Профиль",
+                        tint = SageGreenPrimary,
+                        modifier = Modifier.size(19.dp)
+                    )
+                }
             }
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-        // QUICK ACTION HEADER BUTTONS: Синхр, Экспорт
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(18.dp),
+            colors = CardDefaults.cardColors(containerColor = TacticalSurface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(13.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = workspaceName,
+                            color = TacticalTextPrimary,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = "Текущая группа учёта",
+                            color = TacticalTextMuted,
+                            fontSize = 10.5.sp
+                        )
+                    }
+
+                    if (unitKey.isNotBlank()) {
+                        Row(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(TacticalSurfaceLight)
+                                .clickable {
+                                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                    clipboard.setPrimaryClip(ClipData.newPlainText("workspace_code", unitKey))
+                                    Toast.makeText(context, "Код группы скопирован", Toast.LENGTH_SHORT).show()
+                                }
+                                .padding(horizontal = 9.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = unitKey,
+                                color = TacticalTextSecondary,
+                                fontSize = 10.5.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(11.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    ModernHeaderAction(
+                        label = "Синхр.",
+                        icon = Icons.Default.Sync,
+                        onClick = onSyncClick,
+                        modifier = Modifier.weight(1f).testTag("header_sync_button")
+                    )
+                    ModernHeaderAction(
+                        label = "Подключить",
+                        icon = Icons.Default.QrCode,
+                        onClick = onSecondPhoneClick,
+                        modifier = Modifier.weight(1f)
+                    )
+                    ModernHeaderAction(
+                        label = "Отчёты",
+                        icon = Icons.Default.FileDownload,
+                        onClick = onExportClick,
+                        modifier = Modifier.weight(1f).testTag("header_export_button")
+                    )
+                    ModernHeaderAction(
+                        label = "Помощь",
+                        icon = Icons.Default.HelpOutline,
+                        onClick = onHelpClick,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            HeaderActionButton(
-                label = "Синхронизация",
-                icon = Icons.Default.Sync,
-                onClick = onSyncClick,
+            Text(
+                text = if (profile?.isProActive == true) "Лицензия PRO" else "Проверить лицензию",
+                color = if (profile?.isProActive == true) SageGreenPrimary else TacticalGold,
+                fontSize = 10.5.sp,
+                fontWeight = FontWeight.SemiBold,
                 modifier = Modifier
-                    .weight(1f)
-                    .testTag("header_sync_button")
+                    .clip(RoundedCornerShape(10.dp))
+                    .clickable { onBannerClick() }
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
             )
-
-            HeaderActionButton(
-                label = "Отчеты Excel",
-                icon = Icons.Default.FileDownload,
-                onClick = onExportClick,
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = if (isDarkTheme) "Светлая тема" else "Тёмная тема",
+                color = TacticalTextMuted,
+                fontSize = 10.5.sp,
                 modifier = Modifier
-                    .weight(1f)
-                    .testTag("header_export_button")
+                    .clip(RoundedCornerShape(10.dp))
+                    .clickable { onToggleTheme() }
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
             )
         }
     }
 }
 
 @Composable
-private fun HeaderActionButton(
+private fun ModernHeaderAction(
     label: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(
+    Column(
         modifier = modifier
-            .clip(RoundedCornerShape(10.dp))
+            .clip(RoundedCornerShape(13.dp))
             .background(TacticalSurfaceLight)
-            .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(10.dp))
             .clickable { onClick() }
-            .padding(vertical = 8.dp, horizontal = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center
+            .padding(vertical = 8.dp, horizontal = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Icon(
             imageVector = icon,
             contentDescription = label,
             tint = SageGreenPrimary,
-            modifier = Modifier.size(14.dp)
+            modifier = Modifier.size(18.dp)
         )
-        Spacer(modifier = Modifier.width(6.dp))
+        Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = label,
-            color = TacticalTextPrimary,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.SemiBold
+            color = TacticalTextSecondary,
+            fontSize = 9.5.sp,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1
         )
     }
 }
-
