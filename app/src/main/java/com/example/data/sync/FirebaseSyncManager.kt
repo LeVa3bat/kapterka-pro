@@ -74,6 +74,7 @@ class FirebaseSyncManager(
         const val PRESENCE_HEARTBEAT_MS = 5 * 60 * 1000L
         const val TOMBSTONE_POINT = "warehouse_point"
         const val TOMBSTONE_ITEM = "inventory_item"
+        const val TOMBSTONE_STOCK = "stock_record"
         const val TOMBSTONE_OPERATION = "operation"
         const val TOMBSTONE_REQUISITION = "requisition"
     }
@@ -119,6 +120,12 @@ class FirebaseSyncManager(
             TOMBSTONE_ITEM -> {
                 dao.deleteStockForItem(tombstone.entityId)
                 dao.deleteItem(tombstone.entityId)
+            }
+            TOMBSTONE_STOCK -> {
+                val parts = tombstone.entityId.split(":::", limit = 2)
+                if (parts.size == 2 && parts[0].isNotBlank() && parts[1].isNotBlank()) {
+                    dao.deleteStockRecord(parts[0], parts[1])
+                }
             }
             TOMBSTONE_OPERATION -> dao.deleteOperation(tombstone.entityId)
             TOMBSTONE_REQUISITION -> dao.deleteRequisition(tombstone.entityId)
@@ -295,7 +302,8 @@ class FirebaseSyncManager(
                         )
                         if (s.pointId.isNotBlank() && s.itemId.isNotBlank() &&
                             !isTombstoned(unitKey, TOMBSTONE_POINT, s.pointId) &&
-                            !isTombstoned(unitKey, TOMBSTONE_ITEM, s.itemId)
+                            !isTombstoned(unitKey, TOMBSTONE_ITEM, s.itemId) &&
+                            !isTombstoned(unitKey, TOMBSTONE_STOCK, "${s.pointId}:::${s.itemId}")
                         ) {
                             dao.insertOrUpdateStock(s)
                             // Do not create generic placeholder from stock record if nameHint is missing;
@@ -518,7 +526,8 @@ class FirebaseSyncManager(
                         // Do not re-insert stocks belonging to points that no longer exist in cloud
                         if ((existingPointsMap.containsKey(ptId) || ptId == "base_sklad") &&
                             !isTombstoned(cleanKey, TOMBSTONE_POINT, ptId) &&
-                            !isTombstoned(cleanKey, TOMBSTONE_ITEM, itemId)
+                            !isTombstoned(cleanKey, TOMBSTONE_ITEM, itemId) &&
+                            !isTombstoned(cleanKey, TOMBSTONE_STOCK, "${ptId}:::${itemId}")
                         ) {
                             cloudStockKeys.add("${ptId}:::${itemId}")
                             recordsToInsert.add(
