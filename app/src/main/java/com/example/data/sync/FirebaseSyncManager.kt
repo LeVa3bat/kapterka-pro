@@ -76,7 +76,6 @@ class FirebaseSyncManager(
         const val TOMBSTONE_ITEM = "inventory_item"
         const val TOMBSTONE_OPERATION = "operation"
         const val TOMBSTONE_REQUISITION = "requisition"
-        const val TOMBSTONE_RETENTION_MS = 120L * 24L * 60L * 60L * 1000L
     }
 
     suspend fun prepareDeletionTombstone(
@@ -178,7 +177,6 @@ class FirebaseSyncManager(
             applyTombstone(tombstone)
         }
 
-        dao.pruneOldSyncTombstones(System.currentTimeMillis() - TOMBSTONE_RETENTION_MS)
     }
 
     fun startSyncForUnit(unitKey: String, callsign: String, unitName: String) {
