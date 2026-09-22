@@ -108,7 +108,20 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
     fun resetCategoriesToDefault() {
         saveCategoriesToPrefs(com.example.data.local.InitialData.getDefaultCategories())
         viewModelScope.launch {
-            _toastEvent.emit("Штатные группы восстановлены по умолчанию")
+            _toastEvent.emit("Группы по умолчанию восстановлены")
+        }
+    }
+
+    fun applyWarehouseProfile(profileId: String) {
+        val template = com.example.universal.WarehouseProfileCatalog.find(profileId)
+        val customCategories = _availableCategories.value.filter {
+            it !in com.example.universal.WarehouseProfileCatalog.allPresetCategories
+        }
+        val merged = (template.categories + customCategories).distinct()
+        saveCategoriesToPrefs(merged)
+        _selectedCategory.value = "Все виды"
+        viewModelScope.launch {
+            _toastEvent.emit("Профиль «${template.title}» применён")
         }
     }
 
