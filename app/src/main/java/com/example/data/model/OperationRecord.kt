@@ -4,10 +4,10 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 
 enum class OperationType(val titleRu: String, val code: String) {
-    INCOME("Привезли", "income"),
+    INCOME("Поступление", "income"),
     TRANSFER("Перемещение", "transfer"),
-    ISSUE("Подняли", "issue"),
-    EXPENDITURE("Расход (ф. 8)", "expenditure")
+    ISSUE("Выдача", "issue"),
+    EXPENDITURE("Списание", "expenditure")
 }
 
 data class OperationItemEntry(
@@ -16,7 +16,7 @@ data class OperationItemEntry(
     val unit: String,
     val quantity: Int,
     val categoryClass: String = "Кат. 1",
-    val reason: String = "" // Причина расхода (для ф.8: "Боевая работа", "Пристрелка", etc.)
+    val reason: String = "" // Причина списания / расхода
 )
 
 @Entity(tableName = "operation_records")
@@ -25,10 +25,10 @@ data class OperationRecord(
     val type: OperationType,
     val fromPointName: String,
     val toPointName: String,
-    val docNumber: String = "",       // № Акта / Формуляра
-    val responsiblePerson: String = "", // Ответственный
+    val docNumber: String = "",       // Документ / номер акта
+    val responsiblePerson: String = "", // Ответственное лицо
     val comment: String = "",
     val timestamp: Long = System.currentTimeMillis(),
-    val itemsSummary: String = "",     // e.g. "Мина 120-мм — 24 шт., ВОГ-17 — 50 шт."
+    val itemsSummary: String = "",     // Краткий список позиций
     val itemsJson: String = ""         // Serialized list
 )
