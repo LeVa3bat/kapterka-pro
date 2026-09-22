@@ -38,15 +38,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.ui.theme.SageGreenDark
-import com.example.ui.theme.SageGreenPrimary
-import com.example.ui.theme.TacticalBg
-import com.example.ui.theme.TacticalBorderSubtle
-import com.example.ui.theme.TacticalSurface
-import com.example.ui.theme.TacticalSurfaceLight
-import com.example.ui.theme.TacticalTextMuted
-import com.example.ui.theme.TacticalTextPrimary
-import com.example.ui.theme.TacticalTextSecondary
 import com.example.universal.WarehouseProfileCatalog
 
 @Composable
@@ -55,91 +46,91 @@ fun WarehouseProfileSetupScreen(
 ) {
     var selectedId by remember { mutableStateOf<String?>(null) }
     val selected = selectedId?.let { WarehouseProfileCatalog.find(it) }
+    val profiles = remember {
+        WarehouseProfileCatalog.profiles.sortedBy {
+            when (it.id) {
+                "universal" -> 0
+                "military" -> 1
+                else -> 2
+            }
+        }
+    }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(TacticalBg)
+            .background(Color(0xFFF5F7FB))
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 18.dp, end = 18.dp, top = 28.dp, bottom = 12.dp)
+                    .padding(start = 20.dp, end = 20.dp, top = 28.dp, bottom = 15.dp)
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "Склад ПРО",
-                        color = TacticalTextPrimary,
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = (-0.5).sp
-                    )
-                    Spacer(modifier = Modifier.size(8.dp))
-                    Text(
-                        text = "ALPHA",
-                        color = SageGreenPrimary,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(SageGreenDark)
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
                 Text(
-                    text = "Какой у вас склад?",
-                    color = TacticalTextPrimary,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold
+                    text = "Выберите сценарий",
+                    color = Color(0xFF111827),
+                    fontSize = 29.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = (-0.5).sp
                 )
+                Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "Выберем подходящие категории и сценарии работы. Всё можно изменить позже.",
-                    color = TacticalTextMuted,
+                    text = "Склад ПРО настроит категории и операции под вашу работу. Всё можно изменить позже.",
+                    color = Color(0xFF6B7280),
                     fontSize = 13.sp,
-                    lineHeight = 18.sp
+                    lineHeight = 19.sp
                 )
             }
 
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
                 modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(start = 14.dp, end = 14.dp, bottom = 126.dp),
+                contentPadding = PaddingValues(start = 14.dp, end = 14.dp, bottom = 146.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                items(WarehouseProfileCatalog.profiles, key = { it.id }) { profile ->
+                items(profiles, key = { it.id }) { profile ->
                     val isSelected = selectedId == profile.id
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { selectedId = profile.id },
-                        shape = RoundedCornerShape(20.dp),
+                        shape = RoundedCornerShape(22.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = if (isSelected) SageGreenDark else TacticalSurface
+                            containerColor = if (isSelected) Color(0xFFEEEEFF) else Color.White
                         ),
                         border = androidx.compose.foundation.BorderStroke(
                             if (isSelected) 1.5.dp else 1.dp,
-                            if (isSelected) SageGreenPrimary else TacticalBorderSubtle
+                            if (isSelected) Color(0xFF5B5CE2) else Color(0xFFE6E9EF)
                         ),
-                        elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 3.dp else 0.dp)
+                        elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 3.dp else 1.dp)
                     ) {
-                        Column(modifier = Modifier.padding(13.dp)) {
+                        Column(modifier = Modifier.padding(14.dp)) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.Top
                             ) {
-                                Text(text = profile.emoji, fontSize = 25.sp)
+                                Box(
+                                    modifier = Modifier
+                                        .size(42.dp)
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(
+                                            if (profile.id == "military") Color(0xFFF0F2F5)
+                                            else Color(0xFFF5F6FF)
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(text = profile.emoji, fontSize = 22.sp)
+                                }
+
                                 if (isSelected) {
                                     Box(
                                         modifier = Modifier
                                             .size(24.dp)
                                             .clip(RoundedCornerShape(8.dp))
-                                            .background(SageGreenPrimary),
+                                            .background(Color(0xFF5B5CE2)),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Icon(
@@ -152,12 +143,12 @@ fun WarehouseProfileSetupScreen(
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(9.dp))
+                            Spacer(modifier = Modifier.height(11.dp))
 
                             Text(
                                 text = profile.title,
-                                color = TacticalTextPrimary,
-                                fontSize = 14.sp,
+                                color = Color(0xFF111827),
+                                fontSize = 13.5.sp,
                                 fontWeight = FontWeight.Bold,
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis
@@ -165,12 +156,26 @@ fun WarehouseProfileSetupScreen(
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = profile.subtitle,
-                                color = TacticalTextMuted,
-                                fontSize = 10.5.sp,
+                                color = Color(0xFF707887),
+                                fontSize = 10.sp,
                                 lineHeight = 14.sp,
                                 maxLines = 3,
                                 overflow = TextOverflow.Ellipsis
                             )
+
+                            if (profile.id == "military") {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "Камера и фото отключены",
+                                    color = Color(0xFF596273),
+                                    fontSize = 8.5.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(100.dp))
+                                        .background(Color(0xFFE8EBF0))
+                                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
                         }
                     }
                 }
@@ -181,24 +186,24 @@ fun WarehouseProfileSetupScreen(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .background(TacticalBg)
+                .background(Color(0xFFF5F7FB))
                 .padding(horizontal = 16.dp, vertical = 14.dp)
         ) {
             if (selected != null) {
                 Text(
-                    text = "Стартовые группы: " + selected.categories.take(3).joinToString(" • ") +
+                    text = "Будут созданы группы: " + selected.categories.take(3).joinToString(" • ") +
                         if (selected.categories.size > 3) " • ещё ${selected.categories.size - 3}" else "",
-                    color = TacticalTextSecondary,
+                    color = Color(0xFF667085),
                     fontSize = 10.5.sp,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(TacticalSurfaceLight)
-                        .padding(horizontal = 12.dp, vertical = 9.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color.White)
+                        .padding(horizontal = 12.dp, vertical = 10.dp)
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(9.dp))
             }
 
             Button(
@@ -206,20 +211,19 @@ fun WarehouseProfileSetupScreen(
                 enabled = selectedId != null,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp),
-                shape = RoundedCornerShape(16.dp),
+                    .height(54.dp),
+                shape = RoundedCornerShape(17.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = SageGreenPrimary,
-                    disabledContainerColor = TacticalSurfaceLight,
-                    disabledContentColor = TacticalTextMuted
+                    containerColor = Color(0xFF5B5CE2),
+                    contentColor = Color.White,
+                    disabledContainerColor = Color(0xFFE3E6EC),
+                    disabledContentColor = Color(0xFF9AA1AE)
                 )
             ) {
                 Text(
-                    text = if (selected == null) "Выберите профиль склада" else "Продолжить с «${selected.title}»",
+                    text = if (selected == null) "Выберите тип склада" else "Продолжить",
                     fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    fontWeight = FontWeight.Bold
                 )
             }
         }
