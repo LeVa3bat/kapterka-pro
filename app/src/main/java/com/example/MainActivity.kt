@@ -147,7 +147,12 @@ class MainActivity : ComponentActivity() {
         }
 
         try {
-            if (com.google.firebase.FirebaseApp.getApps(this).isEmpty()) {
+            // KapterkaApplication owns Firebase initialization. Keep this fallback
+            // only for production builds; NEXT-SAFE test APKs must never connect
+            // to the production Firebase project.
+            if (!BuildConfig.IS_NEXT_SAFE_TEST &&
+                com.google.firebase.FirebaseApp.getApps(this).isEmpty()
+            ) {
                 val options = com.google.firebase.FirebaseOptions.Builder()
                     .setApplicationId("1:946233715306:android:d2502913c49c0b985c7813")
                     .setApiKey("AIzaSyAYyoG42TuQJFLxN0KnFIePZx-gAtizw0Q")
