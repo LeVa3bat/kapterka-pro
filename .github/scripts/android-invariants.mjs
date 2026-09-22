@@ -239,6 +239,18 @@ if (emailSource.includes('api.brevo.com') ||
   ok('license email delivery is server-authoritative');
 }
 
+const syncIdentitySource = read('app/src/main/java/com/example/data/sync/SyncIdentityGenerator.kt');
+if (!syncIdentitySource.includes('fun newUnitKey(): String = "kapt_" + randomHex(20)')) {
+  fail('new unit keys must keep at least 80 bits of random hex entropy');
+} else {
+  ok('new sync unit keys are high-entropy while legacy keys remain compatible');
+}
+if (!syncIdentitySource.includes('fun newDeviceId(): String = "dev_" + randomHex(16)')) {
+  fail('new device IDs must keep at least 64 bits of random hex entropy');
+} else {
+  ok('new sync device IDs are collision-resistant');
+}
+
 const sourceFiles = [];
 const walk = (dir) => {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
