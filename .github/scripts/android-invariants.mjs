@@ -96,6 +96,16 @@ if (manualActivation.includes('Ключ подтвержден цифровой 
   ok('manual activation does not mint a fresh offline license');
 }
 
+const daoSource = read('app/src/main/java/com/example/data/local/KapterkaDao.kt');
+const repositorySource = read('app/src/main/java/com/example/data/repository/KapterkaRepository.kt');
+if (!daoSource.includes('@Transaction') || !daoSource.includes('commitOperationAndStocks')) {
+  fail('atomic Room operation+stock transaction is missing');
+} else if ((repositorySource.match(/dao\.commitOperationAndStocks\(/g) || []).length < 4) {
+  fail('not all core stock-changing operations use atomic Room transaction');
+} else {
+  ok('core operation history and stock mutations are committed atomically');
+}
+
 const syncSource = read('app/src/main/java/com/example/data/sync/FirebaseSyncManager.kt');
 const reconcileStart = syncSource.indexOf('suspend fun syncAndReconcileAll');
 const reconcileEnd = syncSource.indexOf('fun pushOperationAsync', reconcileStart);
