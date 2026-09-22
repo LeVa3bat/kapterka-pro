@@ -86,23 +86,8 @@ fun InventoryCatalogScreen(
     var editingItem by remember { mutableStateOf<InventoryItem?>(null) }
 
     val services = remember(availableCategories) {
-        if (availableCategories.isNotEmpty()) {
-            listOf("Все категории") + availableCategories
-        } else {
-            listOf(
-                "Все категории",
-                "Служба РАВ",
-                "Служба БПЛА и робототехники",
-                "Служба связи и РЭБ",
-                "Вещевая служба и СИБЗ",
-                "Медицинская служба",
-                "Инженерная служба",
-                "Служба ГСМ",
-                "Продовольственная служба",
-                "Автомобильная и БТ служба",
-                "Служба РХБЗ",
-                "Топографическая и штабная"
-            )
+        listOf("Все категории") + availableCategories.ifEmpty {
+            com.example.data.local.InitialData.getDefaultCategories()
         }
     }
 
