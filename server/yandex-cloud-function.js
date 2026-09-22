@@ -917,7 +917,12 @@ module.exports.handler = async function handler(event) {
 
       let activeLicense = null;
       if (email) {
-        try { activeLicense = await queryActiveLicenseByEmail(email); } catch (_) {}
+        try {
+          const candidate = await queryActiveLicenseByEmail(email);
+          if (candidate && candidate.fighterId === fighterId) {
+            activeLicense = candidate;
+          }
+        } catch (_) {}
       }
 
       await patchFirestoreDocument('fighters', fighterId, {
