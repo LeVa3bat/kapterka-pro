@@ -29,7 +29,12 @@ Admin:
 - `ADMIN_API_SECRET_SHA256=<sha256 of admin passphrase>`
 - `ADMIN_SESSION_SECRET=<random high-entropy server secret>`
 
-Optional notifications:
+License email (required for release readiness):
+- `BREVO_API_KEY=<server only>`
+- `EMAIL_SENDER_EMAIL=<verified sender address>`
+- optional display name: `EMAIL_SENDER_NAME=Каптёрка ПРО`
+
+Optional Telegram notifications:
 - `TG_BOT_TOKEN=<server only>`
 - `TG_ADMIN_CHAT_ID=<server only>`
 
@@ -51,6 +56,9 @@ Must return JSON with:
 - `service: "kapterka-payment-api"`
 - `secretConfigured: true`
 - `licenseRegistryConfigured: true`
+- `adminAuthConfigured: true`
+- `adminSessionConfigured: true`
+- `emailConfigured: true`
 
 Health must never return secret values.
 
