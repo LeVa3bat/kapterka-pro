@@ -10,6 +10,7 @@ on:
       - 'docs/security.html'
       - 'docs/updates.html'
       - 'docs/help.html'
+      - 'docs/bezopasnoe-obnovlenie-kapterka-pro.html'
       - 'docs/sitemap.xml'
       - 'docs/robots.txt'
       - 'docs/site.webmanifest'
@@ -72,6 +73,7 @@ jobs:
               "https://kapterka-pro.ru/security.html",
               "https://kapterka-pro.ru/updates.html",
               "https://kapterka-pro.ru/help.html",
+              "https://kapterka-pro.ru/bezopasnoe-obnovlenie-kapterka-pro.html",
               "https://kapterka-pro.ru/uchet-ostatkov-na-telefone.html",
               "https://kapterka-pro.ru/uchet-imushchestva-offline.html",
               "https://kapterka-pro.ru/skladskoy-uchet-android.html",
