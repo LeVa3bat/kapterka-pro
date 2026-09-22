@@ -87,6 +87,8 @@ jobs:
             'admin_list_fighters',
             'admin_grant_license',
             'send_license_email',
+            'LICENSE_EMAIL_RATE_LIMITED',
+            'reserveLicenseEmailSend',
             'license_key',
             'expires_at'
           ];
