@@ -67,4 +67,32 @@ jobs:
           "$SDKMANAGER" "platforms;android-36.1"
 
       - name: Run debug unit tests
+        id: unit_tests
+        continue-on-error: true
         run: gradle :app:testDebugUnitTest --no-daemon --stacktrace
+
+      - name: Report failed unit tests
+        if: always()
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import glob, xml.etree.ElementTree as ET
+          failed = 0
+          for path in glob.glob("app/build/test-results/testDebugUnitTest/*.xml"):
+              root = ET.parse(path).getroot()
+              for case in root.findall(".//testcase"):
+                  failure = case.find("failure")
+                  error = case.find("error")
+                  node = failure if failure is not None else error
+                  if node is not None:
+                      failed += 1
+                      name = case.attrib.get("classname","") + "." + case.attrib.get("name","")
+                      msg = (node.attrib.get("message") or node.text or "").replace("\n"," ")[:1200]
+                      print(f"::error title=Unit test failed::{name}: {msg}")
+          if failed:
+              raise SystemExit(f"{failed} unit test(s) failed")
+          PY
+
+      - name: Enforce unit test result
+        if: steps.unit_tests.outcome != 'success'
+        run: exit 1
