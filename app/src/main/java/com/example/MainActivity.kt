@@ -676,6 +676,7 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
             catalogItems = catalogItems,
             stockRecords = stockRecords,
             initialPointId = selectedPointId,
+            warehouseProfileId = warehouseProfileId,
             onDismiss = { showIncomeDialog = false },
             onConfirm = { toPointId, toPointName, supplier, items, comment ->
                 viewModel.recordIncome(toPointId, toPointName, supplier, items, comment)
@@ -689,6 +690,7 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
             catalogItems = catalogItems,
             stockRecords = stockRecords,
             initialPointId = selectedPointId,
+            warehouseProfileId = warehouseProfileId,
             onDismiss = { showTransferDialog = false },
             onConfirm = { fromPointId, fromPointName, toPointId, toPointName, items, comment ->
                 viewModel.recordTransfer(fromPointId, fromPointName, toPointId, toPointName, items, comment)
@@ -702,6 +704,7 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
             catalogItems = catalogItems,
             stockRecords = stockRecords,
             initialPointId = selectedPointId,
+            warehouseProfileId = warehouseProfileId,
             onDismiss = { showIssueDialog = false },
             onConfirm = { fromPointId, fromPointName, toPointId, toPointName, items, comment ->
                 viewModel.recordIssue(fromPointId, fromPointName, toPointId, toPointName, items, comment)
@@ -716,6 +719,7 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
             catalogItems = catalogItems,
             stockRecords = stockRecords,
             initialPointId = selectedPointId,
+            warehouseProfileId = warehouseProfileId,
             onDismiss = { showExpenditureDialog = false },
             onConfirm = { fromPointId, pointName, docNumber, responsiblePerson, items, comment ->
                 viewModel.recordExpenditure(fromPointId, pointName, docNumber, responsiblePerson, items, comment)
