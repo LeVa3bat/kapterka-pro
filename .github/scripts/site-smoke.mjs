@@ -19,6 +19,7 @@ const requiredFiles = [
   'docs/index.html',
   'docs/style.css',
   'docs/guide.css',
+  'docs/guide-analytics.js',
   'docs/app.js',
   'docs/auth-config.js',
   'docs/auth-v2.js',
@@ -26,6 +27,7 @@ const requiredFiles = [
   'docs/terms.html',
   'docs/updates.html',
   'docs/help.html',
+  'docs/bezopasnoe-obnovlenie-kapterka-pro.html',
   'docs/security.html',
   'docs/uchet-ostatkov-na-telefone.html',
   'docs/uchet-imushchestva-offline.html',
@@ -35,6 +37,14 @@ const requiredFiles = [
   'docs/prihod-rashod-sklad-android.html',
   'docs/uchet-vydachi-imushchestva-android.html',
   'docs/peremeshchenie-mezhdu-skladami-android.html',
+  'docs/uchet-tmc-android.html',
+  'docs/uchet-instrumenta-android.html',
+  'docs/uchet-oborudovaniya-android.html',
+  'docs/uchet-inventarya-android.html',
+  'docs/skladskoy-uchet-dlya-nebolshogo-sklada.html',
+  'docs/sklad-bez-1c-na-telefone.html',
+  'docs/zhurnal-dvizheniya-imushchestva-android.html',
+  'docs/uchet-neskolkih-skladov-android.html',
   'docs/robots.txt',
   'docs/google3271685078741b10.html',
   'docs/sitemap.xml',
@@ -63,9 +73,18 @@ const guideFiles = [
   'docs/inventarizaciya-na-android.html',
   'docs/uchet-vydachi-imushchestva-android.html',
   'docs/peremeshchenie-mezhdu-skladami-android.html',
+  'docs/uchet-tmc-android.html',
+  'docs/uchet-instrumenta-android.html',
+  'docs/uchet-oborudovaniya-android.html',
+  'docs/uchet-inventarya-android.html',
+  'docs/skladskoy-uchet-dlya-nebolshogo-sklada.html',
+  'docs/sklad-bez-1c-na-telefone.html',
+  'docs/zhurnal-dvizheniya-imushchestva-android.html',
+  'docs/uchet-neskolkih-skladov-android.html',
   'docs/security.html',
   'docs/updates.html',
-  'docs/help.html'
+  'docs/help.html',
+  'docs/bezopasnoe-obnovlenie-kapterka-pro.html'
 ];
 for (const file of guideFiles) {
   const source = read(file);
@@ -175,7 +194,7 @@ if (!index.includes('v3.4.9') && !index.includes('3.4.9')) fail('site version 3.
 if (!index.includes('сборка 31') && !index.includes('Сборка 31') && !index.includes('data-release-code>31</span>')) fail('site build 31 marker is missing');
 
 
-const htmlFiles = ['docs/index.html', 'docs/privacy.html', 'docs/terms.html', 'docs/security.html', 'docs/updates.html', 'docs/help.html', 'docs/skladskoy-uchet-android.html', 'docs/uchet-imushchestva-offline.html', 'docs/uchet-ostatkov-na-telefone.html', 'docs/guides.html', 'docs/prihod-rashod-sklad-android.html', 'docs/inventarizaciya-na-android.html', 'docs/uchet-vydachi-imushchestva-android.html', 'docs/peremeshchenie-mezhdu-skladami-android.html', 'docs/404.html'];
+const htmlFiles = ['docs/index.html', 'docs/privacy.html', 'docs/terms.html', 'docs/security.html', 'docs/updates.html', 'docs/help.html', 'docs/skladskoy-uchet-android.html', 'docs/uchet-imushchestva-offline.html', 'docs/uchet-ostatkov-na-telefone.html', 'docs/guides.html', 'docs/prihod-rashod-sklad-android.html', 'docs/inventarizaciya-na-android.html', 'docs/uchet-vydachi-imushchestva-android.html', 'docs/peremeshchenie-mezhdu-skladami-android.html', 'docs/uchet-tmc-android.html', 'docs/uchet-instrumenta-android.html', 'docs/uchet-oborudovaniya-android.html', 'docs/uchet-inventarya-android.html', 'docs/skladskoy-uchet-dlya-nebolshogo-sklada.html', 'docs/sklad-bez-1c-na-telefone.html', 'docs/zhurnal-dvizheniya-imushchestva-android.html', 'docs/uchet-neskolkih-skladov-android.html', 'docs/bezopasnoe-obnovlenie-kapterka-pro.html', 'docs/404.html'];
 const missingLocalTargets = [];
 for (const htmlFile of htmlFiles) {
   const source = read(htmlFile);
@@ -277,7 +296,16 @@ const requiredSitemapUrls = [
   'https://kapterka-pro.ru/prihod-rashod-sklad-android.html',
   'https://kapterka-pro.ru/inventarizaciya-na-android.html',
   'https://kapterka-pro.ru/uchet-vydachi-imushchestva-android.html',
-  'https://kapterka-pro.ru/peremeshchenie-mezhdu-skladami-android.html'
+  'https://kapterka-pro.ru/peremeshchenie-mezhdu-skladami-android.html',
+  'https://kapterka-pro.ru/uchet-tmc-android.html',
+  'https://kapterka-pro.ru/uchet-instrumenta-android.html',
+  'https://kapterka-pro.ru/uchet-oborudovaniya-android.html',
+  'https://kapterka-pro.ru/uchet-inventarya-android.html',
+  'https://kapterka-pro.ru/skladskoy-uchet-dlya-nebolshogo-sklada.html',
+  'https://kapterka-pro.ru/sklad-bez-1c-na-telefone.html',
+  'https://kapterka-pro.ru/zhurnal-dvizheniya-imushchestva-android.html',
+  'https://kapterka-pro.ru/uchet-neskolkih-skladov-android.html',
+  'https://kapterka-pro.ru/bezopasnoe-obnovlenie-kapterka-pro.html'
 ];
 const missingSitemapUrls = requiredSitemapUrls.filter(url => !sitemap.includes('<loc>' + url + '</loc>'));
 if (missingSitemapUrls.length) fail('sitemap is missing URLs: ' + missingSitemapUrls.join(', '));
@@ -325,7 +353,9 @@ const publicHtmlForA11y = [
   'docs/privacy.html','docs/terms.html','docs/skladskoy-uchet-android.html',
   'docs/uchet-imushchestva-offline.html','docs/uchet-ostatkov-na-telefone.html',
   'docs/guides.html','docs/prihod-rashod-sklad-android.html','docs/inventarizaciya-na-android.html',
-  'docs/uchet-vydachi-imushchestva-android.html','docs/peremeshchenie-mezhdu-skladami-android.html'
+  'docs/uchet-vydachi-imushchestva-android.html','docs/peremeshchenie-mezhdu-skladami-android.html',
+  'docs/uchet-tmc-android.html','docs/uchet-instrumenta-android.html','docs/uchet-oborudovaniya-android.html','docs/uchet-inventarya-android.html','docs/skladskoy-uchet-dlya-nebolshogo-sklada.html','docs/sklad-bez-1c-na-telefone.html','docs/zhurnal-dvizheniya-imushchestva-android.html','docs/uchet-neskolkih-skladov-android.html',
+  'docs/bezopasnoe-obnovlenie-kapterka-pro.html'
 ];
 for (const file of publicHtmlForA11y) {
   const source = read(file);
@@ -363,7 +393,16 @@ const seoGrowthPages = [
   'docs/prihod-rashod-sklad-android.html',
   'docs/inventarizaciya-na-android.html',
   'docs/uchet-vydachi-imushchestva-android.html',
-  'docs/peremeshchenie-mezhdu-skladami-android.html'
+  'docs/peremeshchenie-mezhdu-skladami-android.html',
+  'docs/uchet-tmc-android.html',
+  'docs/uchet-instrumenta-android.html',
+  'docs/uchet-oborudovaniya-android.html',
+  'docs/uchet-inventarya-android.html',
+  'docs/skladskoy-uchet-dlya-nebolshogo-sklada.html',
+  'docs/sklad-bez-1c-na-telefone.html',
+  'docs/zhurnal-dvizheniya-imushchestva-android.html',
+  'docs/uchet-neskolkih-skladov-android.html',
+  'docs/bezopasnoe-obnovlenie-kapterka-pro.html'
 ];
 for (const file of seoGrowthPages) {
   if (!fs.existsSync(file)) fail(`${file}: SEO growth page missing`);
@@ -373,11 +412,24 @@ for (const file of seoGrowthPages) {
   if (!/rel=["']canonical["']/.test(source)) fail(`${file}: canonical missing`);
   if (!/name=["']robots["'][^>]*index/.test(source)) fail(`${file}: robots index missing`);
 }
-for (const url of ['guides.html','prihod-rashod-sklad-android.html','inventarizaciya-na-android.html','uchet-vydachi-imushchestva-android.html','peremeshchenie-mezhdu-skladami-android.html']) {
+for (const url of ['guides.html','prihod-rashod-sklad-android.html','inventarizaciya-na-android.html','uchet-vydachi-imushchestva-android.html','peremeshchenie-mezhdu-skladami-android.html','uchet-tmc-android.html','uchet-instrumenta-android.html','uchet-oborudovaniya-android.html','uchet-inventarya-android.html','skladskoy-uchet-dlya-nebolshogo-sklada.html','sklad-bez-1c-na-telefone.html','zhurnal-dvizheniya-imushchestva-android.html','uchet-neskolkih-skladov-android.html','bezopasnoe-obnovlenie-kapterka-pro.html']) {
   if (!sitemap.includes(url)) fail(`sitemap missing ${url}`);
 }
 if (!index.includes('href="guides.html">Материалы</a>')) fail('homepage footer does not link to SEO content hub');
 else ok('SEO growth pages are indexed and internally linked');
+
+const guideAnalytics = read('docs/guide-analytics.js');
+if (!guideAnalytics.includes("webvisor: false") || !guideAnalytics.includes("guide_action")) fail('guide analytics privacy/config guard is missing');
+if (/(email|callsign|licenseKey|unitKey|paymentId)\s*:/i.test(guideAnalytics)) fail('guide analytics must not send personal/sensitive fields');
+let guideAnalyticsMissing = false;
+for (const file of seoGrowthPages) {
+  const source = read(file);
+  if (!source.includes('guide-analytics.js')) {
+    fail(`${file}: guide analytics is not connected`);
+    guideAnalyticsMissing = true;
+  }
+}
+if (!guideAnalyticsMissing) ok('guide pages use privacy-safe analytics');
 
 if (!index.includes('class="neo-guides"') ||
     !index.includes('href="guides.html"') ||

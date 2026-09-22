@@ -4083,3 +4083,10 @@ a.neo-trust-item:hover{transform:translateY(-1px);background:#111b15;border-colo
   min-height:28px;
   padding:4px 0;
 }
+
+/* COMPACT SEO TASK LINKS 2026-09-22 */
+.neo-guides-more{display:flex;align-items:center;justify-content:center;gap:7px;flex-wrap:wrap;margin-top:12px;color:#74867b;font-size:.66rem}
+.neo-guides-more span{font-weight:800;color:#8fa096}
+.neo-guides-more a{padding:5px 8px;border:1px solid rgba(255,255,255,.075);border-radius:999px;background:#0c140f;color:#a9bbb0;text-decoration:none;white-space:nowrap}
+.neo-guides-more a:hover{border-color:rgba(113,215,167,.28);color:#dce8e1}
+@media(max-width:620px){.neo-guides-more{justify-content:flex-start;gap:5px;margin-top:9px}.neo-guides-more span{width:100%;font-size:.58rem}.neo-guides-more a{font-size:.58rem;padding:4px 7px}}
