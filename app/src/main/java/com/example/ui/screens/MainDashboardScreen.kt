@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import com.example.BuildConfig
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -299,12 +300,14 @@ fun MainDashboardScreen(
             )
         }
 
-        // DEMO OR PRO STATUS BANNER
-        item {
-            DemoBanner(
-                profile = profile,
-                onBannerClick = onBannerClick
-            )
+        // Legacy subscription banner belongs only to the original Kapterka product line.
+        if (!BuildConfig.IS_UNIVERSAL_APP) {
+            item {
+                DemoBanner(
+                    profile = profile,
+                    onBannerClick = onBannerClick
+                )
+            }
         }
 
         // COMPACT OVERVIEW
