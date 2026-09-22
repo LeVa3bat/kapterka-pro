@@ -17,12 +17,13 @@ process.env.EMAIL_SENDER_EMAIL = 'sender@example.invalid';
 
 const { handler } = require('./yandex-cloud-function.js');
 
-async function call(action, body = {}, method = 'POST') {
+async function call(action, body = {}, method = 'POST', sourceIp = '127.0.0.1') {
   const response = await handler({
     httpMethod: method,
     queryStringParameters: method === 'GET' ? { action } : {},
     body: method === 'GET' ? '' : JSON.stringify({ action, ...body }),
-    isBase64Encoded: false
+    isBase64Encoded: false,
+    requestContext: { identity: { sourceIp } }
   });
   let parsed = {};
   try { parsed = JSON.parse(response.body || '{}'); } catch (_) {}
@@ -58,6 +59,22 @@ async function call(action, body = {}, method = 'POST') {
   });
   assert.strictEqual(invalidAdmin.statusCode, 403);
   assert.strictEqual(invalidAdmin.parsed.error, 'ADMIN_SESSION_INVALID');
+
+  // admin rate limit: five failures are rejected normally; the sixth is throttled.
+  for (let i = 0; i < 5; i++) {
+    const bad = await call('admin_auth', { secret: 'wrong-secret-' + i }, 'POST', '198.51.100.10');
+    assert.strictEqual(bad.statusCode, 403);
+    assert.strictEqual(bad.parsed.error, 'ADMIN_AUTH_FAILED');
+  }
+  const throttled = await call('admin_auth', { secret: 'still-wrong' }, 'POST', '198.51.100.10');
+  assert.strictEqual(throttled.statusCode, 429);
+  assert.strictEqual(throttled.parsed.error, 'ADMIN_AUTH_RATE_LIMITED');
+
+  // A different source with the correct secret must still be able to authenticate.
+  const validAdmin = await call('admin_auth', { secret: 'correct-admin-secret' }, 'POST', '198.51.100.11');
+  assert.strictEqual(validAdmin.statusCode, 200);
+  assert.strictEqual(validAdmin.parsed.ok, true);
+  assert.ok(validAdmin.parsed.admin_token);
 
   const invalidPayment = await call('create', {
     email: 'not-an-email',
