@@ -514,12 +514,9 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                             },
                             onLogoutClick = {
                                 val current = profile ?: com.example.data.model.UserProfile()
-                                viewModel.updateProfile(current.copy(
-                                    isLoggedIn = false,
-                                    isProActive = false,
-                                    proDaysLeft = 0
-                                ))
-                                viewModel.resetLicense()
+                                // Logging out / changing the profile must not revoke a paid license
+                                // or replace the stable fighter identity used for server restore.
+                                viewModel.updateProfile(current.copy(isLoggedIn = false))
                             },
                             onUpdateProfile = { updated ->
                                 viewModel.updateProfile(updated)
