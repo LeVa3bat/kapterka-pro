@@ -166,6 +166,23 @@ if (!backupRules.includes('kapterka_sync_prefs.xml') ||
   ok('device UUID is excluded from cloud/device restore');
 }
 
+const fighterRegistrySource = read('app/src/main/java/com/example/data/admin/FighterRegistryManager.kt');
+if (fighterRegistrySource.includes('FirebaseFirestore') ||
+    fighterRegistrySource.includes('collection("fighters")')) {
+  fail('FighterRegistryManager must not access Firestore directly');
+} else if (!fighterRegistrySource.includes('FighterBackendService')) {
+  fail('ordinary fighter registry operations are not routed through backend');
+} else {
+  ok('ordinary fighter registry access is backend-routed');
+}
+
+const adminBackendSource = read('app/src/main/java/com/example/data/admin/AdminBackendService.kt');
+if (!adminBackendSource.includes('admin_list_fighters')) {
+  fail('global fighter list is not admin-backend protected');
+} else {
+  ok('global fighter list requires admin backend');
+}
+
 const emailSource = read('app/src/main/java/com/example/data/notification/EmailDeliveryService.kt');
 if (emailSource.includes('api.brevo.com') ||
     emailSource.includes('api.resend.com') ||
