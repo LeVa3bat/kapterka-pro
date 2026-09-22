@@ -1,0 +1,87 @@
+# Android next-safe audit — 2026-09-22
+
+## Baseline that must not be broken
+
+- Stable app: 3.4.9 / versionCode 31
+- Package: com.aistudio.kapterka.jmwqve
+- minSdk: 24 (Android 7.0+)
+- Room database: kapterka_database, schema version 2
+- Published signer SHA-256 baseline: 843a7e883914f3a7a5a7665ff07b2e8c43da87a24ee4dc35e1600758aee73cb9
+- Working web release remains independent from this branch.
+
+## Critical findings
+
+### P0 — YooKassa secret is embedded in Android source
+The Android client currently contains live YooKassa credential material and calls YooKassa API directly.
+Because the repository is public and secrets embedded in APKs are extractable, this must be migrated to a server-only payment API before a future security release.
+
+Do not revoke/rotate the currently used YooKassa credential until the server path is deployed and the current production payment path is understood, otherwise payment in 3.4.9 can break.
+
+Target design:
+1. Android sends only callsign/email/return URL to our payment backend.
+2. Backend stores YooKassa secret only in environment variables.
+3. Backend creates payments and verifies status with YooKassa.
+4. Android never receives or stores shop secret.
+5. Credential rotation happens after the new path is deployed and verified.
+
+### P0 — License activation can be forged locally
+The license checksum algorithm and its seed are present in the Android client.
+There is also compatibility handling for KPT-format keys and an offline fallback that can activate a locally valid key even when Firestore cannot confirm it.
+
+Target design:
+- Server/Firestore registry is authoritative for paid licenses.
+- Offline mode may continue an already-confirmed license until its stored expiry, but must not mint a fresh 30-day license from an unregistered key.
+- Remove unconditional KPT bypass after checking whether any real users still depend on those legacy keys.
+- Preserve existing valid paid users during migration.
+
+### P0 — Sync reconciliation can delete local data
+Current sync uses cloud-authoritative reconciliation. When cloud collections do not contain a local stock/operation/point, local rows may be deleted. An empty or stale cloud can therefore erase local data during reconcile.
+
+Target design:
+- Never infer destructive deletion from absence alone.
+- Introduce explicit deletion/tombstone metadata or another conflict-safe rule.
+- Before any destructive reconciliation, create a recoverable local snapshot.
+- Add tests for: first sync, empty cloud, stale cloud, two-device edit, delete on one device, offline edits, reconnect.
+
+### P1 — Release signing is intentionally pinned to the published baseline
+Gradle release currently uses debugConfig. This looks unusual, but the repository invariant explicitly protects it because the published 3.4.9 signer must remain identical.
+
+Do not switch signing configs until the actual keystore producing the published signer is available and verified. A signing change would prevent installation over existing users.
+
+### P1 — Backup rules are still default/sample
+Android backup/data extraction rules are effectively unconfigured. The sync device UUID is stored in a dedicated SharedPreferences file and should not be restored to a second phone as the same physical device identity.
+
+Target design:
+- Preserve Room data and user/license data as intended.
+- Exclude ephemeral device identity from device/cloud restore.
+- Test Android device transfer and restore behavior before release.
+
+### P1 — Local operation + stock updates are not a single Room transaction
+Repository operations write history and stock in several DAO calls. A process death between calls can leave history and balances inconsistent.
+
+Target design:
+- Group each business operation and all affected stock updates inside one Room transaction.
+- Sync only after local transaction commits.
+- Add rollback/consistency tests.
+
+## Safe implementation order
+
+1. Establish green baseline compile + unit tests on this branch.
+2. Payment backend/client split without changing production 3.4.9.
+3. License verification migration with backward compatibility.
+4. Sync data-loss protection and conflict tests.
+5. Backup/device-transfer rules.
+6. Room transactional operations.
+7. UI/stability/performance improvements.
+8. Only then choose next versionName/versionCode and build a test APK.
+9. Verify test APK installs over 3.4.9 and preserves data, license, device count and sync.
+10. Never merge/release until all safety gates pass.
+
+## Explicit non-goals for the audit stage
+
+- Do not change package name.
+- Do not change Room filename.
+- Do not use destructive migration.
+- Do not change published signing identity.
+- Do not publish APK from this branch.
+- Do not modify current RuStore release while moderation is active.
