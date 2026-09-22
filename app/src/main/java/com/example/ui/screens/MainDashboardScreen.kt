@@ -990,7 +990,7 @@ fun MainDashboardScreen(
                                         Text(
                                             text = "$pointStockSum ед.",
                                             color = SageGreenBright,
-                                            fontSize = 13.sp,
+                                            fontSize = 11.5.sp,
                                             fontWeight = FontWeight.Bold,
                                             fontFamily = FontFamily.Monospace
                                         )
@@ -1214,7 +1214,7 @@ private fun PointStockTableView(
                                 Text(
                                     text = rowData.item.subType.uppercase(),
                                     color = TacticalTextMuted,
-                                    fontSize = 10.sp,
+                                    fontSize = 8.5.sp,
                                     fontWeight = FontWeight.Medium
                                 )
                                 if (rowData.item.standardCode.isNotBlank()) {
@@ -1452,7 +1452,7 @@ private fun SleekOperationTile(
         ) {
             Box(
                 modifier = Modifier
-                    .size(30.dp)
+                    .size(34.dp)
                     .clip(CircleShape)
                     .background(accentColor.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center
@@ -1461,16 +1461,16 @@ private fun SleekOperationTile(
                     imageVector = icon,
                     contentDescription = title,
                     tint = accentColor,
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier.size(18.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(5.dp))
 
             Text(
                 text = title,
                 color = TacticalTextPrimary,
-                fontSize = 11.5.sp,
+                fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
                 maxLines = 1
@@ -1479,7 +1479,7 @@ private fun SleekOperationTile(
             Text(
                 text = subtitle,
                 color = TacticalTextMuted,
-                fontSize = 8.5.sp,
+                fontSize = 10.sp,
                 textAlign = TextAlign.Center,
                 maxLines = 1
             )
