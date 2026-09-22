@@ -541,6 +541,120 @@ async function queryActiveLicenseByEmail(email) {
   });
 }
 
+function firestoreFieldValue(fields, name) {
+  const field = (fields || {})[name] || {};
+  if (Object.prototype.hasOwnProperty.call(field, 'stringValue')) return field.stringValue;
+  if (Object.prototype.hasOwnProperty.call(field, 'integerValue')) return Number(field.integerValue);
+  if (Object.prototype.hasOwnProperty.call(field, 'booleanValue')) return Boolean(field.booleanValue);
+  if (Object.prototype.hasOwnProperty.call(field, 'timestampValue')) return Date.parse(field.timestampValue) || 0;
+  return null;
+}
+
+function parseFighterDocument(doc) {
+  if (!doc) return null;
+  const fields = doc.fields || {};
+  const name = String(doc.name || '');
+  const docId = decodeURIComponent(name.split('/').pop() || '');
+  return {
+    id: firestoreFieldValue(fields, 'fighterId') || docId,
+    callsign: firestoreFieldValue(fields, 'callsign') || '',
+    role: firestoreFieldValue(fields, 'role') || 'Старшина подразделения',
+    unitName: firestoreFieldValue(fields, 'unitName') || '',
+    unitKey: firestoreFieldValue(fields, 'unitKey') || '',
+    licenseKey: firestoreFieldValue(fields, 'licenseKey') || '',
+    expiresAt: Number(firestoreFieldValue(fields, 'expiresAt') || 0),
+    registeredAt: Number(firestoreFieldValue(fields, 'registeredAt') || 0),
+    lastSeenAt: Number(firestoreFieldValue(fields, 'lastSeenAt') || 0),
+    email: firestoreFieldValue(fields, 'email') || '',
+    deviceModel: firestoreFieldValue(fields, 'deviceModel') || ''
+  };
+}
+
+async function queryFighterByEmail(email) {
+  const token = await requestGoogleAccessToken();
+  const path = `/v1/projects/${encodeURIComponent(FIREBASE_PROJECT_ID)}/databases/(default)/documents:runQuery`;
+  const payload = JSON.stringify({
+    structuredQuery: {
+      from: [{ collectionId: 'fighters' }],
+      where: {
+        fieldFilter: {
+          field: { fieldPath: 'email' },
+          op: 'EQUAL',
+          value: { stringValue: email }
+        }
+      },
+      limit: 10
+    }
+  });
+
+  return new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname: 'firestore.googleapis.com',
+      port: 443,
+      path,
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload)
+      },
+      timeout: 10000
+    }, (res) => {
+      let responseBody = '';
+      res.on('data', (chunk) => { responseBody += chunk; });
+      res.on('end', () => {
+        if (res.statusCode < 200 || res.statusCode >= 300) {
+          return reject(new Error(`Firestore fighter query failed: HTTP ${res.statusCode}`));
+        }
+        try {
+          const rows = JSON.parse(responseBody || '[]');
+          resolve(rows.map((row) => parseFighterDocument(row.document)).filter(Boolean));
+        } catch (error) {
+          reject(error);
+        }
+      });
+    });
+    req.on('timeout', () => req.destroy(new Error('Firestore fighter query timeout')));
+    req.on('error', reject);
+    req.write(payload);
+    req.end();
+  });
+}
+
+async function listFightersFromFirestore() {
+  const token = await requestGoogleAccessToken();
+  const path =
+    `/v1/projects/${encodeURIComponent(FIREBASE_PROJECT_ID)}/databases/(default)/documents/fighters?pageSize=500`;
+
+  return new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname: 'firestore.googleapis.com',
+      port: 443,
+      path,
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` },
+      timeout: 10000
+    }, (res) => {
+      let responseBody = '';
+      res.on('data', (chunk) => { responseBody += chunk; });
+      res.on('end', () => {
+        if (res.statusCode < 200 || res.statusCode >= 300) {
+          return reject(new Error(`Firestore fighter list failed: HTTP ${res.statusCode}`));
+        }
+        try {
+          const parsed = JSON.parse(responseBody || '{}');
+          resolve((parsed.documents || []).map(parseFighterDocument).filter(Boolean));
+        } catch (error) {
+          reject(error);
+        }
+      });
+    });
+    req.on('timeout', () => req.destroy(new Error('Firestore fighter list timeout')));
+    req.on('error', reject);
+    req.end();
+  });
+}
+
 async function patchFirestoreDocument(collection, docId, data) {
   const token = await requestGoogleAccessToken();
   const fields = {};
@@ -631,6 +745,94 @@ module.exports.handler = async function handler(event) {
       }, callback);
     }
 
+    if (action === 'fighter_upsert') {
+      const fighterId = cleanText(body.fighter_id, 100);
+      const callsign = cleanText(body.callsign || 'Боец', 80);
+      const unitName = cleanText(body.unit_name || 'Подразделение', 120);
+      const unitKey = cleanText(body.unit_key, 120);
+      const email = cleanEmail(body.email);
+      const deviceModel = cleanText(body.device_model || 'Android', 120);
+
+      if (!fighterId) return json(400, { ok: false, error: 'MISSING_FIGHTER_ID' });
+
+      let activeLicense = null;
+      if (email) {
+        try { activeLicense = await queryActiveLicenseByEmail(email); } catch (_) {}
+      }
+
+      const now = Date.now();
+      await patchFirestoreDocument('fighters', fighterId, {
+        fighterId,
+        callsign,
+        role: 'Старшина подразделения',
+        unitName,
+        unitKey,
+        email,
+        deviceModel,
+        lastSeenAt: now,
+        licenseKey: activeLicense?.licenseKey || '',
+        expiresAt: activeLicense?.expiresAt || 0,
+        isProActive: Boolean(activeLicense && activeLicense.expiresAt > now)
+      });
+
+      return json(200, { ok: true });
+    }
+
+    if (action === 'fighter_lookup') {
+      const fighterId = cleanText(body.fighter_id, 100);
+      const email = cleanEmail(body.email);
+      const callsign = cleanText(body.callsign, 80).toLowerCase();
+      let fighter = null;
+
+      if (fighterId) {
+        const token = await requestGoogleAccessToken();
+        const path =
+          `/v1/projects/${encodeURIComponent(FIREBASE_PROJECT_ID)}/databases/(default)/documents/fighters/${encodeURIComponent(fighterId)}`;
+        fighter = await new Promise((resolve, reject) => {
+          const req = https.request({
+            hostname: 'firestore.googleapis.com',
+            port: 443,
+            path,
+            method: 'GET',
+            headers: { Authorization: `Bearer ${token}` },
+            timeout: 10000
+          }, (res) => {
+            let responseBody = '';
+            res.on('data', (chunk) => { responseBody += chunk; });
+            res.on('end', () => {
+              if (res.statusCode === 404) return resolve(null);
+              if (res.statusCode < 200 || res.statusCode >= 300) {
+                return reject(new Error(`Firestore fighter read failed: HTTP ${res.statusCode}`));
+              }
+              try { resolve(parseFighterDocument(JSON.parse(responseBody || '{}'))); }
+              catch (error) { reject(error); }
+            });
+          });
+          req.on('timeout', () => req.destroy(new Error('Firestore fighter read timeout')));
+          req.on('error', reject);
+          req.end();
+        });
+      }
+
+      if (!fighter && email) {
+        const candidates = await queryFighterByEmail(email);
+        fighter = candidates.find((item) =>
+          !callsign || String(item.callsign || '').trim().toLowerCase() === callsign
+        ) || null;
+      }
+
+      if (!fighter) return json(404, { ok: false, error: 'FIGHTER_NOT_FOUND' });
+
+      return json(200, {
+        ok: true,
+        fighter: {
+          id: fighter.id,
+          unit_name: fighter.unitName,
+          unit_key: fighter.unitKey
+        }
+      });
+    }
+
     if (action === 'license_verify') {
       const licenseKey = cleanText(body.license_key, 40).toUpperCase();
       const fighterId = cleanText(body.fighter_id, 100);
@@ -719,6 +921,29 @@ module.exports.handler = async function handler(event) {
         ok: true,
         admin_token: adminToken,
         expires_in_seconds: Math.floor(ADMIN_TOKEN_TTL_MS / 1000)
+      });
+    }
+
+    if (action === 'admin_list_fighters') {
+      if (!verifyAdminToken(body.admin_token)) {
+        return json(403, { ok: false, error: 'ADMIN_SESSION_INVALID' });
+      }
+      const fighters = await listFightersFromFirestore();
+      return json(200, {
+        ok: true,
+        fighters: fighters.map((fighter) => ({
+          id: fighter.id,
+          callsign: fighter.callsign,
+          role: fighter.role,
+          unit_name: fighter.unitName,
+          unit_key: fighter.unitKey,
+          license_key: fighter.licenseKey,
+          expires_at: fighter.expiresAt,
+          registered_at: fighter.registeredAt,
+          last_seen_at: fighter.lastSeenAt,
+          email: fighter.email,
+          device_model: fighter.deviceModel
+        }))
       });
     }
 
