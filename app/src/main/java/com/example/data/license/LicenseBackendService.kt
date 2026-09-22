@@ -40,12 +40,14 @@ class LicenseBackendService {
     }
 
     suspend fun restoreByEmail(
-        email: String
+        email: String,
+        fighterId: String
     ): LicenseBackendResult = withContext(Dispatchers.IO) {
         requestLicense(
             action = "license_restore",
             payload = JSONObject().apply {
                 put("email", email.trim().lowercase())
+                put("fighter_id", fighterId.trim())
             }
         )
     }
@@ -130,6 +132,8 @@ class LicenseBackendService {
         "LICENSE_NOT_ACTIVE" -> "Лицензия не найдена или срок её действия истёк."
         "LICENSE_NOT_FOUND" -> "Активная оплаченная лицензия для этого Email не найдена."
         "FIGHTER_MISMATCH" -> "Лицензия привязана к другому пользователю."
+        "LICENSE_RESTORE_IDENTITY_MISMATCH" -> "Автоматическое восстановление не разрешено на этом профиле. Используйте сохранённую резервную копию или обратитесь в поддержку для безопасной перепривязки."
+        "MISSING_FIGHTER_ID" -> "Не найден идентификатор пользователя для безопасного восстановления."
         "INVALID_EMAIL" -> "Укажите корректный Email."
         else -> "Сервер не подтвердил лицензию."
     }
