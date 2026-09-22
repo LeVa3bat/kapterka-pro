@@ -10,6 +10,7 @@ import com.example.data.model.InventoryItem
 import com.example.data.model.OperationRecord
 import com.example.data.model.RequisitionRequest
 import com.example.data.model.StockRecord
+import com.example.data.model.SyncTombstone
 import com.example.data.model.UserProfile
 import com.example.data.model.WarehousePoint
 import kotlinx.coroutines.flow.Flow
@@ -130,4 +131,17 @@ interface KapterkaDao {
 
     @Query("DELETE FROM requisitions")
     suspend fun clearAllRequisitions()
+
+    // Explicit sync deletion markers
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertSyncTombstone(tombstone: SyncTombstone)
+
+    @Query("SELECT * FROM sync_tombstones WHERE unitKey = :unitKey")
+    suspend fun getSyncTombstonesForUnit(unitKey: String): List<SyncTombstone>
+
+    @Query("SELECT * FROM sync_tombstones WHERE id = :id LIMIT 1")
+    suspend fun getSyncTombstoneById(id: String): SyncTombstone?
+
+    @Query("DELETE FROM sync_tombstones WHERE deletedAt < :olderThan")
+    suspend fun pruneOldSyncTombstones(olderThan: Long)
 }
