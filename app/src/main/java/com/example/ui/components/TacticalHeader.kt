@@ -121,7 +121,7 @@ fun TacticalHeader(
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = profile?.callsign ?: "Старшина",
+                    text = profile?.callsign ?: "Пользователь",
                     color = TacticalTextPrimary,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
@@ -129,7 +129,7 @@ fun TacticalHeader(
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
                 Text(
-                    text = " • ${profile?.unitName ?: "1-я Рота"} [v${com.example.BuildConfig.VERSION_NAME} (сб.${com.example.BuildConfig.VERSION_CODE}) PRO]",
+                    text = " • ${profile?.unitName ?: "Основной склад"} [v${com.example.BuildConfig.VERSION_NAME} (сб.${com.example.BuildConfig.VERSION_CODE}) PRO]",
                     color = TacticalTextSecondary,
                     fontSize = 11.sp,
                     maxLines = 1,
@@ -265,7 +265,7 @@ fun TacticalHeader(
                     )
                 }
                 Text(
-                    text = "СКЛАД • УЧЕТ • СНАБЖЕНИЕ",
+                    text = "СКЛАД • ИМУЩЕСТВО • УЧЁТ",
                     color = TacticalTextMuted,
                     fontSize = 9.5.sp,
                     fontWeight = FontWeight.Bold,
@@ -285,7 +285,7 @@ fun TacticalHeader(
                         .clickable(enabled = unitKey.isNotBlank()) {
                             val clipManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                             clipManager.setPrimaryClip(ClipData.newPlainText("UnitKey", unitKey))
-                            Toast.makeText(context, "Код подразделения скопирован", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Код склада / группы скопирован", Toast.LENGTH_SHORT).show()
                         }
                         .padding(horizontal = 10.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -308,7 +308,7 @@ fun TacticalHeader(
                 }
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "КОД ПОДРАЗДЕЛЕНИЯ / СКЛАДА",
+                    text = "КОД СКЛАДА / ГРУППЫ",
                     color = TacticalTextMuted,
                     fontSize = 7.5.sp,
                     fontWeight = FontWeight.Medium,
