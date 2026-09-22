@@ -66,7 +66,7 @@ class KapterkaRepository(
                 id = 1,
                 callsign = "",
                 unitName = "",
-                unitKey = com.example.data.sync.SyncIdentityGenerator.newUnitKey(),
+                unitKey = "",
                 email = "",
                 isLoggedIn = false,
                 isProActive = false,
