@@ -1,0 +1,77 @@
+name: Historical APK signer timeline
+
+on:
+  push:
+    branches:
+      - recovery/historical-signer-2026-09-22
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  signer-timeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      EXPECTED: 843a7e883914f3a7a5a7665ff07b2e8c43da87a24ee4dc35e1600758aee73cb9
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Locate apksigner
+        shell: bash
+        run: |
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -1)"
+          test -x "$APKSIGNER"
+          echo "APKSIGNER=$APKSIGNER" >> "$GITHUB_ENV"
+
+      - name: "3.4.3 — 4db31f0"
+        continue-on-error: true
+        shell: bash
+        run: |
+          git show 4db31f003db6ed8da55198a081bccaf419b1ca7c:docs/kapterka-pro.apk > /tmp/app.apk
+          ACTUAL="$("$APKSIGNER" verify --print-certs /tmp/app.apk | grep -i 'Signer #1 certificate SHA-256 digest:' | head -1 | awk '{print $NF}' | tr '[:upper:]' '[:lower:]')"
+          test "$ACTUAL" = "$EXPECTED"
+
+      - name: "3.4.x signing — cb50b9a"
+        continue-on-error: true
+        shell: bash
+        run: |
+          git show cb50b9a7c7f92e877dacd0830ec3607848c2d9de:docs/kapterka-pro.apk > /tmp/app.apk
+          ACTUAL="$("$APKSIGNER" verify --print-certs /tmp/app.apk | grep -i 'Signer #1 certificate SHA-256 digest:' | head -1 | awk '{print $NF}' | tr '[:upper:]' '[:lower:]')"
+          test "$ACTUAL" = "$EXPECTED"
+
+      - name: "build 21 — ca5ffc9"
+        continue-on-error: true
+        shell: bash
+        run: |
+          git show ca5ffc906dfd8946560eadff3a1fe20e86fdd9a5:docs/kapterka-pro.apk > /tmp/app.apk
+          ACTUAL="$("$APKSIGNER" verify --print-certs /tmp/app.apk | grep -i 'Signer #1 certificate SHA-256 digest:' | head -1 | awk '{print $NF}' | tr '[:upper:]' '[:lower:]')"
+          test "$ACTUAL" = "$EXPECTED"
+
+      - name: "3.4.5 — 8e153e0"
+        continue-on-error: true
+        shell: bash
+        run: |
+          git show 8e153e034da37dd6be500b1c8e1a34e54412d18a:docs/kapterka-pro.apk > /tmp/app.apk
+          ACTUAL="$("$APKSIGNER" verify --print-certs /tmp/app.apk | grep -i 'Signer #1 certificate SHA-256 digest:' | head -1 | awk '{print $NF}' | tr '[:upper:]' '[:lower:]')"
+          test "$ACTUAL" = "$EXPECTED"
+
+      - name: "pre-3.4.9 — 5b150dd"
+        continue-on-error: true
+        shell: bash
+        run: |
+          git show 5b150dd3d92b35e9c04662c723e1db3242021cbf:docs/kapterka-pro.apk > /tmp/app.apk
+          ACTUAL="$("$APKSIGNER" verify --print-certs /tmp/app.apk | grep -i 'Signer #1 certificate SHA-256 digest:' | head -1 | awk '{print $NF}' | tr '[:upper:]' '[:lower:]')"
+          test "$ACTUAL" = "$EXPECTED"
+
+      - name: "3.4.9 build 31 — 849a232"
+        continue-on-error: true
+        shell: bash
+        run: |
+          git show 849a232a6c1da074197c1a70d52b59e24c5498e6:docs/kapterka-pro.apk > /tmp/app.apk
+          ACTUAL="$("$APKSIGNER" verify --print-certs /tmp/app.apk | grep -i 'Signer #1 certificate SHA-256 digest:' | head -1 | awk '{print $NF}' | tr '[:upper:]' '[:lower:]')"
+          test "$ACTUAL" = "$EXPECTED"
