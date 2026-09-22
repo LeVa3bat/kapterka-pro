@@ -145,7 +145,7 @@ fun AuthScreen(
                         letterSpacing = 1.sp
                     )
                     Text(
-                        text = "Воинский учет и снабжение подразделения",
+                        text = "Учёт склада, имущества и снабжения",
                         color = TacticalTextSecondary,
                         fontSize = 11.sp
                     )
@@ -175,7 +175,7 @@ fun AuthScreen(
                         .padding(16.dp)
                 ) {
                     Text(
-                        text = "Создайте новое подразделение или подключитесь к существующему.",
+                        text = "Создайте новую группу учёта или подключитесь к существующей.",
                         color = TacticalTextSecondary,
                         fontSize = 12.sp,
                         lineHeight = 16.sp
@@ -204,7 +204,7 @@ fun AuthScreen(
                         Tab(
                             selected = selectedTab == 1,
                             onClick = { selectedTab = 1 },
-                            text = { Text("Вход в подразделение", fontSize = 13.sp, fontWeight = FontWeight.Bold) }
+                            text = { Text("Подключиться", fontSize = 13.sp, fontWeight = FontWeight.Bold) }
                         )
                     }
 
@@ -214,8 +214,8 @@ fun AuthScreen(
                     OutlinedTextField(
                         value = callsign,
                         onValueChange = { callsign = it },
-                        label = { Text("Позывной / Имя", color = TacticalTextSecondary, fontSize = 12.sp) },
-                        placeholder = { Text("Введите свой позывной (например: Сокол, Буран)", color = TacticalTextDim, fontSize = 12.sp) },
+                        label = { Text("Имя пользователя", color = TacticalTextSecondary, fontSize = 12.sp) },
+                        placeholder = { Text("Введите имя или короткое обозначение", color = TacticalTextDim, fontSize = 12.sp) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(8.dp),
@@ -234,8 +234,8 @@ fun AuthScreen(
                     OutlinedTextField(
                         value = unitName,
                         onValueChange = { unitName = it },
-                        label = { Text("Подразделение / Рота", color = TacticalTextSecondary, fontSize = 12.sp) },
-                        placeholder = { Text("Введите название: ${"1-е Подразделение"}", color = TacticalTextDim, fontSize = 12.sp) },
+                        label = { Text("Организация / склад", color = TacticalTextSecondary, fontSize = 12.sp) },
+                        placeholder = { Text("Например: Основной склад", color = TacticalTextDim, fontSize = 12.sp) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(8.dp),
@@ -255,8 +255,8 @@ fun AuthScreen(
                     OutlinedTextField(
                         value = unitKey,
                         onValueChange = { unitKey = it },
-                        label = { Text("Код подразделения", color = TacticalTextSecondary, fontSize = 12.sp) },
-                        placeholder = { Text(if (selectedTab == 0) "Пусто = создать новый код" else "Введите код существующего подразделения", color = TacticalTextDim, fontSize = 12.sp) },
+                        label = { Text("Код группы учёта", color = TacticalTextSecondary, fontSize = 12.sp) },
+                        placeholder = { Text(if (selectedTab == 0) "Пусто = создать новый код" else "Введите код существующей группы", color = TacticalTextDim, fontSize = 12.sp) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(8.dp),
@@ -290,7 +290,7 @@ fun AuthScreen(
                             text = if (selectedTab == 0)
                                 "Оставьте поле пустым — приложение безопасно создаст новый код. Для других телефонов используйте этот же код."
                             else
-                                "Введите ключ, выданный старшиной или командиром роты.",
+                                "Введите код, который вам передал владелец или администратор группы.",
                             color = TacticalTextMuted,
                             fontSize = 11.sp,
                             lineHeight = 14.sp
@@ -419,7 +419,7 @@ fun AuthScreen(
                             }
                             val cleanCallsign = callsign.trim()
                             if (cleanCallsign.isBlank()) {
-                                errorMessage = "Пожалуйста, введите ваш позывной или имя!"
+                                errorMessage = "Пожалуйста, введите имя пользователя!"
                                 return@Button
                             }
 
@@ -431,10 +431,10 @@ fun AuthScreen(
                                 return@Button
                             }
 
-                            val cleanUnitName = unitName.trim().ifEmpty { "1-е Подразделение" }
+                            val cleanUnitName = unitName.trim().ifEmpty { "Основной склад" }
                             val enteredKey = unitKey.trim()
                             if (selectedTab == 1 && enteredKey.isBlank()) {
-                                errorMessage = "Для входа в существующее подразделение укажите его код."
+                                errorMessage = "Для подключения к существующей группе укажите её код."
                                 return@Button
                             }
 
@@ -481,7 +481,7 @@ fun AuthScreen(
                                 return@Button
                             }
                             val cleanCallsign = callsign.trim().ifEmpty { "Пользователь" }
-                            val cleanUnitName = unitName.trim().ifEmpty { "1-е Подразделение" }
+                            val cleanUnitName = unitName.trim().ifEmpty { "Основной склад" }
                             val cleanKey = unitKey.trim()
                             val cleanEmail = email.trim()
 
