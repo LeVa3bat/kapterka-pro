@@ -16,6 +16,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: sklad-pro-alpha-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-alpha:
     runs-on: ubuntu-latest
@@ -55,10 +59,21 @@ jobs:
           "$SDKMANAGER" "platform-tools" "build-tools;36.0.0" "platforms;android-36"
           "$SDKMANAGER" "platforms;android-36.1"
 
-      - name: Create isolated alpha signer
+      - name: Restore isolated Alpha signer
+        id: alpha-signer-cache
+        uses: actions/cache@v4
+        with:
+          path: debug.keystore
+          key: sklad-pro-alpha-signer-v1
+
+      - name: Create isolated Alpha signer only once
         shell: bash
         run: |
-          keytool -genkeypair -v             -keystore debug.keystore             -storepass android             -alias androiddebugkey             -keypass android             -keyalg RSA             -keysize 2048             -validity 10000             -dname "CN=Sklad PRO Alpha,O=Development,C=RU"
+          if test ! -f debug.keystore; then
+            keytool -genkeypair -v               -keystore debug.keystore               -storepass android               -alias androiddebugkey               -keypass android               -keyalg RSA               -keysize 2048               -validity 10000               -dname "CN=Sklad PRO Alpha,O=Development,C=RU"
+          fi
+          chmod 600 debug.keystore
+          keytool -list -v             -keystore debug.keystore             -storepass android             -alias androiddebugkey             | grep -E 'Alias name:|SHA256:'
 
       - name: Run unit tests
         run: gradle :app:testDebugUnitTest --no-daemon --stacktrace
@@ -78,6 +93,8 @@ jobs:
             echo "Old Kapterka package leaked into Sklad PRO APK" >&2
             exit 1
           fi
+          "$ANDROID_SDK_ROOT/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$APK"             | tee /tmp/alpha-signature.txt
+          grep -q "Signer #1 certificate SHA-256 digest:" /tmp/alpha-signature.txt
           cp "$APK" "Sklad-PRO-0.3.0-alpha3.apk"
 
       - name: Upload alpha APK
