@@ -16,8 +16,8 @@ android {
     minSdk = 24
     targetSdk = 34
     // Standalone universal product. It never updates/replaces "Каптёрка ПРО".
-    versionCode = 19
-    versionName = "0.8.0-alpha19"
+    versionCode = 20
+    versionName = "0.8.0-alpha20"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

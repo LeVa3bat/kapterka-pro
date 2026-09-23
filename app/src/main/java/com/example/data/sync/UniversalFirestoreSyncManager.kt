@@ -29,6 +29,16 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
+internal fun shouldKeepLocalWarehouseVersion(
+    localUpdatedAt: Long,
+    cloudUpdatedAt: Long,
+    hasUserData: Boolean
+): Boolean = when {
+    !hasUserData -> false
+    cloudUpdatedAt <= 0L -> true
+    else -> localUpdatedAt >= cloudUpdatedAt
+}
+
 class UniversalFirestoreSyncManager(
     context: Context,
     private val dao: KapterkaDao,
@@ -241,14 +251,42 @@ class UniversalFirestoreSyncManager(
 
     private suspend fun pullWarehouses(uid: String) {
         val localById = dao.getAllPoints().first().associateBy { it.id }
+        val localStocks = dao.getAllStockRecords().first()
+        val localOperations = dao.getAllOperations().first()
+        val localItems = dao.getAllItems().first()
         val docs = workspace(uid).collection("warehouses").get().await()
+
         for (doc in docs.documents) {
             if (tombstoned(uid, POINT, doc.id)) continue
 
             val local = localById[doc.id]
             val cloudUpdated = cloudUpdatedAt(doc)
-            if (local != null && local.updatedAt >= cloudUpdated) {
-                continue
+
+            if (local != null) {
+                val hasStock = localStocks.any { stock ->
+                    stock.pointId == local.id &&
+                        (stock.quantity != 0 || stock.incomeTotal != 0 || stock.expenseTotal != 0)
+                }
+                val hasCustomCatalog = localItems.any { item ->
+                    item.isCustom && item.warehouseId == local.id
+                }
+                val hasOperations = localOperations.any { operation ->
+                    val hasStableIds =
+                        operation.fromPointId.isNotBlank() || operation.toPointId.isNotBlank()
+                    if (hasStableIds) {
+                        operation.fromPointId == local.id || operation.toPointId == local.id
+                    } else {
+                        operation.fromPointName == local.name || operation.toPointName == local.name
+                    }
+                }
+                val hasUserData = hasStock || hasCustomCatalog || hasOperations
+
+                val keepLocal = shouldKeepLocalWarehouseVersion(
+                    localUpdatedAt = local.updatedAt,
+                    cloudUpdatedAt = cloudUpdated,
+                    hasUserData = hasUserData
+                )
+                if (keepLocal) continue
             }
 
             dao.insertPoint(

@@ -15,6 +15,7 @@ import com.example.data.model.OperationItemEntry
 import com.example.data.model.StockRecord
 import com.example.data.model.SyncTombstone
 import com.example.data.model.WarehousePoint
+import com.example.data.sync.shouldKeepLocalWarehouseVersion
 import com.example.data.repository.KapterkaRepository
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -955,6 +956,41 @@ class KapterkaDatabaseTest {
 
         helper.close()
         context.deleteDatabase(dbName)
+    }
+
+    @Test
+    fun testWarehouseConflictResolutionProtectsRealDataAndRestoresEmptyDevice() {
+        assertFalse(
+            shouldKeepLocalWarehouseVersion(
+                localUpdatedAt = 500L,
+                cloudUpdatedAt = 100L,
+                hasUserData = false
+            )
+        )
+
+        assertTrue(
+            shouldKeepLocalWarehouseVersion(
+                localUpdatedAt = 0L,
+                cloudUpdatedAt = 0L,
+                hasUserData = true
+            )
+        )
+
+        assertTrue(
+            shouldKeepLocalWarehouseVersion(
+                localUpdatedAt = 500L,
+                cloudUpdatedAt = 400L,
+                hasUserData = true
+            )
+        )
+
+        assertFalse(
+            shouldKeepLocalWarehouseVersion(
+                localUpdatedAt = 400L,
+                cloudUpdatedAt = 500L,
+                hasUserData = true
+            )
+        )
     }
 
 }
