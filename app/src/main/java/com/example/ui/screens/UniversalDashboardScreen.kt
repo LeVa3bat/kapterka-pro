@@ -96,8 +96,12 @@ fun UniversalDashboardScreen(
     val activePositions = remember(stockRecords) {
         stockRecords.filter { it.quantity > 0 }.map { it.itemId }.distinct().size
     }
-    val zeroPositions = remember(stockRecords) {
-        stockRecords.filter { it.quantity <= 0 }.map { it.itemId }.distinct().size
+    val zeroPositions = remember(catalogItems, stockRecords) {
+        val positiveIds = stockRecords
+            .filter { it.quantity > 0 }
+            .map { it.itemId }
+            .toSet()
+        catalogItems.count { it.id !in positiveIds }
     }
     val pendingRequests = remember(requisitions) {
         requisitions.count { it.status == RequestStatus.PENDING }
@@ -131,15 +135,19 @@ fun UniversalDashboardScreen(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = greeting(userProfile?.callsign),
-                            color = UniversalMuted,
-                            fontSize = 12.sp
+                            text = "Сегодня",
+                            color = UniversalInk,
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.ExtraBold
                         )
                         Text(
-                            text = userProfile?.unitName?.takeIf { it.isNotBlank() } ?: "Мой склад",
-                            color = UniversalInk,
-                            fontSize = 25.sp,
-                            fontWeight = FontWeight.ExtraBold,
+                            text = buildString {
+                                append(greeting(userProfile?.callsign))
+                                val unit = userProfile?.unitName?.trim().orEmpty()
+                                if (unit.isNotBlank()) append(" • ").append(unit)
+                            },
+                            color = UniversalMuted,
+                            fontSize = 11.5.sp,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -207,9 +215,9 @@ fun UniversalDashboardScreen(
                             }
                             Spacer(modifier = Modifier.height(16.dp))
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                HeroMetric(activePositions.toString(), "позиций", Modifier.weight(1f))
-                                HeroMetric(points.size.toString(), "складов", Modifier.weight(1f))
-                                HeroMetric(todayOps.toString(), "операций сегодня", Modifier.weight(1f))
+                                HeroMetric(catalogItems.size.toString(), "в каталоге", Modifier.weight(1f))
+                                HeroMetric(activePositions.toString(), "с остатком", Modifier.weight(1f))
+                                HeroMetric(todayOps.toString(), "сегодня", Modifier.weight(1f))
                             }
                         }
                     }
@@ -290,11 +298,19 @@ fun UniversalDashboardScreen(
                 SectionTitle("Требует внимания")
                 Spacer(modifier = Modifier.height(9.dp))
 
-                AttentionCard(
-                    zeroPositions = zeroPositions,
-                    pendingRequests = pendingRequests,
-                    catalogIsEmpty = catalogItems.isEmpty()
-                )
+                if (operations.isEmpty() && totalQuantity == 0) {
+                    StarterGuideCard(
+                        catalogCount = catalogItems.size,
+                        onIncomeClick = onIncomeClick,
+                        onOpenCatalog = onOpenCatalog
+                    )
+                } else {
+                    AttentionCard(
+                        zeroPositions = zeroPositions,
+                        pendingRequests = pendingRequests,
+                        catalogIsEmpty = catalogItems.isEmpty()
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(20.dp))
 
@@ -510,6 +526,54 @@ private fun SmallCommandCard(
             tint = Color(0xFFB3BAC6),
             modifier = Modifier.size(15.dp)
         )
+    }
+}
+
+@Composable
+private fun StarterGuideCard(
+    catalogCount: Int,
+    onIncomeClick: () -> Unit,
+    onOpenCatalog: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(containerColor = UniversalPrimarySoft),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Рабочее пространство готово",
+                color = UniversalInk,
+                fontSize = 13.5.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = if (catalogCount > 0)
+                    "Каталог уже подготовлен: $catalogCount поз. с нулевым остатком. Внесите первое поступление — история и показатели заполнятся автоматически."
+                else
+                    "Добавьте первую позицию или внесите поступление. Никаких тестовых остатков мы не создаём.",
+                color = UniversalMuted,
+                fontSize = 10.5.sp,
+                lineHeight = 15.sp
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                SmallCommandCard(
+                    text = "Первый приход",
+                    icon = Icons.Default.ArrowDownward,
+                    onClick = onIncomeClick,
+                    modifier = Modifier.weight(1f)
+                )
+                SmallCommandCard(
+                    text = "Открыть каталог",
+                    icon = Icons.Default.Inventory2,
+                    onClick = onOpenCatalog,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
     }
 }
 
