@@ -6,7 +6,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,7 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -29,6 +27,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -48,26 +47,35 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.ui.theme.SageGreenPrimary
-import com.example.ui.theme.TacticalBg
-import com.example.ui.theme.TacticalBorderSubtle
-import com.example.ui.theme.TacticalSurface
-import com.example.ui.theme.TacticalTextMuted
-import com.example.ui.theme.TacticalTextPrimary
 
 @Composable
 fun UniversalAuthScreen(
-    hasAccount: Boolean,
     savedEmail: String,
-    onRegister: (name: String, email: String, password: String) -> String?,
-    onLogin: (email: String, password: String) -> String?
+    pendingVerificationEmail: String?,
+    onRegister: (
+        name: String,
+        email: String,
+        password: String,
+        onComplete: (String?) -> Unit
+    ) -> Unit,
+    onLogin: (
+        email: String,
+        password: String,
+        onComplete: (String?) -> Unit
+    ) -> Unit,
+    onCheckVerification: (onComplete: (String?) -> Unit) -> Unit,
+    onResendVerification: (onComplete: (String?) -> Unit) -> Unit,
+    onCancelVerification: () -> Unit,
+    onResetPassword: (email: String, onComplete: (String?) -> Unit) -> Unit
 ) {
-    var mode by remember { mutableStateOf(if (hasAccount) 1 else 0) }
+    var mode by remember { mutableStateOf(if (savedEmail.isNotBlank()) 1 else 0) }
     var name by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf(savedEmail) }
+    var email by remember(savedEmail) { mutableStateOf(savedEmail) }
     var password by remember { mutableStateOf("") }
     var passwordRepeat by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
+    var info by remember { mutableStateOf<String?>(null) }
+    var loading by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -122,6 +130,44 @@ fun UniversalAuthScreen(
 
             Spacer(modifier = Modifier.height(34.dp))
 
+            if (!pendingVerificationEmail.isNullOrBlank()) {
+                VerificationCard(
+                    email = pendingVerificationEmail,
+                    loading = loading,
+                    error = error,
+                    info = info,
+                    onCheck = {
+                        loading = true
+                        error = null
+                        info = null
+                        onCheckVerification { message ->
+                            loading = false
+                            error = message
+                        }
+                    },
+                    onResend = {
+                        loading = true
+                        error = null
+                        info = null
+                        onResendVerification { message ->
+                            loading = false
+                            if (message == null) {
+                                info = "Письмо отправлено повторно"
+                            } else {
+                                error = message
+                            }
+                        }
+                    },
+                    onBack = {
+                        loading = false
+                        error = null
+                        info = null
+                        onCancelVerification()
+                    }
+                )
+                return@Column
+            }
+
             Text(
                 text = if (mode == 0) "Создайте аккаунт" else "С возвращением",
                 color = Color(0xFF111827),
@@ -131,9 +177,9 @@ fun UniversalAuthScreen(
             Spacer(modifier = Modifier.height(7.dp))
             Text(
                 text = if (mode == 0)
-                    "Сначала создадим ваш профиль. Тип склада выберете на следующем шаге."
+                    "Аккаунт будет защищён Firebase. После регистрации подтвердите email."
                 else
-                    "Войдите в локальный аккаунт этой Alpha-версии.",
+                    "Войдите в аккаунт Склад ПРО с подтверждённой почтой.",
                 color = Color(0xFF6B7280),
                 fontSize = 13.sp,
                 lineHeight = 19.sp
@@ -159,8 +205,11 @@ fun UniversalAuthScreen(
                             text = "Регистрация",
                             selected = mode == 0,
                             onClick = {
-                                mode = 0
-                                error = null
+                                if (!loading) {
+                                    mode = 0
+                                    error = null
+                                    info = null
+                                }
                             },
                             modifier = Modifier.weight(1f)
                         )
@@ -168,8 +217,11 @@ fun UniversalAuthScreen(
                             text = "Вход",
                             selected = mode == 1,
                             onClick = {
-                                mode = 1
-                                error = null
+                                if (!loading) {
+                                    mode = 1
+                                    error = null
+                                    info = null
+                                }
                             },
                             modifier = Modifier.weight(1f)
                         )
@@ -192,7 +244,8 @@ fun UniversalAuthScreen(
                                     },
                                     label = "Ваше имя",
                                     placeholder = "Алексей",
-                                    icon = Icons.Default.Person
+                                    icon = Icons.Default.Person,
+                                    enabled = !loading
                                 )
                                 Spacer(modifier = Modifier.height(11.dp))
                             }
@@ -205,7 +258,8 @@ fun UniversalAuthScreen(
                                 },
                                 label = "Email",
                                 placeholder = "name@example.com",
-                                icon = Icons.Default.Email
+                                icon = Icons.Default.Email,
+                                enabled = !loading
                             )
 
                             Spacer(modifier = Modifier.height(11.dp))
@@ -219,7 +273,8 @@ fun UniversalAuthScreen(
                                 label = "Пароль",
                                 placeholder = "Минимум 8 символов",
                                 icon = Icons.Default.Lock,
-                                isPassword = true
+                                isPassword = true,
+                                enabled = !loading
                             )
 
                             if (selectedMode == 0) {
@@ -233,36 +288,43 @@ fun UniversalAuthScreen(
                                     label = "Повторите пароль",
                                     placeholder = "Ещё раз пароль",
                                     icon = Icons.Default.Lock,
-                                    isPassword = true
+                                    isPassword = true,
+                                    enabled = !loading
                                 )
                             }
                         }
                     }
 
-                    if (error != null) {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = error!!,
-                            color = Color(0xFFB42318),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
+                    AuthMessage(error = error, info = info)
 
                     Spacer(modifier = Modifier.height(18.dp))
 
                     Button(
                         onClick = {
-                            error = if (mode == 0) {
-                                when {
-                                    name.trim().isBlank() -> "Укажите ваше имя"
-                                    password != passwordRepeat -> "Пароли не совпадают"
-                                    else -> onRegister(name.trim(), email.trim(), password)
-                                }
+                            error = null
+                            info = null
+
+                            if (mode == 0 && name.trim().isBlank()) {
+                                error = "Укажите ваше имя"
+                                return@Button
+                            }
+                            if (mode == 0 && password != passwordRepeat) {
+                                error = "Пароли не совпадают"
+                                return@Button
+                            }
+
+                            loading = true
+                            val complete: (String?) -> Unit = { message ->
+                                loading = false
+                                error = message
+                            }
+                            if (mode == 0) {
+                                onRegister(name.trim(), email.trim(), password, complete)
                             } else {
-                                onLogin(email.trim(), password)
+                                onLogin(email.trim(), password, complete)
                             }
                         },
+                        enabled = !loading,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(54.dp),
@@ -272,17 +334,49 @@ fun UniversalAuthScreen(
                             contentColor = Color.White
                         )
                     ) {
-                        Text(
-                            text = if (mode == 0) "Создать аккаунт" else "Войти",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.size(8.dp))
-                        Icon(
-                            imageVector = Icons.Default.ArrowForward,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
+                        if (loading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp,
+                                color = Color.White
+                            )
+                        } else {
+                            Text(
+                                text = if (mode == 0) "Создать аккаунт" else "Войти",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.size(8.dp))
+                            Icon(
+                                imageVector = Icons.Default.ArrowForward,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+
+                    if (mode == 1) {
+                        TextButton(
+                            onClick = {
+                                if (!loading) {
+                                    loading = true
+                                    error = null
+                                    info = null
+                                    onResetPassword(email.trim()) { message ->
+                                        loading = false
+                                        if (message == null) {
+                                            info = "Ссылка для смены пароля отправлена на почту"
+                                        } else {
+                                            error = message
+                                        }
+                                    }
+                                }
+                            },
+                            enabled = !loading,
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                        ) {
+                            Text("Забыли пароль?", color = Color(0xFF5B5CE2))
+                        }
                     }
                 }
             }
@@ -290,12 +384,132 @@ fun UniversalAuthScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Alpha: аккаунт пока хранится только на этом устройстве. Рабочую «Каптёрку ПРО» и её серверы это приложение не использует.",
+                text = "Аккаунт Склад ПРО работает только с новым проектом Firebase и не использует серверы «Каптёрки ПРО». Локальные складские данные не удаляются при входе.",
                 color = Color(0xFF7C8392),
                 fontSize = 10.5.sp,
                 lineHeight = 15.sp
             )
         }
+    }
+}
+
+@Composable
+private fun VerificationCard(
+    email: String,
+    loading: Boolean,
+    error: String?,
+    info: String?,
+    onCheck: () -> Unit,
+    onResend: () -> Unit,
+    onBack: () -> Unit
+) {
+    Text(
+        text = "Подтвердите почту",
+        color = Color(0xFF111827),
+        fontSize = 30.sp,
+        fontWeight = FontWeight.ExtraBold
+    )
+    Spacer(modifier = Modifier.height(8.dp))
+    Text(
+        text = "Мы отправили письмо на $email. Откройте ссылку в письме, затем вернитесь сюда.",
+        color = Color(0xFF6B7280),
+        fontSize = 13.sp,
+        lineHeight = 19.sp
+    )
+    Spacer(modifier = Modifier.height(24.dp))
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(18.dp)) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color(0xFFEEEEFF)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Email,
+                    contentDescription = null,
+                    tint = Color(0xFF5B5CE2)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+            Text(
+                text = email,
+                color = Color(0xFF111827),
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp
+            )
+
+            AuthMessage(error = error, info = info)
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = onCheck,
+                enabled = !loading,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF5B5CE2),
+                    contentColor = Color.White
+                )
+            ) {
+                if (loading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = Color.White
+                    )
+                } else {
+                    Text("Я подтвердил почту", fontWeight = FontWeight.Bold)
+                }
+            }
+
+            TextButton(
+                onClick = onResend,
+                enabled = !loading,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            ) {
+                Text("Отправить письмо ещё раз", color = Color(0xFF5B5CE2))
+            }
+
+            TextButton(
+                onClick = onBack,
+                enabled = !loading,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            ) {
+                Text("Вернуться ко входу", color = Color(0xFF6B7280))
+            }
+        }
+    }
+}
+
+@Composable
+private fun AuthMessage(error: String?, info: String?) {
+    if (error != null) {
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(
+            text = error,
+            color = Color(0xFFB42318),
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium
+        )
+    } else if (info != null) {
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(
+            text = info,
+            color = Color(0xFF067647),
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium
+        )
     }
 }
 
@@ -330,11 +544,13 @@ private fun ModernAuthField(
     label: String,
     placeholder: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
-    isPassword: Boolean = false
+    isPassword: Boolean = false,
+    enabled: Boolean = true
 ) {
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
+        enabled = enabled,
         modifier = Modifier.fillMaxWidth(),
         singleLine = true,
         label = { Text(label, fontSize = 12.sp) },
@@ -347,11 +563,16 @@ private fun ModernAuthField(
                 modifier = Modifier.size(19.dp)
             )
         },
-        visualTransformation = if (isPassword) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
+        visualTransformation = if (isPassword) {
+            PasswordVisualTransformation()
+        } else {
+            androidx.compose.ui.text.input.VisualTransformation.None
+        },
         shape = RoundedCornerShape(15.dp),
         colors = OutlinedTextFieldDefaults.colors(
             focusedContainerColor = Color(0xFFF9FAFB),
             unfocusedContainerColor = Color(0xFFF9FAFB),
+            disabledContainerColor = Color(0xFFF9FAFB),
             focusedBorderColor = Color(0xFF5B5CE2),
             unfocusedBorderColor = Color(0xFFE5E7EB),
             focusedTextColor = Color(0xFF111827),
