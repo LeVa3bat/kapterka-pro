@@ -795,6 +795,11 @@ fun KapterkaAppRoot(
                                 },
                                 onOpenCatalog = { currentDestination = AppDestination.CATALOG },
                                 onOpenOperations = { currentDestination = AppDestination.HISTORY },
+                                onOpenReport = {
+                                    universalAccess(canUniversalCatalog, "выгрузки отчётов") {
+                                        showUniversalReportDialog = true
+                                    }
+                                },
                                 onOpenProfile = { currentDestination = AppDestination.MORE }
                             )
                         } else {

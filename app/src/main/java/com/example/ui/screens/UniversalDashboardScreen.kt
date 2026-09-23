@@ -90,6 +90,7 @@ fun UniversalDashboardScreen(
     onAddItemClick: () -> Unit,
     onOpenCatalog: () -> Unit,
     onOpenOperations: () -> Unit,
+    onOpenReport: () -> Unit,
     onOpenProfile: () -> Unit
 ) {
     val profileTemplate = WarehouseProfileCatalog.find(warehouseProfileId)
@@ -109,7 +110,7 @@ fun UniversalDashboardScreen(
     }
     val selectedPointBalances = remember(selectedPointStocks, catalogById) {
         selectedPointStocks
-            .filter { it.quantity != 0 }
+            .filter { it.quantity != 0 || it.incomeTotal != 0 || it.expenseTotal != 0 }
             .mapNotNull { stock ->
                 catalogById[stock.itemId]?.let { item -> item to stock }
             }
@@ -296,13 +297,22 @@ fun UniversalDashboardScreen(
                         "Остатки • " + (selectedPoint?.name ?: "склад"),
                         modifier = Modifier.weight(1f)
                     )
-                    Text(
-                        text = "Весь склад",
-                        color = UniversalPrimary,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.clickable(onClick = onOpenCatalog)
-                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text(
+                            text = "Excel",
+                            color = UniversalGreen,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.clickable(onClick = onOpenReport)
+                        )
+                        Text(
+                            text = "Каталог",
+                            color = UniversalPrimary,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.clickable(onClick = onOpenCatalog)
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(9.dp))
@@ -348,57 +358,90 @@ fun UniversalDashboardScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                SectionTitle("Быстрые действия")
+                SectionTitle("Операции")
 
-                Spacer(modifier = Modifier.height(9.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    UniversalActionCard(
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    UniversalQuickActionChip(
                         title = vocab.income,
-                        subtitle = "",
                         icon = Icons.Default.ArrowDownward,
                         accent = UniversalGreen,
                         soft = UniversalGreenSoft,
-                        onClick = onIncomeClick,
-                        modifier = Modifier.weight(1f)
+                        onClick = onIncomeClick
                     )
-                    UniversalActionCard(
+                    UniversalQuickActionChip(
                         title = vocab.issue,
-                        subtitle = "",
                         icon = Icons.Default.ArrowUpward,
                         accent = UniversalOrange,
                         soft = UniversalOrangeSoft,
-                        onClick = onIssueClick,
-                        modifier = Modifier.weight(1f)
+                        onClick = onIssueClick
                     )
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    UniversalActionCard(
+                    UniversalQuickActionChip(
                         title = vocab.transfer,
-                        subtitle = "",
                         icon = Icons.Default.SwapHoriz,
                         accent = UniversalBlue,
                         soft = UniversalBlueSoft,
-                        onClick = onTransferClick,
-                        modifier = Modifier.weight(1f)
+                        onClick = onTransferClick
                     )
-                    UniversalActionCard(
+                    UniversalQuickActionChip(
                         title = vocab.writeOff,
-                        subtitle = "",
                         icon = Icons.Default.MoreHoriz,
                         accent = UniversalRed,
                         soft = UniversalRedSoft,
-                        onClick = onWriteOffClick,
-                        modifier = Modifier.weight(1f)
+                        onClick = onWriteOffClick
                     )
                 }
 
                 Spacer(modifier = Modifier.height(22.dp))
             }
         }
+    }
+}
+
+@Composable
+private fun UniversalQuickActionChip(
+    title: String,
+    icon: ImageVector,
+    accent: Color,
+    soft: Color,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(UniversalSurface)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 11.dp, vertical = 9.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(30.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(soft),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = accent,
+                modifier = Modifier.size(16.dp)
+            )
+        }
+        Spacer(modifier = Modifier.width(7.dp))
+        Text(
+            text = title,
+            color = UniversalInk,
+            fontSize = 10.5.sp,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1
+        )
     }
 }
 

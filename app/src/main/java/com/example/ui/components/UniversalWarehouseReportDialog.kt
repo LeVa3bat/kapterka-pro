@@ -315,19 +315,19 @@ private fun ReportStockRow(row: WarehouseReportRow) {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    "Пришло \${row.stock.incomeTotal} \${row.item.unit}",
+                    "Пришло ${row.stock.incomeTotal} ${row.item.unit}",
                     color = Color(0xFF159A72),
                     fontSize = 9.5.sp,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    "Ушло \${row.stock.expenseTotal} \${row.item.unit}",
+                    "Ушло ${row.stock.expenseTotal} ${row.item.unit}",
                     color = Color(0xFFE88B22),
                     fontSize = 9.5.sp,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    "Остаток \${row.stock.quantity} \${row.item.unit}",
+                    "Остаток ${row.stock.quantity} ${row.item.unit}",
                     color = ReportInk,
                     fontSize = 9.5.sp,
                     fontWeight = FontWeight.Bold
