@@ -104,6 +104,23 @@ fun UniversalDashboardScreen(
     val activePositions = remember(selectedPointStocks) {
         selectedPointStocks.filter { it.quantity > 0 }.map { it.itemId }.distinct().size
     }
+    val catalogById = remember(catalogItems) {
+        catalogItems.associateBy { it.id }
+    }
+    val selectedPointBalances = remember(selectedPointStocks, catalogById) {
+        selectedPointStocks
+            .filter { it.quantity != 0 }
+            .mapNotNull { stock ->
+                catalogById[stock.itemId]?.let { item -> item to stock }
+            }
+            .sortedWith(
+                compareBy<Pair<InventoryItem, StockRecord>>(
+                    { it.first.serviceCategory },
+                    { it.first.subType },
+                    { it.first.name }
+                )
+            )
+    }
     val selectedPointOperations = remember(operations, selectedPoint?.name) {
         val pointName = selectedPoint?.name.orEmpty()
         if (pointName.isBlank()) {
@@ -271,6 +288,66 @@ fun UniversalDashboardScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    SectionTitle(
+                        "Остатки • " + (selectedPoint?.name ?: "склад"),
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        text = "Весь склад",
+                        color = UniversalPrimary,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.clickable(onClick = onOpenCatalog)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(9.dp))
+
+                if (selectedPointBalances.isEmpty()) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = UniversalSurface)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "На этом складе пока нет остатков",
+                                color = UniversalInk,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                text = "После поступления здесь появятся конкретные позиции и их количество.",
+                                color = UniversalMuted,
+                                fontSize = 10.5.sp
+                            )
+                        }
+                    }
+                } else {
+                    selectedPointBalances.take(6).forEach { (item, stock) ->
+                        DashboardStockRow(item = item, stock = stock)
+                        Spacer(modifier = Modifier.height(7.dp))
+                    }
+                    if (selectedPointBalances.size > 6) {
+                        Text(
+                            text = "Ещё " + (selectedPointBalances.size - 6) + " позиций • открыть весь склад",
+                            color = UniversalPrimary,
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable(onClick = onOpenCatalog)
+                                .padding(vertical = 4.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
                 SectionTitle("Быстрые действия")
 
                 Spacer(modifier = Modifier.height(9.dp))
@@ -383,6 +460,85 @@ fun UniversalDashboardScreen(
                 }
 
                 Spacer(modifier = Modifier.height(26.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun DashboardStockRow(
+    item: InventoryItem,
+    stock: StockRecord
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = UniversalSurface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 13.dp, vertical = 11.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(38.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(UniversalPrimarySoft),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Inventory2,
+                    contentDescription = null,
+                    tint = UniversalPrimary,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.width(10.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = item.name,
+                    color = UniversalInk,
+                    fontSize = 12.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = buildString {
+                        append(item.serviceCategory)
+                        if (item.subType.isNotBlank()) append(" • ").append(item.subType)
+                    },
+                    color = UniversalMuted,
+                    fontSize = 9.5.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = "Остаток",
+                    color = UniversalMuted,
+                    fontSize = 8.5.sp
+                )
+                Text(
+                    text = stock.quantity.toString(),
+                    color = if (stock.quantity < 0) UniversalRed else UniversalInk,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.ExtraBold
+                )
+                Text(
+                    text = item.unit,
+                    color = UniversalMuted,
+                    fontSize = 9.5.sp
+                )
             }
         }
     }

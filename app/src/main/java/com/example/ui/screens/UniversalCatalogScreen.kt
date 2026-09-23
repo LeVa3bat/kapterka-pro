@@ -72,7 +72,14 @@ fun UniversalCatalogScreen(
     onDeleteItem: (String, String) -> Unit
 ) {
     var query by remember { mutableStateOf("") }
-    var category by remember(warehouseProfileId) { mutableStateOf<String?>(null) }
+    var category by remember(warehouseProfileId) {
+        mutableStateOf<String?>(
+            com.example.universal.WarehouseProfileCatalog
+                .find(warehouseProfileId)
+                .categories
+                .firstOrNull()
+        )
+    }
     var group by remember(warehouseProfileId) { mutableStateOf<String?>(null) }
     var editing by remember { mutableStateOf<InventoryItem?>(null) }
 
@@ -116,7 +123,11 @@ fun UniversalCatalogScreen(
                     item.serviceCategory.lowercase().contains(q) ||
                     item.subType.lowercase().contains(q) ||
                     item.standardCode.lowercase().contains(q))
-        }.sortedWith(compareBy<InventoryItem> { it.serviceCategory }.thenBy { it.name })
+        }.sortedWith(
+            compareBy<InventoryItem> { it.serviceCategory }
+                .thenBy { it.subType }
+                .thenBy { it.name }
+        )
     }
 
     LazyColumn(
@@ -265,7 +276,7 @@ fun UniversalCatalogScreen(
             if (category != null && groupSuggestions.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Вид / группа",
+                    text = "Вид / группа • " + groupSuggestions.size,
                     color = CatalogMuted,
                     fontSize = 9.5.sp,
                     fontWeight = FontWeight.SemiBold
@@ -374,6 +385,11 @@ fun UniversalCatalogScreen(
                         }
 
                         Column(horizontalAlignment = Alignment.End) {
+                            Text(
+                                text = "Остаток",
+                                color = CatalogMuted,
+                                fontSize = 8.5.sp
+                            )
                             Text(
                                 text = qty.toString(),
                                 color = if (qty > 0) CatalogInk else Color(0xFFD94C4C),

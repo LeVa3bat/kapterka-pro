@@ -38,4 +38,33 @@ class SkladProStarterCatalogTest {
             }
         }
     }
+    @Test
+    fun nonMilitaryProfilesExposePreparedGroupsInStarterCatalog() {
+        WarehouseProfileCatalog.profiles
+            .filterNot { it.id == "military" }
+            .forEach { profile ->
+                val items = WarehouseStarterCatalog.itemsFor(profile.id)
+                val groups = items.map { it.subType }.filter { it.isNotBlank() }.distinct()
+
+                assertTrue(
+                    "Non-military profile should expose more than one prepared group: " + profile.id,
+                    groups.size > 1
+                )
+                assertTrue(
+                    "Non-military starter catalog should no longer be limited to six rows: " + profile.id,
+                    items.size > 6
+                )
+            }
+    }
+
+    @Test
+    fun nonMilitaryPresetIdsAreStableAcrossCalls() {
+        WarehouseProfileCatalog.profiles
+            .filterNot { it.id == "military" }
+            .forEach { profile ->
+                val first = WarehouseStarterCatalog.itemsFor(profile.id).map { it.id }
+                val second = WarehouseStarterCatalog.itemsFor(profile.id).map { it.id }
+                assertEquals(first, second)
+            }
+    }
 }
