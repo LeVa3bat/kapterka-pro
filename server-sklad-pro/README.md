@@ -71,15 +71,10 @@ workspaces/{workspaceId}/tombstones/{tombstoneId}
 Firebase:
 
 ~~~
-SKLAD_FIREBASE_PROJECT_ID=
-SKLAD_FIREBASE_SERVICE_ACCOUNT_JSON=
+SKLAD_FIREBASE_PROJECT_ID=sklad-pro-a1ec0
 ~~~
 
-или:
-
-~~~
-SKLAD_FIREBASE_SERVICE_ACCOUNT_B64=
-~~~
+Backend принимает только отдельный проект `sklad-pro-a1ec0`. В Cloud Run доступ к Firebase/Firestore выполняется через service identity и Application Default Credentials. Долгоживущий JSON-ключ service account в переменных окружения не используется. Для локальной разработки допустим стандартный `GOOGLE_APPLICATION_CREDENTIALS`, но файл ключа нельзя добавлять в Git.
 
 YooKassa:
 

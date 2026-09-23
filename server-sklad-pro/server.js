@@ -1,13 +1,14 @@
 const http = require('http');
 const crypto = require('crypto');
 const { URL } = require('url');
-const { initializeApp, getApps, cert, applicationDefault } = require('firebase-admin/app');
+const { initializeApp, getApps, applicationDefault } = require('firebase-admin/app');
 const { getAuth } = require('firebase-admin/auth');
 const { getFirestore, Timestamp } = require('firebase-admin/firestore');
 
 const PORT = Number(process.env.PORT || 8080);
 const MAX_BODY_BYTES = 64 * 1024;
 const DEMO_DAYS = Number(process.env.SKLAD_DEMO_DAYS || 7);
+const EXPECTED_FIREBASE_PROJECT_ID = 'sklad-pro-a1ec0';
 const VALID_PROFILE_IDS = new Set([
   'universal',
   'retail',
@@ -32,44 +33,37 @@ function env(name) {
   return String(process.env[name] || '').trim();
 }
 
-function decodeServiceAccount() {
-  const raw = env('SKLAD_FIREBASE_SERVICE_ACCOUNT_JSON');
-  if (raw) return JSON.parse(raw);
-
-  const b64 = env('SKLAD_FIREBASE_SERVICE_ACCOUNT_B64');
-  if (b64) return JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
-
-  return null;
+function isExpectedFirebaseProject(projectId) {
+  return String(projectId || '').trim() === EXPECTED_FIREBASE_PROJECT_ID;
 }
 
 function initFirebase() {
   if (getApps().length > 0) {
-    firebaseReady = true;
+    const appProjectId = getApps()[0]?.options?.projectId || '';
+    firebaseReady = isExpectedFirebaseProject(appProjectId);
+    firebaseInitError = firebaseReady ? '' : 'Unexpected Firebase project';
     return;
   }
 
   try {
     const projectId = env('SKLAD_FIREBASE_PROJECT_ID');
-    const serviceAccount = decodeServiceAccount();
-
-    if (serviceAccount) {
-      initializeApp({
-        credential: cert(serviceAccount),
-        projectId: projectId || serviceAccount.project_id
-      });
-    } else if (projectId || env('GOOGLE_APPLICATION_CREDENTIALS')) {
-      initializeApp({
-        credential: applicationDefault(),
-        projectId: projectId || undefined
-      });
-    } else {
-      firebaseInitError = 'Firebase credentials are not configured';
+    if (!isExpectedFirebaseProject(projectId)) {
+      firebaseInitError = 'Unexpected or missing Firebase project';
       return;
     }
 
+    // Cloud Run uses its service identity through Application Default Credentials.
+    // Local development may use GOOGLE_APPLICATION_CREDENTIALS. Long-lived JSON
+    // service-account secrets are intentionally not accepted through app env vars.
+    initializeApp({
+      credential: applicationDefault(),
+      projectId
+    });
+
     firebaseReady = true;
   } catch (error) {
-    firebaseInitError = error?.message || 'Firebase initialization failed';
+    console.error('Firebase initialization failed:', error?.message || error);
+    firebaseInitError = 'Firebase initialization failed';
     firebaseReady = false;
   }
 }
@@ -667,8 +661,7 @@ const server = http.createServer(async (req, res) => {
         firebaseConfigured: firebaseReady,
         paymentConfigured: paymentConfigured(),
         plansConfigured: publicPlans().length > 0,
-        demoDays: DEMO_DAYS,
-        firebaseError: firebaseReady ? '' : firebaseInitError
+        demoDays: DEMO_DAYS
       });
     }
 
@@ -773,5 +766,7 @@ module.exports = {
   timestampMillis,
   requireVerifiedEmail,
   VALID_PROFILE_IDS,
-  normalizeDevicePayload
+  normalizeDevicePayload,
+  EXPECTED_FIREBASE_PROJECT_ID,
+  isExpectedFirebaseProject
 };

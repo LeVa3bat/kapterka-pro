@@ -6,7 +6,9 @@ const {
   normalizeMoney,
   requireVerifiedEmail,
   VALID_PROFILE_IDS,
-  normalizeDevicePayload
+  normalizeDevicePayload,
+  EXPECTED_FIREBASE_PROJECT_ID,
+  isExpectedFirebaseProject
 } = require('./server');
 
 test('active paid subscription wins over trial state', () => {
@@ -82,15 +84,23 @@ test('device payload accepts only bounded installation ids and metadata', () => 
     installationId: 'android-install-1234',
     name: 'Телефон кладовщика',
     model: 'Android Device',
-    appVersion: '0.3.0-alpha3'
+    appVersion: '0.4.0-alpha4'
   });
 
   assert.equal(device.installationId, 'android-install-1234');
   assert.equal(device.platform, 'android');
-  assert.equal(device.appVersion, '0.3.0-alpha3');
+  assert.equal(device.appVersion, '0.4.0-alpha4');
 
   assert.throws(
     () => normalizeDevicePayload({ installationId: '../bad' }),
     (error) => error.message === 'INVALID_INSTALLATION_ID' && error.statusCode === 400
   );
+});
+
+
+test('backend is pinned to the dedicated Sklad PRO Firebase project', () => {
+  assert.equal(EXPECTED_FIREBASE_PROJECT_ID, 'sklad-pro-a1ec0');
+  assert.equal(isExpectedFirebaseProject('sklad-pro-a1ec0'), true);
+  assert.equal(isExpectedFirebaseProject('kapterka-pro'), false);
+  assert.equal(isExpectedFirebaseProject(''), false);
 });
