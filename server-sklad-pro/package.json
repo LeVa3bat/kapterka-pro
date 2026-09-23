@@ -1,0 +1,17 @@
+{
+  "name": "sklad-pro-backend",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Standalone auth-aware billing and workspace backend for Sklad PRO",
+  "main": "server.js",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "check": "node --check server.js"
+  },
+  "dependencies": {
+    "firebase-admin": "14.4.0"
+  }
+}
