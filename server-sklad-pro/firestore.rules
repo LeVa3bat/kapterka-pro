@@ -11,6 +11,10 @@ service cloud.firestore {
       return verifiedUser() && request.auth.uid == uid;
     }
 
+    function isPersonalOwner(workspaceId) {
+      return verifiedUser() && workspaceId == request.auth.uid;
+    }
+
     function memberPath(workspaceId) {
       return /databases/$(database)/documents/workspaces/$(workspaceId)/members/$(request.auth.uid);
     }
@@ -19,13 +23,18 @@ service cloud.firestore {
       return verifiedUser() && exists(memberPath(workspaceId));
     }
 
+    function canReadWorkspace(workspaceId) {
+      return isPersonalOwner(workspaceId) || isMember(workspaceId);
+    }
+
     function memberRole(workspaceId) {
       return get(memberPath(workspaceId)).data.role;
     }
 
     function isManager(workspaceId) {
-      return isMember(workspaceId) &&
-        (memberRole(workspaceId) == 'owner' || memberRole(workspaceId) == 'manager');
+      return isPersonalOwner(workspaceId) ||
+        (isMember(workspaceId) &&
+          (memberRole(workspaceId) == 'owner' || memberRole(workspaceId) == 'manager'));
     }
 
     match /users/{uid} {
@@ -48,43 +57,59 @@ service cloud.firestore {
     }
 
     match /workspaces/{workspaceId} {
-      allow read: if isMember(workspaceId);
-      allow write: if false;
+      allow read: if canReadWorkspace(workspaceId);
+      allow create: if isPersonalOwner(workspaceId) &&
+        request.resource.data.ownerUid == request.auth.uid;
+      allow update: if isPersonalOwner(workspaceId) &&
+        resource.data.ownerUid == request.auth.uid &&
+        request.resource.data.ownerUid == request.auth.uid;
+      allow delete: if false;
 
       match /members/{uid} {
-        allow read: if isMember(workspaceId);
-        allow write: if false;
+        allow read: if canReadWorkspace(workspaceId);
+        allow create: if isPersonalOwner(workspaceId) &&
+          uid == request.auth.uid &&
+          request.resource.data.uid == request.auth.uid &&
+          request.resource.data.role == 'owner';
+        allow update, delete: if false;
+      }
+
+      match /warehouses/{warehouseId} {
+        allow read: if canReadWorkspace(workspaceId);
+        allow create, update: if isManager(workspaceId);
+        allow delete: if false;
       }
 
       match /items/{itemId} {
-        allow read: if isMember(workspaceId);
+        allow read: if canReadWorkspace(workspaceId);
         allow create, update: if isManager(workspaceId);
         allow delete: if false;
       }
 
       match /stocks/{stockId} {
-        allow read: if isMember(workspaceId);
-        allow create, update: if isMember(workspaceId);
+        allow read: if canReadWorkspace(workspaceId);
+        allow create, update: if canReadWorkspace(workspaceId);
         allow delete: if false;
       }
 
       match /operations/{operationId} {
-        allow read: if isMember(workspaceId);
-        allow create: if isMember(workspaceId) &&
+        allow read: if canReadWorkspace(workspaceId);
+        allow create: if canReadWorkspace(workspaceId) &&
           request.resource.data.createdBy == request.auth.uid;
         allow update, delete: if false;
       }
 
       match /requisitions/{requestId} {
-        allow read: if isMember(workspaceId);
-        allow create: if isMember(workspaceId) &&
+        allow read: if canReadWorkspace(workspaceId);
+        allow create: if canReadWorkspace(workspaceId) &&
           request.resource.data.createdBy == request.auth.uid;
-        allow update: if isMember(workspaceId);
-        allow delete: if isManager(workspaceId);
+        allow update: if canReadWorkspace(workspaceId) &&
+          request.resource.data.createdBy == resource.data.createdBy;
+        allow delete: if false;
       }
 
       match /tombstones/{tombstoneId} {
-        allow read: if isMember(workspaceId);
+        allow read: if canReadWorkspace(workspaceId);
         allow create, update: if isManager(workspaceId);
         allow delete: if false;
       }
