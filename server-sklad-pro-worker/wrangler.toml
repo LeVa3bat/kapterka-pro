@@ -6,3 +6,5 @@ workers_dev = true
 [vars]
 SKLAD_ENV = "alpha"
 FIREBASE_PROJECT_ID = "sklad-pro-a1ec0"
+FIREBASE_API_KEY = "AIzaSyAuFsrthvLozx3KDEnIXkjMjxWszn0Gu40"
+SKLAD_PAYMENT_RETURN_URL = "skladpro://payment_success"
