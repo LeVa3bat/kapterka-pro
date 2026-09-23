@@ -61,6 +61,19 @@ class KapterkaRepository(
         }
     }
 
+    suspend fun ensureUniversalStarterCatalog(profileId: String): Int {
+        if (!BuildConfig.IS_UNIVERSAL_APP) return 0
+
+        val existing = dao.getAllItems().first()
+        if (existing.isNotEmpty()) return 0
+
+        val starters = com.example.universal.WarehouseStarterCatalog.itemsFor(profileId)
+        if (starters.isEmpty()) return 0
+
+        dao.insertItemsIfMissing(starters)
+        return starters.size
+    }
+
     suspend fun ensureInitialized() {
         val currentProfile = dao.getUserProfile().first()
         val activeProfile = if (currentProfile == null) {
