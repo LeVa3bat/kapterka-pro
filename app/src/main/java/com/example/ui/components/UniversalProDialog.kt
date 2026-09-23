@@ -96,24 +96,39 @@ fun UniversalProDialog(
                     )
                 }
 
-                Text(
-                    text = "Демо на 3 дня",
-                    color = Color(0xFF111827),
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "В демо доступны локальный каталог, склады и основные операции. PRO снимает ограничения подписки; облачная синхронизация и отчёты подключаются поэтапно в Alpha.",
-                    color = Color(0xFF596273),
-                    fontSize = 11.sp,
-                    lineHeight = 16.sp
-                )
-                Text(
-                    text = "После окончания демо данные не удаляются: просмотр остаётся доступен, а изменение данных включается после активации PRO.",
-                    color = Color(0xFF7C8392),
-                    fontSize = 10.5.sp,
-                    lineHeight = 15.sp
-                )
+                if (entitlement?.isProActive == true) {
+                    Text(
+                        text = "Подписка активна",
+                        color = Color(0xFF16803A),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Можно продлить заранее: ещё 30 дней добавятся к уже оплаченному сроку.",
+                        color = Color(0xFF596273),
+                        fontSize = 11.sp,
+                        lineHeight = 16.sp
+                    )
+                } else {
+                    Text(
+                        text = "Демо на 3 дня",
+                        color = Color(0xFF111827),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "В демо доступны локальный каталог, склады и основные операции. PRO снимает ограничения подписки; облачная синхронизация и отчёты подключаются поэтапно в Alpha.",
+                        color = Color(0xFF596273),
+                        fontSize = 11.sp,
+                        lineHeight = 16.sp
+                    )
+                    Text(
+                        text = "После окончания демо данные не удаляются: просмотр остаётся доступен, а изменение данных включается после активации PRO.",
+                        color = Color(0xFF7C8392),
+                        fontSize = 10.5.sp,
+                        lineHeight = 15.sp
+                    )
+                }
 
                 if (!backendConfigured) {
                     Text(
@@ -150,9 +165,7 @@ fun UniversalProDialog(
 
                 Button(
                     onClick = onPay,
-                    enabled = !loading &&
-                        backendConfigured &&
-                        entitlement?.isProActive != true,
+                    enabled = !loading && backendConfigured,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFF5B5CE2),
                         contentColor = Color.White
@@ -167,7 +180,7 @@ fun UniversalProDialog(
                     } else {
                         Text(
                             text = if (entitlement?.isProActive == true)
-                                "PRO активен"
+                                "Продлить 500 ₽"
                             else
                                 "Оплатить 500 ₽",
                             fontWeight = FontWeight.Bold
