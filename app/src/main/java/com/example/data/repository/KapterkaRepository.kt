@@ -166,14 +166,26 @@ class KapterkaRepository(
     
 
 
-    suspend fun deleteCategory(categoryName: String, deleteItems: Boolean = false) {
+    suspend fun deleteCategory(
+        categoryName: String,
+        deleteItems: Boolean = false,
+        profileId: String = ""
+    ) {
         if (deleteItems) {
-            val itemsToDelete = dao.getItemsByCategory(categoryName).first()
+            val itemsToDelete = if (BuildConfig.IS_UNIVERSAL_APP && profileId.isNotBlank()) {
+                dao.getItemsByCategoryAndProfile(profileId, categoryName).first()
+            } else {
+                dao.getItemsByCategory(categoryName).first()
+            }
             val unitKey = getCurrentUnitKey()
             for (item in itemsToDelete) {
                 syncManager?.prepareDeletionTombstone(unitKey, "inventory_item", item.id)
             }
-            dao.deleteItemsByCategory(categoryName)
+            if (BuildConfig.IS_UNIVERSAL_APP && profileId.isNotBlank()) {
+                dao.deleteItemsByCategoryAndProfile(profileId, categoryName)
+            } else {
+                dao.deleteItemsByCategory(categoryName)
+            }
             for (item in itemsToDelete) {
                 dao.deleteStockForItem(item.id)
                 syncManager?.deleteInventoryItemAsync(unitKey, item.id)
