@@ -1,0 +1,44 @@
+name: Sklad PRO backend check
+
+on:
+  push:
+    branches:
+      - 'universal/alpha'
+    paths:
+      - 'server-sklad-pro/**'
+      - '.github/workflows/sklad-pro-backend-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backend-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install backend dependencies
+        working-directory: server-sklad-pro
+        run: npm install --ignore-scripts --no-audit --no-fund
+
+      - name: Syntax check
+        working-directory: server-sklad-pro
+        run: npm run check
+
+      - name: Confirm secrets are not committed
+        shell: bash
+        run: |
+          set -e
+          if grep -R -nE '(SKLAD_YOOKASSA_SECRET_KEY=.+|private_key.*BEGIN PRIVATE KEY|AIza[0-9A-Za-z_-]{20,})' server-sklad-pro --exclude='README.md'; then
+            echo "Potential secret material found in Sklad PRO backend sources." >&2
+            exit 1
+          fi
