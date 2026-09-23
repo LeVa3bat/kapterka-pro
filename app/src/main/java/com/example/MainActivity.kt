@@ -278,6 +278,60 @@ fun KapterkaAppRoot(
     val allFighters by viewModel.allFighters.collectAsState()
     val issuedPaymentKey by viewModel.issuedPaymentKey.collectAsState()
 
+    val activeProfileId = warehouseProfileId ?: "universal"
+    val profileCatalogItems = remember(catalogItems, activeProfileId) {
+        if (!BuildConfig.IS_UNIVERSAL_APP) {
+            catalogItems
+        } else {
+            catalogItems.filter { it.profileId == activeProfileId }
+        }
+    }
+    val profileItemIds = remember(profileCatalogItems) {
+        profileCatalogItems.map { it.id }.toSet()
+    }
+    val profileItemNames = remember(profileCatalogItems) {
+        profileCatalogItems.map { it.name }.toSet()
+    }
+    val profileStockRecords = remember(stockRecords, profileItemIds) {
+        if (!BuildConfig.IS_UNIVERSAL_APP) {
+            stockRecords
+        } else {
+            stockRecords.filter { it.itemId in profileItemIds }
+        }
+    }
+    val profileOperations = remember(operations, profileItemIds, profileItemNames) {
+        if (!BuildConfig.IS_UNIVERSAL_APP) {
+            operations
+        } else {
+            operations.filter { operation ->
+                val entries = viewModel.parseOperationItems(operation.itemsJson)
+                entries.any { it.itemId in profileItemIds } ||
+                    (entries.isEmpty() && profileItemNames.any { name ->
+                        operation.itemsSummary.contains(name, ignoreCase = true)
+                    })
+            }
+        }
+    }
+    val profileRequisitions = remember(requisitions, profileItemNames) {
+        if (!BuildConfig.IS_UNIVERSAL_APP) {
+            requisitions
+        } else {
+            requisitions.filter { request ->
+                val entries = viewModel.parseRequisitionItems(request.itemsJson)
+                entries.any { it.itemName in profileItemNames } ||
+                    (entries.isEmpty() && profileItemNames.any { name ->
+                        request.itemsSummary.contains(name, ignoreCase = true)
+                    })
+            }
+        }
+    }
+
+    LaunchedEffect(points) {
+        if (BuildConfig.IS_UNIVERSAL_APP && points.isNotEmpty() && points.none { it.id == selectedPointId }) {
+            viewModel.selectPoint(points.first().id)
+        }
+    }
+
     // Dialog Control States
     var showIncomeDialog by remember { mutableStateOf(false) }
     var showTransferDialog by remember { mutableStateOf(false) }
@@ -679,10 +733,12 @@ fun KapterkaAppRoot(
                                 userProfile = profile,
                                 warehouseProfileId = warehouseProfileId,
                                 points = points,
-                                catalogItems = catalogItems,
-                                stockRecords = stockRecords,
-                                operations = operations,
-                                requisitions = requisitions,
+                                selectedPointId = selectedPointId,
+                                catalogItems = profileCatalogItems,
+                                stockRecords = profileStockRecords,
+                                operations = profileOperations,
+                                requisitions = profileRequisitions,
+                                onSelectPoint = { viewModel.selectPoint(it) },
                                 onIncomeClick = {
                                     universalAccess(canUniversalOperate, "операций склада") {
                                         showIncomeDialog = true
@@ -760,7 +816,7 @@ fun KapterkaAppRoot(
                         if (BuildConfig.IS_UNIVERSAL_APP) {
                             UniversalOperationsScreen(
                                 warehouseProfileId = warehouseProfileId,
-                                operations = operations
+                                operations = profileOperations
                             )
                         } else {
                             HistoryScreen(
@@ -781,9 +837,9 @@ fun KapterkaAppRoot(
                             UniversalRequestsScreen(
                                 profile = profile,
                                 points = points,
-                                catalogItems = catalogItems,
-                                stockRecords = stockRecords,
-                                requisitions = requisitions,
+                                catalogItems = profileCatalogItems,
+                                stockRecords = profileStockRecords,
+                                requisitions = profileRequisitions,
                                 onCreateRequisition = { pName, applicant, items, comment ->
                                     universalAccess(canUniversalRequests, "расширенных заявок") {
                                         viewModel.createRequisition(pName, applicant, items, comment)
@@ -823,8 +879,9 @@ fun KapterkaAppRoot(
                     AppDestination.CATALOG -> {
                         if (BuildConfig.IS_UNIVERSAL_APP) {
                             UniversalCatalogScreen(
-                                items = catalogItems,
-                                stockRecords = stockRecords,
+                                warehouseProfileId = warehouseProfileId,
+                                items = profileCatalogItems,
+                                stockRecords = profileStockRecords,
                                 availableCategories = availableCategories,
                                 onAddItem = {
                                     universalAccess(canUniversalCatalog, "изменения каталога") {
@@ -1012,8 +1069,8 @@ fun KapterkaAppRoot(
             UniversalIncomeOperationDialog(
                 profile = profile,
                 points = points,
-                catalogItems = catalogItems,
-                stockRecords = stockRecords,
+                catalogItems = profileCatalogItems,
+                stockRecords = profileStockRecords,
                 initialPointId = selectedPointId,
                 warehouseProfileId = warehouseProfileId,
                 onDismiss = { showIncomeDialog = false },
@@ -1025,8 +1082,8 @@ fun KapterkaAppRoot(
             IncomeOperationDialog(
                 profile = profile,
                 points = points,
-                catalogItems = catalogItems,
-                stockRecords = stockRecords,
+                catalogItems = profileCatalogItems,
+                stockRecords = profileStockRecords,
                 initialPointId = selectedPointId,
                 warehouseProfileId = warehouseProfileId,
                 onDismiss = { showIncomeDialog = false },
@@ -1041,8 +1098,8 @@ fun KapterkaAppRoot(
         if (BuildConfig.IS_UNIVERSAL_APP) {
             UniversalTransferOperationDialog(
                 points = points,
-                catalogItems = catalogItems,
-                stockRecords = stockRecords,
+                catalogItems = profileCatalogItems,
+                stockRecords = profileStockRecords,
                 initialPointId = selectedPointId,
                 warehouseProfileId = warehouseProfileId,
                 onDismiss = { showTransferDialog = false },
@@ -1053,8 +1110,8 @@ fun KapterkaAppRoot(
         } else {
             TransferOperationDialog(
                 points = points,
-                catalogItems = catalogItems,
-                stockRecords = stockRecords,
+                catalogItems = profileCatalogItems,
+                stockRecords = profileStockRecords,
                 initialPointId = selectedPointId,
                 warehouseProfileId = warehouseProfileId,
                 onDismiss = { showTransferDialog = false },
@@ -1069,8 +1126,8 @@ fun KapterkaAppRoot(
         if (BuildConfig.IS_UNIVERSAL_APP) {
             UniversalIssueOperationDialog(
                 points = points,
-                catalogItems = catalogItems,
-                stockRecords = stockRecords,
+                catalogItems = profileCatalogItems,
+                stockRecords = profileStockRecords,
                 initialPointId = selectedPointId,
                 warehouseProfileId = warehouseProfileId,
                 onDismiss = { showIssueDialog = false },
@@ -1081,8 +1138,8 @@ fun KapterkaAppRoot(
         } else {
             IssueOperationDialog(
                 points = points,
-                catalogItems = catalogItems,
-                stockRecords = stockRecords,
+                catalogItems = profileCatalogItems,
+                stockRecords = profileStockRecords,
                 initialPointId = selectedPointId,
                 warehouseProfileId = warehouseProfileId,
                 onDismiss = { showIssueDialog = false },
@@ -1098,8 +1155,8 @@ fun KapterkaAppRoot(
             UniversalExpenditureOperationDialog(
                 profile = profile,
                 points = points,
-                catalogItems = catalogItems,
-                stockRecords = stockRecords,
+                catalogItems = profileCatalogItems,
+                stockRecords = profileStockRecords,
                 initialPointId = selectedPointId,
                 warehouseProfileId = warehouseProfileId,
                 onDismiss = { showExpenditureDialog = false },
@@ -1111,8 +1168,8 @@ fun KapterkaAppRoot(
             ExpenditureOperationDialog(
                 profile = profile,
                 points = points,
-                catalogItems = catalogItems,
-                stockRecords = stockRecords,
+                catalogItems = profileCatalogItems,
+                stockRecords = profileStockRecords,
                 initialPointId = selectedPointId,
                 warehouseProfileId = warehouseProfileId,
                 onDismiss = { showExpenditureDialog = false },
