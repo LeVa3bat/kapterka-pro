@@ -39,6 +39,9 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Validate Firestore rules tests
+        run: node --test server-sklad-pro/firestore-rules.test.js
+
       - name: Deploy Firestore rules
         env:
           PROJECT_ID: 'sklad-pro-a1ec0'
