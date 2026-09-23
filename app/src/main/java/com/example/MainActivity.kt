@@ -817,6 +817,9 @@ fun KapterkaAppRoot(
                         if (BuildConfig.IS_UNIVERSAL_APP) {
                             UniversalOperationsScreen(
                                 warehouseProfileId = warehouseProfileId,
+                                points = points,
+                                selectedPointId = selectedPointId,
+                                onSelectPoint = { viewModel.selectPoint(it) },
                                 operations = profileOperations
                             )
                         } else {
