@@ -165,27 +165,6 @@ class MainActivity : ComponentActivity() {
             android.util.Log.w("MainActivity", "enableEdgeToEdge skipped: ${e.message}")
         }
 
-        try {
-            // KapterkaApplication owns Firebase initialization. Keep this fallback
-            // only for production builds; NEXT-SAFE test APKs must never connect
-            // to the production Firebase project.
-            if (!BuildConfig.IS_NEXT_SAFE_TEST && !BuildConfig.IS_UNIVERSAL_APP &&
-                com.google.firebase.FirebaseApp.getApps(this).isEmpty()
-            ) {
-                val options = com.google.firebase.FirebaseOptions.Builder()
-                    .setApplicationId("1:946233715306:android:d2502913c49c0b985c7813")
-                    .setApiKey("AIzaSyAYyoG42TuQJFLxN0KnFIePZx-gAtizw0Q")
-                    .setProjectId("kapterka-pro")
-                    .setDatabaseUrl("https://kapterka-pro-default-rtdb.europe-west1.firebasedatabase.app")
-                    .setStorageBucket("kapterka-pro.firebasestorage.app")
-                    .setGcmSenderId("946233715306")
-                    .build()
-                com.google.firebase.FirebaseApp.initializeApp(this, options)
-            }
-        } catch (e: Throwable) {
-            android.util.Log.e("MainActivity", "Firebase init error: ${e.message}", e)
-        }
-
         if (!BuildConfig.IS_UNIVERSAL_APP) {
             try {
                 TacticalNotificationHelper.createNotificationChannel(this)

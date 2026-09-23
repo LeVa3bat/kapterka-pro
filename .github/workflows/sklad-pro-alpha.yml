@@ -100,18 +100,27 @@ jobs:
             echo "Old Kapterka package leaked into Sklad PRO APK" >&2
             exit 1
           fi
+          unzip -p "$APK" 'classes*.dex' 2>/dev/null | strings > /tmp/sklad-apk-strings.txt || true
+          if grep -qE '946233715306|kapterka-pro-default-rtdb|1:946233715306:android:' /tmp/sklad-apk-strings.txt; then
+            echo "Legacy Kapterka Firebase configuration leaked into Sklad PRO APK" >&2
+            exit 1
+          fi
+          grep -q 'sklad-pro-a1ec0' /tmp/sklad-apk-strings.txt || {
+            echo "Dedicated Sklad PRO Firebase project id not found in APK" >&2
+            exit 1
+          }
           "$ANDROID_SDK_ROOT/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$APK"             | tee /tmp/alpha-signature.txt
           ACTUAL_APK_SIGNER="$(grep -m1 'Signer #1 certificate SHA-256 digest:' /tmp/alpha-signature.txt             | sed 's/.*digest:[[:space:]]*//'             | tr -d ':'             | tr '[:upper:]' '[:lower:]')"
           test "$ACTUAL_APK_SIGNER" = "$EXPECTED_ALPHA_SIGNER_SHA256" || {
             echo "Built APK signer does not match the stable Sklad PRO Alpha signer." >&2
             exit 1
           }
-          cp "$APK" "Sklad-PRO-0.3.0-alpha3.apk"
+          cp "$APK" "Sklad-PRO-0.4.0-alpha4.apk"
 
       - name: Upload alpha APK
         uses: actions/upload-artifact@v4
         with:
           name: sklad-pro-alpha
-          path: Sklad-PRO-0.3.0-alpha3.apk
+          path: Sklad-PRO-0.4.0-alpha4.apk
           if-no-files-found: error
           retention-days: 14
