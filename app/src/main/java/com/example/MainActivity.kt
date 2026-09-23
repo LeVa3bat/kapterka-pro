@@ -424,6 +424,13 @@ fun KapterkaAppRoot(
             return
         }
 
+        LaunchedEffect(warehouseProfileId, universalWorkspaceReady) {
+            val profileId = warehouseProfileId
+            if (universalWorkspaceReady && !profileId.isNullOrBlank()) {
+                viewModel.ensureWarehouseProfileStarterCatalog(profileId)
+            }
+        }
+
         LaunchedEffect(universalAuthenticated, universalWorkspaceReady) {
             if (
                 universalAuthenticated &&
@@ -855,7 +862,7 @@ fun KapterkaAppRoot(
                             }
                             val subscriptionSubtitle = when {
                                 universalEntitlement?.isProActive == true ->
-                                    "Все функции подписки доступны"
+                                    "PRO активен • платёж подтверждён"
                                 universalEntitlement?.isTrialActive == true ->
                                     "Базовый локальный учёт; PRO открывает синхронизацию, отчёты и заявки"
                                 universalEntitlement?.isExpired == true ->
