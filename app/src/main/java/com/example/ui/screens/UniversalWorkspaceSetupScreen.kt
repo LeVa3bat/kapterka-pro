@@ -166,7 +166,7 @@ fun UniversalWorkspaceSetupScreen(
                         text = if (template.id == "military")
                             "Военный профиль: камера и фотографии отключены."
                         else
-                            "Аккаунт уже защищён отдельным Firebase. Складские данные Alpha пока остаются локальными и не используют серверы «Каптёрки ПРО».",
+                            "Аккаунт защищён отдельным Firebase. Демо работает локально; в PRO складские данные синхронизируются через отдельное облако Склад ПРО.",
                         color = Color(0xFF505A6B),
                         fontSize = 11.sp,
                         lineHeight = 16.sp,
@@ -174,7 +174,7 @@ fun UniversalWorkspaceSetupScreen(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Облачную синхронизацию нового приложения подключим отдельным безопасным этапом.",
+                        text = "Данные «Каптёрки ПРО» не используются и не смешиваются с новым приложением.",
                         color = Color(0xFF858D9B),
                         fontSize = 10.sp,
                         lineHeight = 14.sp
