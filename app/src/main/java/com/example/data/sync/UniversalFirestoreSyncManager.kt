@@ -96,14 +96,16 @@ class UniversalFirestoreSyncManager(
             SetOptions.merge()
         ).await()
 
-        root.collection("members").document(uid).set(
-            hashMapOf(
-                "uid" to uid,
-                "role" to "owner",
-                "updatedAt" to FieldValue.serverTimestamp()
-            ),
-            SetOptions.merge()
-        ).await()
+        val memberRef = root.collection("members").document(uid)
+        if (!memberRef.get().await().exists()) {
+            memberRef.set(
+                hashMapOf(
+                    "uid" to uid,
+                    "role" to "owner",
+                    "updatedAt" to FieldValue.serverTimestamp()
+                )
+            ).await()
+        }
     }
 
     override suspend fun syncAndReconcileAll(
