@@ -50,6 +50,13 @@ interface KapterkaDao {
     @Query("SELECT * FROM inventory_items WHERE id = :itemId LIMIT 1")
     suspend fun getItemById(itemId: String): InventoryItem?
 
+    @Query("SELECT * FROM inventory_items WHERE profileId = :profileId ORDER BY serviceCategory ASC, subType ASC, name ASC")
+    fun getItemsForProfile(profileId: String): Flow<List<InventoryItem>>
+
+    @Query("UPDATE inventory_items SET profileId = :profileId WHERE profileId = ''")
+    suspend fun claimUnassignedItemsForProfile(profileId: String)
+
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertItem(item: InventoryItem)
 
