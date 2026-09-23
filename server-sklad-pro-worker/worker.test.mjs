@@ -8,7 +8,7 @@ const source = await fs.readFile(
 );
 const moduleUrl =
   "data:text/javascript;base64," + Buffer.from(source).toString("base64");
-const { effectiveEntitlement, normalizeMoney, plans } = await import(moduleUrl);
+const { effectiveEntitlement, normalizeMoney, plans, SkladProAccount } = await import(moduleUrl);
 
 test("monthly plan is server-owned and normalized", () => {
   assert.equal(normalizeMoney("500"), "500.00");
@@ -80,4 +80,118 @@ test("active PRO unlocks paid features", () => {
   assert.equal(entitlement.features.multiDevice, true);
   assert.equal(entitlement.features.exportReports, true);
   assert.equal(entitlement.features.advancedRequisitions, true);
+});
+
+
+class FakeStorage {
+  constructor() {
+    this.values = new Map();
+  }
+
+  async get(key) {
+    return this.values.get(key);
+  }
+
+  async put(key, value) {
+    this.values.set(key, structuredClone(value));
+  }
+}
+
+async function body(response) {
+  return JSON.parse(await response.text());
+}
+
+test("bootstrap creates demo once and does not restart it", async () => {
+  const storage = new FakeStorage();
+  const account = new SkladProAccount({ storage });
+
+  const first = await body(
+    await account.fetch(
+      new Request("https://account.internal/bootstrap", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          uid: "u1",
+          email: "user@example.com",
+          demoDays: 3
+        })
+      })
+    )
+  );
+
+  const savedFirst = await storage.get("entitlement");
+
+  await new Promise((resolve) => setTimeout(resolve, 2));
+
+  const second = await body(
+    await account.fetch(
+      new Request("https://account.internal/bootstrap", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          uid: "u1",
+          email: "user@example.com",
+          demoDays: 3
+        })
+      })
+    )
+  );
+
+  const savedSecond = await storage.get("entitlement");
+  assert.equal(first.ok, true);
+  assert.equal(second.ok, true);
+  assert.equal(savedSecond.demoStartedAt, savedFirst.demoStartedAt);
+  assert.equal(savedSecond.demoEndsAt, savedFirst.demoEndsAt);
+  assert.equal(savedFirst.demoEndsAt - savedFirst.demoStartedAt, 3 * 24 * 60 * 60 * 1000);
+});
+
+test("same succeeded payment cannot grant PRO twice", async () => {
+  const storage = new FakeStorage();
+  const account = new SkladProAccount({ storage });
+
+  await account.fetch(
+    new Request("https://account.internal/bootstrap", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        uid: "u2",
+        email: "paid@example.com",
+        demoDays: 3
+      })
+    })
+  );
+
+  const payload = {
+    paymentId: "payment-123",
+    planId: "pro_month",
+    durationDays: 30,
+    amount: "500.00",
+    currency: "RUB"
+  };
+
+  const first = await body(
+    await account.fetch(
+      new Request("https://account.internal/apply-payment", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload)
+      })
+    )
+  );
+  const firstPaidUntil = first.entitlement.paidUntil;
+
+  const second = await body(
+    await account.fetch(
+      new Request("https://account.internal/apply-payment", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload)
+      })
+    )
+  );
+
+  assert.equal(second.entitlement.paidUntil, firstPaidUntil);
+  const payment = await storage.get("payment:payment-123");
+  assert.equal(payment.grantApplied, true);
+  assert.equal(payment.expectedAmount, "500.00");
 });
