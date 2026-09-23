@@ -123,6 +123,7 @@ import com.example.ui.screens.UniversalAuthScreen
 import com.example.ui.screens.UniversalDashboardScreen
 import com.example.ui.screens.UniversalOperationsScreen
 import com.example.ui.screens.UniversalCatalogScreen
+import com.example.ui.screens.UniversalRequestsScreen
 import com.example.ui.screens.UniversalSplashScreen
 import com.example.universal.UniversalLocalAuth
 import com.example.ui.viewmodel.KapterkaViewModel
@@ -586,21 +587,39 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                     }
 
                     AppDestination.REQUESTS -> {
-                        RequestsScreen(
-                            profile = profile,
-                            points = points,
-                            catalogItems = catalogItems,
-                            stockRecords = stockRecords,
-                            requisitions = requisitions,
-                            onCreateRequisition = { pName, applicant, items, comment ->
-                                viewModel.createRequisition(pName, applicant, items, comment)
-                            },
-                            onUpdateStatus = { req, nextStatus ->
-                                viewModel.updateRequisitionStatus(req, nextStatus)
-                            },
-                            onDeleteRequisition = { viewModel.deleteRequisition(it) },
-                            parseItems = { viewModel.parseRequisitionItems(it) }
-                        )
+                        if (BuildConfig.IS_UNIVERSAL_APP) {
+                            UniversalRequestsScreen(
+                                profile = profile,
+                                points = points,
+                                catalogItems = catalogItems,
+                                stockRecords = stockRecords,
+                                requisitions = requisitions,
+                                onCreateRequisition = { pName, applicant, items, comment ->
+                                    viewModel.createRequisition(pName, applicant, items, comment)
+                                },
+                                onUpdateStatus = { req, nextStatus ->
+                                    viewModel.updateRequisitionStatus(req, nextStatus)
+                                },
+                                onDeleteRequisition = { viewModel.deleteRequisition(it) },
+                                parseItems = { viewModel.parseRequisitionItems(it) }
+                            )
+                        } else {
+                            RequestsScreen(
+                                profile = profile,
+                                points = points,
+                                catalogItems = catalogItems,
+                                stockRecords = stockRecords,
+                                requisitions = requisitions,
+                                onCreateRequisition = { pName, applicant, items, comment ->
+                                    viewModel.createRequisition(pName, applicant, items, comment)
+                                },
+                                onUpdateStatus = { req, nextStatus ->
+                                    viewModel.updateRequisitionStatus(req, nextStatus)
+                                },
+                                onDeleteRequisition = { viewModel.deleteRequisition(it) },
+                                parseItems = { viewModel.parseRequisitionItems(it) }
+                            )
+                        }
                     }
 
                     AppDestination.CATALOG -> {
