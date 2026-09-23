@@ -30,6 +30,10 @@ jobs:
         working-directory: server-sklad-pro
         run: npm install --ignore-scripts --no-audit --no-fund
 
+      - name: Validate Cloud Run setup script
+        working-directory: server-sklad-pro
+        run: bash -n setup-cloud-run.sh
+
       - name: Syntax check
         working-directory: server-sklad-pro
         run: npm run check
