@@ -1,0 +1,46 @@
+name: Sklad PRO Worker check
+
+on:
+  push:
+    branches:
+      - 'universal/alpha'
+    paths:
+      - 'server-sklad-pro-worker/**'
+      - '.github/workflows/sklad-pro-worker-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sklad-pro-worker-check
+  cancel-in-progress: true
+
+jobs:
+  worker-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Syntax check
+        run: node --input-type=module --check < server-sklad-pro-worker/src/index.js
+
+      - name: Entitlement tests
+        run: node --test server-sklad-pro-worker/worker.test.mjs
+
+      - name: Confirm YooKassa secret is not committed
+        shell: bash
+        run: |
+          set -e
+          if grep -R -nE 'test_[A-Za-z0-9_-]{20,}|SKLAD_YOOKASSA_SECRET_KEY[[:space:]]*=[[:space:]]*".+"' server-sklad-pro-worker --exclude='README.md'; then
+            echo "Potential YooKassa secret found in Worker sources." >&2
+            exit 1
+          fi
