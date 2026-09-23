@@ -25,7 +25,11 @@ class SkladProProductInvariantTest {
     fun warehouseProfiles_areCompleteAndUnique() {
         val profiles = WarehouseProfileCatalog.profiles
 
-        assertEquals(14, profiles.size)
+        assertEquals(3, profiles.size)
+        assertEquals(
+            listOf("universal", "retail", "military"),
+            profiles.map { it.id }
+        )
         assertEquals(profiles.size, profiles.map { it.id }.distinct().size)
 
         profiles.forEach { profile ->
