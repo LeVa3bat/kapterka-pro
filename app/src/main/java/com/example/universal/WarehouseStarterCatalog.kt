@@ -22,10 +22,15 @@ object WarehouseStarterCatalog {
                     .firstOrNull()
                     .orEmpty()
                     .ifBlank { "Основное" }
+                val presetName = WarehouseItemPresetCatalog
+                    .namesFor(profile.id, category, group)
+                    .firstOrNull()
+                    .orEmpty()
+                    .ifBlank { group }
 
                 InventoryItem(
                     id = "starter_" + profile.id + "_" + (index + 1),
-                    name = group,
+                    name = presetName,
                     serviceCategory = category,
                     subType = group,
                     unit = "шт.",
