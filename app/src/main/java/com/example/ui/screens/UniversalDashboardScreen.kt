@@ -197,9 +197,11 @@ fun UniversalDashboardScreen(
                         points.forEach { point ->
                             WarehouseMiniCard(
                                 point = point,
-                                quantity = stockRecords
-                                    .filter { it.pointId == point.id }
-                                    .sumOf { it.quantity.coerceAtLeast(0) },
+                                positions = stockRecords
+                                    .filter { it.pointId == point.id && it.quantity > 0 }
+                                    .map { it.itemId }
+                                    .distinct()
+                                    .size,
                                 selected = point.id == selectedPoint?.id,
                                 onClick = { onSelectPoint(point.id) }
                             )
@@ -630,7 +632,7 @@ private fun AttentionCard(
 @Composable
 private fun WarehouseMiniCard(
     point: WarehousePoint,
-    quantity: Int,
+    positions: Int,
     selected: Boolean,
     onClick: () -> Unit
 ) {
@@ -659,7 +661,7 @@ private fun WarehouseMiniCard(
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = quantity.toString() + " ед.",
+                text = positions.toString() + " поз. с остатком",
                 color = if (selected) Color.White.copy(alpha = 0.75f) else UniversalMuted,
                 fontSize = 8.5.sp
             )
