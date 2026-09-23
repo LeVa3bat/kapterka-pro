@@ -864,7 +864,7 @@ fun KapterkaAppRoot(
                                 universalEntitlement?.isProActive == true ->
                                     "PRO активен • платёж подтверждён"
                                 universalEntitlement?.isTrialActive == true ->
-                                    "Базовый локальный учёт; PRO открывает синхронизацию, отчёты и заявки"
+                                    "Базовый локальный учёт; PRO снимает ограничения подписки. Синхронизация и отчёты подключаются поэтапно в Alpha"
                                 universalEntitlement?.isExpired == true ->
                                     "Данные сохранены; изменение данных доступно после оплаты"
                                 !universalBackend.isConfigured ->
