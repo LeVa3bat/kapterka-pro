@@ -150,7 +150,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun applyWarehouseProfile(profileId: String) {
+    fun applyWarehouseProfile(profileId: String, announce: Boolean = true) {
         val template = com.example.universal.WarehouseProfileCatalog.find(profileId)
         activeWarehouseProfileId = template.id
         prefs.edit()
@@ -163,13 +163,15 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             repository.claimUnassignedUniversalItems(template.id)
             val added = repository.ensureUniversalStarterCatalog(template.id)
-            _toastEvent.emit(
-                if (added > 0) {
-                    "Профиль «" + template.title + "» применён • каталог подготовлен"
-                } else {
-                    "Профиль «" + template.title + "» применён"
-                }
-            )
+            if (announce) {
+                _toastEvent.emit(
+                    if (added > 0) {
+                        "Профиль «" + template.title + "» применён • каталог подготовлен"
+                    } else {
+                        "Профиль «" + template.title + "» применён"
+                    }
+                )
+            }
         }
     }
 
