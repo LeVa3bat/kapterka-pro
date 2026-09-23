@@ -89,6 +89,10 @@ import com.example.ui.components.UserManualDialog
 import com.example.ui.components.UniversalAddItemDialog
 import com.example.ui.components.UniversalAddPointDialog
 import com.example.ui.components.UniversalEditPointDialog
+import com.example.ui.components.UniversalIncomeOperationDialog
+import com.example.ui.components.UniversalTransferOperationDialog
+import com.example.ui.components.UniversalIssueOperationDialog
+import com.example.ui.components.UniversalExpenditureOperationDialog
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -731,61 +735,119 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
 
     // MODAL DIALOGS
     if (showIncomeDialog) {
-        IncomeOperationDialog(
-            profile = profile,
-            points = points,
-            catalogItems = catalogItems,
-            stockRecords = stockRecords,
-            initialPointId = selectedPointId,
-            warehouseProfileId = warehouseProfileId,
-            onDismiss = { showIncomeDialog = false },
-            onConfirm = { toPointId, toPointName, supplier, items, comment ->
-                viewModel.recordIncome(toPointId, toPointName, supplier, items, comment)
-            }
-        )
+        if (BuildConfig.IS_UNIVERSAL_APP) {
+            UniversalIncomeOperationDialog(
+                profile = profile,
+                points = points,
+                catalogItems = catalogItems,
+                stockRecords = stockRecords,
+                initialPointId = selectedPointId,
+                warehouseProfileId = warehouseProfileId,
+                onDismiss = { showIncomeDialog = false },
+                onConfirm = { toPointId, toPointName, supplier, items, comment ->
+                    viewModel.recordIncome(toPointId, toPointName, supplier, items, comment)
+                }
+            )
+        } else {
+            IncomeOperationDialog(
+                profile = profile,
+                points = points,
+                catalogItems = catalogItems,
+                stockRecords = stockRecords,
+                initialPointId = selectedPointId,
+                warehouseProfileId = warehouseProfileId,
+                onDismiss = { showIncomeDialog = false },
+                onConfirm = { toPointId, toPointName, supplier, items, comment ->
+                    viewModel.recordIncome(toPointId, toPointName, supplier, items, comment)
+                }
+            )
+        }
     }
 
     if (showTransferDialog) {
-        TransferOperationDialog(
-            points = points,
-            catalogItems = catalogItems,
-            stockRecords = stockRecords,
-            initialPointId = selectedPointId,
-            warehouseProfileId = warehouseProfileId,
-            onDismiss = { showTransferDialog = false },
-            onConfirm = { fromPointId, fromPointName, toPointId, toPointName, items, comment ->
-                viewModel.recordTransfer(fromPointId, fromPointName, toPointId, toPointName, items, comment)
-            }
-        )
+        if (BuildConfig.IS_UNIVERSAL_APP) {
+            UniversalTransferOperationDialog(
+                points = points,
+                catalogItems = catalogItems,
+                stockRecords = stockRecords,
+                initialPointId = selectedPointId,
+                warehouseProfileId = warehouseProfileId,
+                onDismiss = { showTransferDialog = false },
+                onConfirm = { fromPointId, fromPointName, toPointId, toPointName, items, comment ->
+                    viewModel.recordTransfer(fromPointId, fromPointName, toPointId, toPointName, items, comment)
+                }
+            )
+        } else {
+            TransferOperationDialog(
+                points = points,
+                catalogItems = catalogItems,
+                stockRecords = stockRecords,
+                initialPointId = selectedPointId,
+                warehouseProfileId = warehouseProfileId,
+                onDismiss = { showTransferDialog = false },
+                onConfirm = { fromPointId, fromPointName, toPointId, toPointName, items, comment ->
+                    viewModel.recordTransfer(fromPointId, fromPointName, toPointId, toPointName, items, comment)
+                }
+            )
+        }
     }
 
     if (showIssueDialog) {
-        IssueOperationDialog(
-            points = points,
-            catalogItems = catalogItems,
-            stockRecords = stockRecords,
-            initialPointId = selectedPointId,
-            warehouseProfileId = warehouseProfileId,
-            onDismiss = { showIssueDialog = false },
-            onConfirm = { fromPointId, fromPointName, toPointId, toPointName, items, comment ->
-                viewModel.recordIssue(fromPointId, fromPointName, toPointId, toPointName, items, comment)
-            }
-        )
+        if (BuildConfig.IS_UNIVERSAL_APP) {
+            UniversalIssueOperationDialog(
+                points = points,
+                catalogItems = catalogItems,
+                stockRecords = stockRecords,
+                initialPointId = selectedPointId,
+                warehouseProfileId = warehouseProfileId,
+                onDismiss = { showIssueDialog = false },
+                onConfirm = { fromPointId, fromPointName, toPointId, toPointName, items, comment ->
+                    viewModel.recordIssue(fromPointId, fromPointName, toPointId, toPointName, items, comment)
+                }
+            )
+        } else {
+            IssueOperationDialog(
+                points = points,
+                catalogItems = catalogItems,
+                stockRecords = stockRecords,
+                initialPointId = selectedPointId,
+                warehouseProfileId = warehouseProfileId,
+                onDismiss = { showIssueDialog = false },
+                onConfirm = { fromPointId, fromPointName, toPointId, toPointName, items, comment ->
+                    viewModel.recordIssue(fromPointId, fromPointName, toPointId, toPointName, items, comment)
+                }
+            )
+        }
     }
 
     if (showExpenditureDialog) {
-        ExpenditureOperationDialog(
-            profile = profile,
-            points = points,
-            catalogItems = catalogItems,
-            stockRecords = stockRecords,
-            initialPointId = selectedPointId,
-            warehouseProfileId = warehouseProfileId,
-            onDismiss = { showExpenditureDialog = false },
-            onConfirm = { fromPointId, pointName, docNumber, responsiblePerson, items, comment ->
-                viewModel.recordExpenditure(fromPointId, pointName, docNumber, responsiblePerson, items, comment)
-            }
-        )
+        if (BuildConfig.IS_UNIVERSAL_APP) {
+            UniversalExpenditureOperationDialog(
+                profile = profile,
+                points = points,
+                catalogItems = catalogItems,
+                stockRecords = stockRecords,
+                initialPointId = selectedPointId,
+                warehouseProfileId = warehouseProfileId,
+                onDismiss = { showExpenditureDialog = false },
+                onConfirm = { fromPointId, pointName, docNumber, responsiblePerson, items, comment ->
+                    viewModel.recordExpenditure(fromPointId, pointName, docNumber, responsiblePerson, items, comment)
+                }
+            )
+        } else {
+            ExpenditureOperationDialog(
+                profile = profile,
+                points = points,
+                catalogItems = catalogItems,
+                stockRecords = stockRecords,
+                initialPointId = selectedPointId,
+                warehouseProfileId = warehouseProfileId,
+                onDismiss = { showExpenditureDialog = false },
+                onConfirm = { fromPointId, pointName, docNumber, responsiblePerson, items, comment ->
+                    viewModel.recordExpenditure(fromPointId, pointName, docNumber, responsiblePerson, items, comment)
+                }
+            )
+        }
     }
 
     if (showAddPointDialog) {
