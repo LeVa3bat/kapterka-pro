@@ -282,23 +282,38 @@ class KapterkaRepository(
     suspend fun deleteCategory(
         categoryName: String,
         deleteItems: Boolean = false,
-        profileId: String = ""
+        profileId: String = "",
+        warehouseId: String = ""
     ) {
-        if (deleteItems) {
-            val itemsToDelete = if (BuildConfig.IS_UNIVERSAL_APP && profileId.isNotBlank()) {
-                dao.getItemsByCategoryAndProfile(profileId, categoryName).first()
-            } else {
-                dao.getItemsByCategory(categoryName).first()
-            }
-            val unitKey = getCurrentUnitKey()
+        if (!deleteItems) return
+
+        val unitKey = getCurrentUnitKey()
+        val itemsToDelete = if (BuildConfig.IS_UNIVERSAL_APP && profileId.isNotBlank()) {
+            dao.getItemsByCategoryAndProfile(profileId, categoryName)
+                .first()
+                .filter { item ->
+                    item.isCustom &&
+                        warehouseId.isNotBlank() &&
+                        item.warehouseId == warehouseId
+                }
+        } else {
+            dao.getItemsByCategory(categoryName).first()
+        }
+
+        for (item in itemsToDelete) {
+            syncManager?.prepareDeletionTombstone(unitKey, "inventory_item", item.id)
+        }
+
+        if (BuildConfig.IS_UNIVERSAL_APP) {
+            // Universal starter catalog is shared read-only template data.
+            // Delete only user-created items owned by this physical warehouse.
             for (item in itemsToDelete) {
-                syncManager?.prepareDeletionTombstone(unitKey, "inventory_item", item.id)
+                dao.deleteStockForItem(item.id)
+                dao.deleteItem(item.id)
+                syncManager?.deleteInventoryItemAsync(unitKey, item.id)
             }
-            if (BuildConfig.IS_UNIVERSAL_APP && profileId.isNotBlank()) {
-                dao.deleteItemsByCategoryAndProfile(profileId, categoryName)
-            } else {
-                dao.deleteItemsByCategory(categoryName)
-            }
+        } else {
+            dao.deleteItemsByCategory(categoryName)
             for (item in itemsToDelete) {
                 dao.deleteStockForItem(item.id)
                 syncManager?.deleteInventoryItemAsync(unitKey, item.id)
@@ -648,11 +663,19 @@ class KapterkaRepository(
     }
 
     suspend fun updateInventoryItem(i: InventoryItem) {
+        if (BuildConfig.IS_UNIVERSAL_APP && !i.isCustom) {
+            return
+        }
         dao.insertItem(i)
         syncManager?.pushInventoryItemAsync(getCurrentUnitKey(), i)
     }
 
     suspend fun deleteInventoryItem(id: String) {
+        val current = dao.getItemById(id)
+        if (BuildConfig.IS_UNIVERSAL_APP && current?.isCustom != true) {
+            return
+        }
+
         val unitKey = getCurrentUnitKey()
         syncManager?.prepareDeletionTombstone(unitKey, "inventory_item", id)
         dao.deleteStockForItem(id)

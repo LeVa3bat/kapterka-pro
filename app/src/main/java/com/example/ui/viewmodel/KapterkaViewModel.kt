@@ -95,8 +95,33 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         val template = com.example.universal.WarehouseProfileCatalog.find(profileId)
         val warehouseSaved = prefs.getStringSet(categoriesKey(template.id), null).orEmpty()
         val legacySaved = prefs.getStringSet("saved_categories_v2_" + template.id, null).orEmpty()
-        val saved = if (warehouseSaved.isNotEmpty()) warehouseSaved else legacySaved
+        val migrationComplete = prefs.getBoolean("categories_v3_migration_complete", false)
+        val saved = when {
+            warehouseSaved.isNotEmpty() -> warehouseSaved
+            !migrationComplete -> legacySaved
+            else -> emptySet()
+        }
         return (template.categories + saved.filter { it !in template.categories }).distinct()
+    }
+
+    private fun migrateUniversalCategoryPrefs(points: List<WarehousePoint>) {
+        if (!BuildConfig.IS_UNIVERSAL_APP) return
+        if (prefs.getBoolean("categories_v3_migration_complete", false)) return
+
+        val editor = prefs.edit()
+        points.forEach { point ->
+            val profileId = com.example.universal.WarehouseProfileCatalog
+                .find(point.profileId.ifBlank { activeWarehouseProfileId })
+                .id
+            val warehouseKey = categoriesKey(profileId, point.id)
+            if (!prefs.contains(warehouseKey)) {
+                val legacy = prefs.getStringSet("saved_categories_v2_" + profileId, null)
+                if (!legacy.isNullOrEmpty()) {
+                    editor.putStringSet(warehouseKey, legacy.toSet())
+                }
+            }
+        }
+        editor.putBoolean("categories_v3_migration_complete", true).apply()
     }
 
     private fun saveCategoriesToPrefs(list: List<String>) {
@@ -134,7 +159,8 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             repository.deleteCategory(
                 categoryName = categoryName,
                 deleteItems = deleteItems,
-                profileId = if (BuildConfig.IS_UNIVERSAL_APP) activeWarehouseProfileId else ""
+                profileId = if (BuildConfig.IS_UNIVERSAL_APP) activeWarehouseProfileId else "",
+                warehouseId = if (BuildConfig.IS_UNIVERSAL_APP) activeWarehouseId else ""
             )
             _toastEvent.emit("Группа «$categoryName» удалена")
         }
@@ -330,6 +356,9 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             if (BuildConfig.IS_UNIVERSAL_APP) {
                 repository.prepareUniversalWarehouses(activeWarehouseProfileId)
                 repository.prepareUniversalCustomItemOwnership()
+                val existingPoints = repository.allPoints.first()
+                migrateUniversalCategoryPrefs(existingPoints)
+                _availableCategories.value = loadCategoriesForProfile(activeWarehouseProfileId)
                 // Safe add-only refresh for APK updates: make newly prepared catalog
                 // entries available immediately without rewriting stock or operations.
                 repository.ensureUniversalStarterCatalog(activeWarehouseProfileId)

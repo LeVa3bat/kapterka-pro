@@ -615,12 +615,25 @@ private fun CompactCatalogItem(
                 }
             }
             Spacer(Modifier.width(4.dp))
-            IconButton(onClick = onEdit, modifier = Modifier.size(28.dp)) {
-                Icon(
-                    imageVector = Icons.Default.Edit,
-                    contentDescription = "Изменить",
-                    tint = CatalogPrimary,
-                    modifier = Modifier.size(15.dp)
+            if (item.isCustom) {
+                IconButton(onClick = onEdit, modifier = Modifier.size(28.dp)) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Изменить свою позицию",
+                        tint = CatalogPrimary,
+                        modifier = Modifier.size(15.dp)
+                    )
+                }
+            } else {
+                Text(
+                    text = "ГОТОВАЯ",
+                    color = CatalogMuted,
+                    fontSize = 7.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(CatalogBg)
+                        .padding(horizontal = 5.dp, vertical = 4.dp)
                 )
             }
         }

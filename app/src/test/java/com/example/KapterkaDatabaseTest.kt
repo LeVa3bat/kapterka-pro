@@ -814,4 +814,59 @@ class KapterkaDatabaseTest {
         assertTrue(point.syncKey.startsWith("SKL-"))
     }
 
+    @Test
+    fun testUniversalStarterItemCannotBeDeletedAsWarehouseCustomItem() = runBlocking {
+        val repository = KapterkaRepository(dao, null)
+        val standard = InventoryItem(
+            id = "starter-shared",
+            name = "Готовая позиция",
+            serviceCategory = "Товары для продажи",
+            subType = "Основной товар",
+            unit = "шт.",
+            isCustom = false,
+            profileId = "retail"
+        )
+        dao.insertItem(standard)
+
+        repository.deleteInventoryItem(standard.id)
+
+        assertNotNull(dao.getItemById(standard.id))
+    }
+
+    @Test
+    fun testDeletingWarehouseCategoryDoesNotTouchAnotherWarehouse() = runBlocking {
+        val repository = KapterkaRepository(dao, null)
+        val first = InventoryItem(
+            id = "custom-w1",
+            name = "Позиция первого склада",
+            serviceCategory = "Своя категория",
+            subType = "Своя группа",
+            unit = "шт.",
+            isCustom = true,
+            profileId = "retail",
+            warehouseId = "warehouse-1"
+        )
+        val second = InventoryItem(
+            id = "custom-w2",
+            name = "Позиция второго склада",
+            serviceCategory = "Своя категория",
+            subType = "Своя группа",
+            unit = "шт.",
+            isCustom = true,
+            profileId = "retail",
+            warehouseId = "warehouse-2"
+        )
+        dao.insertItems(listOf(first, second))
+
+        repository.deleteCategory(
+            categoryName = "Своя категория",
+            deleteItems = true,
+            profileId = "retail",
+            warehouseId = "warehouse-1"
+        )
+
+        assertNull(dao.getItemById(first.id))
+        assertNotNull(dao.getItemById(second.id))
+    }
+
 }

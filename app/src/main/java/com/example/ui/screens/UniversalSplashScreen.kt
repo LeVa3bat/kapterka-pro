@@ -103,7 +103,7 @@ fun UniversalSplashScreen(
             horizontalArrangement = Arrangement.Center
         ) {
             Text(
-                text = "Alpha 0.1",
+                text = "Данные под вашим контролем",
                 color = Color.White.copy(alpha = 0.45f),
                 fontSize = 10.sp,
                 modifier = Modifier
