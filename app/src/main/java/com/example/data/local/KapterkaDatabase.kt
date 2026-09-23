@@ -27,7 +27,7 @@ import kotlinx.coroutines.launch
         UserProfile::class,
         SyncTombstone::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -64,6 +64,16 @@ abstract class KapterkaDatabase : RoomDatabase() {
             }
         }
 
+        internal val MIGRATION_3_4 = object : androidx.room.migration.Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Add-only ownership marker for Sklad PRO catalog isolation.
+                // Existing rows are preserved and claimed by the active profile on first launch.
+                db.execSQL(
+                    "ALTER TABLE inventory_items ADD COLUMN profileId TEXT NOT NULL DEFAULT ''"
+                )
+            }
+        }
+
         fun getDatabase(context: Context, scope: CoroutineScope): KapterkaDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -71,7 +81,7 @@ abstract class KapterkaDatabase : RoomDatabase() {
                     KapterkaDatabase::class.java,
                     "kapterka_database"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                     .addCallback(DatabaseCallback(scope))
                     .build()
                 INSTANCE = instance
