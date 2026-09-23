@@ -482,6 +482,7 @@ fun KapterkaAppRoot(
         LaunchedEffect(warehouseProfileId, universalWorkspaceReady) {
             val profileId = warehouseProfileId
             if (universalWorkspaceReady && !profileId.isNullOrBlank()) {
+                viewModel.applyWarehouseProfile(profileId, announce = false)
                 viewModel.ensureWarehouseProfileStarterCatalog(profileId)
             }
         }
