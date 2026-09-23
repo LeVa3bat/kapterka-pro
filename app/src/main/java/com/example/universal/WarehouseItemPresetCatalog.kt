@@ -206,7 +206,7 @@ object WarehouseItemPresetCatalog {
     private val generic: Map<String, Map<String, List<String>>> = mapOf(
         "universal" to mapOf(
             "Основной ассортимент" to listOf("Товар", "Комплект", "Набор"),
-            "Сырьё" to listOf("Сырьё", "Материал"),
+            "Сырьё" to listOf("Материал сырьевой", "Сырьё производственное"),
             "Одноразовые материалы" to listOf("Расходный материал", "Одноразовый комплект"),
             "Ручной инструмент" to listOf("Набор ручного инструмента", "Отвёртка", "Ключ"),
             "Стационарное" to listOf("Оборудование", "Станок"),
