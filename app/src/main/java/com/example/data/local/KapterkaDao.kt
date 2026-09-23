@@ -47,6 +47,9 @@ interface KapterkaDao {
     @Query("SELECT * FROM inventory_items WHERE serviceCategory = :category ORDER BY name ASC")
     fun getItemsByCategory(category: String): Flow<List<InventoryItem>>
 
+    @Query("SELECT * FROM inventory_items WHERE profileId = :profileId AND serviceCategory = :category ORDER BY name ASC")
+    fun getItemsByCategoryAndProfile(profileId: String, category: String): Flow<List<InventoryItem>>
+
     @Query("SELECT * FROM inventory_items WHERE id = :itemId LIMIT 1")
     suspend fun getItemById(itemId: String): InventoryItem?
 
@@ -75,6 +78,9 @@ interface KapterkaDao {
 
     @Query("DELETE FROM inventory_items WHERE serviceCategory = :category")
     suspend fun deleteItemsByCategory(category: String)
+
+    @Query("DELETE FROM inventory_items WHERE profileId = :profileId AND serviceCategory = :category")
+    suspend fun deleteItemsByCategoryAndProfile(profileId: String, category: String)
 
     // Stock Records
     @Query("SELECT * FROM stock_records WHERE pointId = :pointId")
