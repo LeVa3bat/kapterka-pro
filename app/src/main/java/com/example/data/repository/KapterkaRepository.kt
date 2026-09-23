@@ -71,17 +71,34 @@ class KapterkaRepository(
 
         claimUnassignedUniversalItems(profileId)
 
-        val existing = dao.getAllItems().first().filter { it.profileId == profileId }
-        if (existing.isNotEmpty()) return 0
-
+        val allItems = dao.getAllItems().first()
+        val existing = allItems.filter { it.profileId == profileId }
         val starters = com.example.universal.WarehouseStarterCatalog.itemsFor(profileId)
         if (starters.isEmpty()) return 0
 
-        dao.insertItemsIfMissing(starters)
-        starters.forEach { item ->
-            syncManager?.pushInventoryItemAsync("", item)
+        var added = 0
+        for (starter in starters) {
+            val current = allItems.firstOrNull { it.id == starter.id }
+            when {
+                current == null -> {
+                    dao.insertItem(starter)
+                    syncManager?.pushInventoryItemAsync("", starter)
+                    added += 1
+                }
+                !current.isCustom && current.name == current.subType -> {
+                    // Upgrade old Alpha placeholder text without changing the item ID,
+                    // so any existing stock remains attached to the same row.
+                    dao.insertItem(
+                        starter.copy(
+                            standardCode = current.standardCode
+                        )
+                    )
+                    syncManager?.pushInventoryItemAsync("", starter)
+                }
+            }
         }
-        return starters.size
+
+        return added
     }
 
     suspend fun ensureInitialized() {
