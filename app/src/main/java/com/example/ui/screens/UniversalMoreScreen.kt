@@ -64,7 +64,7 @@ fun UniversalMoreScreen(
             Text(
                 text = "Профиль",
                 color = Color(0xFF111827),
-                fontSize = 26.sp,
+                fontSize = 28.sp,
                 fontWeight = FontWeight.ExtraBold
             )
             Text(
@@ -131,16 +131,29 @@ fun UniversalMoreScreen(
         }
 
         item {
-            SettingsRow(
-                emoji = "⭐",
+            Text(
+                text = "ДОСТУП",
+                color = Color(0xFF98A2B3),
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(7.dp))
+            SubscriptionCard(
                 title = subscriptionTitle,
                 subtitle = subscriptionSubtitle,
                 onClick = onSubscriptionClick
             )
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(14.dp))
         }
 
         item {
+            Text(
+                text = "РАБОЧЕЕ ПРОСТРАНСТВО",
+                color = Color(0xFF98A2B3),
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(7.dp))
             SettingsRow(
                 emoji = profile.emoji,
                 title = "Тип склада",
@@ -263,6 +276,55 @@ fun UniversalMoreScreen(
         }
 
         item { Spacer(modifier = Modifier.height(24.dp)) }
+    }
+}
+
+@Composable
+private fun SubscriptionCard(
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(22.dp))
+            .background(Color(0xFF20265C))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 15.dp, vertical = 15.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(Color.White.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(text = "PRO", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
+        }
+        Spacer(modifier = Modifier.size(11.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                color = Color.White,
+                fontSize = 13.5.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = subtitle,
+                color = Color(0xFFC9CCFF),
+                fontSize = 10.5.sp,
+                lineHeight = 14.sp,
+                maxLines = 2
+            )
+        }
+        Icon(
+            imageVector = Icons.Default.ChevronRight,
+            contentDescription = null,
+            tint = Color(0xFFC9CCFF),
+            modifier = Modifier.size(20.dp)
+        )
     }
 }
 
