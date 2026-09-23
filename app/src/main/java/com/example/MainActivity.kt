@@ -781,7 +781,7 @@ fun KapterkaAppRoot(
                                 catalogItems = catalogItems,
                                 stockRecords = stockRecords,
                                 operations = operations,
-                                availableCategories = profileAvailableCategories,
+                                availableCategories = availableCategories,
                                 selectedCategory = selectedCategory,
                                 searchQuery = dashboardSearchQuery,
                                 onSelectCategory = { viewModel.selectCategory(it) },
@@ -893,7 +893,7 @@ fun KapterkaAppRoot(
                                 selectedPointId = selectedPointId,
                                 items = profileCatalogItems,
                                 stockRecords = profileStockRecords,
-                                availableCategories = availableCategories,
+                                availableCategories = profileAvailableCategories,
                                 onSelectPoint = { viewModel.selectPoint(it) },
                                 onAddItem = {
                                     universalAccess(canUniversalCatalog, "изменения каталога") {
