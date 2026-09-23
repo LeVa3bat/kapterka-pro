@@ -286,6 +286,11 @@ fun KapterkaAppRoot(
             catalogItems.filter { it.profileId == activeProfileId }
         }
     }
+    val profileAvailableCategories = remember(availableCategories, profileCatalogItems) {
+        (availableCategories + profileCatalogItems.map { it.serviceCategory })
+            .filter { it.isNotBlank() }
+            .distinct()
+    }
     val profileItemIds = remember(profileCatalogItems) {
         profileCatalogItems.map { it.id }.toSet()
     }
@@ -776,7 +781,7 @@ fun KapterkaAppRoot(
                                 catalogItems = catalogItems,
                                 stockRecords = stockRecords,
                                 operations = operations,
-                                availableCategories = availableCategories,
+                                availableCategories = profileAvailableCategories,
                                 selectedCategory = selectedCategory,
                                 searchQuery = dashboardSearchQuery,
                                 onSelectCategory = { viewModel.selectCategory(it) },
@@ -1236,7 +1241,8 @@ fun KapterkaAppRoot(
         if (BuildConfig.IS_UNIVERSAL_APP) {
             UniversalAddItemDialog(
                 warehouseProfileId = warehouseProfileId,
-                availableCategories = availableCategories,
+                availableCategories = profileAvailableCategories,
+                catalogItems = profileCatalogItems,
                 onDismiss = { showAddCustomItemDialog = false },
                 onConfirm = { name, category, group, unit ->
                     viewModel.addCustomItem(name, category, group, unit)
