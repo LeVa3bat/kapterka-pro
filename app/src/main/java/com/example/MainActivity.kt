@@ -144,11 +144,11 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.MutableStateFlow
 
 enum class AppDestination(val title: String, val icon: ImageVector, val tag: String) {
-    HOME("Главная", Icons.Default.SpaceDashboard, "nav_home"),
+    HOME("Сегодня", Icons.Default.SpaceDashboard, "nav_home"),
     HISTORY("Операции", Icons.Default.ReceiptLong, "nav_history"),
     REQUESTS("Заявки", Icons.Default.RuleFolder, "nav_requests"),
     CATALOG("Имущество", Icons.Default.Inventory2, "nav_catalog"),
-    MORE("Ещё", Icons.Default.Tune, "nav_more")
+    MORE("Профиль", Icons.Default.Tune, "nav_more")
 }
 
 class MainActivity : ComponentActivity() {
