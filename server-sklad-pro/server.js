@@ -212,17 +212,31 @@ async function bootstrapUser(decoded) {
   return readEntitlement(decoded.uid);
 }
 
+function effectiveEntitlement(data, now = Date.now()) {
+  const demoStartedAt = timestampMillis(data.demoStartedAt);
+  const demoEndsAt = timestampMillis(data.demoEndsAt);
+  const paidUntil = timestampMillis(data.paidUntil);
+  const isProActive = paidUntil > now;
+  const isTrialActive = !isProActive && demoEndsAt > now;
+  const status = isProActive ? 'pro' : (isTrialActive ? 'trial' : 'expired');
+
+  return {
+    status,
+    storedStatus: data.status || '',
+    planId: data.planId || '',
+    demoStartedAt,
+    demoEndsAt,
+    paidUntil,
+    isProActive,
+    isTrialActive,
+    serverTime: now
+  };
+}
+
 async function readEntitlement(uid) {
   const snap = await getFirestore().collection('entitlements').doc(uid).get();
   if (!snap.exists) return null;
-  const data = snap.data() || {};
-  return {
-    status: data.status || 'trial',
-    planId: data.planId || '',
-    demoStartedAt: timestampMillis(data.demoStartedAt),
-    demoEndsAt: timestampMillis(data.demoEndsAt),
-    paidUntil: timestampMillis(data.paidUntil)
-  };
+  return effectiveEntitlement(snap.data() || {});
 }
 
 function timestampMillis(value) {
@@ -609,6 +623,14 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, '0.0.0.0', () => {
-  console.log('Sklad PRO backend listening on port ' + PORT);
-});
+if (require.main === module) {
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log('Sklad PRO backend listening on port ' + PORT);
+  });
+}
+
+module.exports = {
+  effectiveEntitlement,
+  normalizeMoney,
+  timestampMillis
+};

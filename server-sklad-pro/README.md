@@ -113,7 +113,7 @@ GET /v1/plans — публичные планы и цены.
 
 POST /v1/bootstrap — инициализация пользователя и демо. Требует Firebase Bearer token.
 
-GET /v1/me — entitlement текущего пользователя. Требует Firebase Bearer token.
+GET /v1/me — entitlement текущего пользователя. Требует Firebase Bearer token. Поле `status` вычисляется по серверному времени: `pro`, `trial` или `expired`; устаревшее сохранённое значение не даёт доступ после истечения срока.
 
 POST /v1/workspaces — создание рабочего пространства. Требует Firebase Bearer token.
 
