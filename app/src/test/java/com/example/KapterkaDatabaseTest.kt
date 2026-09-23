@@ -686,4 +686,26 @@ class KapterkaDatabaseTest {
         context.deleteDatabase(dbName)
     }
 
+    @Test
+    fun testWarehouseSyncKeyLookupIsCaseInsensitive() = runBlocking {
+        dao.insertPoint(
+            WarehousePoint(
+                id = "sync-key-point",
+                name = "Склад по ключу",
+                description = "",
+                isBase = false,
+                orderIndex = 0,
+                createdAt = 1L,
+                profileId = "universal",
+                syncKey = "SKL-ABCD-1234"
+            )
+        )
+
+        val repository = KapterkaRepository(dao, null)
+        val found = repository.findUniversalWarehouseBySyncKey("  skl-abcd-1234  ")
+
+        assertNotNull(found)
+        assertEquals("sync-key-point", found!!.id)
+    }
+
 }

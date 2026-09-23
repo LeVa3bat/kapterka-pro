@@ -356,6 +356,47 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun connectUniversalWarehouseByKey(rawKey: String) {
+        if (!BuildConfig.IS_UNIVERSAL_APP) return
+
+        val key = rawKey.trim()
+        if (key.isBlank()) {
+            viewModelScope.launch {
+                _toastEvent.emit("Введите ключ синхронизации склада")
+            }
+            return
+        }
+
+        viewModelScope.launch {
+            val syncResult = repository.triggerCloudSync()
+            if (!syncResult.first) {
+                _toastEvent.emit(syncResult.second)
+                return@launch
+            }
+
+            val point = repository.findUniversalWarehouseBySyncKey(key)
+            if (point == null) {
+                _toastEvent.emit("Склад с таким ключом в этом аккаунте не найден")
+                return@launch
+            }
+
+            _selectedPointId.value = point.id
+            activeWarehouseId = point.id
+            val resolvedProfile = com.example.universal.WarehouseProfileCatalog
+                .find(point.profileId.ifBlank { activeWarehouseProfileId })
+                .id
+            activeWarehouseProfileId = resolvedProfile
+            prefs.edit()
+                .putString("active_warehouse_id_v3", point.id)
+                .putString("active_warehouse_profile_id_v2", resolvedProfile)
+                .apply()
+            _availableCategories.value = loadCategoriesForProfile(resolvedProfile)
+            _selectedCategory.value = "Все виды"
+
+            _toastEvent.emit("Подключён склад «${point.name}»")
+        }
+    }
+
     fun setUniversalCloudSyncEnabled(enabled: Boolean) {
         if (!BuildConfig.IS_UNIVERSAL_APP) return
 

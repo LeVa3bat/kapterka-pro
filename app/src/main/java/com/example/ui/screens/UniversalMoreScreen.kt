@@ -23,10 +23,17 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Card
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -55,6 +62,7 @@ fun UniversalMoreScreen(
     syncSubtitle: String,
     onSubscriptionClick: () -> Unit,
     onSyncClick: () -> Unit,
+    onConnectWarehouseKey: (String) -> Unit,
     onAddWarehouse: () -> Unit,
     onEditWarehouse: (WarehousePoint) -> Unit,
     onChangeProfile: () -> Unit,
@@ -64,6 +72,8 @@ fun UniversalMoreScreen(
     val profile = WarehouseProfileCatalog.find(warehouseProfileId)
     val clipboard = LocalClipboardManager.current
     val context = LocalContext.current
+    var showConnectKeyDialog by remember { mutableStateOf(false) }
+    var connectKey by remember { mutableStateOf("") }
 
     LazyColumn(
         modifier = Modifier
@@ -215,6 +225,16 @@ fun UniversalMoreScreen(
 
         item {
             SettingsRow(
+                emoji = "🔗",
+                title = "Подключить склад по ключу",
+                subtitle = "На втором устройстве в этом же подтверждённом аккаунте",
+                onClick = { showConnectKeyDialog = true }
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+        }
+
+        item {
+            SettingsRow(
                 emoji = "☁️",
                 title = syncTitle,
                 subtitle = syncSubtitle,
@@ -317,6 +337,55 @@ fun UniversalMoreScreen(
         }
 
         item { Spacer(modifier = Modifier.height(24.dp)) }
+    }
+
+    if (showConnectKeyDialog) {
+        AlertDialog(
+            onDismissRequest = { showConnectKeyDialog = false },
+            title = {
+                Text(
+                    text = "Подключить склад",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        text = "Введите ключ вида SKL-XXXX-XXXX. Перед поиском приложение синхронизирует склады вашего подтверждённого аккаунта.",
+                        color = Color(0xFF667085),
+                        fontSize = 11.sp
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    OutlinedTextField(
+                        value = connectKey,
+                        onValueChange = { connectKey = it.uppercase() },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        label = { Text("Ключ склада") },
+                        placeholder = { Text("SKL-XXXX-XXXX") }
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val key = connectKey.trim()
+                        if (key.isNotBlank()) {
+                            onConnectWarehouseKey(key)
+                            connectKey = ""
+                            showConnectKeyDialog = false
+                        }
+                    }
+                ) {
+                    Text("Подключить")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showConnectKeyDialog = false }) {
+                    Text("Отмена")
+                }
+            }
+        )
     }
 }
 

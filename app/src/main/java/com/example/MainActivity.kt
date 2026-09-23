@@ -1021,6 +1021,15 @@ fun KapterkaAppRoot(
                                         showPaymentProDialog = true
                                     }
                                 },
+                                onConnectWarehouseKey = { key ->
+                                    if (universalEntitlement?.isProActive == true) {
+                                        viewModel.connectUniversalWarehouseByKey(key)
+                                    } else {
+                                        universalSubscriptionMessage =
+                                            "Подключение склада по ключу доступно в PRO."
+                                        showPaymentProDialog = true
+                                    }
+                                },
                                 onAddWarehouse = {
                                     universalAccess(canUniversalWarehouses, "управления складами") {
                                         showAddPointDialog = true

@@ -256,6 +256,16 @@ class KapterkaRepository(
         return syncManager?.syncAndReconcileAll(p.unitKey, p.callsign, p.unitName) ?: Pair(false, "Синхронизация отключена")
     }
 
+    suspend fun findUniversalWarehouseBySyncKey(syncKey: String): WarehousePoint? {
+        if (!BuildConfig.IS_UNIVERSAL_APP) return null
+        val normalized = syncKey.trim().uppercase(Locale.ROOT)
+        if (normalized.isBlank()) return null
+
+        return dao.getAllPoints().first().firstOrNull { point ->
+            point.syncKey.trim().uppercase(Locale.ROOT) == normalized
+        }
+    }
+
     suspend fun clearAllData() {
         val unitKey = getCurrentUnitKey()
 
