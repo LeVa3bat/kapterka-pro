@@ -241,7 +241,9 @@ class UniversalFirestoreSyncManager(
                     description = doc.getString("description").orEmpty(),
                     isBase = doc.getBoolean("isBase") ?: false,
                     orderIndex = doc.getLong("orderIndex")?.toInt() ?: 0,
-                    createdAt = doc.getLong("createdAt") ?: System.currentTimeMillis()
+                    createdAt = doc.getLong("createdAt") ?: System.currentTimeMillis(),
+                    profileId = doc.getString("profileId").orEmpty(),
+                    syncKey = doc.getString("syncKey").orEmpty()
                 )
             )
         }
@@ -363,6 +365,8 @@ class UniversalFirestoreSyncManager(
                 "isBase" to point.isBase,
                 "orderIndex" to point.orderIndex,
                 "createdAt" to point.createdAt,
+                "profileId" to point.profileId,
+                "syncKey" to point.syncKey,
                 "updatedAt" to FieldValue.serverTimestamp()
             ),
             SetOptions.merge()

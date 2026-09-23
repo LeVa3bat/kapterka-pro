@@ -66,13 +66,20 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             .orEmpty()
             .ifBlank { "universal" }
 
+    private var activeWarehouseId: String =
+        prefs.getString("active_warehouse_id_v3", "").orEmpty()
+
     private val _availableCategories = MutableStateFlow<List<String>>(
         loadCategoriesForProfile(activeWarehouseProfileId)
     )
     val availableCategories: StateFlow<List<String>> = _availableCategories.asStateFlow()
 
-    private fun categoriesKey(profileId: String): String =
-        "saved_categories_v2_" + profileId
+    private fun categoriesKey(profileId: String, warehouseId: String = activeWarehouseId): String =
+        if (warehouseId.isBlank()) {
+            "saved_categories_v2_" + profileId
+        } else {
+            "saved_categories_v3_" + warehouseId + "_" + profileId
+        }
 
     private fun loadCategoriesForProfile(profileId: String): List<String> {
         if (!BuildConfig.IS_UNIVERSAL_APP) {
@@ -86,7 +93,9 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         }
 
         val template = com.example.universal.WarehouseProfileCatalog.find(profileId)
-        val saved = prefs.getStringSet(categoriesKey(template.id), null).orEmpty()
+        val warehouseSaved = prefs.getStringSet(categoriesKey(template.id), null).orEmpty()
+        val legacySaved = prefs.getStringSet("saved_categories_v2_" + template.id, null).orEmpty()
+        val saved = if (warehouseSaved.isNotEmpty()) warehouseSaved else legacySaved
         return (template.categories + saved.filter { it !in template.categories }).distinct()
     }
 
@@ -319,6 +328,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             repository.ensureInitialized()
             if (BuildConfig.IS_UNIVERSAL_APP) {
+                repository.prepareUniversalWarehouses(activeWarehouseProfileId)
                 // Safe add-only refresh for APK updates: make newly prepared catalog
                 // entries available immediately without rewriting stock or operations.
                 repository.ensureUniversalStarterCatalog(activeWarehouseProfileId)
@@ -361,6 +371,21 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
 
     fun selectPoint(pointId: String) {
         _selectedPointId.value = pointId
+        if (BuildConfig.IS_UNIVERSAL_APP) {
+            allPoints.value.firstOrNull { it.id == pointId }?.let { point ->
+                activeWarehouseId = point.id
+                val resolvedProfile = com.example.universal.WarehouseProfileCatalog
+                    .find(point.profileId.ifBlank { activeWarehouseProfileId })
+                    .id
+                activeWarehouseProfileId = resolvedProfile
+                prefs.edit()
+                    .putString("active_warehouse_id_v3", point.id)
+                    .putString("active_warehouse_profile_id_v2", resolvedProfile)
+                    .apply()
+                _availableCategories.value = loadCategoriesForProfile(resolvedProfile)
+                _selectedCategory.value = "Все виды"
+            }
+        }
     }
 
     fun selectCategory(category: String) {
@@ -518,9 +543,14 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
     }
 
     // Points
-    fun addWarehousePoint(name: String, description: String) {
+    fun addWarehousePoint(
+        name: String,
+        description: String,
+        profileId: String = activeWarehouseProfileId
+    ) {
         viewModelScope.launch {
-            repository.addWarehousePoint(name, description)
+            repository.addWarehousePoint(name, description, profileId)
+            repository.ensureUniversalStarterCatalog(profileId)
             _toastEvent.emit(if (BuildConfig.IS_UNIVERSAL_APP) "Склад «$name» добавлен" else "Точка «$name» добавлена в журнал")
         }
     }

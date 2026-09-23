@@ -514,4 +514,59 @@ class KapterkaDatabaseTest {
         assertEquals(listOf("auto-1"), auto.map { it.id })
     }
 
+    @Test
+    fun testMigration4To5PreservesWarehouseRowsAndAddsProfileMetadata() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val dbName = "migration_4_5_test.db"
+        context.deleteDatabase(dbName)
+
+        val helper = FrameworkSQLiteOpenHelperFactory().create(
+            SupportSQLiteOpenHelper.Configuration.builder(context)
+                .name(dbName)
+                .callback(object : SupportSQLiteOpenHelper.Callback(4) {
+                    override fun onCreate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                        db.execSQL(
+                            """
+                            CREATE TABLE warehouse_points (
+                                id TEXT NOT NULL PRIMARY KEY,
+                                name TEXT NOT NULL,
+                                description TEXT NOT NULL,
+                                isBase INTEGER NOT NULL,
+                                orderIndex INTEGER NOT NULL,
+                                createdAt INTEGER NOT NULL
+                            )
+                            """.trimIndent()
+                        )
+                        db.execSQL(
+                            "INSERT INTO warehouse_points(id,name,description,isBase,orderIndex,createdAt) " +
+                                "VALUES ('w1','Старый склад','Данные сохранить',1,0,123)"
+                        )
+                    }
+
+                    override fun onUpgrade(
+                        db: androidx.sqlite.db.SupportSQLiteDatabase,
+                        oldVersion: Int,
+                        newVersion: Int
+                    ) = Unit
+                })
+                .build()
+        )
+
+        val sqlite = helper.writableDatabase
+        KapterkaDatabase.MIGRATION_4_5.migrate(sqlite)
+
+        sqlite.query(
+            "SELECT name, description, profileId, syncKey FROM warehouse_points WHERE id='w1'"
+        ).use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("Старый склад", cursor.getString(0))
+            assertEquals("Данные сохранить", cursor.getString(1))
+            assertEquals("", cursor.getString(2))
+            assertEquals("", cursor.getString(3))
+        }
+
+        helper.close()
+        context.deleteDatabase(dbName)
+    }
+
 }

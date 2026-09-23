@@ -10,5 +10,7 @@ data class WarehousePoint(
     val description: String = "",
     val isBase: Boolean = false,
     val orderIndex: Int = 0,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val profileId: String = "",
+    val syncKey: String = ""
 )

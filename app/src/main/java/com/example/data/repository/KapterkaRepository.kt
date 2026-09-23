@@ -168,6 +168,33 @@ class KapterkaRepository(
     
 
 
+    suspend fun prepareUniversalWarehouses(defaultProfileId: String) {
+        if (!BuildConfig.IS_UNIVERSAL_APP) return
+
+        val safeProfile = com.example.universal.WarehouseProfileCatalog.find(defaultProfileId).id
+        val current = dao.getAllPoints().first()
+        if (current.isEmpty()) return
+
+        current.forEach { point ->
+            val updated = point.copy(
+                profileId = point.profileId.ifBlank { safeProfile },
+                syncKey = point.syncKey.ifBlank { generateWarehouseSyncKey() }
+            )
+            if (updated != point) {
+                dao.updatePoint(updated)
+                syncManager?.pushWarehousePointAsync("", updated)
+            }
+        }
+    }
+
+    private fun generateWarehouseSyncKey(): String {
+        val raw = java.util.UUID.randomUUID()
+            .toString()
+            .replace("-", "")
+            .uppercase(Locale.ROOT)
+        return "SKL-" + raw.take(4) + "-" + raw.drop(4).take(4)
+    }
+
     suspend fun deleteCategory(
         categoryName: String,
         deleteItems: Boolean = false,
@@ -326,8 +353,23 @@ class KapterkaRepository(
         syncManager?.pushOperationAsync(getCurrentUnitKey(), op, updatedStocks)
     }
 
-    suspend fun addWarehousePoint(name: String, desc: String) {
-        val p = WarehousePoint(java.util.UUID.randomUUID().toString(), name, desc)
+    suspend fun addWarehousePoint(
+        name: String,
+        desc: String,
+        profileId: String = ""
+    ) {
+        val resolvedProfile = if (BuildConfig.IS_UNIVERSAL_APP) {
+            com.example.universal.WarehouseProfileCatalog.find(profileId).id
+        } else {
+            ""
+        }
+        val p = WarehousePoint(
+            id = java.util.UUID.randomUUID().toString(),
+            name = name,
+            description = desc,
+            profileId = resolvedProfile,
+            syncKey = if (BuildConfig.IS_UNIVERSAL_APP) generateWarehouseSyncKey() else ""
+        )
         dao.insertPoint(p)
         syncManager?.pushWarehousePointAsync(getCurrentUnitKey(), p)
     }

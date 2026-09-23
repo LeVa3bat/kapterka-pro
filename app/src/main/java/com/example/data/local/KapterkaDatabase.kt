@@ -27,7 +27,7 @@ import kotlinx.coroutines.launch
         UserProfile::class,
         SyncTombstone::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -74,6 +74,19 @@ abstract class KapterkaDatabase : RoomDatabase() {
             }
         }
 
+        internal val MIGRATION_4_5 = object : androidx.room.migration.Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Add-only per-warehouse metadata. Existing warehouse rows and all stock/history
+                // stay untouched; blank values are claimed safely after the DB opens.
+                db.execSQL(
+                    "ALTER TABLE warehouse_points ADD COLUMN profileId TEXT NOT NULL DEFAULT ''"
+                )
+                db.execSQL(
+                    "ALTER TABLE warehouse_points ADD COLUMN syncKey TEXT NOT NULL DEFAULT ''"
+                )
+            }
+        }
+
         fun getDatabase(context: Context, scope: CoroutineScope): KapterkaDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -81,7 +94,7 @@ abstract class KapterkaDatabase : RoomDatabase() {
                     KapterkaDatabase::class.java,
                     "kapterka_database"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                     .addCallback(DatabaseCallback(scope))
                     .build()
                 INSTANCE = instance
