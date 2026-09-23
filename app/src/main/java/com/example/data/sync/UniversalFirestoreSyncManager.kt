@@ -265,7 +265,9 @@ class UniversalFirestoreSyncManager(
                     categoryClass = doc.getString("categoryClass") ?: "Кат. 1",
                     standardCode = doc.getString("standardCode").orEmpty(),
                     isCustom = doc.getBoolean("isCustom") ?: false,
-                    profileId = cloudProfileId.ifBlank { local?.profileId.orEmpty() }
+                    profileId = cloudProfileId.ifBlank { local?.profileId.orEmpty() },
+                    warehouseId = doc.getString("warehouseId").orEmpty()
+                        .ifBlank { local?.warehouseId.orEmpty() }
                 )
             )
         }
@@ -386,6 +388,7 @@ class UniversalFirestoreSyncManager(
                 "standardCode" to item.standardCode,
                 "isCustom" to item.isCustom,
                 "profileId" to item.profileId,
+                "warehouseId" to item.warehouseId,
                 "updatedAt" to FieldValue.serverTimestamp()
             ),
             SetOptions.merge()
