@@ -45,11 +45,11 @@ fun UniversalBottomNavigationBar(
     onNavigate: (AppDestination) -> Unit
 ) {
     val items = listOf(
-        UniversalNavItem(AppDestination.HOME, "Сегодня", Icons.Default.Home),
+        UniversalNavItem(AppDestination.HOME, "Склад", Icons.Default.Home),
         UniversalNavItem(AppDestination.CATALOG, "Каталог", Icons.Default.Inventory2),
         UniversalNavItem(AppDestination.HISTORY, "Операции", Icons.Default.ReceiptLong),
         UniversalNavItem(AppDestination.REQUESTS, "Заявки", Icons.Default.Assignment),
-        UniversalNavItem(AppDestination.MORE, "Профиль", Icons.Default.Person)
+        UniversalNavItem(AppDestination.MORE, "Ещё", Icons.Default.Person)
     )
 
     Box(

@@ -205,11 +205,11 @@ fun UniversalMoreScreen(
 
         selectedWarehouse?.let { warehouse ->
             item {
-                SettingsRow(
-                    emoji = "🔑",
-                    title = "Ключ синхронизации склада",
-                    subtitle = warehouse.syncKey.ifBlank { "Ключ будет создан автоматически" },
-                    onClick = {
+                SyncWorkspaceCard(
+                    warehouse = warehouse,
+                    syncTitle = syncTitle,
+                    syncSubtitle = syncSubtitle,
+                    onCopyKey = {
                         val key = warehouse.syncKey.trim()
                         if (key.isNotBlank()) {
                             clipboard.setText(AnnotatedString(key))
@@ -217,30 +217,12 @@ fun UniversalMoreScreen(
                         } else {
                             onEditWarehouse(warehouse)
                         }
-                    }
+                    },
+                    onConnectKey = { showConnectKeyDialog = true },
+                    onSync = onSyncClick
                 )
                 Spacer(modifier = Modifier.height(10.dp))
             }
-        }
-
-        item {
-            SettingsRow(
-                emoji = "🔗",
-                title = "Подключить склад по ключу",
-                subtitle = "На втором устройстве в этом же подтверждённом аккаунте",
-                onClick = { showConnectKeyDialog = true }
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-        }
-
-        item {
-            SettingsRow(
-                emoji = "☁️",
-                title = syncTitle,
-                subtitle = syncSubtitle,
-                onClick = onSyncClick
-            )
-            Spacer(modifier = Modifier.height(10.dp))
         }
 
         if (profile.id == "military") {
@@ -385,6 +367,132 @@ fun UniversalMoreScreen(
                     Text("Отмена")
                 }
             }
+        )
+    }
+}
+
+@Composable
+private fun SyncWorkspaceCard(
+    warehouse: WarehousePoint,
+    syncTitle: String,
+    syncSubtitle: String,
+    onCopyKey: () -> Unit,
+    onConnectKey: () -> Unit,
+    onSync: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(13.dp))
+                        .background(Color(0xFFEFF1FF)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("☁️", fontSize = 18.sp)
+                }
+                Spacer(modifier = Modifier.size(10.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Синхронизация склада",
+                        color = Color(0xFF111827),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = syncTitle,
+                        color = Color(0xFF5B5CE2),
+                        fontSize = 9.5.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(15.dp))
+                    .background(Color(0xFFF6F7FB))
+                    .padding(11.dp)
+            ) {
+                Text(
+                    text = "Ключ выбранного склада",
+                    color = Color(0xFF667085),
+                    fontSize = 8.8.sp
+                )
+                Text(
+                    text = warehouse.syncKey.ifBlank { "Создаётся автоматически" },
+                    color = Color(0xFF111827),
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.ExtraBold
+                )
+                Text(
+                    text = "Ключ создаётся автоматически при создании склада. На втором устройстве войдите в тот же подтверждённый аккаунт и введите этот ключ.",
+                    color = Color(0xFF7A8494),
+                    fontSize = 9.2.sp,
+                    lineHeight = 13.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = syncSubtitle,
+                color = Color(0xFF667085),
+                fontSize = 9.2.sp,
+                lineHeight = 13.sp,
+                maxLines = 3
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(7.dp)) {
+                SyncAction(
+                    title = "Копировать",
+                    onClick = onCopyKey,
+                    modifier = Modifier.weight(1f)
+                )
+                SyncAction(
+                    title = "Подключить",
+                    onClick = onConnectKey,
+                    modifier = Modifier.weight(1f)
+                )
+                SyncAction(
+                    title = "Обновить",
+                    onClick = onSync,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SyncAction(
+    title: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color(0xFFEEEEFF))
+            .clickable(onClick = onClick)
+            .padding(vertical = 9.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = title,
+            color = Color(0xFF5B5CE2),
+            fontSize = 9.5.sp,
+            fontWeight = FontWeight.Bold
         )
     }
 }

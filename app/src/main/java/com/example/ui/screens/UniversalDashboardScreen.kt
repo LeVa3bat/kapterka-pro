@@ -11,66 +11,65 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.SwapHoriz
-import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material.icons.filled.Warehouse
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import com.example.data.model.InventoryItem
 import com.example.data.model.OperationRecord
-import com.example.data.model.OperationType
-import com.example.data.model.RequestStatus
 import com.example.data.model.RequisitionRequest
 import com.example.data.model.StockRecord
 import com.example.data.model.UserProfile
 import com.example.data.model.WarehousePoint
 import com.example.universal.WarehouseProfileCatalog
-import java.text.SimpleDateFormat
 import java.util.Calendar
-import java.util.Date
-import java.util.Locale
 
-private val UniversalInk = Color(0xFF111827)
-private val UniversalMuted = Color(0xFF6B7280)
-private val UniversalBg = Color(0xFFF5F7FB)
-private val UniversalSurface = Color.White
-private val UniversalPrimary = Color(0xFF5B5CE2)
-private val UniversalPrimarySoft = Color(0xFFEEEEFF)
-private val UniversalGreen = Color(0xFF159A72)
-private val UniversalGreenSoft = Color(0xFFE9F8F3)
-private val UniversalOrange = Color(0xFFE88B22)
-private val UniversalOrangeSoft = Color(0xFFFFF4E5)
-private val UniversalRed = Color(0xFFD94C4C)
-private val UniversalRedSoft = Color(0xFFFFEEEE)
-private val UniversalBlue = Color(0xFF3977D8)
-private val UniversalBlueSoft = Color(0xFFEAF2FF)
+private val HomeInk = Color(0xFF111827)
+private val HomeMuted = Color(0xFF667085)
+private val HomeBg = Color(0xFFF6F7FB)
+private val HomeSurface = Color.White
+private val HomePrimary = Color(0xFF5B5CE2)
+private val HomePrimarySoft = Color(0xFFEEEEFF)
+private val HomeGreen = Color(0xFF159A72)
+private val HomeGreenSoft = Color(0xFFE9F8F3)
+private val HomeOrange = Color(0xFFE88B22)
+private val HomeOrangeSoft = Color(0xFFFFF4E5)
+private val HomeRed = Color(0xFFD94C4C)
+private val HomeRedSoft = Color(0xFFFFEEEE)
+private val HomeBlue = Color(0xFF3977D8)
+private val HomeBlueSoft = Color(0xFFEAF2FF)
 
 @Composable
 fun UniversalDashboardScreen(
@@ -93,23 +92,23 @@ fun UniversalDashboardScreen(
     onOpenReport: () -> Unit,
     onOpenProfile: () -> Unit
 ) {
-    val profileTemplate = WarehouseProfileCatalog.find(warehouseProfileId)
-    val vocab = profileTemplate.operations
+    var showWarehousePicker by remember { mutableStateOf(false) }
+
     val selectedPoint = remember(points, selectedPointId) {
         points.firstOrNull { it.id == selectedPointId } ?: points.firstOrNull()
     }
-    val selectedPointStocks = remember(stockRecords, selectedPoint?.id) {
+    val selectedProfile = WarehouseProfileCatalog.find(
+        selectedPoint?.profileId?.takeIf { it.isNotBlank() } ?: warehouseProfileId
+    )
+    val vocab = selectedProfile.operations
+
+    val selectedStocks = remember(stockRecords, selectedPoint?.id) {
         val pointId = selectedPoint?.id
         if (pointId == null) emptyList() else stockRecords.filter { it.pointId == pointId }
     }
-    val activePositions = remember(selectedPointStocks) {
-        selectedPointStocks.filter { it.quantity > 0 }.map { it.itemId }.distinct().size
-    }
-    val catalogById = remember(catalogItems) {
-        catalogItems.associateBy { it.id }
-    }
-    val selectedPointBalances = remember(selectedPointStocks, catalogById) {
-        selectedPointStocks
+    val catalogById = remember(catalogItems) { catalogItems.associateBy { it.id } }
+    val balances = remember(selectedStocks, catalogById) {
+        selectedStocks
             .filter { it.quantity != 0 || it.incomeTotal != 0 || it.expenseTotal != 0 }
             .mapNotNull { stock ->
                 catalogById[stock.itemId]?.let { item -> item to stock }
@@ -122,19 +121,18 @@ fun UniversalDashboardScreen(
                 )
             )
     }
-    val selectedPointOperations = remember(operations, selectedPoint?.id, selectedPoint?.name) {
-        val pointId = selectedPoint?.id.orEmpty()
-        val pointName = selectedPoint?.name.orEmpty()
-        if (pointId.isBlank() && pointName.isBlank()) {
-            operations
-        } else {
-            operations.filter { operation ->
-                val hasStableIds = operation.fromPointId.isNotBlank() || operation.toPointId.isNotBlank()
-                if (hasStableIds) {
-                    operation.fromPointId == pointId || operation.toPointId == pointId
-                } else {
-                    operation.fromPointName == pointName || operation.toPointName == pointName
-                }
+    val activePositions = balances.count { it.second.quantity > 0 }
+    val categoryCount = catalogItems.map { it.serviceCategory }.filter { it.isNotBlank() }.distinct().size
+
+    val warehouseOps = remember(operations, selectedPoint?.id, selectedPoint?.name) {
+        val id = selectedPoint?.id.orEmpty()
+        val name = selectedPoint?.name.orEmpty()
+        operations.filter { op ->
+            val hasStableIds = op.fromPointId.isNotBlank() || op.toPointId.isNotBlank()
+            if (hasStableIds) {
+                op.fromPointId == id || op.toPointId == id
+            } else {
+                op.fromPointName == name || op.toPointName == name
             }
         }
     }
@@ -146,391 +144,274 @@ fun UniversalDashboardScreen(
             set(Calendar.MILLISECOND, 0)
         }.timeInMillis
     }
-    val todayOps = remember(selectedPointOperations, todayStart) {
-        selectedPointOperations.count { it.timestamp >= todayStart }
-    }
-    val recentOperations = remember(selectedPointOperations) {
-        selectedPointOperations.sortedByDescending { it.timestamp }.take(2)
-    }
-    val formatter = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
+    val todayOps = warehouseOps.count { it.timestamp >= todayStart }
 
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(UniversalBg)
+            .background(HomeBg)
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 18.dp, end = 18.dp, top = 18.dp, bottom = 8.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Сегодня",
-                            color = UniversalInk,
-                            fontSize = 28.sp,
-                            fontWeight = FontWeight.ExtraBold
-                        )
-                        Text(
-                            text = buildString {
-                                append(greeting(userProfile?.callsign))
-                                val unit = userProfile?.unitName?.trim().orEmpty()
-                                if (unit.isNotBlank()) append(" • ").append(unit)
-                            },
-                            color = UniversalMuted,
-                            fontSize = 11.5.sp,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-
-                    Row(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(100.dp))
-                            .background(UniversalPrimarySoft)
-                            .clickable(onClick = onOpenProfile)
-                            .padding(horizontal = 11.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(text = profileTemplate.emoji, fontSize = 15.sp)
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = profileTemplate.title,
-                            color = UniversalPrimary,
-                            fontSize = 10.5.sp,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                if (points.isNotEmpty()) {
-                    Text(
-                        text = "МЕСТО ХРАНЕНИЯ",
-                        color = UniversalMuted,
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        points.forEach { point ->
-                            WarehouseMiniCard(
-                                point = point,
-                                positions = stockRecords
-                                    .filter { it.pointId == point.id && it.quantity > 0 }
-                                    .map { it.itemId }
-                                    .distinct()
-                                    .size,
-                                selected = point.id == selectedPoint?.id,
-                                onClick = { onSelectPoint(point.id) }
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(12.dp))
-                }
-
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(
-                                Brush.linearGradient(
-                                    listOf(Color(0xFF20265C), Color(0xFF5B5CE2))
-                                )
-                            )
-                            .padding(horizontal = 18.dp, vertical = 17.dp)
-                    ) {
-                        Column {
-                            Text(
-                                text = selectedPoint?.name ?: "Основной склад",
-                                color = Color.White,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Row(verticalAlignment = Alignment.Bottom) {
-                                Text(
-                                    text = activePositions.toString(),
-                                    color = Color.White,
-                                    fontSize = 34.sp,
-                                    fontWeight = FontWeight.ExtraBold
-                                )
-                                Spacer(modifier = Modifier.width(7.dp))
-                                Text(
-                                    text = "позиций с остатком",
-                                    color = Color.White.copy(alpha = 0.76f),
-                                    fontSize = 12.sp,
-                                    modifier = Modifier.padding(bottom = 5.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(7.dp))
-                            Text(
-                                text = "Каталог: " + catalogItems.size +
-                                    " • Операций сегодня: " + todayOps,
-                                color = Color.White.copy(alpha = 0.72f),
-                                fontSize = 10.5.sp
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    SectionTitle(
-                        "Остатки • " + (selectedPoint?.name ?: "склад"),
-                        modifier = Modifier.weight(1f)
-                    )
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Text(
-                            text = "Excel",
-                            color = UniversalGreen,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.clickable(onClick = onOpenReport)
-                        )
-                        Text(
-                            text = "Каталог",
-                            color = UniversalPrimary,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.clickable(onClick = onOpenCatalog)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(9.dp))
-
-                if (selectedPointBalances.isEmpty()) {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = UniversalSurface)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                text = "На этом складе пока нет остатков",
-                                color = UniversalInk,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            Text(
-                                text = "После поступления здесь появятся конкретные позиции и их количество.",
-                                color = UniversalMuted,
-                                fontSize = 10.5.sp
-                            )
-                        }
-                    }
-                } else {
-                    selectedPointBalances.take(6).forEach { (item, stock) ->
-                        DashboardStockRow(item = item, stock = stock)
-                        Spacer(modifier = Modifier.height(7.dp))
-                    }
-                    if (selectedPointBalances.size > 6) {
-                        Text(
-                            text = "Ещё " + (selectedPointBalances.size - 6) + " позиций • открыть весь склад",
-                            color = UniversalPrimary,
-                            fontSize = 10.5.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable(onClick = onOpenCatalog)
-                                .padding(vertical = 4.dp)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                SectionTitle("Операции")
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    UniversalQuickActionChip(
-                        title = vocab.income,
-                        icon = Icons.Default.ArrowDownward,
-                        accent = UniversalGreen,
-                        soft = UniversalGreenSoft,
-                        onClick = onIncomeClick
-                    )
-                    UniversalQuickActionChip(
-                        title = vocab.issue,
-                        icon = Icons.Default.ArrowUpward,
-                        accent = UniversalOrange,
-                        soft = UniversalOrangeSoft,
-                        onClick = onIssueClick
-                    )
-                    UniversalQuickActionChip(
-                        title = vocab.transfer,
-                        icon = Icons.Default.SwapHoriz,
-                        accent = UniversalBlue,
-                        soft = UniversalBlueSoft,
-                        onClick = onTransferClick
-                    )
-                    UniversalQuickActionChip(
-                        title = vocab.writeOff,
-                        icon = Icons.Default.MoreHoriz,
-                        accent = UniversalRed,
-                        soft = UniversalRedSoft,
-                        onClick = onWriteOffClick
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(22.dp))
-            }
-        }
-    }
-}
-
-@Composable
-private fun UniversalQuickActionChip(
-    title: String,
-    icon: ImageVector,
-    accent: Color,
-    soft: Color,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(UniversalSurface)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 11.dp, vertical = 9.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(30.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(soft),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = accent,
-                modifier = Modifier.size(16.dp)
-            )
-        }
-        Spacer(modifier = Modifier.width(7.dp))
-        Text(
-            text = title,
-            color = UniversalInk,
-            fontSize = 10.5.sp,
-            fontWeight = FontWeight.Bold,
-            maxLines = 1
-        )
-    }
-}
-
-@Composable
-private fun DashboardStockRow(
-    item: InventoryItem,
-    stock: StockRecord
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = UniversalSurface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 13.dp, vertical = 11.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(34.dp)
-                        .clip(RoundedCornerShape(11.dp))
-                        .background(UniversalPrimarySoft),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Inventory2,
-                        contentDescription = null,
-                        tint = UniversalPrimary,
-                        modifier = Modifier.size(17.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(9.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = item.name,
-                        color = UniversalInk,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = buildString {
-                            append(item.serviceCategory)
-                            if (item.subType.isNotBlank()) append(" • ").append(item.subType)
-                        },
-                        color = UniversalMuted,
-                        fontSize = 9.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
+            Spacer(Modifier.height(14.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                DashboardStockMetric(
-                    label = "Пришло",
-                    value = stock.incomeTotal,
-                    unit = item.unit,
-                    accent = UniversalGreen,
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Склад",
+                        color = HomeInk,
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.ExtraBold
+                    )
+                    Text(
+                        text = "Остатки и движения без лишних экранов",
+                        color = HomeMuted,
+                        fontSize = 11.5.sp
+                    )
+                }
+                Text(
+                    text = selectedProfile.emoji,
+                    fontSize = 22.sp,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(HomePrimarySoft)
+                        .clickable(onClick = onOpenProfile)
+                        .padding(10.dp)
+                )
+            }
+        }
+
+        item {
+            CurrentWarehouseCard(
+                point = selectedPoint,
+                profileTitle = selectedProfile.title,
+                positions = activePositions,
+                onClick = { showWarehousePicker = true }
+            )
+        }
+
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                HomeMetric(
+                    value = activePositions.toString(),
+                    label = "с остатком",
                     modifier = Modifier.weight(1f)
                 )
-                DashboardStockMetric(
-                    label = "Ушло",
-                    value = stock.expenseTotal,
-                    unit = item.unit,
-                    accent = UniversalOrange,
+                HomeMetric(
+                    value = todayOps.toString(),
+                    label = "операций сегодня",
                     modifier = Modifier.weight(1f)
                 )
-                DashboardStockMetric(
-                    label = "Остаток",
-                    value = stock.quantity,
-                    unit = item.unit,
-                    accent = if (stock.quantity < 0) UniversalRed else UniversalPrimary,
+                HomeMetric(
+                    value = categoryCount.toString(),
+                    label = "категорий",
                     modifier = Modifier.weight(1f)
+                )
+            }
+        }
+
+        item {
+            Text(
+                text = "Быстрые операции",
+                color = HomeInk,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(Modifier.height(7.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                QuickChip(vocab.income, Icons.Default.ArrowDownward, HomeGreen, HomeGreenSoft, onIncomeClick)
+                QuickChip(vocab.issue, Icons.Default.ArrowUpward, HomeOrange, HomeOrangeSoft, onIssueClick)
+                QuickChip(vocab.transfer, Icons.Default.SwapHoriz, HomeBlue, HomeBlueSoft, onTransferClick)
+                QuickChip(vocab.writeOff, Icons.Default.MoreHoriz, HomeRed, HomeRedSoft, onWriteOffClick)
+            }
+        }
+
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Остатки",
+                    color = HomeInk,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    text = "Отчёт",
+                    color = HomeGreen,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .clickable(onClick = onOpenReport)
+                        .padding(6.dp)
+                )
+                Text(
+                    text = "Каталог",
+                    color = HomePrimary,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .clickable(onClick = onOpenCatalog)
+                        .padding(6.dp)
+                )
+            }
+        }
+
+        if (balances.isEmpty()) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = HomeSurface)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "На выбранном складе пока нет движения",
+                            color = HomeInk,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Сделайте поступление — здесь сразу появятся пришло, ушло и остаток.",
+                            color = HomeMuted,
+                            fontSize = 10.5.sp
+                        )
+                    }
+                }
+            }
+        } else {
+            items(balances.take(4), key = { it.first.id }) { (item, stock) ->
+                CompactBalanceRow(item, stock)
+            }
+            if (balances.size > 4) {
+                item {
+                    Text(
+                        text = "Показать ещё ${balances.size - 4} поз.",
+                        color = HomePrimary,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(onClick = onOpenCatalog)
+                            .padding(vertical = 8.dp)
+                    )
+                }
+            }
+        }
+
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                SmallLinkCard(
+                    title = "Все операции",
+                    subtitle = "История выбранного склада",
+                    onClick = onOpenOperations,
+                    modifier = Modifier.weight(1f)
+                )
+                SmallLinkCard(
+                    title = "Добавить позицию",
+                    subtitle = "В каталог этого склада",
+                    onClick = onAddItemClick,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            Spacer(Modifier.height(18.dp))
+        }
+    }
+
+    if (showWarehousePicker) {
+        WarehousePickerDialog(
+            points = points,
+            selectedPointId = selectedPoint?.id.orEmpty(),
+            onSelect = {
+                onSelectPoint(it.id)
+                showWarehousePicker = false
+            },
+            onDismiss = { showWarehousePicker = false }
+        )
+    }
+}
+
+@Composable
+private fun CurrentWarehouseCard(
+    point: WarehousePoint?,
+    profileTitle: String,
+    positions: Int,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF20265C)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(46.dp)
+                    .clip(RoundedCornerShape(15.dp))
+                    .background(Color.White.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Warehouse,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(23.dp)
+                )
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "ТЕКУЩИЙ СКЛАД",
+                    color = Color.White.copy(alpha = 0.62f),
+                    fontSize = 8.5.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = point?.name ?: "Склад не выбран",
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = "$profileTitle • $positions поз. с остатком",
+                    color = Color.White.copy(alpha = 0.76f),
+                    fontSize = 10.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = "Сменить",
+                    color = Color(0xFFD7D9FF),
+                    fontSize = 9.5.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Icon(
+                    imageVector = Icons.Default.ArrowDropDown,
+                    contentDescription = "Выбрать склад",
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
                 )
             }
         }
@@ -538,29 +419,118 @@ private fun DashboardStockRow(
 }
 
 @Composable
-private fun DashboardStockMetric(
-    label: String,
-    value: Int,
-    unit: String,
-    accent: Color,
-    modifier: Modifier = Modifier
+private fun WarehousePickerDialog(
+    points: List<WarehousePoint>,
+    selectedPointId: String,
+    onSelect: (WarehousePoint) -> Unit,
+    onDismiss: () -> Unit
 ) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(26.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Выберите склад",
+                    color = HomeInk,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.ExtraBold
+                )
+                Text(
+                    text = "У каждого склада свои профиль, остатки, каталог и отчёты.",
+                    color = HomeMuted,
+                    fontSize = 10.5.sp
+                )
+                Spacer(Modifier.height(12.dp))
+
+                if (points.isEmpty()) {
+                    Text(
+                        text = "Складов пока нет. Добавьте первый склад в разделе «Ещё».",
+                        color = HomeMuted,
+                        fontSize = 11.sp,
+                        modifier = Modifier.padding(vertical = 12.dp)
+                    )
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.heightIn(max = 420.dp),
+                        verticalArrangement = Arrangement.spacedBy(7.dp)
+                    ) {
+                        items(points, key = { it.id }) { point ->
+                            val profile = WarehouseProfileCatalog.find(point.profileId)
+                            val selected = point.id == selectedPointId
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(if (selected) HomePrimarySoft else HomeBg)
+                                    .clickable { onSelect(point) }
+                                    .padding(horizontal = 12.dp, vertical = 11.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(profile.emoji, fontSize = 18.sp)
+                                Spacer(Modifier.width(10.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = point.name,
+                                        color = HomeInk,
+                                        fontSize = 12.5.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = profile.title,
+                                        color = HomeMuted,
+                                        fontSize = 9.5.sp
+                                    )
+                                }
+                                if (selected) {
+                                    Icon(
+                                        imageVector = Icons.Default.CheckCircle,
+                                        contentDescription = null,
+                                        tint = HomePrimary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = "Закрыть",
+                    color = HomePrimary,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .align(Alignment.End)
+                        .clickable(onClick = onDismiss)
+                        .padding(8.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun HomeMetric(value: String, label: String, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFFF7F8FB))
-            .padding(horizontal = 8.dp, vertical = 7.dp)
+            .clip(RoundedCornerShape(17.dp))
+            .background(HomeSurface)
+            .padding(horizontal = 10.dp, vertical = 11.dp)
     ) {
         Text(
-            text = label,
-            color = UniversalMuted,
-            fontSize = 8.5.sp
+            text = value,
+            color = HomeInk,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.ExtraBold
         )
         Text(
-            text = value.toString() + " " + unit,
-            color = accent,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.ExtraBold,
+            text = label,
+            color = HomeMuted,
+            fontSize = 8.8.sp,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -568,170 +538,101 @@ private fun DashboardStockMetric(
 }
 
 @Composable
-private fun HeroMetric(value: String, label: String, modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier
+private fun QuickChip(
+    title: String,
+    icon: ImageVector,
+    accent: Color,
+    soft: Color,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
             .clip(RoundedCornerShape(15.dp))
-            .background(Color.White.copy(alpha = 0.10f))
-            .padding(horizontal = 9.dp, vertical = 9.dp)
+            .background(HomeSurface)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 9.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
+        Box(
+            modifier = Modifier
+                .size(28.dp)
+                .clip(RoundedCornerShape(9.dp))
+                .background(soft),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(15.dp))
+        }
+        Spacer(Modifier.width(6.dp))
         Text(
-            text = value,
-            color = Color.White,
-            fontSize = 15.sp,
-            fontWeight = FontWeight.ExtraBold
-        )
-        Text(
-            text = label,
-            color = Color.White.copy(alpha = 0.62f),
-            fontSize = 8.5.sp,
+            text = title,
+            color = HomeInk,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold,
             maxLines = 1
         )
     }
 }
 
 @Composable
-private fun UniversalActionCard(
-    title: String,
-    subtitle: String,
-    icon: ImageVector,
-    accent: Color,
-    soft: Color,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
+private fun CompactBalanceRow(item: InventoryItem, stock: StockRecord) {
     Card(
-        modifier = modifier.clickable(onClick = onClick),
-        shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(containerColor = UniversalSurface),
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(17.dp),
+        colors = CardDefaults.cardColors(containerColor = HomeSurface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Column(modifier = Modifier.padding(10.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Box(
                 modifier = Modifier
-                    .size(32.dp)
+                    .size(34.dp)
                     .clip(RoundedCornerShape(11.dp))
-                    .background(soft),
+                    .background(HomePrimarySoft),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = icon,
+                    imageVector = Icons.Default.Inventory2,
                     contentDescription = null,
-                    tint = accent,
+                    tint = HomePrimary,
                     modifier = Modifier.size(17.dp)
                 )
             }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = title,
-                color = UniversalInk,
-                fontSize = 11.5.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            if (subtitle.isNotBlank()) {
-                Spacer(modifier = Modifier.height(3.dp))
+            Spacer(Modifier.width(9.dp))
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = subtitle,
-                    color = UniversalMuted,
-                    fontSize = 9.5.sp,
+                    text = item.name,
+                    color = HomeInk,
+                    fontSize = 11.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = listOf(item.serviceCategory, item.subType)
+                        .filter { it.isNotBlank() }
+                        .joinToString(" • "),
+                    color = HomeMuted,
+                    fontSize = 8.8.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun SmallCommandCard(
-    text: String,
-    icon: ImageVector,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier
-            .clip(RoundedCornerShape(17.dp))
-            .background(UniversalSurface)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 13.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(31.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(UniversalPrimarySoft),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = UniversalPrimary,
-                modifier = Modifier.size(16.dp)
-            )
-        }
-        Spacer(modifier = Modifier.width(9.dp))
-        Text(
-            text = text,
-            color = UniversalInk,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.weight(1f)
-        )
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-            contentDescription = null,
-            tint = Color(0xFFB3BAC6),
-            modifier = Modifier.size(15.dp)
-        )
-    }
-}
-
-@Composable
-private fun StarterGuideCard(
-    catalogCount: Int,
-    onIncomeClick: () -> Unit,
-    onOpenCatalog: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(containerColor = UniversalPrimarySoft),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Рабочее пространство готово",
-                color = UniversalInk,
-                fontSize = 13.5.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = if (catalogCount > 0)
-                    "Каталог уже подготовлен: $catalogCount поз. с нулевым остатком. Внесите первое поступление — история и показатели заполнятся автоматически."
-                else
-                    "Добавьте первую позицию или внесите поступление. Никаких тестовых остатков мы не создаём.",
-                color = UniversalMuted,
-                fontSize = 10.5.sp,
-                lineHeight = 15.sp
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                SmallCommandCard(
-                    text = "Первый приход",
-                    icon = Icons.Default.ArrowDownward,
-                    onClick = onIncomeClick,
-                    modifier = Modifier.weight(1f)
+            Spacer(Modifier.width(6.dp))
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = "${stock.quantity} ${item.unit}",
+                    color = if (stock.quantity > 0) HomeInk else HomeRed,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.ExtraBold
                 )
-                SmallCommandCard(
-                    text = "Открыть каталог",
-                    icon = Icons.Default.Inventory2,
-                    onClick = onOpenCatalog,
-                    modifier = Modifier.weight(1f)
+                Text(
+                    text = "+${stock.incomeTotal} / -${stock.expenseTotal}",
+                    color = HomeMuted,
+                    fontSize = 8.6.sp
                 )
             }
         }
@@ -739,205 +640,26 @@ private fun StarterGuideCard(
 }
 
 @Composable
-private fun AttentionCard(
-    zeroPositions: Int,
-    pendingRequests: Int,
-    catalogIsEmpty: Boolean
-) {
-    val title: String
-    val subtitle: String
-    val accent: Color
-    val soft: Color
-
-    when {
-        catalogIsEmpty -> {
-            title = "Склад пока пуст"
-            subtitle = "Добавьте первую позицию и начните учёт."
-            accent = UniversalPrimary
-            soft = UniversalPrimarySoft
-        }
-        zeroPositions > 0 -> {
-            title = "$zeroPositions поз. с нулевым остатком"
-            subtitle = "Проверьте, нужно ли пополнение."
-            accent = UniversalRed
-            soft = UniversalRedSoft
-        }
-        pendingRequests > 0 -> {
-            title = "$pendingRequests заявок ждут обработки"
-            subtitle = "Откройте раздел заявок и проверьте статус."
-            accent = UniversalOrange
-            soft = UniversalOrangeSoft
-        }
-        else -> {
-            title = "Всё в порядке"
-            subtitle = "Критичных состояний сейчас нет."
-            accent = UniversalGreen
-            soft = UniversalGreenSoft
-        }
-    }
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .background(soft)
-            .padding(14.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(42.dp)
-                .clip(RoundedCornerShape(14.dp))
-                .background(Color.White.copy(alpha = 0.8f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = if (zeroPositions > 0) Icons.Default.WarningAmber else Icons.Default.Inventory2,
-                contentDescription = null,
-                tint = accent,
-                modifier = Modifier.size(21.dp)
-            )
-        }
-        Spacer(modifier = Modifier.width(11.dp))
-        Column {
-            Text(
-                text = title,
-                color = UniversalInk,
-                fontSize = 12.5.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = subtitle,
-                color = UniversalMuted,
-                fontSize = 10.sp
-            )
-        }
-    }
-}
-
-@Composable
-private fun WarehouseMiniCard(
-    point: WarehousePoint,
-    positions: Int,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(if (selected) UniversalPrimary else UniversalSurface)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 9.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = Icons.Default.Warehouse,
-            contentDescription = null,
-            tint = if (selected) Color.White else UniversalPrimary,
-            modifier = Modifier.size(16.dp)
-        )
-        Spacer(modifier = Modifier.width(7.dp))
-        Column {
-            Text(
-                text = point.name,
-                color = if (selected) Color.White else UniversalInk,
-                fontSize = 10.5.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = positions.toString() + " поз. с остатком",
-                color = if (selected) Color.White.copy(alpha = 0.75f) else UniversalMuted,
-                fontSize = 8.5.sp
-            )
-        }
-    }
-}
-
-@Composable
-private fun RecentOperationRow(
-    operation: OperationRecord,
-    label: String,
-    time: String
-) {
-    val (accent, soft, icon) = when (operation.type) {
-        OperationType.INCOME -> Triple(UniversalGreen, UniversalGreenSoft, Icons.Default.ArrowDownward)
-        OperationType.TRANSFER -> Triple(UniversalBlue, UniversalBlueSoft, Icons.Default.SwapHoriz)
-        OperationType.ISSUE -> Triple(UniversalOrange, UniversalOrangeSoft, Icons.Default.ArrowUpward)
-        OperationType.EXPENDITURE -> Triple(UniversalRed, UniversalRedSoft, Icons.Default.MoreHoriz)
-    }
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
-            .background(UniversalSurface)
-            .padding(12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(38.dp)
-                .clip(RoundedCornerShape(13.dp))
-                .background(soft),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = accent,
-                modifier = Modifier.size(18.dp)
-            )
-        }
-        Spacer(modifier = Modifier.width(11.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = label,
-                color = UniversalInk,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-            Text(
-                text = operation.itemsSummary.ifBlank {
-                    listOf(operation.fromPointName, operation.toPointName)
-                        .filter { it.isNotBlank() }
-                        .joinToString(" → ")
-                },
-                color = UniversalMuted,
-                fontSize = 9.5.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-        Text(
-            text = time,
-            color = Color(0xFF9CA3AF),
-            fontSize = 9.5.sp
-        )
-    }
-}
-
-@Composable
-private fun SectionTitle(
-    text: String,
+private fun SmallLinkCard(
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Text(
-        text = text,
-        color = UniversalInk,
-        fontSize = 15.sp,
-        fontWeight = FontWeight.Bold,
+    Column(
         modifier = modifier
-    )
-}
-
-private fun greeting(name: String?): String {
-    val prefix = when (Calendar.getInstance().get(Calendar.HOUR_OF_DAY)) {
-        in 5..11 -> "Доброе утро"
-        in 12..17 -> "Добрый день"
-        else -> "Добрый вечер"
+            .clip(RoundedCornerShape(17.dp))
+            .background(HomeSurface)
+            .clickable(onClick = onClick)
+            .padding(12.dp)
+    ) {
+        Text(title, color = HomeInk, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        Text(
+            subtitle,
+            color = HomeMuted,
+            fontSize = 8.8.sp,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
     }
-    val clean = name?.trim().orEmpty()
-    return if (clean.isBlank()) prefix else "$prefix, $clean"
 }
