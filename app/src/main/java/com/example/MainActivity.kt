@@ -504,7 +504,11 @@ fun KapterkaAppRoot(
                 currentProfile = profile,
                 warehouseProfileId = activeProfileId,
                 onComplete = { newProfile ->
-                    viewModel.saveUniversalProfile(newProfile.copy(unitKey = ""))
+                    viewModel.completeUniversalWorkspace(
+                        profile = newProfile,
+                        warehouseName = newProfile.unitName,
+                        warehouseProfileId = activeProfileId
+                    )
                     setupPrefs.edit().putBoolean("universal_workspace_ready_v2", true).apply()
                     universalWorkspaceReady = true
                 }

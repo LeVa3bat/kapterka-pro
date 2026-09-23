@@ -115,10 +115,13 @@ fun UniversalIncomeOperationDialog(
     var supplier by remember { mutableStateOf("") }
     var comment by remember { mutableStateOf("") }
     val drafts = remember { mutableStateListOf(UniversalOperationDraft()) }
-    val currentStockMap = remember(selectedPoint.id, stockRecords) {
-        stockRecords
+    val currentStockMap = remember(selectedPoint.id, stockRecords, catalogItems) {
+        val saved = stockRecords
             .filter { it.pointId == selectedPoint.id }
             .associate { it.itemId to it.quantity }
+        catalogItems.associate { item ->
+            item.id to (saved[item.id] ?: 0)
+        }
     }
     val suggestions = if (isMilitary) {
         listOf("Тыл / служба снабжения", "Центральная база хранения", "Соседнее подразделение", "Волонтёрская помощь")
@@ -182,7 +185,9 @@ fun UniversalIncomeOperationDialog(
 
         UniversalOperationPrimaryButton(
             text = "Сохранить ${warehouseProfile.operations.income.lowercase()}",
-            enabled = drafts.any { it.item != null },
+            enabled = drafts.any {
+                it.item != null && (it.quantity.toIntOrNull() ?: 0) > 0
+            },
             testTag = "submit_income_button",
             accent = UOpGreen
         ) {
@@ -298,7 +303,9 @@ fun UniversalTransferOperationDialog(
 
         UniversalOperationPrimaryButton(
             text = profile.operations.transfer,
-            enabled = drafts.any { it.item != null },
+            enabled = drafts.any {
+                it.item != null && (it.quantity.toIntOrNull() ?: 0) > 0
+            },
             testTag = "submit_transfer_button",
             accent = UOpBlue
         ) {
@@ -319,15 +326,7 @@ fun UniversalTransferOperationDialog(
         UniversalInsufficientStockDialog(
             pointName = fromPoint.name,
             items = problems,
-            onDismiss = { insufficient = null },
-            onProceed = {
-                val entries = universalEntries(drafts)
-                if (entries.isNotEmpty()) {
-                    onConfirm(fromPoint.id, fromPoint.name, toPoint.id, toPoint.name, entries, comment)
-                    insufficient = null
-                    onDismiss()
-                }
-            }
+            onDismiss = { insufficient = null }
         )
     }
 }
@@ -425,7 +424,9 @@ fun UniversalIssueOperationDialog(
 
         UniversalOperationPrimaryButton(
             text = "Сохранить ${profile.operations.issue.lowercase()}",
-            enabled = drafts.any { it.item != null },
+            enabled = drafts.any {
+                it.item != null && (it.quantity.toIntOrNull() ?: 0) > 0
+            },
             testTag = "submit_issue_button",
             accent = UOpOrange
         ) {
@@ -446,15 +447,7 @@ fun UniversalIssueOperationDialog(
         UniversalInsufficientStockDialog(
             pointName = fromPoint.name,
             items = problems,
-            onDismiss = { insufficient = null },
-            onProceed = {
-                val entries = universalEntries(drafts)
-                if (entries.isNotEmpty()) {
-                    onConfirm(fromPoint.id, fromPoint.name, targetPoint.id, targetPoint.name, entries, comment)
-                    insufficient = null
-                    onDismiss()
-                }
-            }
+            onDismiss = { insufficient = null }
         )
     }
 }
@@ -586,7 +579,9 @@ fun UniversalExpenditureOperationDialog(
 
         UniversalOperationPrimaryButton(
             text = "Сохранить ${warehouseProfile.operations.writeOff.lowercase()}",
-            enabled = drafts.any { it.item != null },
+            enabled = drafts.any {
+                it.item != null && (it.quantity.toIntOrNull() ?: 0) > 0
+            },
             testTag = "submit_expenditure_button",
             accent = UOpRed
         ) {
@@ -607,15 +602,7 @@ fun UniversalExpenditureOperationDialog(
         UniversalInsufficientStockDialog(
             pointName = fromPoint.name,
             items = problems,
-            onDismiss = { insufficient = null },
-            onProceed = {
-                val entries = universalEntries(drafts, includeReason = true)
-                if (entries.isNotEmpty()) {
-                    onConfirm(fromPoint.id, fromPoint.name, docNumber, responsible, entries, comment)
-                    insufficient = null
-                    onDismiss()
-                }
-            }
+            onDismiss = { insufficient = null }
         )
     }
 }
@@ -1183,8 +1170,7 @@ private fun UniversalOperationInfo(text: String) {
 private fun UniversalInsufficientStockDialog(
     pointName: String,
     items: List<String>,
-    onDismiss: () -> Unit,
-    onProceed: () -> Unit
+    onDismiss: () -> Unit
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -1213,13 +1199,8 @@ private fun UniversalInsufficientStockDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onProceed) {
-                Text("Продолжить", color = UOpRed, fontWeight = FontWeight.Bold)
-            }
-        },
-        dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Исправить", color = UOpPrimary, fontWeight = FontWeight.SemiBold)
+                Text("Исправить количество", color = UOpPrimary, fontWeight = FontWeight.Bold)
             }
         }
     )
@@ -1243,7 +1224,7 @@ private fun universalEntries(
 ): List<OperationItemEntry> =
     drafts.mapNotNull { draft ->
         val item = draft.item ?: return@mapNotNull null
-        val qty = draft.quantity.toIntOrNull() ?: 1
+        val qty = draft.quantity.toIntOrNull()?.takeIf { it > 0 } ?: return@mapNotNull null
         OperationItemEntry(
             itemId = item.id,
             itemName = item.name,
@@ -1258,11 +1239,16 @@ private fun universalInsufficient(
     entries: List<OperationItemEntry>,
     stockMap: Map<String, Int>
 ): List<String> =
-    entries.mapNotNull { entry ->
-        val available = stockMap[entry.itemId] ?: 0
-        if (entry.quantity > available) {
-            "${entry.itemName}: в наличии $available ${entry.unit}, указано ${entry.quantity} ${entry.unit}"
-        } else {
-            null
+    entries
+        .groupBy { it.itemId }
+        .mapNotNull { (itemId, itemEntries) ->
+            val first = itemEntries.first()
+            val requested = itemEntries.sumOf { it.quantity }
+            val available = stockMap[itemId] ?: 0
+            if (requested > available) {
+                first.itemName + ": в наличии " + available + " " + first.unit +
+                    ", указано " + requested + " " + first.unit
+            } else {
+                null
+            }
         }
-    }

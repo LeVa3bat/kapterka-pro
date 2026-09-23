@@ -70,7 +70,7 @@ fun UniversalWorkspaceSetupScreen(
             )
             Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = "Назовите рабочее пространство. Позже вы сможете добавить дополнительные склады и точки хранения.",
+                text = "Создайте первый склад. Его название, профиль и ключ синхронизации можно будет изменить или использовать на других устройствах.",
                 color = Color(0xFF6B7280),
                 fontSize = 13.sp,
                 lineHeight = 19.sp
@@ -120,7 +120,7 @@ fun UniversalWorkspaceSetupScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "Название склада или организации",
+                text = "Название первого склада",
                 color = Color(0xFF111827),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold
@@ -174,6 +174,14 @@ fun UniversalWorkspaceSetupScreen(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
+                        text = "Ключ вида SKL-XXXX-XXXX создастся автоматически. Придумывать его не нужно.",
+                        color = Color(0xFF5B5CE2),
+                        fontSize = 10.sp,
+                        lineHeight = 14.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
                         text = "Данные «Каптёрки ПРО» не используются и не смешиваются с новым приложением.",
                         color = Color(0xFF858D9B),
                         fontSize = 10.sp,
@@ -198,7 +206,7 @@ fun UniversalWorkspaceSetupScreen(
                 onClick = {
                     val cleanWarehouse = warehouseName.trim()
                     if (cleanWarehouse.isBlank()) {
-                        error = "Укажите название склада или организации"
+                        error = "Укажите название первого склада"
                         return@Button
                     }
 
@@ -221,7 +229,7 @@ fun UniversalWorkspaceSetupScreen(
                 )
             ) {
                 Text(
-                    text = "Открыть Склад ПРО",
+                    text = "Создать и открыть склад",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold
                 )

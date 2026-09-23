@@ -85,13 +85,13 @@ fun UniversalMoreScreen(
     ) {
         item {
             Text(
-                text = "Профиль",
+                text = "Ещё",
                 color = Color(0xFF111827),
                 fontSize = 28.sp,
                 fontWeight = FontWeight.ExtraBold
             )
             Text(
-                text = "Аккаунт и настройки рабочего пространства",
+                text = "Склад, синхронизация, отчёты и аккаунт",
                 color = Color(0xFF6B7280),
                 fontSize = 12.sp
             )
@@ -171,7 +171,7 @@ fun UniversalMoreScreen(
 
         item {
             Text(
-                text = "РАБОЧЕЕ ПРОСТРАНСТВО",
+                text = "СКЛАД И УЧЁТ",
                 color = Color(0xFF98A2B3),
                 fontSize = 9.sp,
                 fontWeight = FontWeight.Bold

@@ -337,6 +337,41 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun completeUniversalWorkspace(
+        profile: UserProfile,
+        warehouseName: String,
+        warehouseProfileId: String
+    ) {
+        if (!BuildConfig.IS_UNIVERSAL_APP) return
+
+        viewModelScope.launch {
+            repository.saveUserProfile(profile.copy(unitKey = ""))
+            val point = repository.configureInitialUniversalWarehouse(
+                requestedName = warehouseName,
+                requestedProfileId = warehouseProfileId
+            )
+            repository.ensureUniversalStarterCatalog(warehouseProfileId)
+
+            if (point != null) {
+                _selectedPointId.value = point.id
+                activeWarehouseId = point.id
+                activeWarehouseProfileId = com.example.universal.WarehouseProfileCatalog
+                    .find(point.profileId.ifBlank { warehouseProfileId })
+                    .id
+                prefs.edit()
+                    .putString("active_warehouse_id_v3", point.id)
+                    .putString("active_warehouse_profile_id_v2", activeWarehouseProfileId)
+                    .apply()
+                _availableCategories.value = loadCategoriesForProfile(activeWarehouseProfileId)
+                _selectedCategory.value = "Все виды"
+
+                _toastEvent.emit(
+                    "Склад «" + point.name + "» готов • ключ " + point.syncKey
+                )
+            }
+        }
+    }
+
     fun saveUniversalProfile(profile: UserProfile) {
         if (!BuildConfig.IS_UNIVERSAL_APP) return
 

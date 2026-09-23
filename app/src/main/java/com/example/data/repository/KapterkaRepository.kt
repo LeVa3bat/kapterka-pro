@@ -195,6 +195,63 @@ class KapterkaRepository(
             }
     }
 
+    suspend fun configureInitialUniversalWarehouse(
+        requestedName: String,
+        requestedProfileId: String
+    ): WarehousePoint? {
+        if (!BuildConfig.IS_UNIVERSAL_APP) return null
+
+        val safeName = requestedName.trim().ifBlank { "Мой склад" }
+        val safeProfile = com.example.universal.WarehouseProfileCatalog.find(requestedProfileId).id
+        val points = dao.getAllPoints().first()
+
+        if (points.isEmpty()) {
+            return addWarehousePoint(
+                name = safeName,
+                desc = "Первый склад",
+                profileId = safeProfile
+            )
+        }
+
+        val target = points.firstOrNull { it.id == "main_warehouse" }
+            ?: points.firstOrNull { it.isBase }
+            ?: points.first()
+
+        val hasStock = dao.getStockForPoint(target.id).first()
+            .any { it.quantity != 0 || it.incomeTotal != 0 || it.expenseTotal != 0 }
+        val hasOperations = dao.getAllOperations().first().any { operation ->
+            val hasStableIds = operation.fromPointId.isNotBlank() || operation.toPointId.isNotBlank()
+            if (hasStableIds) {
+                operation.fromPointId == target.id || operation.toPointId == target.id
+            } else {
+                operation.fromPointName == target.name || operation.toPointName == target.name
+            }
+        }
+
+        val canApplyFirstRunIdentity =
+            !hasStock &&
+            !hasOperations &&
+            target.name == "Основной склад"
+
+        val updated = target.copy(
+            name = if (canApplyFirstRunIdentity) safeName else target.name,
+            description = if (canApplyFirstRunIdentity) "Первый склад" else target.description,
+            profileId = when {
+                canApplyFirstRunIdentity -> safeProfile
+                target.profileId.isBlank() -> safeProfile
+                else -> target.profileId
+            },
+            syncKey = target.syncKey.ifBlank { generateWarehouseSyncKey() }
+        )
+
+        if (updated != target) {
+            dao.updatePoint(updated)
+            syncManager?.pushWarehousePointAsync("", updated)
+        }
+
+        return updated
+    }
+
     suspend fun prepareUniversalWarehouses(defaultProfileId: String) {
         if (!BuildConfig.IS_UNIVERSAL_APP) return
 

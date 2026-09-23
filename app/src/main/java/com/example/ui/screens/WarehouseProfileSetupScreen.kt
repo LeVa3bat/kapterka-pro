@@ -69,7 +69,7 @@ fun WarehouseProfileSetupScreen(
                     .padding(start = 20.dp, end = 20.dp, top = 28.dp, bottom = 15.dp)
             ) {
                 Text(
-                    text = "Выберите профиль учёта",
+                    text = "Какой склад создаём?",
                     color = Color(0xFF111827),
                     fontSize = 29.sp,
                     fontWeight = FontWeight.ExtraBold,
@@ -77,7 +77,7 @@ fun WarehouseProfileSetupScreen(
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "Профиль определяет категории, группы и названия имущества. Физические склады и остатки учитываются отдельно. Смена профиля не удаляет старые данные — они остаются в своём профиле.",
+                    text = "Выберите тип склада. Он определит готовые категории, группы и названия. Позже тип любого склада можно изменить без удаления остатков и истории.",
                     color = Color(0xFF6B7280),
                     fontSize = 13.sp,
                     lineHeight = 19.sp
@@ -223,7 +223,7 @@ fun WarehouseProfileSetupScreen(
                 )
             ) {
                 Text(
-                    text = if (selected == null) "Выберите профиль учёта" else "Продолжить",
+                    text = if (selected == null) "Выберите тип склада" else "Выбрать этот тип",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold
                 )

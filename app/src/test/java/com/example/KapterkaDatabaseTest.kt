@@ -790,4 +790,28 @@ class KapterkaDatabaseTest {
         assertEquals(point.id, item.warehouseId)
     }
 
+    @Test
+    fun testFirstRunConfiguresRealWarehouseWithoutDeletingData() = runBlocking {
+        dao.insertPoint(
+            WarehousePoint(
+                id = "main_warehouse",
+                name = "Основной склад",
+                description = "Главное место хранения",
+                isBase = true
+            )
+        )
+
+        val repository = KapterkaRepository(dao, null)
+        val point = repository.configureInitialUniversalWarehouse(
+            requestedName = "Центральный склад",
+            requestedProfileId = "retail"
+        )
+
+        assertNotNull(point)
+        assertEquals("main_warehouse", point!!.id)
+        assertEquals("Центральный склад", point.name)
+        assertEquals("retail", point.profileId)
+        assertTrue(point.syncKey.startsWith("SKL-"))
+    }
+
 }
