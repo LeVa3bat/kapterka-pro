@@ -71,6 +71,9 @@ class KapterkaRepository(
         if (starters.isEmpty()) return 0
 
         dao.insertItemsIfMissing(starters)
+        starters.forEach { item ->
+            syncManager?.pushInventoryItemAsync("", item)
+        }
         return starters.size
     }
 
