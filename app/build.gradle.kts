@@ -16,8 +16,8 @@ android {
     minSdk = 24
     targetSdk = 34
     // Standalone universal product. It never updates/replaces "Каптёрка ПРО".
-    versionCode = 3
-    versionName = "0.3.0-alpha3"
+    versionCode = 4
+    versionName = "0.4.0-alpha4"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -127,9 +127,9 @@ dependencies {
   // Firestore database for online sync:
   implementation(libs.firebase.firestore)
 
-  // Uncomment ALL FOUR of the following dependencies together to use Firebase Auth and Google
-  // Sign-In via Credential Manager:
-  // implementation(libs.firebase.auth)
+  // Sklad PRO uses Firebase Email/Password authentication.
+  implementation(libs.firebase.auth)
+  // Google Sign-In is intentionally not enabled.
   // implementation(libs.androidx.credentials)
   // implementation(libs.androidx.credentials.play.services)
   // implementation(libs.googleid)
