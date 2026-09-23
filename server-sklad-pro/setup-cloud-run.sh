@@ -6,6 +6,7 @@ PROJECT_NUMBER="98775459607"
 REGION="europe-central2"
 POOL_ID="github-sklad-pro"
 REPOSITORY="LeVa3bat/kapterka-pro"
+BOOTSTRAP_SA="github-firestore-deployer@${PROJECT_ID}.iam.gserviceaccount.com"
 
 DEPLOYER_NAME="github-sklad-deployer"
 RUNTIME_NAME="sklad-pro-runtime"
@@ -61,6 +62,19 @@ done
 
 POOL_NAME="projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/${POOL_ID}"
 gcloud iam service-accounts add-iam-policy-binding "$DEPLOYER_SA"   --project="$PROJECT_ID"   --role="roles/iam.workloadIdentityUser"   --member="principalSet://iam.googleapis.com/${POOL_NAME}/attribute.repository/${REPOSITORY}"   --quiet >/dev/null
+
+# Drop temporary bootstrap IAM if it was granted to the existing Firestore deployer.
+# These roles are needed only for this one-time provisioning step.
+for ROLE in \
+  roles/resourcemanager.projectIamAdmin \
+  roles/iam.serviceAccountAdmin \
+  roles/serviceusage.serviceUsageAdmin
+do
+  gcloud projects remove-iam-policy-binding "$PROJECT_ID" \
+    --member="serviceAccount:${BOOTSTRAP_SA}" \
+    --role="$ROLE" \
+    --quiet >/dev/null 2>&1 || true
+done
 
 echo "CLOUD_RUN_SETUP_READY"
 echo "PROJECT=$PROJECT_ID"
