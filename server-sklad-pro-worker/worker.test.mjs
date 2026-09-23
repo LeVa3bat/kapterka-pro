@@ -8,7 +8,7 @@ const source = await fs.readFile(
 );
 const moduleUrl =
   "data:text/javascript;base64," + Buffer.from(source).toString("base64");
-const { effectiveEntitlement, normalizeMoney, plans, SkladProAccount } = await import(moduleUrl);
+const { effectiveEntitlement, normalizeMoney, plans, assertExpectedPayment, SkladProAccount } = await import(moduleUrl);
 
 test("monthly plan is server-owned and normalized", () => {
   assert.equal(normalizeMoney("500"), "500.00");
@@ -194,4 +194,78 @@ test("same succeeded payment cannot grant PRO twice", async () => {
   const payment = await storage.get("payment:payment-123");
   assert.equal(payment.grantApplied, true);
   assert.equal(payment.expectedAmount, "500.00");
+});
+
+
+test("payment validation binds uid, amount, currency and test mode", () => {
+  const env = {
+    SKLAD_PRO_MONTH_PRICE_RUB: "500.00",
+    SKLAD_YOOKASSA_EXPECT_TEST: "true"
+  };
+  const payment = {
+    test: true,
+    amount: { value: "500.00", currency: "RUB" },
+    metadata: {
+      app: "sklad-pro",
+      uid: "uid-1",
+      planId: "pro_month"
+    }
+  };
+
+  const valid = assertExpectedPayment(env, payment, "uid-1");
+  assert.equal(valid.uid, "uid-1");
+  assert.equal(valid.plan.amount, "500.00");
+
+  assert.throws(
+    () => assertExpectedPayment(env, {
+      ...payment,
+      amount: { value: "499.00", currency: "RUB" }
+    }, "uid-1"),
+    /PAYMENT_AMOUNT_MISMATCH/
+  );
+
+  assert.throws(
+    () => assertExpectedPayment(env, { ...payment, test: false }, "uid-1"),
+    /PAYMENT_MODE_MISMATCH/
+  );
+
+  assert.throws(
+    () => assertExpectedPayment(env, payment, "another-user"),
+    /PAYMENT_BINDING_MISMATCH/
+  );
+});
+
+test("new payment extends an already active subscription", async () => {
+  const storage = new FakeStorage();
+  const account = new SkladProAccount({ storage });
+  const future = Date.now() + 10 * 24 * 60 * 60 * 1000;
+
+  await storage.put("entitlement", {
+    uid: "u3",
+    email: "renew@example.com",
+    demoStartedAt: Date.now() - 1000,
+    demoEndsAt: Date.now() - 500,
+    paidUntil: future,
+    planId: "pro_month",
+    updatedAt: Date.now()
+  });
+
+  const response = await body(
+    await account.fetch(
+      new Request("https://account.internal/apply-payment", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          paymentId: "payment-renew",
+          planId: "pro_month",
+          durationDays: 30,
+          amount: "500.00",
+          currency: "RUB"
+        })
+      })
+    )
+  );
+
+  const expected = future + 30 * 24 * 60 * 60 * 1000;
+  assert.equal(response.entitlement.paidUntil, expected);
 });
