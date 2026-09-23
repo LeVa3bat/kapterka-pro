@@ -113,6 +113,17 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun ensureWarehouseProfileStarterCatalog(profileId: String) {
+        if (!BuildConfig.IS_UNIVERSAL_APP) return
+
+        viewModelScope.launch {
+            val added = repository.ensureUniversalStarterCatalog(profileId)
+            if (added > 0) {
+                _toastEvent.emit("Готовый каталог добавлен • $added позиций")
+            }
+        }
+    }
+
     fun applyWarehouseProfile(profileId: String) {
         val template = com.example.universal.WarehouseProfileCatalog.find(profileId)
         val customCategories = _availableCategories.value.filter {
