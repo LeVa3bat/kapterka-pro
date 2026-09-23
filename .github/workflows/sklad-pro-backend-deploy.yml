@@ -1,0 +1,79 @@
+name: Sklad PRO backend deploy
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: sklad-pro-backend-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PROJECT_ID: sklad-pro-a1ec0
+      REGION: europe-central2
+      SERVICE: sklad-pro-backend
+      RUNTIME_SERVICE_ACCOUNT: sklad-pro-runtime@sklad-pro-a1ec0.iam.gserviceaccount.com
+      BUILD_SERVICE_ACCOUNT: projects/sklad-pro-a1ec0/serviceAccounts/sklad-pro-builder@sklad-pro-a1ec0.iam.gserviceaccount.com
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: 'sklad-pro-a1ec0'
+          workload_identity_provider: 'projects/98775459607/locations/global/workloadIdentityPools/github-sklad-pro/providers/kapterka-pro'
+          service_account: 'github-firestore-deployer@sklad-pro-a1ec0.iam.gserviceaccount.com'
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Deploy backend to Cloud Run
+        shell: bash
+        run: |
+          set -euo pipefail
+          gcloud run deploy "$SERVICE" \
+            --project "$PROJECT_ID" \
+            --region "$REGION" \
+            --source server-sklad-pro \
+            --build-service-account "$BUILD_SERVICE_ACCOUNT" \
+            --service-account "$RUNTIME_SERVICE_ACCOUNT" \
+            --allow-unauthenticated \
+            --set-env-vars "SKLAD_FIREBASE_PROJECT_ID=$PROJECT_ID,SKLAD_DEMO_DAYS=7" \
+            --memory 256Mi \
+            --cpu 1 \
+            --min 0 \
+            --max 3 \
+            --concurrency 80 \
+            --quiet
+
+      - name: Verify health
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="$(gcloud run services describe "$SERVICE" \
+            --project "$PROJECT_ID" \
+            --region "$REGION" \
+            --format='value(status.url)')"
+          test -n "$URL"
+          echo "Backend URL: $URL"
+          RESPONSE="$(curl --fail --silent --show-error "$URL/health")"
+          echo "$RESPONSE"
+          echo "$RESPONSE" | grep -q '"ok":true'
+          echo "$RESPONSE" | grep -q '"firebaseConfigured":true'
+          {
+            echo "### Sklad PRO backend"
+            echo ""
+            echo "- URL: $URL"
+            echo "- Health: OK"
+            echo "- Firebase project: $PROJECT_ID"
+            echo "- Region: $REGION"
+          } >> "$GITHUB_STEP_SUMMARY"
