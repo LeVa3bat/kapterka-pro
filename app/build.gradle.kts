@@ -17,14 +17,17 @@ android {
     applicationId = "com.aistudio.kapterka.jmwqve"
     minSdk = 24
     targetSdk = 34
-    versionCode = 31
-    versionName = "3.4.9"
+    versionCode = 32
+    versionName = "3.5.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
     // Developer access: only a SHA-256 fingerprint is embedded in the APK.
     // The actual key is never stored in app source or resources.
     buildConfigField("String", "DEV_ADMIN_KEY_SHA256", "\"621e801ca063883242a6a22131a5a4b06cf2b07daca53d805e885615a614845b\"")
+
+    // Payment client talks only to our backend; YooKassa secret never enters the APK.
+    buildConfigField("String", "PAYMENT_API_URL", "\"https://kapterka-api.alex-666-881.workers.dev\"")
   }
 
   signingConfigs {
@@ -77,6 +80,9 @@ secrets {
   propertiesFileName = ".env"
   defaultPropertiesFileName = ".env.example"
   ignoreList.add("FIREBASE_APPCHECK_DEBUG_TOKEN")
+  // PAYMENT_API_URL is supplied explicitly through BuildConfig above.
+  // Do not let the Secrets plugin generate/override this field from .env files.
+  ignoreList.add("PAYMENT_API_URL")
 }
 
 googleServices { missingGoogleServicesStrategy = MissingGoogleServicesStrategy.WARN }
@@ -116,7 +122,7 @@ dependencies {
   // Sign-In via Credential Manager:
   // implementation(libs.firebase.auth)
   // implementation(libs.androidx.credentials)
-  // implementation(libs.androidx.credentials.play.services)
+  // implementation(libs.androidx.credentials.play.services.auth)
   // implementation(libs.googleid)
   implementation(libs.firebase.appcheck.recaptcha)
   implementation(libs.firebase.appcheck.debug)
