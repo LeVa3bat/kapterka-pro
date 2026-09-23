@@ -39,6 +39,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.universal.WarehouseProfileCatalog
+import com.example.universal.WarehouseGroupCatalog
 
 @Composable
 fun WarehouseProfileSetupScreen(
@@ -191,8 +192,9 @@ fun WarehouseProfileSetupScreen(
         ) {
             if (selected != null) {
                 Text(
-                    text = "Будут созданы группы: " + selected.categories.take(3).joinToString(" • ") +
-                        if (selected.categories.size > 3) " • ещё ${selected.categories.size - 3}" else "",
+                    text = "${selected.categories.size} категорий • ${WarehouseGroupCatalog.groupCount(selected.id)} готовых групп. " +
+                        selected.categories.take(2).joinToString(" • ") +
+                        if (selected.categories.size > 2) " • ещё ${selected.categories.size - 2}" else "",
                     color = Color(0xFF667085),
                     fontSize = 10.5.sp,
                     maxLines = 2,
