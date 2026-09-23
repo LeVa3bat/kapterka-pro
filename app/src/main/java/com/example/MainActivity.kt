@@ -408,7 +408,8 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
         ) {
             val context = LocalContext.current
 
-            // TACTICAL IN-APP POPUP BANNER ("Всплывающее сообщение о проводке")
+            // In-app status banner. The universal app uses its own light visual language.
+            val universalNotice = BuildConfig.IS_UNIVERSAL_APP
             AnimatedVisibility(
                 visible = inAppToastMessage != null,
                 enter = fadeIn() + slideInVertically { -it },
@@ -423,9 +424,14 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { inAppToastMessage = null },
-                        colors = CardDefaults.cardColors(containerColor = TacticalSurfaceLight),
-                        border = BorderStroke(1.5.dp, SageGreenPrimary),
-                        shape = RoundedCornerShape(10.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (universalNotice) Color.White else TacticalSurfaceLight
+                        ),
+                        border = BorderStroke(
+                            if (universalNotice) 1.dp else 1.5.dp,
+                            if (universalNotice) Color(0xFFE2E6EE) else SageGreenPrimary
+                        ),
+                        shape = RoundedCornerShape(if (universalNotice) 20.dp else 10.dp),
                         elevation = CardDefaults.cardElevation(8.dp)
                     ) {
                         Row(
@@ -438,21 +444,21 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                                 modifier = Modifier
                                     .size(36.dp)
                                     .clip(RoundedCornerShape(8.dp))
-                                    .background(SageGreenDark),
+                                    .background(if (universalNotice) Color(0xFFEEEEFF) else SageGreenDark),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.CheckCircle,
                                     contentDescription = null,
-                                    tint = SageGreenBright,
+                                    tint = if (universalNotice) Color(0xFF5B5CE2) else SageGreenBright,
                                     modifier = Modifier.size(22.dp)
                                 )
                             }
                             Spacer(modifier = Modifier.width(10.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "ОПЕРАЦИЯ ЗАФИКСИРОВАНА",
-                                    color = SageGreenBright,
+                                    text = if (universalNotice) "Готово" else "ОПЕРАЦИЯ ЗАФИКСИРОВАНА",
+                                    color = if (universalNotice) Color(0xFF111827) else SageGreenBright,
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.ExtraBold,
                                     letterSpacing = 0.5.sp
@@ -460,7 +466,7 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
                                     text = msg,
-                                    color = TacticalTextPrimary,
+                                    color = if (universalNotice) Color(0xFF667085) else TacticalTextPrimary,
                                     fontSize = 12.sp,
                                     lineHeight = 16.sp
                                 )
@@ -472,7 +478,7 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                                 Icon(
                                     imageVector = Icons.Default.Close,
                                     contentDescription = "Закрыть",
-                                    tint = TacticalTextMuted,
+                                    tint = if (universalNotice) Color(0xFF98A2B3) else TacticalTextMuted,
                                     modifier = Modifier.size(16.dp)
                                 )
                             }

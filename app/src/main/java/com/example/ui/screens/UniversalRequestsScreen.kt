@@ -62,7 +62,7 @@ import com.example.data.model.RequestStatus
 import com.example.data.model.StockRecord
 import com.example.data.model.UserProfile
 import com.example.data.model.WarehousePoint
-import com.example.ui.components.TacticalSearchableItemDropdown
+import com.example.ui.components.UniversalSearchableItemDropdown
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -529,7 +529,7 @@ private fun CreateUniversalRequestDialog(
                                     }
                                 }
 
-                                TacticalSearchableItemDropdown(
+                                UniversalSearchableItemDropdown(
                                     label = "",
                                     catalogItems = availableItems,
                                     selectedItem = draft.item,
