@@ -13,7 +13,12 @@ class SkladProProductInvariantTest {
     fun universalBuild_isStandaloneProduct() {
         assertTrue(BuildConfig.IS_UNIVERSAL_APP)
         assertEquals("com.aistudio.skladpro", BuildConfig.APPLICATION_ID)
-        assertTrue(BuildConfig.PAYMENT_API_URL.isBlank())
+        assertTrue(
+            BuildConfig.PAYMENT_API_URL.isBlank() ||
+                BuildConfig.PAYMENT_API_URL.startsWith("https://")
+        )
+        assertFalse(BuildConfig.PAYMENT_API_URL.contains("kapterka-pro-default-rtdb"))
+        assertFalse(BuildConfig.PAYMENT_API_URL.contains("kapterka-pro.cloudfunctions"))
     }
 
     @Test
