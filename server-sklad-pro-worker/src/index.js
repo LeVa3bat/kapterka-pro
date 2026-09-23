@@ -420,7 +420,7 @@ async function webhook(request, env) {
   }
 }
 
-export { effectiveEntitlement, normalizeMoney, plans };
+export { effectiveEntitlement, normalizeMoney, plans, assertExpectedPayment };
 
 export class SkladProAccount {
   constructor(ctx) {
