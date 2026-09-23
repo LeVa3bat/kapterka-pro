@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.data.model.InventoryItem
 import com.example.data.model.StockRecord
+import com.example.universal.WarehouseGroupCatalog
 
 private val CatalogBg = Color(0xFFF5F7FB)
 private val CatalogInk = Color(0xFF111827)
@@ -58,6 +59,7 @@ private val CatalogSoft = Color(0xFFEEEEFF)
 
 @Composable
 fun UniversalCatalogScreen(
+    warehouseProfileId: String?,
     items: List<InventoryItem>,
     stockRecords: List<StockRecord>,
     availableCategories: List<String>,
@@ -66,7 +68,8 @@ fun UniversalCatalogScreen(
     onDeleteItem: (String, String) -> Unit
 ) {
     var query by remember { mutableStateOf("") }
-    var category by remember { mutableStateOf<String?>(null) }
+    var category by remember(warehouseProfileId) { mutableStateOf<String?>(null) }
+    var group by remember(warehouseProfileId) { mutableStateOf<String?>(null) }
     var editing by remember { mutableStateOf<InventoryItem?>(null) }
 
     val quantities = remember(stockRecords) {
@@ -78,10 +81,15 @@ fun UniversalCatalogScreen(
     }
     val zeroStockCount = (items.size - inStockCount).coerceAtLeast(0)
 
-    val filtered = remember(items, query, category) {
+    val groupSuggestions = remember(warehouseProfileId, category) {
+        category?.let { WarehouseGroupCatalog.groupsFor(warehouseProfileId, it) }.orEmpty()
+    }
+
+    val filtered = remember(items, query, category, group) {
         val q = query.trim().lowercase()
         items.filter { item ->
             (category == null || item.serviceCategory == category) &&
+                (group == null || item.subType == group) &&
                 (q.isBlank() ||
                     item.name.lowercase().contains(q) ||
                     item.serviceCategory.lowercase().contains(q) ||
@@ -150,7 +158,7 @@ fun UniversalCatalogScreen(
                 )
                 CatalogMetric(
                     value = zeroStockCount.toString(),
-                    label = "нужно принять",
+                    label = "без остатка",
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -189,9 +197,37 @@ fun UniversalCatalogScreen(
                     .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(7.dp)
             ) {
-                CatalogChip("Все", category == null) { category = null }
+                CatalogChip("Все", category == null) {
+                    category = null
+                    group = null
+                }
                 availableCategories.forEach { value ->
-                    CatalogChip(value, category == value) { category = value }
+                    CatalogChip(value, category == value) {
+                        category = value
+                        group = null
+                    }
+                }
+            }
+
+            if (category != null && groupSuggestions.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Вид / группа",
+                    color = CatalogMuted,
+                    fontSize = 9.5.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(7.dp)
+                ) {
+                    CatalogChip("Все виды", group == null) { group = null }
+                    groupSuggestions.forEach { value ->
+                        CatalogChip(value, group == value) { group = value }
+                    }
                 }
             }
 
