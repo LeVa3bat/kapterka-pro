@@ -1,0 +1,96 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function memberPath(workspaceId) {
+      return /databases/$(database)/documents/workspaces/$(workspaceId)/members/$(request.auth.uid);
+    }
+
+    function isMember(workspaceId) {
+      return signedIn() && exists(memberPath(workspaceId));
+    }
+
+    function memberRole(workspaceId) {
+      return get(memberPath(workspaceId)).data.role;
+    }
+
+    function isManager(workspaceId) {
+      return isMember(workspaceId) &&
+        (memberRole(workspaceId) == 'owner' || memberRole(workspaceId) == 'manager');
+    }
+
+    match /users/{uid} {
+      allow read: if isSelf(uid);
+      allow create: if isSelf(uid) &&
+        request.resource.data.uid == request.auth.uid;
+      allow update: if isSelf(uid) &&
+        request.resource.data.uid == resource.data.uid;
+      allow delete: if false;
+    }
+
+    match /entitlements/{uid} {
+      allow read: if isSelf(uid);
+      allow write: if false;
+    }
+
+    match /payments/{paymentId} {
+      allow read: if signedIn() && resource.data.uid == request.auth.uid;
+      allow write: if false;
+    }
+
+    match /workspaces/{workspaceId} {
+      allow read: if isMember(workspaceId);
+      allow write: if false;
+
+      match /members/{uid} {
+        allow read: if isMember(workspaceId);
+        allow write: if false;
+      }
+
+      match /items/{itemId} {
+        allow read: if isMember(workspaceId);
+        allow create, update: if isManager(workspaceId);
+        allow delete: if false;
+      }
+
+      match /stocks/{stockId} {
+        allow read: if isMember(workspaceId);
+        allow create, update: if isMember(workspaceId);
+        allow delete: if false;
+      }
+
+      match /operations/{operationId} {
+        allow read: if isMember(workspaceId);
+        allow create: if isMember(workspaceId) &&
+          request.resource.data.createdBy == request.auth.uid;
+        allow update, delete: if false;
+      }
+
+      match /requisitions/{requestId} {
+        allow read: if isMember(workspaceId);
+        allow create: if isMember(workspaceId) &&
+          request.resource.data.createdBy == request.auth.uid;
+        allow update: if isMember(workspaceId);
+        allow delete: if isManager(workspaceId);
+      }
+
+      match /tombstones/{tombstoneId} {
+        allow read: if isMember(workspaceId);
+        allow create, update: if isManager(workspaceId);
+        allow delete: if false;
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
