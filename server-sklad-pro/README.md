@@ -10,7 +10,7 @@
 
 Android использует отдельный Firebase Authentication проект с Email/Password.
 
-Backend не получает пароль пользователя. Android получает Firebase ID token, а backend проверяет его через Firebase Admin SDK.
+Backend не получает пароль пользователя. Android получает Firebase ID token, а backend проверяет его через Firebase Admin SDK. Защищённые API-методы принимают только аккаунт с подтверждённым email; до подтверждения сервер возвращает `EMAIL_VERIFICATION_REQUIRED`.
 
 ### Демо
 

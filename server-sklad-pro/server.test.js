@@ -3,7 +3,9 @@ const assert = require('node:assert/strict');
 
 const {
   effectiveEntitlement,
-  normalizeMoney
+  normalizeMoney,
+  requireVerifiedEmail,
+  VALID_PROFILE_IDS
 } = require('./server');
 
 test('active paid subscription wins over trial state', () => {
@@ -54,4 +56,22 @@ test('money normalization rejects invalid prices and fixes precision', () => {
   assert.equal(normalizeMoney('490.5'), '490.50');
   assert.equal(normalizeMoney('0'), '');
   assert.equal(normalizeMoney('not-a-number'), '');
+});
+
+test('protected backend requires a verified email token', () => {
+  assert.throws(
+    () => requireVerifiedEmail({ uid: 'u1', email: 'user@example.com', email_verified: false }),
+    (error) => error.message === 'EMAIL_VERIFICATION_REQUIRED' && error.statusCode === 403
+  );
+
+  const decoded = { uid: 'u1', email: 'user@example.com', email_verified: true };
+  assert.equal(requireVerifiedEmail(decoded), decoded);
+});
+
+test('workspace profile ids stay aligned with Android presets', () => {
+  assert.equal(VALID_PROFILE_IDS.size, 14);
+  for (const id of ['universal', 'retail', 'auto', 'medical', 'office_it', 'military']) {
+    assert.equal(VALID_PROFILE_IDS.has(id), true);
+  }
+  assert.equal(VALID_PROFILE_IDS.has('unknown-profile'), false);
 });

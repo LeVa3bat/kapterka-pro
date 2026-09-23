@@ -8,6 +8,22 @@ const { getFirestore, Timestamp } = require('firebase-admin/firestore');
 const PORT = Number(process.env.PORT || 8080);
 const MAX_BODY_BYTES = 64 * 1024;
 const DEMO_DAYS = Number(process.env.SKLAD_DEMO_DAYS || 7);
+const VALID_PROFILE_IDS = new Set([
+  'universal',
+  'retail',
+  'auto',
+  'construction',
+  'tools',
+  'manufacturing',
+  'food',
+  'medical',
+  'office_it',
+  'education',
+  'wholesale',
+  'logistics',
+  'service',
+  'military'
+]);
 
 let firebaseReady = false;
 let firebaseInitError = '';
@@ -146,6 +162,15 @@ function bearerToken(req) {
   return header.slice(7).trim();
 }
 
+function requireVerifiedEmail(decoded) {
+  if (!decoded?.email || decoded.email_verified !== true) {
+    const error = new Error('EMAIL_VERIFICATION_REQUIRED');
+    error.statusCode = 403;
+    throw error;
+  }
+  return decoded;
+}
+
 async function requireUser(req) {
   if (!firebaseReady) {
     const error = new Error('BACKEND_NOT_READY');
@@ -161,11 +186,13 @@ async function requireUser(req) {
   }
 
   try {
-    return await getAuth().verifyIdToken(token, true);
-  } catch {
-    const error = new Error('INVALID_AUTH_TOKEN');
-    error.statusCode = 401;
-    throw error;
+    const decoded = await getAuth().verifyIdToken(token, true);
+    return requireVerifiedEmail(decoded);
+  } catch (error) {
+    if (error?.message === 'EMAIL_VERIFICATION_REQUIRED') throw error;
+    const invalid = new Error('INVALID_AUTH_TOKEN');
+    invalid.statusCode = 401;
+    throw invalid;
   }
 }
 
@@ -252,6 +279,11 @@ async function createWorkspace(decoded, body) {
   const profileId = String(body?.profileId || 'universal').trim();
   if (!name) {
     const error = new Error('WORKSPACE_NAME_REQUIRED');
+    error.statusCode = 400;
+    throw error;
+  }
+  if (!VALID_PROFILE_IDS.has(profileId)) {
+    const error = new Error('INVALID_PROFILE_ID');
     error.statusCode = 400;
     throw error;
   }
@@ -632,5 +664,7 @@ if (require.main === module) {
 module.exports = {
   effectiveEntitlement,
   normalizeMoney,
-  timestampMillis
+  timestampMillis,
+  requireVerifiedEmail,
+  VALID_PROFILE_IDS
 };
