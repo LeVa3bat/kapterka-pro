@@ -326,7 +326,18 @@ class KapterkaRepository(
         val itemsJson = serializeOperationItems(items)
         val src = supplier.ifBlank { "Служба снабжения / Тыл" }
         val dest = toPointName.ifBlank { "Базовый склад" }
-        val op = OperationRecord(java.util.UUID.randomUUID().toString(), OperationType.INCOME, src, dest, "", actor, comment, System.currentTimeMillis(), summary, itemsJson)
+        val op = OperationRecord(
+            id = java.util.UUID.randomUUID().toString(),
+            type = OperationType.INCOME,
+            fromPointName = src,
+            toPointName = dest,
+            responsiblePerson = actor,
+            comment = comment,
+            timestamp = System.currentTimeMillis(),
+            itemsSummary = summary,
+            itemsJson = itemsJson,
+            toPointId = toPointId
+        )
         val stagedStocks = linkedMapOf<String, StockRecord>()
         for (item in items) {
             stageAdjustedStock(stagedStocks, toPointId, item.itemId, item.quantity, isIncome = true)
@@ -339,7 +350,19 @@ class KapterkaRepository(
     suspend fun recordTransfer(fromPointId: String, fromPointName: String, toPointId: String, toPointName: String, items: List<OperationItemEntry>, comment: String, actor: String) {
         val summary = items.joinToString(", ") { "${it.itemName} - ${it.quantity} ${it.unit}" }
         val itemsJson = serializeOperationItems(items)
-        val op = OperationRecord(java.util.UUID.randomUUID().toString(), OperationType.TRANSFER, fromPointName, toPointName, "", actor, comment, System.currentTimeMillis(), summary, itemsJson)
+        val op = OperationRecord(
+            id = java.util.UUID.randomUUID().toString(),
+            type = OperationType.TRANSFER,
+            fromPointName = fromPointName,
+            toPointName = toPointName,
+            responsiblePerson = actor,
+            comment = comment,
+            timestamp = System.currentTimeMillis(),
+            itemsSummary = summary,
+            itemsJson = itemsJson,
+            fromPointId = fromPointId,
+            toPointId = toPointId
+        )
         val stagedStocks = linkedMapOf<String, StockRecord>()
         for (item in items) {
             stageAdjustedStock(stagedStocks, fromPointId, item.itemId, -item.quantity, isIncome = false)
@@ -353,7 +376,19 @@ class KapterkaRepository(
     suspend fun recordIssue(fromPointId: String, fromPointName: String, toPointId: String, toPointName: String, items: List<OperationItemEntry>, comment: String, actor: String) {
         val summary = items.joinToString(", ") { "${it.itemName} - ${it.quantity} ${it.unit}" }
         val itemsJson = serializeOperationItems(items)
-        val op = OperationRecord(java.util.UUID.randomUUID().toString(), OperationType.ISSUE, fromPointName, toPointName, "", actor, comment, System.currentTimeMillis(), summary, itemsJson)
+        val op = OperationRecord(
+            id = java.util.UUID.randomUUID().toString(),
+            type = OperationType.ISSUE,
+            fromPointName = fromPointName,
+            toPointName = toPointName,
+            responsiblePerson = actor,
+            comment = comment,
+            timestamp = System.currentTimeMillis(),
+            itemsSummary = summary,
+            itemsJson = itemsJson,
+            fromPointId = fromPointId,
+            toPointId = toPointId
+        )
         val stagedStocks = linkedMapOf<String, StockRecord>()
         for (item in items) {
             stageAdjustedStock(stagedStocks, fromPointId, item.itemId, -item.quantity, isIncome = false)
@@ -370,7 +405,19 @@ class KapterkaRepository(
         val summary = items.joinToString(", ") { "${it.itemName} - ${it.quantity} ${it.unit}" }
         val itemsJson = serializeOperationItems(items)
         val destinationLabel = if (BuildConfig.IS_UNIVERSAL_APP) "Списание" else "Списание (ф. 8)"
-        val op = OperationRecord(java.util.UUID.randomUUID().toString(), OperationType.EXPENDITURE, pointName, destinationLabel, docNumber, responsiblePerson, comment, System.currentTimeMillis(), summary, itemsJson)
+        val op = OperationRecord(
+            id = java.util.UUID.randomUUID().toString(),
+            type = OperationType.EXPENDITURE,
+            fromPointName = pointName,
+            toPointName = destinationLabel,
+            docNumber = docNumber,
+            responsiblePerson = responsiblePerson,
+            comment = comment,
+            timestamp = System.currentTimeMillis(),
+            itemsSummary = summary,
+            itemsJson = itemsJson,
+            fromPointId = fromPointId
+        )
         val stagedStocks = linkedMapOf<String, StockRecord>()
         for (item in items) {
             stageAdjustedStock(stagedStocks, fromPointId, item.itemId, -item.quantity, isIncome = false)

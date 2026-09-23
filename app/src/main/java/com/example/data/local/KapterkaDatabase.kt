@@ -27,7 +27,7 @@ import kotlinx.coroutines.launch
         UserProfile::class,
         SyncTombstone::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -96,6 +96,19 @@ abstract class KapterkaDatabase : RoomDatabase() {
             }
         }
 
+        internal val MIGRATION_6_7 = object : androidx.room.migration.Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Add-only stable warehouse references for operation history.
+                // Existing rows remain readable via fromPointName/toPointName fallback.
+                db.execSQL(
+                    "ALTER TABLE operation_records ADD COLUMN fromPointId TEXT NOT NULL DEFAULT ''"
+                )
+                db.execSQL(
+                    "ALTER TABLE operation_records ADD COLUMN toPointId TEXT NOT NULL DEFAULT ''"
+                )
+            }
+        }
+
         fun getDatabase(context: Context, scope: CoroutineScope): KapterkaDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -103,7 +116,7 @@ abstract class KapterkaDatabase : RoomDatabase() {
                     KapterkaDatabase::class.java,
                     "kapterka_database"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
                     .addCallback(DatabaseCallback(scope))
                     .build()
                 INSTANCE = instance

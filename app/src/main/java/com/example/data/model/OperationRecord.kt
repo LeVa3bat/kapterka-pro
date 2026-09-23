@@ -30,5 +30,7 @@ data class OperationRecord(
     val comment: String = "",
     val timestamp: Long = System.currentTimeMillis(),
     val itemsSummary: String = "",     // Краткий список позиций
-    val itemsJson: String = ""         // Serialized list
+    val itemsJson: String = "",        // Serialized list
+    val fromPointId: String = "",      // Stable warehouse identity for new records
+    val toPointId: String = ""         // Stable warehouse identity for new records
 )

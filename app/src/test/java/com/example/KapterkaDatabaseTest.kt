@@ -627,4 +627,63 @@ class KapterkaDatabaseTest {
         context.deleteDatabase(dbName)
     }
 
+    @Test
+    fun testMigration6To7PreservesOperationsAndAddsWarehouseIds() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val dbName = "migration_6_7_test.db"
+        context.deleteDatabase(dbName)
+
+        val helper = FrameworkSQLiteOpenHelperFactory().create(
+            SupportSQLiteOpenHelper.Configuration.builder(context)
+                .name(dbName)
+                .callback(object : SupportSQLiteOpenHelper.Callback(6) {
+                    override fun onCreate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                        db.execSQL(
+                            """
+                            CREATE TABLE operation_records (
+                                id TEXT NOT NULL PRIMARY KEY,
+                                type TEXT NOT NULL,
+                                fromPointName TEXT NOT NULL,
+                                toPointName TEXT NOT NULL,
+                                docNumber TEXT NOT NULL,
+                                responsiblePerson TEXT NOT NULL,
+                                comment TEXT NOT NULL,
+                                timestamp INTEGER NOT NULL,
+                                itemsSummary TEXT NOT NULL,
+                                itemsJson TEXT NOT NULL
+                            )
+                            """.trimIndent()
+                        )
+                        db.execSQL(
+                            "INSERT INTO operation_records(id,type,fromPointName,toPointName,docNumber,responsiblePerson,comment,timestamp,itemsSummary,itemsJson) " +
+                                "VALUES ('old-op','INCOME','Поставщик','Склад А','','','','1','Товар - 2 шт.','')"
+                        )
+                    }
+
+                    override fun onUpgrade(
+                        db: androidx.sqlite.db.SupportSQLiteDatabase,
+                        oldVersion: Int,
+                        newVersion: Int
+                    ) = Unit
+                })
+                .build()
+        )
+
+        val sqlite = helper.writableDatabase
+        KapterkaDatabase.MIGRATION_6_7.migrate(sqlite)
+
+        sqlite.query(
+            "SELECT fromPointName, toPointName, fromPointId, toPointId FROM operation_records WHERE id='old-op'"
+        ).use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("Поставщик", cursor.getString(0))
+            assertEquals("Склад А", cursor.getString(1))
+            assertEquals("", cursor.getString(2))
+            assertEquals("", cursor.getString(3))
+        }
+
+        helper.close()
+        context.deleteDatabase(dbName)
+    }
+
 }

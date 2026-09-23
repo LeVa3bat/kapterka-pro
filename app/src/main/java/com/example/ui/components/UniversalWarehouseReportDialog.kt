@@ -80,9 +80,16 @@ fun UniversalWarehouseReportDialog(
                     .thenBy { it.item.name }
             )
     }
-    val warehouseOperations = remember(operations, warehouse.name) {
+    val warehouseOperations = remember(operations, warehouse.id, warehouse.name) {
         operations
-            .filter { it.fromPointName == warehouse.name || it.toPointName == warehouse.name }
+            .filter { operation ->
+                val hasStableIds = operation.fromPointId.isNotBlank() || operation.toPointId.isNotBlank()
+                if (hasStableIds) {
+                    operation.fromPointId == warehouse.id || operation.toPointId == warehouse.id
+                } else {
+                    operation.fromPointName == warehouse.name || operation.toPointName == warehouse.name
+                }
+            }
             .sortedByDescending { it.timestamp }
     }
     val formatter = remember { SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()) }

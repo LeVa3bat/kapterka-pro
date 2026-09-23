@@ -318,7 +318,9 @@ class UniversalFirestoreSyncManager(
                     comment = doc.getString("comment").orEmpty(),
                     timestamp = doc.getLong("timestamp") ?: 0L,
                     itemsSummary = doc.getString("itemsSummary").orEmpty(),
-                    itemsJson = doc.getString("itemsJson").orEmpty()
+                    itemsJson = doc.getString("itemsJson").orEmpty(),
+                    fromPointId = doc.getString("fromPointId").orEmpty(),
+                    toPointId = doc.getString("toPointId").orEmpty()
                 )
             )
         }
@@ -426,6 +428,8 @@ class UniversalFirestoreSyncManager(
                         "type" to op.type.name,
                         "fromPointName" to op.fromPointName,
                         "toPointName" to op.toPointName,
+                        "fromPointId" to op.fromPointId,
+                        "toPointId" to op.toPointId,
                         "docNumber" to op.docNumber,
                         "responsiblePerson" to op.responsiblePerson,
                         "comment" to op.comment,

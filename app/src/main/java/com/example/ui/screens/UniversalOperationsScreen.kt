@@ -74,13 +74,19 @@ fun UniversalOperationsScreen(
     val selectedPoint = remember(points, selectedPointId) {
         points.firstOrNull { it.id == selectedPointId } ?: points.firstOrNull()
     }
-    val scopedOperations = remember(operations, selectedPoint?.name, showAllWarehouses) {
+    val scopedOperations = remember(operations, selectedPoint?.id, selectedPoint?.name, showAllWarehouses) {
         if (showAllWarehouses || selectedPoint == null) {
             operations
         } else {
+            val pointId = selectedPoint.id
             val pointName = selectedPoint.name
-            operations.filter {
-                it.fromPointName == pointName || it.toPointName == pointName
+            operations.filter { operation ->
+                val hasStableIds = operation.fromPointId.isNotBlank() || operation.toPointId.isNotBlank()
+                if (hasStableIds) {
+                    operation.fromPointId == pointId || operation.toPointId == pointId
+                } else {
+                    operation.fromPointName == pointName || operation.toPointName == pointName
+                }
             }
         }
     }

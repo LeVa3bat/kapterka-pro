@@ -122,13 +122,19 @@ fun UniversalDashboardScreen(
                 )
             )
     }
-    val selectedPointOperations = remember(operations, selectedPoint?.name) {
+    val selectedPointOperations = remember(operations, selectedPoint?.id, selectedPoint?.name) {
+        val pointId = selectedPoint?.id.orEmpty()
         val pointName = selectedPoint?.name.orEmpty()
-        if (pointName.isBlank()) {
+        if (pointId.isBlank() && pointName.isBlank()) {
             operations
         } else {
-            operations.filter {
-                it.fromPointName == pointName || it.toPointName == pointName
+            operations.filter { operation ->
+                val hasStableIds = operation.fromPointId.isNotBlank() || operation.toPointId.isNotBlank()
+                if (hasStableIds) {
+                    operation.fromPointId == pointId || operation.toPointId == pointId
+                } else {
+                    operation.fromPointName == pointName || operation.toPointName == pointName
+                }
             }
         }
     }
