@@ -14,7 +14,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Warehouse
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Info
@@ -34,12 +36,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.BuildConfig
 import com.example.data.model.UserProfile
+import com.example.data.model.WarehousePoint
 import com.example.universal.WarehouseProfileCatalog
 
 @Composable
 fun UniversalMoreScreen(
     userProfile: UserProfile?,
     warehouseProfileId: String?,
+    points: List<WarehousePoint>,
+    onAddWarehouse: () -> Unit,
+    onEditWarehouse: (WarehousePoint) -> Unit,
     onChangeProfile: () -> Unit,
     onLogout: () -> Unit
 ) {
@@ -127,6 +133,15 @@ fun UniversalMoreScreen(
                 title = "Тип склада",
                 subtitle = profile.title,
                 onClick = onChangeProfile
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+        }
+
+        item {
+            WarehouseSettingsCard(
+                points = points,
+                onAddWarehouse = onAddWarehouse,
+                onEditWarehouse = onEditWarehouse
             )
             Spacer(modifier = Modifier.height(10.dp))
         }
@@ -235,6 +250,140 @@ fun UniversalMoreScreen(
         }
 
         item { Spacer(modifier = Modifier.height(24.dp)) }
+    }
+}
+
+@Composable
+private fun WarehouseSettingsCard(
+    points: List<WarehousePoint>,
+    onAddWarehouse: () -> Unit,
+    onEditWarehouse: (WarehousePoint) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Склады",
+                        color = Color(0xFF111827),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = if (points.isEmpty()) "Добавьте первый склад" else "Всего: ${points.size}",
+                        color = Color(0xFF747D8C),
+                        fontSize = 10.sp
+                    )
+                }
+
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFFF2F3FF))
+                        .clickable(onClick = onAddWarehouse)
+                        .padding(horizontal = 10.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = null,
+                        tint = Color(0xFF5B5CE2),
+                        modifier = Modifier.size(17.dp)
+                    )
+                    Spacer(modifier = Modifier.size(4.dp))
+                    Text(
+                        text = "Добавить",
+                        color = Color(0xFF5B5CE2),
+                        fontSize = 10.5.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            if (points.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(10.dp))
+            }
+
+            points.forEachIndexed { index, point ->
+                if (index > 0) {
+                    Spacer(modifier = Modifier.height(7.dp))
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(15.dp))
+                        .background(Color(0xFFF8F9FC))
+                        .clickable { onEditWarehouse(point) }
+                        .padding(horizontal = 11.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(11.dp))
+                            .background(Color(0xFFEFF1FF)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Warehouse,
+                            contentDescription = null,
+                            tint = Color(0xFF5B5CE2),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.size(9.dp))
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = point.name,
+                                color = Color(0xFF111827),
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.weight(1f)
+                            )
+                            if (point.isBase) {
+                                Text(
+                                    text = "ОСНОВНОЙ",
+                                    color = Color(0xFF5B5CE2),
+                                    fontSize = 7.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(100.dp))
+                                        .background(Color(0xFFEFF1FF))
+                                        .padding(horizontal = 6.dp, vertical = 3.dp)
+                                )
+                            }
+                        }
+                        if (point.description.isNotBlank()) {
+                            Text(
+                                text = point.description,
+                                color = Color(0xFF7B8493),
+                                fontSize = 9.5.sp,
+                                maxLines = 1
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.size(6.dp))
+                    Icon(
+                        imageVector = Icons.Default.ChevronRight,
+                        contentDescription = "Редактировать",
+                        tint = Color(0xFFB3BAC6),
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+        }
     }
 }
 
