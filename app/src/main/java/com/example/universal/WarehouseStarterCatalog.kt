@@ -31,7 +31,8 @@ object WarehouseStarterCatalog {
                     unit = "шт.",
                     categoryClass = "Кат. 1",
                     standardCode = "",
-                    isCustom = false
+                    isCustom = false,
+                    profileId = profile.id
                 )
             }
     }
