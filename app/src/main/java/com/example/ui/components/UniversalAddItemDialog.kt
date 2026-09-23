@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.universal.WarehouseGroupCatalog
+import com.example.universal.WarehouseItemPresetCatalog
 import com.example.universal.WarehouseProfileCatalog
 
 private val ItemPrimary = Color(0xFF5B5CE2)
@@ -64,6 +65,7 @@ fun UniversalAddItemDialog(
     onConfirm: (name: String, category: String, group: String, unit: String) -> Unit
 ) {
     val profile = WarehouseProfileCatalog.find(warehouseProfileId)
+    val isMilitary = profile.id == "military"
     val categories = remember(warehouseProfileId, availableCategories) {
         (profile.categories + availableCategories)
             .filter { it.isNotBlank() && it != "Все виды" && it != "Все категории" }
@@ -76,9 +78,13 @@ fun UniversalAddItemDialog(
     var unit by remember { mutableStateOf("шт.") }
     var categoryExpanded by remember { mutableStateOf(false) }
     var groupExpanded by remember { mutableStateOf(false) }
+    var nameExpanded by remember { mutableStateOf(false) }
 
     val groupSuggestions = remember(warehouseProfileId, category) {
         WarehouseGroupCatalog.groupsFor(warehouseProfileId, category)
+    }
+    val itemSuggestions = remember(warehouseProfileId, category, group) {
+        WarehouseItemPresetCatalog.namesFor(warehouseProfileId, category, group)
     }
     val units = listOf("шт.", "компл.", "уп.", "кор.", "ящ.", "кг", "л", "м", "м²", "пара")
 
@@ -138,17 +144,9 @@ fun UniversalAddItemDialog(
 
                 Spacer(modifier = Modifier.height(18.dp))
 
-                UniversalItemField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = "Название позиции",
-                    placeholder = "Например: Фильтр масляный"
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = "Категория",
+                    text = if (isMilitary) "Служба" else "Категория",
                     color = ItemInk,
                     fontSize = 11.5.sp,
                     fontWeight = FontWeight.SemiBold
@@ -183,7 +181,7 @@ fun UniversalAddItemDialog(
                         },
                         placeholder = {
                             Text(
-                                "Выберите или введите свою категорию",
+                                if (isMilitary) "Выберите службу" else "Выберите или введите свою категорию",
                                 color = Color(0xFF9CA3AF),
                                 fontSize = 11.5.sp
                             )
@@ -227,6 +225,7 @@ fun UniversalAddItemDialog(
                                     onClick = {
                                         category = value
                                         group = ""
+                                        name = ""
                                         categoryExpanded = false
                                     }
                                 )
@@ -237,7 +236,10 @@ fun UniversalAddItemDialog(
 
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "Можно выбрать готовую категорию или создать свою.",
+                    text = if (isMilitary)
+                        "Выберите службу — список разделов и наименований изменится автоматически."
+                    else
+                        "Можно выбрать готовую категорию или создать свою.",
                     color = ItemMuted,
                     fontSize = 9.5.sp
                 )
@@ -245,7 +247,7 @@ fun UniversalAddItemDialog(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = "Группа / вид",
+                    text = if (isMilitary) "Раздел / вид" else "Группа / вид",
                     color = ItemInk,
                     fontSize = 11.5.sp,
                     fontWeight = FontWeight.SemiBold
@@ -296,6 +298,7 @@ fun UniversalAddItemDialog(
                                 text = { Text(value, color = ItemInk, fontSize = 12.sp) },
                                 onClick = {
                                     group = value
+                                    name = ""
                                     groupExpanded = false
                                 }
                             )
@@ -306,7 +309,97 @@ fun UniversalAddItemDialog(
                 if (groupSuggestions.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(7.dp))
                     Text(
-                        text = "${groupSuggestions.size} готовых групп для этой категории",
+                        text = if (isMilitary)
+                            groupSuggestions.size.toString() + " разделов для выбранной службы"
+                        else
+                            groupSuggestions.size.toString() + " готовых групп для этой категории",
+                        color = ItemMuted,
+                        fontSize = 9.5.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Text(
+                    text = "Наименование",
+                    color = ItemInk,
+                    fontSize = 11.5.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Box {
+                    OutlinedTextField(
+                        value = name,
+                        onValueChange = {
+                            name = it
+                            nameExpanded = itemSuggestions.isNotEmpty()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        placeholder = {
+                            Text(
+                                if (itemSuggestions.isEmpty())
+                                    "Введите наименование"
+                                else
+                                    "Выберите готовое или введите своё",
+                                color = Color(0xFF9CA3AF),
+                                fontSize = 11.5.sp
+                            )
+                        },
+                        trailingIcon = {
+                            if (itemSuggestions.isNotEmpty()) {
+                                Icon(
+                                    imageVector = Icons.Default.ArrowDropDown,
+                                    contentDescription = "Показать наименования",
+                                    tint = ItemPrimary,
+                                    modifier = Modifier.clickable { nameExpanded = true }
+                                )
+                            }
+                        },
+                        shape = RoundedCornerShape(15.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = Color(0xFFF9FAFB),
+                            unfocusedContainerColor = Color(0xFFF9FAFB),
+                            focusedBorderColor = ItemPrimary,
+                            unfocusedBorderColor = ItemBorder,
+                            focusedTextColor = ItemInk,
+                            unfocusedTextColor = ItemInk
+                        )
+                    )
+
+                    DropdownMenu(
+                        expanded = nameExpanded,
+                        onDismissRequest = { nameExpanded = false },
+                        modifier = Modifier.background(Color.White)
+                    ) {
+                        val filteredNames = itemSuggestions.filter {
+                            name.isBlank() || it.contains(name, ignoreCase = true)
+                        }
+                        filteredNames.forEach { value ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = value,
+                                        color = ItemInk,
+                                        fontSize = 11.5.sp,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                },
+                                onClick = {
+                                    name = value
+                                    nameExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                if (itemSuggestions.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(7.dp))
+                    Text(
+                        text = itemSuggestions.size.toString() + " готовых наименований",
                         color = ItemMuted,
                         fontSize = 9.5.sp
                     )
