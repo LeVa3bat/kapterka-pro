@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.OperationRecord
 import com.example.data.model.OperationType
+import com.example.data.model.WarehousePoint
 import com.example.universal.WarehouseProfileCatalog
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -60,16 +61,33 @@ private val OpsPrimarySoft = Color(0xFFEEEEFF)
 @Composable
 fun UniversalOperationsScreen(
     warehouseProfileId: String?,
+    points: List<WarehousePoint>,
+    selectedPointId: String,
+    onSelectPoint: (String) -> Unit,
     operations: List<OperationRecord>
 ) {
     val template = WarehouseProfileCatalog.find(warehouseProfileId)
     val vocab = template.operations
     var query by remember { mutableStateOf("") }
     var typeFilter by remember { mutableStateOf<OperationType?>(null) }
+    var showAllWarehouses by remember { mutableStateOf(false) }
+    val selectedPoint = remember(points, selectedPointId) {
+        points.firstOrNull { it.id == selectedPointId } ?: points.firstOrNull()
+    }
+    val scopedOperations = remember(operations, selectedPoint?.name, showAllWarehouses) {
+        if (showAllWarehouses || selectedPoint == null) {
+            operations
+        } else {
+            val pointName = selectedPoint.name
+            operations.filter {
+                it.fromPointName == pointName || it.toPointName == pointName
+            }
+        }
+    }
 
-    val filtered = remember(operations, query, typeFilter) {
+    val filtered = remember(scopedOperations, query, typeFilter) {
         val q = query.trim().lowercase()
-        operations
+        scopedOperations
             .asSequence()
             .filter { typeFilter == null || it.type == typeFilter }
             .filter {
@@ -93,8 +111,8 @@ fun UniversalOperationsScreen(
             set(Calendar.MILLISECOND, 0)
         }.timeInMillis
     }
-    val todayCount = remember(operations, todayStart) {
-        operations.count { it.timestamp >= todayStart }
+    val todayCount = remember(scopedOperations, todayStart) {
+        scopedOperations.count { it.timestamp >= todayStart }
     }
 
     LazyColumn(
@@ -121,8 +139,8 @@ fun UniversalOperationsScreen(
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OperationSummaryCard(
-                    value = operations.size.toString(),
-                    label = "всего",
+                    value = scopedOperations.size.toString(),
+                    label = if (showAllWarehouses) "все склады" else "этот склад",
                     modifier = Modifier.weight(1f)
                 )
                 OperationSummaryCard(
@@ -135,6 +153,37 @@ fun UniversalOperationsScreen(
                     label = "показано",
                     modifier = Modifier.weight(1f)
                 )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            if (points.isNotEmpty()) {
+                Text(
+                    text = "Склад",
+                    color = OpsMuted,
+                    fontSize = 9.5.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(7.dp)
+                ) {
+                    UniversalFilterChip("Все склады", showAllWarehouses) {
+                        showAllWarehouses = true
+                    }
+                    points.forEach { point ->
+                        UniversalFilterChip(
+                            point.name,
+                            !showAllWarehouses && point.id == selectedPoint?.id
+                        ) {
+                            showAllWarehouses = false
+                            onSelectPoint(point.id)
+                        }
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(14.dp))
@@ -190,14 +239,14 @@ fun UniversalOperationsScreen(
                 ) {
                     Column(modifier = Modifier.padding(18.dp)) {
                         Text(
-                            text = if (operations.isEmpty()) "Операций пока нет" else "Ничего не найдено",
+                            text = if (scopedOperations.isEmpty()) "Операций пока нет" else "Ничего не найдено",
                             color = OpsInk,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = if (operations.isEmpty())
-                                "После первого прихода, выдачи, перемещения или списания запись появится здесь автоматически."
+                            text = if (scopedOperations.isEmpty())
+                                "Для выбранного склада операций пока нет."
                             else
                                 "Измените фильтр или поисковый запрос.",
                             color = OpsMuted,
