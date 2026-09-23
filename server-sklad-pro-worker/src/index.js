@@ -72,6 +72,19 @@ function proFeatures() {
   };
 }
 
+function expiredFeatures() {
+  return {
+    coreInventory: true,
+    localOperations: false,
+    localCatalog: false,
+    localWarehouses: false,
+    cloudSync: false,
+    multiDevice: false,
+    exportReports: false,
+    advancedRequisitions: false
+  };
+}
+
 function effectiveEntitlement(raw, now = Date.now()) {
   const paidUntil = Number(raw?.paidUntil || 0);
   const demoEndsAt = Number(raw?.demoEndsAt || 0);
@@ -88,7 +101,9 @@ function effectiveEntitlement(raw, now = Date.now()) {
     paidUntil,
     planId: String(raw?.planId || ""),
     serverTime: now,
-    features: isProActive ? proFeatures() : trialFeatures()
+    features: isProActive
+      ? proFeatures()
+      : (isTrialActive ? trialFeatures() : expiredFeatures())
   };
 }
 
@@ -404,6 +419,8 @@ async function webhook(request, env) {
     throw error;
   }
 }
+
+export { effectiveEntitlement, normalizeMoney, plans };
 
 export class SkladProAccount {
   constructor(ctx) {
