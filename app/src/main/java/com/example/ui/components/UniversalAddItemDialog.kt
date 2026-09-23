@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.data.model.InventoryItem
 import com.example.universal.WarehouseGroupCatalog
 import com.example.universal.WarehouseItemPresetCatalog
 import com.example.universal.WarehouseProfileCatalog
@@ -62,12 +63,13 @@ private val ItemSoft = Color(0xFFF5F6FF)
 fun UniversalAddItemDialog(
     warehouseProfileId: String?,
     availableCategories: List<String>,
+    catalogItems: List<InventoryItem> = emptyList(),
     onDismiss: () -> Unit,
     onConfirm: (name: String, category: String, group: String, unit: String) -> Unit
 ) {
     val profile = WarehouseProfileCatalog.find(warehouseProfileId)
-    val categories = remember(warehouseProfileId, availableCategories) {
-        (profile.categories + availableCategories)
+    val categories = remember(warehouseProfileId, availableCategories, catalogItems) {
+        (profile.categories + availableCategories + catalogItems.map { it.serviceCategory })
             .filter { it.isNotBlank() && it != "Все виды" && it != "Все категории" }
             .distinct()
     }
@@ -82,11 +84,23 @@ fun UniversalAddItemDialog(
     var groupExpanded by remember { mutableStateOf(false) }
     var nameExpanded by remember { mutableStateOf(false) }
 
-    val groupSuggestions = remember(warehouseProfileId, category) {
-        WarehouseGroupCatalog.groupsFor(warehouseProfileId, category)
+    val groupSuggestions = remember(warehouseProfileId, category, catalogItems) {
+        (
+            WarehouseGroupCatalog.groupsFor(warehouseProfileId, category) +
+                catalogItems
+                    .filter { it.serviceCategory == category }
+                    .map { it.subType }
+                    .filter { it.isNotBlank() }
+        ).distinct()
     }
-    val nameSuggestions = remember(warehouseProfileId, category, group) {
-        WarehouseItemPresetCatalog.namesFor(warehouseProfileId, category, group)
+    val nameSuggestions = remember(warehouseProfileId, category, group, catalogItems) {
+        (
+            WarehouseItemPresetCatalog.namesFor(warehouseProfileId, category, group) +
+                catalogItems
+                    .filter { it.serviceCategory == category && it.subType == group }
+                    .map { it.name }
+                    .filter { it.isNotBlank() }
+        ).distinct()
     }
     val units = listOf("шт.", "компл.", "уп.", "кор.", "ящ.", "кг", "л", "м", "м²", "пара")
 
