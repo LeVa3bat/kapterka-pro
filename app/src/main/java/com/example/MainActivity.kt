@@ -880,15 +880,42 @@ fun KapterkaAppRoot(
                                     "Нажмите, чтобы проверить статус"
                             }
 
+                            val syncTitle = when {
+                                universalEntitlement?.isProActive == true && syncState.isSyncing ->
+                                    "Синхронизация..."
+                                universalEntitlement?.isProActive == true && syncState.isOnline ->
+                                    "Облако подключено"
+                                universalEntitlement?.isProActive == true ->
+                                    "Облачная синхронизация"
+                                else ->
+                                    "Облачная синхронизация • PRO"
+                            }
+                            val syncSubtitle = if (universalEntitlement?.isProActive == true) {
+                                syncState.syncMessage
+                            } else {
+                                "Доступна после активации PRO. Локальные данные при этом не удаляются."
+                            }
+
                             UniversalMoreScreen(
                                 userProfile = profile,
                                 warehouseProfileId = warehouseProfileId,
                                 points = points,
                                 subscriptionTitle = subscriptionTitle,
                                 subscriptionSubtitle = subscriptionSubtitle,
+                                syncTitle = syncTitle,
+                                syncSubtitle = syncSubtitle,
                                 onSubscriptionClick = {
                                     universalSubscriptionMessage = null
                                     showPaymentProDialog = true
+                                },
+                                onSyncClick = {
+                                    if (universalEntitlement?.isProActive == true) {
+                                        viewModel.syncUniversalNow()
+                                    } else {
+                                        universalSubscriptionMessage =
+                                            "Облачная синхронизация доступна в PRO."
+                                        showPaymentProDialog = true
+                                    }
                                 },
                                 onAddWarehouse = {
                                     universalAccess(canUniversalWarehouses, "управления складами") {
