@@ -185,10 +185,12 @@ class MainActivity : ComponentActivity() {
             android.util.Log.e("MainActivity", "Firebase init error: ${e.message}", e)
         }
 
-        try {
-            TacticalNotificationHelper.createNotificationChannel(this)
-        } catch (e: Throwable) {
-            android.util.Log.w("MainActivity", "Notification channel skipped: ${e.message}")
+        if (!BuildConfig.IS_UNIVERSAL_APP) {
+            try {
+                TacticalNotificationHelper.createNotificationChannel(this)
+            } catch (e: Throwable) {
+                android.util.Log.w("MainActivity", "Notification channel skipped: ${e.message}")
+            }
         }
 
         setContent {
@@ -235,7 +237,7 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
     }
 
     // Request notification permission for Android 13+
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+    if (!BuildConfig.IS_UNIVERSAL_APP && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         val permissionLauncher = rememberLauncherForActivityResult(
             contract = ActivityResultContracts.RequestPermission()
         ) { _ -> }
