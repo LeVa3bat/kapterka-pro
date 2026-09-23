@@ -92,8 +92,18 @@ fun UniversalCatalogScreen(
     }
     val zeroStockCount = (items.size - inStockCount).coerceAtLeast(0)
 
-    val groupSuggestions = remember(warehouseProfileId, category) {
-        category?.let { WarehouseGroupCatalog.groupsFor(warehouseProfileId, it) }.orEmpty()
+    val groupSuggestions = remember(warehouseProfileId, category, items) {
+        val templateGroups = category
+            ?.let { WarehouseGroupCatalog.groupsFor(warehouseProfileId, it) }
+            .orEmpty()
+        val catalogGroups = items
+            .asSequence()
+            .filter { category != null && it.serviceCategory == category }
+            .map { it.subType }
+            .filter { it.isNotBlank() }
+            .distinct()
+            .toList()
+        (templateGroups + catalogGroups).distinct()
     }
 
     val filtered = remember(items, query, category, group) {
@@ -131,9 +141,9 @@ fun UniversalCatalogScreen(
                     )
                     Text(
                         text = if (selectedPoint == null)
-                            items.size.toString() + " позиций в каталоге"
+                            items.size.toString() + " позиций • общий каталог профиля"
                         else
-                            items.size.toString() + " позиций • " + selectedPoint.name,
+                            items.size.toString() + " позиций • остатки: " + selectedPoint.name,
                         color = CatalogMuted,
                         fontSize = 12.sp,
                         maxLines = 1,
