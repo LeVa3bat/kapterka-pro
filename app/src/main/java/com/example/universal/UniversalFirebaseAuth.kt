@@ -11,6 +11,7 @@ import com.google.firebase.auth.UserProfileChangeRequest
 
 sealed interface UniversalAuthResult {
     data class Authenticated(
+        val uid: String,
         val email: String,
         val displayName: String
     ) : UniversalAuthResult
@@ -30,7 +31,12 @@ class UniversalFirebaseAuth(context: Context) {
     fun currentVerifiedAccount(): UniversalAuthResult.Authenticated? {
         val user = auth.currentUser ?: return null
         if (!user.isEmailVerified) return null
+        if (!acceptBoundAccount(user.uid)) {
+            auth.signOut()
+            return null
+        }
         return UniversalAuthResult.Authenticated(
+            uid = user.uid,
             email = user.email.orEmpty().trim().lowercase(),
             displayName = user.displayName.orEmpty().trim()
         )
@@ -192,19 +198,42 @@ class UniversalFirebaseAuth(context: Context) {
 
         val email = user.email.orEmpty().trim().lowercase()
         return if (user.isEmailVerified) {
-            val savedName = prefs.getString("pending_name", "").orEmpty().trim()
-            val name = user.displayName.orEmpty().trim().ifBlank { savedName }
-            prefs.edit()
-                .putString("last_email", email)
-                .remove("pending_name")
-                .apply()
-            UniversalAuthResult.Authenticated(email = email, displayName = name)
+            if (!acceptBoundAccount(user.uid)) {
+                auth.signOut()
+                UniversalAuthResult.Error(
+                    "На этом устройстве уже есть данные другого аккаунта. Смена аккаунта заблокирована, чтобы не смешать складские данные."
+                )
+            } else {
+                val savedName = prefs.getString("pending_name", "").orEmpty().trim()
+                val name = user.displayName.orEmpty().trim().ifBlank { savedName }
+                prefs.edit()
+                    .putString("last_email", email)
+                    .remove("pending_name")
+                    .apply()
+                UniversalAuthResult.Authenticated(
+                    uid = user.uid,
+                    email = email,
+                    displayName = name
+                )
+            }
         } else {
             UniversalAuthResult.VerificationRequired(
                 email = email,
                 message = "Подтвердите email по ссылке из письма и вернитесь в приложение."
             )
         }
+    }
+
+    private fun acceptBoundAccount(uid: String): Boolean {
+        val cleanUid = uid.trim()
+        if (cleanUid.isBlank()) return false
+
+        val boundUid = prefs.getString("bound_uid", "").orEmpty()
+        if (boundUid.isBlank()) {
+            prefs.edit().putString("bound_uid", cleanUid).apply()
+            return true
+        }
+        return boundUid == cleanUid
     }
 
     private fun isEmailValid(email: String): Boolean =
