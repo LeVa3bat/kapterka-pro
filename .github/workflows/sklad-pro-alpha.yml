@@ -24,6 +24,8 @@ jobs:
   build-alpha:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      EXPECTED_ALPHA_SIGNER_SHA256: 6ed709070d92f38fb5580650d08c88042b87ebdc88e457040bc2354a5eadbdb3
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -73,7 +75,12 @@ jobs:
             keytool -genkeypair -v               -keystore debug.keystore               -storepass android               -alias androiddebugkey               -keypass android               -keyalg RSA               -keysize 2048               -validity 10000               -dname "CN=Sklad PRO Alpha,O=Development,C=RU"
           fi
           chmod 600 debug.keystore
-          keytool -list -v             -keystore debug.keystore             -storepass android             -alias androiddebugkey             | grep -E 'Alias name:|SHA256:'
+          keytool -list -v             -keystore debug.keystore             -storepass android             -alias androiddebugkey             | tee /tmp/alpha-keytool.txt
+          ACTUAL="$(grep -m1 'SHA256:' /tmp/alpha-keytool.txt             | sed 's/.*SHA256:[[:space:]]*//'             | tr -d ':'             | tr '[:upper:]' '[:lower:]')"
+          test "$ACTUAL" = "$EXPECTED_ALPHA_SIGNER_SHA256" || {
+            echo "Alpha signer changed. Refusing to create an update-incompatible APK." >&2
+            exit 1
+          }
 
       - name: Run unit tests
         run: gradle :app:testDebugUnitTest --no-daemon --stacktrace
@@ -94,7 +101,11 @@ jobs:
             exit 1
           fi
           "$ANDROID_SDK_ROOT/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$APK"             | tee /tmp/alpha-signature.txt
-          grep -q "Signer #1 certificate SHA-256 digest:" /tmp/alpha-signature.txt
+          ACTUAL_APK_SIGNER="$(grep -m1 'Signer #1 certificate SHA-256 digest:' /tmp/alpha-signature.txt             | sed 's/.*digest:[[:space:]]*//'             | tr -d ':'             | tr '[:upper:]' '[:lower:]')"
+          test "$ACTUAL_APK_SIGNER" = "$EXPECTED_ALPHA_SIGNER_SHA256" || {
+            echo "Built APK signer does not match the stable Sklad PRO Alpha signer." >&2
+            exit 1
+          }
           cp "$APK" "Sklad-PRO-0.3.0-alpha3.apk"
 
       - name: Upload alpha APK
