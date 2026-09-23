@@ -31,7 +31,7 @@ jobs:
         with:
           project_id: 'sklad-pro-a1ec0'
           workload_identity_provider: 'projects/98775459607/locations/global/workloadIdentityPools/github-sklad-pro/providers/kapterka-pro'
-          service_account: 'github-firestore-deployer@sklad-pro-a1ec0.iam.gserviceaccount.com'
+          service_account: 'github-sklad-deployer@sklad-pro-a1ec0.iam.gserviceaccount.com'
 
       - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v3
@@ -46,7 +46,7 @@ jobs:
             --source server-sklad-pro \
             --build-service-account "$BUILD_SERVICE_ACCOUNT" \
             --service-account "$RUNTIME_SERVICE_ACCOUNT" \
-            --allow-unauthenticated \
+            --no-invoker-iam-check \
             --set-env-vars "SKLAD_FIREBASE_PROJECT_ID=$PROJECT_ID,SKLAD_DEMO_DAYS=7" \
             --memory 256Mi \
             --cpu 1 \
