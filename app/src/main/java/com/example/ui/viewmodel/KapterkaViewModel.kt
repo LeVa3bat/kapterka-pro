@@ -449,9 +449,20 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
 
     // Custom Nomenclature Item
     fun addCustomItem(name: String, serviceCategory: String, subType: String, unit: String) {
+        val cleanCategory = serviceCategory.trim()
+        if (BuildConfig.IS_UNIVERSAL_APP && cleanCategory.isNotEmpty() && cleanCategory !in _availableCategories.value) {
+            saveCategoriesToPrefs((_availableCategories.value + cleanCategory).distinct())
+        }
+
         viewModelScope.launch {
-            repository.addCustomInventoryItem(name, serviceCategory, subType, unit)
-            _toastEvent.emit("Позиция «$name» внесена в номенклатуру")
+            repository.addCustomInventoryItem(name, cleanCategory.ifBlank { serviceCategory }, subType, unit)
+            _toastEvent.emit(
+                if (BuildConfig.IS_UNIVERSAL_APP) {
+                    "Позиция «$name» добавлена в каталог"
+                } else {
+                    "Позиция «$name» внесена в номенклатуру"
+                }
+            )
         }
     }
 
