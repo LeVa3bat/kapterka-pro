@@ -260,7 +260,8 @@ class UniversalFirestoreSyncManager(
                     unit = doc.getString("unit") ?: "шт.",
                     categoryClass = doc.getString("categoryClass") ?: "Кат. 1",
                     standardCode = doc.getString("standardCode").orEmpty(),
-                    isCustom = doc.getBoolean("isCustom") ?: false
+                    isCustom = doc.getBoolean("isCustom") ?: false,
+                    profileId = doc.getString("profileId").orEmpty()
                 )
             )
         }
@@ -378,6 +379,7 @@ class UniversalFirestoreSyncManager(
                 "categoryClass" to item.categoryClass,
                 "standardCode" to item.standardCode,
                 "isCustom" to item.isCustom,
+                "profileId" to item.profileId,
                 "updatedAt" to FieldValue.serverTimestamp()
             ),
             SetOptions.merge()
