@@ -101,21 +101,8 @@ fun UniversalDashboardScreen(
         val pointId = selectedPoint?.id
         if (pointId == null) emptyList() else stockRecords.filter { it.pointId == pointId }
     }
-    val totalQuantity = remember(selectedPointStocks) {
-        selectedPointStocks.sumOf { it.quantity.coerceAtLeast(0) }
-    }
     val activePositions = remember(selectedPointStocks) {
         selectedPointStocks.filter { it.quantity > 0 }.map { it.itemId }.distinct().size
-    }
-    val zeroPositions = remember(catalogItems, selectedPointStocks) {
-        val positiveIds = selectedPointStocks
-            .filter { it.quantity > 0 }
-            .map { it.itemId }
-            .toSet()
-        catalogItems.count { it.id !in positiveIds }
-    }
-    val pendingRequests = remember(requisitions) {
-        requisitions.count { it.status == RequestStatus.PENDING }
     }
     val selectedPointOperations = remember(operations, selectedPoint?.name) {
         val pointName = selectedPoint?.name.orEmpty()
@@ -139,7 +126,7 @@ fun UniversalDashboardScreen(
         selectedPointOperations.count { it.timestamp >= todayStart }
     }
     val recentOperations = remember(selectedPointOperations) {
-        selectedPointOperations.sortedByDescending { it.timestamp }.take(3)
+        selectedPointOperations.sortedByDescending { it.timestamp }.take(2)
     }
     val formatter = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
 
@@ -247,29 +234,25 @@ fun UniversalDashboardScreen(
                                 overflow = TextOverflow.Ellipsis
                             )
                             Spacer(modifier = Modifier.height(8.dp))
-                            Row(
-                                verticalAlignment = Alignment.Bottom
-                            ) {
+                            Row(verticalAlignment = Alignment.Bottom) {
                                 Text(
-                                    text = totalQuantity.toString(),
+                                    text = activePositions.toString(),
                                     color = Color.White,
                                     fontSize = 34.sp,
                                     fontWeight = FontWeight.ExtraBold
                                 )
                                 Spacer(modifier = Modifier.width(7.dp))
                                 Text(
-                                    text = "ед. на остатке",
-                                    color = Color.White.copy(alpha = 0.72f),
+                                    text = "позиций с остатком",
+                                    color = Color.White.copy(alpha = 0.76f),
                                     fontSize = 12.sp,
                                     modifier = Modifier.padding(bottom = 5.dp)
                                 )
                             }
-                            Spacer(modifier = Modifier.height(6.dp))
+                            Spacer(modifier = Modifier.height(7.dp))
                             Text(
-                                text = activePositions.toString() +
-                                    " позиций с остатком • " +
-                                    todayOps.toString() +
-                                    " операций сегодня",
+                                text = "Каталог: " + catalogItems.size +
+                                    " • Операций сегодня: " + todayOps,
                                 color = Color.White.copy(alpha = 0.72f),
                                 fontSize = 10.5.sp
                             )
@@ -327,40 +310,13 @@ fun UniversalDashboardScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(18.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    SmallCommandCard(
-                        text = "Новая позиция",
-                        icon = Icons.Default.Add,
-                        onClick = onAddItemClick,
-                        modifier = Modifier.weight(1f)
-                    )
-                    SmallCommandCard(
-                        text = "Весь каталог",
-                        icon = Icons.Default.Inventory2,
-                        onClick = onOpenCatalog,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-
                 Spacer(modifier = Modifier.height(16.dp))
 
-                if (selectedPointOperations.isEmpty() && totalQuantity == 0) {
+                if (selectedPointOperations.isEmpty() && activePositions == 0) {
                     StarterGuideCard(
                         catalogCount = catalogItems.size,
                         onIncomeClick = onIncomeClick,
                         onOpenCatalog = onOpenCatalog
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                } else if (zeroPositions > 0 || pendingRequests > 0) {
-                    AttentionCard(
-                        zeroPositions = zeroPositions,
-                        pendingRequests = pendingRequests,
-                        catalogIsEmpty = catalogItems.isEmpty()
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                 }
