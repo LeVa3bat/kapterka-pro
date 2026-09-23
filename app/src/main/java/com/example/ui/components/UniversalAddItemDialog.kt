@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -42,7 +43,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -65,17 +65,18 @@ fun UniversalAddItemDialog(
     onConfirm: (name: String, category: String, group: String, unit: String) -> Unit
 ) {
     val profile = WarehouseProfileCatalog.find(warehouseProfileId)
-    val isMilitary = profile.id == "military"
     val categories = remember(warehouseProfileId, availableCategories) {
         (profile.categories + availableCategories)
             .filter { it.isNotBlank() && it != "Все виды" && it != "Все категории" }
             .distinct()
     }
 
-    var name by remember { mutableStateOf("") }
-    var category by remember { mutableStateOf(categories.firstOrNull().orEmpty()) }
-    var group by remember { mutableStateOf("") }
-    var unit by remember { mutableStateOf("шт.") }
+    var category by remember(warehouseProfileId) {
+        mutableStateOf(categories.firstOrNull().orEmpty())
+    }
+    var group by remember(warehouseProfileId, category) { mutableStateOf("") }
+    var name by remember(warehouseProfileId) { mutableStateOf("") }
+    var unit by remember(warehouseProfileId) { mutableStateOf("шт.") }
     var categoryExpanded by remember { mutableStateOf(false) }
     var groupExpanded by remember { mutableStateOf(false) }
     var nameExpanded by remember { mutableStateOf(false) }
@@ -83,7 +84,7 @@ fun UniversalAddItemDialog(
     val groupSuggestions = remember(warehouseProfileId, category) {
         WarehouseGroupCatalog.groupsFor(warehouseProfileId, category)
     }
-    val itemSuggestions = remember(warehouseProfileId, category, group) {
+    val nameSuggestions = remember(warehouseProfileId, category, group) {
         WarehouseItemPresetCatalog.namesFor(warehouseProfileId, category, group)
     }
     val units = listOf("шт.", "компл.", "уп.", "кор.", "ящ.", "кг", "л", "м", "м²", "пара")
@@ -100,7 +101,11 @@ fun UniversalAddItemDialog(
             colors = CardDefaults.cardColors(containerColor = Color.White),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
-            Column(modifier = Modifier.padding(20.dp)) {
+            Column(
+                modifier = Modifier
+                    .padding(20.dp)
+                    .heightIn(max = 680.dp)
+            ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
@@ -142,14 +147,13 @@ fun UniversalAddItemDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(18.dp))
-
+                Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = if (isMilitary) "Служба" else "Категория",
+                    text = "1. Категория",
                     color = ItemInk,
                     fontSize = 11.5.sp,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.height(6.dp))
 
@@ -159,6 +163,7 @@ fun UniversalAddItemDialog(
                         onValueChange = { value ->
                             category = value
                             group = ""
+                            name = ""
                             categoryExpanded = true
                         },
                         modifier = Modifier.fillMaxWidth(),
@@ -174,95 +179,60 @@ fun UniversalAddItemDialog(
                         trailingIcon = {
                             Icon(
                                 imageVector = Icons.Default.ArrowDropDown,
-                                contentDescription = "Показать готовые категории",
+                                contentDescription = "Категории",
                                 tint = ItemPrimary,
                                 modifier = Modifier.clickable { categoryExpanded = true }
                             )
                         },
-                        placeholder = {
-                            Text(
-                                if (isMilitary) "Выберите службу" else "Выберите или введите свою категорию",
-                                color = Color(0xFF9CA3AF),
-                                fontSize = 11.5.sp
-                            )
-                        },
+                        placeholder = { Text("Выберите категорию", fontSize = 11.5.sp) },
                         shape = RoundedCornerShape(15.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = Color(0xFFF9FAFB),
-                            unfocusedContainerColor = Color(0xFFF9FAFB),
-                            focusedBorderColor = ItemPrimary,
-                            unfocusedBorderColor = ItemBorder,
-                            focusedTextColor = ItemInk,
-                            unfocusedTextColor = ItemInk
-                        )
+                        colors = universalItemColors()
                     )
 
                     val filteredCategories = categories.filter {
                         category.isBlank() || it.contains(category, ignoreCase = true)
                     }
-
                     DropdownMenu(
                         expanded = categoryExpanded,
                         onDismissRequest = { categoryExpanded = false },
                         modifier = Modifier.background(Color.White)
                     ) {
-                        if (filteredCategories.isEmpty() && category.isNotBlank()) {
+                        filteredCategories.forEach { value ->
                             DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        text = "Создать «${category.trim()}»",
-                                        color = ItemPrimary,
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                },
-                                onClick = { categoryExpanded = false }
+                                text = { Text(value, color = ItemInk, fontSize = 12.sp) },
+                                onClick = {
+                                    category = value
+                                    group = ""
+                                    name = ""
+                                    categoryExpanded = false
+                                }
                             )
-                        } else {
-                            filteredCategories.forEach { value ->
-                                DropdownMenuItem(
-                                    text = { Text(value, color = ItemInk, fontSize = 12.sp) },
-                                    onClick = {
-                                        category = value
-                                        group = ""
-                                        name = ""
-                                        categoryExpanded = false
-                                    }
-                                )
-                            }
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = if (isMilitary)
-                        "Выберите службу — список разделов и наименований изменится автоматически."
-                    else
-                        "Можно выбрать готовую категорию или создать свою.",
-                    color = ItemMuted,
-                    fontSize = 9.5.sp
-                )
-
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = if (isMilitary) "Раздел / вид" else "Группа / вид",
+                    text = "2. Вид / группа",
                     color = ItemInk,
                     fontSize = 11.5.sp,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.height(6.dp))
 
                 Box {
                     OutlinedTextField(
                         value = group,
-                        onValueChange = { group = it },
+                        onValueChange = {
+                            group = it
+                            name = ""
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         placeholder = {
                             Text(
-                                if (groupSuggestions.isEmpty()) "Введите свою группу / вид" else "Выберите готовую или введите свою",
+                                if (groupSuggestions.isEmpty()) "Введите свой вид" else "Выберите вид",
                                 color = Color(0xFF9CA3AF),
                                 fontSize = 11.5.sp
                             )
@@ -271,21 +241,14 @@ fun UniversalAddItemDialog(
                             if (groupSuggestions.isNotEmpty()) {
                                 Icon(
                                     imageVector = Icons.Default.ArrowDropDown,
-                                    contentDescription = "Показать группы",
+                                    contentDescription = "Виды",
                                     tint = ItemPrimary,
                                     modifier = Modifier.clickable { groupExpanded = true }
                                 )
                             }
                         },
                         shape = RoundedCornerShape(15.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = Color(0xFFF9FAFB),
-                            unfocusedContainerColor = Color(0xFFF9FAFB),
-                            focusedBorderColor = ItemPrimary,
-                            unfocusedBorderColor = ItemBorder,
-                            focusedTextColor = ItemInk,
-                            unfocusedTextColor = ItemInk
-                        )
+                        colors = universalItemColors()
                     )
 
                     DropdownMenu(
@@ -308,23 +271,31 @@ fun UniversalAddItemDialog(
 
                 if (groupSuggestions.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(7.dp))
-                    Text(
-                        text = if (isMilitary)
-                            groupSuggestions.size.toString() + " разделов для выбранной службы"
-                        else
-                            groupSuggestions.size.toString() + " готовых групп для этой категории",
-                        color = ItemMuted,
-                        fontSize = 9.5.sp
-                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        groupSuggestions.take(8).forEach { value ->
+                            PresetChip(
+                                text = value,
+                                selected = group == value
+                            ) {
+                                group = value
+                                name = ""
+                            }
+                        }
+                    }
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = "Наименование",
+                    text = "3. Наименование",
                     color = ItemInk,
                     fontSize = 11.5.sp,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.height(6.dp))
 
@@ -333,13 +304,13 @@ fun UniversalAddItemDialog(
                         value = name,
                         onValueChange = {
                             name = it
-                            nameExpanded = itemSuggestions.isNotEmpty()
+                            nameExpanded = nameSuggestions.isNotEmpty()
                         },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         placeholder = {
                             Text(
-                                if (itemSuggestions.isEmpty())
+                                if (nameSuggestions.isEmpty())
                                     "Введите наименование"
                                 else
                                     "Выберите готовое или введите своё",
@@ -348,45 +319,32 @@ fun UniversalAddItemDialog(
                             )
                         },
                         trailingIcon = {
-                            if (itemSuggestions.isNotEmpty()) {
+                            if (nameSuggestions.isNotEmpty()) {
                                 Icon(
                                     imageVector = Icons.Default.ArrowDropDown,
-                                    contentDescription = "Показать наименования",
+                                    contentDescription = "Наименования",
                                     tint = ItemPrimary,
                                     modifier = Modifier.clickable { nameExpanded = true }
                                 )
                             }
                         },
                         shape = RoundedCornerShape(15.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = Color(0xFFF9FAFB),
-                            unfocusedContainerColor = Color(0xFFF9FAFB),
-                            focusedBorderColor = ItemPrimary,
-                            unfocusedBorderColor = ItemBorder,
-                            focusedTextColor = ItemInk,
-                            unfocusedTextColor = ItemInk
-                        )
+                        colors = universalItemColors()
                     )
 
+                    val filteredNames = nameSuggestions.filter {
+                        name.isBlank() || it.contains(name, ignoreCase = true)
+                    }
                     DropdownMenu(
                         expanded = nameExpanded,
                         onDismissRequest = { nameExpanded = false },
-                        modifier = Modifier.background(Color.White)
+                        modifier = Modifier
+                            .background(Color.White)
+                            .heightIn(max = 320.dp)
                     ) {
-                        val filteredNames = itemSuggestions.filter {
-                            name.isBlank() || it.contains(name, ignoreCase = true)
-                        }
                         filteredNames.forEach { value ->
                             DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        text = value,
-                                        color = ItemInk,
-                                        fontSize = 11.5.sp,
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                },
+                                text = { Text(value, color = ItemInk, fontSize = 11.5.sp) },
                                 onClick = {
                                     name = value
                                     nameExpanded = false
@@ -396,22 +354,22 @@ fun UniversalAddItemDialog(
                     }
                 }
 
-                if (itemSuggestions.isNotEmpty()) {
+                if (nameSuggestions.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(7.dp))
                     Text(
-                        text = itemSuggestions.size.toString() + " готовых наименований",
+                        text = nameSuggestions.size.toString() + " готовых наименований для выбранного вида",
                         color = ItemMuted,
                         fontSize = 9.5.sp
                     )
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = "Единица измерения",
+                    text = "4. Единица измерения",
                     color = ItemInk,
                     fontSize = 11.5.sp,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.height(7.dp))
 
@@ -422,24 +380,14 @@ fun UniversalAddItemDialog(
                     horizontalArrangement = Arrangement.spacedBy(7.dp)
                 ) {
                     units.forEach { value ->
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(100.dp))
-                                .background(if (unit == value) ItemPrimary else Color(0xFFF3F4F6))
-                                .clickable { unit = value }
-                                .padding(horizontal = 12.dp, vertical = 8.dp)
-                        ) {
-                            Text(
-                                text = value,
-                                color = if (unit == value) Color.White else Color(0xFF5D6574),
-                                fontSize = 10.5.sp,
-                                fontWeight = if (unit == value) FontWeight.Bold else FontWeight.Medium
-                            )
-                        }
+                        PresetChip(
+                            text = value,
+                            selected = unit == value
+                        ) { unit = value }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(19.dp))
+                Spacer(modifier = Modifier.height(18.dp))
 
                 Button(
                     onClick = {
@@ -452,7 +400,7 @@ fun UniversalAddItemDialog(
                     enabled = name.isNotBlank() && category.isNotBlank(),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(54.dp),
+                        .height(52.dp),
                     shape = RoundedCornerShape(17.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = ItemPrimary,
@@ -461,17 +409,9 @@ fun UniversalAddItemDialog(
                         disabledContentColor = Color(0xFF9CA3AF)
                     )
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(7.dp))
-                    Text(
-                        text = "Добавить в каталог",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Text("Добавить в каталог", fontSize = 13.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -479,29 +419,32 @@ fun UniversalAddItemDialog(
 }
 
 @Composable
-private fun UniversalItemField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    label: String,
-    placeholder: String
+private fun PresetChip(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit
 ) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        modifier = Modifier.fillMaxWidth(),
-        singleLine = true,
-        label = { Text(label, fontSize = 11.sp) },
-        placeholder = { Text(placeholder, color = Color(0xFF9CA3AF), fontSize = 11.5.sp) },
-        shape = RoundedCornerShape(15.dp),
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedContainerColor = Color(0xFFF9FAFB),
-            unfocusedContainerColor = Color(0xFFF9FAFB),
-            focusedBorderColor = ItemPrimary,
-            unfocusedBorderColor = ItemBorder,
-            focusedTextColor = ItemInk,
-            unfocusedTextColor = ItemInk,
-            focusedLabelColor = ItemPrimary,
-            unfocusedLabelColor = ItemMuted
-        )
+    Text(
+        text = text,
+        color = if (selected) Color.White else ItemPrimary,
+        fontSize = 10.sp,
+        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+        modifier = Modifier
+            .clip(RoundedCornerShape(100.dp))
+            .background(if (selected) ItemPrimary else ItemSoft)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 11.dp, vertical = 7.dp)
     )
 }
+
+@Composable
+private fun universalItemColors() = OutlinedTextFieldDefaults.colors(
+    focusedContainerColor = Color(0xFFF9FAFB),
+    unfocusedContainerColor = Color(0xFFF9FAFB),
+    focusedBorderColor = ItemPrimary,
+    unfocusedBorderColor = ItemBorder,
+    focusedTextColor = ItemInk,
+    unfocusedTextColor = ItemInk,
+    focusedLabelColor = ItemPrimary,
+    unfocusedLabelColor = ItemMuted
+)
