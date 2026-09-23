@@ -2,6 +2,7 @@ package com.example
 
 import android.os.Bundle
 import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -93,6 +94,7 @@ import com.example.ui.components.UniversalIncomeOperationDialog
 import com.example.ui.components.UniversalTransferOperationDialog
 import com.example.ui.components.UniversalIssueOperationDialog
 import com.example.ui.components.UniversalExpenditureOperationDialog
+import com.example.ui.components.UniversalProDialog
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -133,9 +135,13 @@ import com.example.ui.screens.UniversalRequestsScreen
 import com.example.ui.screens.UniversalSplashScreen
 import com.example.universal.UniversalAuthResult
 import com.example.universal.UniversalFirebaseAuth
+import com.example.universal.UniversalBackendClient
+import com.example.universal.UniversalBackendResult
+import com.example.universal.UniversalEntitlement
 import com.example.ui.viewmodel.KapterkaViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.MutableStateFlow
 
 enum class AppDestination(val title: String, val icon: ImageVector, val tag: String) {
     HOME("Главная", Icons.Default.SpaceDashboard, "nav_home"),
@@ -148,6 +154,7 @@ enum class AppDestination(val title: String, val icon: ImageVector, val tag: Str
 class MainActivity : ComponentActivity() {
 
     private val viewModel: KapterkaViewModel by viewModels()
+    private val universalPaymentReturnSignal = MutableStateFlow(0L)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -175,8 +182,13 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val isDarkTheme by viewModel.isDarkTheme.collectAsState()
+            val paymentReturnSignal by universalPaymentReturnSignal.collectAsState()
             MyApplicationTheme(darkTheme = isDarkTheme) {
-                KapterkaAppRoot(viewModel = viewModel, isDarkTheme = isDarkTheme)
+                KapterkaAppRoot(
+                    viewModel = viewModel,
+                    isDarkTheme = isDarkTheme,
+                    universalPaymentReturnSignal = paymentReturnSignal
+                )
             }
         }
 
@@ -192,13 +204,21 @@ class MainActivity : ComponentActivity() {
     private fun handlePaymentReturn(sourceIntent: Intent?) {
         val data = sourceIntent?.data ?: return
         if (data.scheme == BuildConfig.PAYMENT_CALLBACK_SCHEME && data.host == "payment_success") {
-            viewModel.confirmPaymentAndActivateLicense()
+            if (BuildConfig.IS_UNIVERSAL_APP) {
+                universalPaymentReturnSignal.value = universalPaymentReturnSignal.value + 1L
+            } else {
+                viewModel.confirmPaymentAndActivateLicense()
+            }
         }
     }
 }
 
 @Composable
-fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) {
+fun KapterkaAppRoot(
+    viewModel: KapterkaViewModel,
+    isDarkTheme: Boolean = false,
+    universalPaymentReturnSignal: Long = 0L
+) {
     var isSplashVisible by remember { mutableStateOf(true) }
     var currentDestination by remember { mutableStateOf(AppDestination.HOME) }
     val context = LocalContext.current
@@ -209,6 +229,12 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
         mutableStateOf(setupPrefs.getString("warehouse_profile_id_v2", null))
     }
     val universalAuth = remember(context) { UniversalFirebaseAuth(context) }
+    val universalBackend = remember(context) { UniversalBackendClient(context) }
+    var universalEntitlement by remember {
+        mutableStateOf<UniversalEntitlement?>(universalBackend.cachedEntitlement())
+    }
+    var universalSubscriptionLoading by remember { mutableStateOf(false) }
+    var universalSubscriptionMessage by remember { mutableStateOf<String?>(null) }
     var universalAuthenticated by remember {
         mutableStateOf(universalAuth.currentVerifiedAccount() != null)
     }
@@ -397,6 +423,51 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
             )
             return
         }
+
+        LaunchedEffect(universalAuthenticated, universalWorkspaceReady) {
+            if (
+                universalAuthenticated &&
+                universalWorkspaceReady &&
+                universalBackend.isConfigured
+            ) {
+                universalSubscriptionLoading = true
+                universalBackend.bootstrap { result ->
+                    universalSubscriptionLoading = false
+                    when (result) {
+                        is UniversalBackendResult.Success -> {
+                            universalEntitlement = result.value
+                            universalSubscriptionMessage = null
+                        }
+                        is UniversalBackendResult.Error -> {
+                            universalSubscriptionMessage = result.message
+                        }
+                    }
+                }
+            }
+        }
+
+        LaunchedEffect(universalPaymentReturnSignal) {
+            if (
+                universalPaymentReturnSignal > 0L &&
+                universalAuthenticated &&
+                universalBackend.isConfigured
+            ) {
+                universalSubscriptionLoading = true
+                universalBackend.checkPendingPayment { result ->
+                    universalSubscriptionLoading = false
+                    when (result) {
+                        is UniversalBackendResult.Success -> {
+                            universalEntitlement = result.value
+                            universalSubscriptionMessage =
+                                if (result.value.isProActive) "Оплата подтверждена. PRO активирован." else null
+                        }
+                        is UniversalBackendResult.Error -> {
+                            universalSubscriptionMessage = result.message
+                        }
+                    }
+                }
+            }
+        }
     } else if (profile?.isLoggedIn != true) {
         AuthScreen(
             currentProfile = profile,
@@ -416,7 +487,18 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                 UniversalBottomNavigationBar(
                     currentDestination = currentDestination,
                     pendingRequestsCount = requisitions.count { it.status == com.example.data.model.RequestStatus.PENDING },
-                    onNavigate = { currentDestination = it }
+                    onNavigate = { destination ->
+                        val canUseAdvancedRequests =
+                            !universalBackend.isConfigured ||
+                            universalEntitlement?.features?.advancedRequisitions == true
+                        if (destination == AppDestination.REQUESTS && !canUseAdvancedRequests) {
+                            universalSubscriptionMessage =
+                                "Расширенные заявки доступны в PRO."
+                            showPaymentProDialog = true
+                        } else {
+                            currentDestination = destination
+                        }
+                    }
                 )
             } else {
                 TacticalBottomNavigationBar(
@@ -512,11 +594,11 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                     }
                 }
             }
-            val isProOrDemoActive = BuildConfig.IS_UNIVERSAL_APP ||
-                                    (profile?.isProActive == true) ||
-                                    licenseStatus.isProActive ||
-                                    ((profile?.demoDaysLeft ?: 0) > 0) ||
-                                    licenseStatus.isDemoActive
+            val isProOrDemoActive =
+                (profile?.isProActive == true) ||
+                licenseStatus.isProActive ||
+                ((profile?.demoDaysLeft ?: 0) > 0) ||
+                licenseStatus.isDemoActive
 
             val checkProAccess: (String, () -> Unit) -> Unit = { actionName, onGranted ->
                 if (isProOrDemoActive) {
@@ -530,6 +612,29 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                     showPaymentProDialog = true
                 }
             }
+
+            val universalAccess: (Boolean, String, () -> Unit) -> Unit =
+                { allowed, actionName, onGranted ->
+                    if (!universalBackend.isConfigured || allowed) {
+                        onGranted()
+                    } else {
+                        universalSubscriptionMessage =
+                            if (universalEntitlement?.isExpired == true)
+                                "Демо-период завершён. Данные сохранены, но для $actionName нужен PRO."
+                            else
+                                "Функция «$actionName» доступна в PRO."
+                        showPaymentProDialog = true
+                    }
+                }
+
+            val canUniversalOperate =
+                universalEntitlement?.features?.localOperations == true
+            val canUniversalCatalog =
+                universalEntitlement?.features?.localCatalog == true
+            val canUniversalWarehouses =
+                universalEntitlement?.features?.localWarehouses == true
+            val canUniversalRequests =
+                universalEntitlement?.features?.advancedRequisitions == true
 
             AnimatedContent(
                 targetState = currentDestination,
@@ -547,11 +652,31 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                                 stockRecords = stockRecords,
                                 operations = operations,
                                 requisitions = requisitions,
-                                onIncomeClick = { showIncomeDialog = true },
-                                onTransferClick = { showTransferDialog = true },
-                                onIssueClick = { showIssueDialog = true },
-                                onWriteOffClick = { showExpenditureDialog = true },
-                                onAddItemClick = { showAddCustomItemDialog = true },
+                                onIncomeClick = {
+                                    universalAccess(canUniversalOperate, "операций склада") {
+                                        showIncomeDialog = true
+                                    }
+                                },
+                                onTransferClick = {
+                                    universalAccess(canUniversalOperate, "перемещения") {
+                                        showTransferDialog = true
+                                    }
+                                },
+                                onIssueClick = {
+                                    universalAccess(canUniversalOperate, "выдачи") {
+                                        showIssueDialog = true
+                                    }
+                                },
+                                onWriteOffClick = {
+                                    universalAccess(canUniversalOperate, "списания") {
+                                        showExpenditureDialog = true
+                                    }
+                                },
+                                onAddItemClick = {
+                                    universalAccess(canUniversalCatalog, "изменения каталога") {
+                                        showAddCustomItemDialog = true
+                                    }
+                                },
                                 onOpenCatalog = { currentDestination = AppDestination.CATALOG },
                                 onOpenOperations = { currentDestination = AppDestination.HISTORY },
                                 onOpenProfile = { currentDestination = AppDestination.MORE }
@@ -629,12 +754,20 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                                 stockRecords = stockRecords,
                                 requisitions = requisitions,
                                 onCreateRequisition = { pName, applicant, items, comment ->
-                                    viewModel.createRequisition(pName, applicant, items, comment)
+                                    universalAccess(canUniversalRequests, "расширенных заявок") {
+                                        viewModel.createRequisition(pName, applicant, items, comment)
+                                    }
                                 },
                                 onUpdateStatus = { req, nextStatus ->
-                                    viewModel.updateRequisitionStatus(req, nextStatus)
+                                    universalAccess(canUniversalRequests, "расширенных заявок") {
+                                        viewModel.updateRequisitionStatus(req, nextStatus)
+                                    }
                                 },
-                                onDeleteRequisition = { viewModel.deleteRequisition(it) },
+                                onDeleteRequisition = { request ->
+                                    universalAccess(canUniversalRequests, "расширенных заявок") {
+                                        viewModel.deleteRequisition(request)
+                                    }
+                                },
                                 parseItems = { viewModel.parseRequisitionItems(it) }
                             )
                         } else {
@@ -662,9 +795,21 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                                 items = catalogItems,
                                 stockRecords = stockRecords,
                                 availableCategories = availableCategories,
-                                onAddItem = { showAddCustomItemDialog = true },
-                                onUpdateItem = { viewModel.updateCatalogItem(it) },
-                                onDeleteItem = { id, name -> viewModel.deleteCatalogItem(id, name) }
+                                onAddItem = {
+                                    universalAccess(canUniversalCatalog, "изменения каталога") {
+                                        showAddCustomItemDialog = true
+                                    }
+                                },
+                                onUpdateItem = { item ->
+                                    universalAccess(canUniversalCatalog, "изменения каталога") {
+                                        viewModel.updateCatalogItem(item)
+                                    }
+                                },
+                                onDeleteItem = { id, name ->
+                                    universalAccess(canUniversalCatalog, "изменения каталога") {
+                                        viewModel.deleteCatalogItem(id, name)
+                                    }
+                                }
                             )
                         } else {
                             InventoryCatalogScreen(
@@ -679,16 +824,57 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
 
                     AppDestination.MORE -> {
                         if (BuildConfig.IS_UNIVERSAL_APP) {
+                            val subscriptionTitle = when {
+                                universalEntitlement?.isProActive == true ->
+                                    "PRO • ${universalEntitlement?.daysRemaining() ?: 0} дн."
+                                universalEntitlement?.isTrialActive == true ->
+                                    "Демо • ${universalEntitlement?.daysRemaining() ?: 0} дн."
+                                universalEntitlement?.isExpired == true ->
+                                    "Демо завершено"
+                                !universalBackend.isConfigured ->
+                                    "PRO • 500 ₽ / 30 дней"
+                                else ->
+                                    "Проверка подписки"
+                            }
+                            val subscriptionSubtitle = when {
+                                universalEntitlement?.isProActive == true ->
+                                    "Все функции подписки доступны"
+                                universalEntitlement?.isTrialActive == true ->
+                                    "Базовый локальный учёт; PRO открывает синхронизацию, отчёты и заявки"
+                                universalEntitlement?.isExpired == true ->
+                                    "Данные сохранены; изменение данных доступно после оплаты"
+                                !universalBackend.isConfigured ->
+                                    "Демо 3 дня; сервер оплаты готовится к финальной привязке"
+                                else ->
+                                    "Нажмите, чтобы проверить статус"
+                            }
+
                             UniversalMoreScreen(
                                 userProfile = profile,
                                 warehouseProfileId = warehouseProfileId,
                                 points = points,
-                                onAddWarehouse = { showAddPointDialog = true },
-                                onEditWarehouse = { editingPoint = it },
+                                subscriptionTitle = subscriptionTitle,
+                                subscriptionSubtitle = subscriptionSubtitle,
+                                onSubscriptionClick = {
+                                    universalSubscriptionMessage = null
+                                    showPaymentProDialog = true
+                                },
+                                onAddWarehouse = {
+                                    universalAccess(canUniversalWarehouses, "управления складами") {
+                                        showAddPointDialog = true
+                                    }
+                                },
+                                onEditWarehouse = { point ->
+                                    universalAccess(canUniversalWarehouses, "управления складами") {
+                                        editingPoint = point
+                                    }
+                                },
                                 onChangeProfile = {
-                                    setupPrefs.edit().remove("warehouse_profile_id_v2").apply()
-                                    warehouseProfileId = null
-                                    currentDestination = AppDestination.HOME
+                                    universalAccess(canUniversalWarehouses, "смены профиля склада") {
+                                        setupPrefs.edit().remove("warehouse_profile_id_v2").apply()
+                                        warehouseProfileId = null
+                                        currentDestination = AppDestination.HOME
+                                    }
                                 },
                                 onLogout = {
                                     universalAuth.signOut()
@@ -949,31 +1135,90 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
         )
     }
 
-    if (showPaymentProDialog && !BuildConfig.IS_UNIVERSAL_APP) {
-        PersonalLicenseDialog(
-            profile = profile,
-            licenseStatus = licenseStatus,
-            yooKassaConfig = viewModel.yooKassaService.getConfig(),
-            issuedPaymentKey = issuedPaymentKey,
-            onPayYooKassaClick = { viewModel.startYooKassaPayment() },
-            onActivateLicenseKey = { key -> viewModel.activateLicenseKey(key) },
-            onTestPaymentConfirm = { viewModel.confirmPaymentAndActivateLicense() },
-            onRestoreSavedLicense = { viewModel.restoreSavedLicenseOnDevice() },
-            onRestoreFromCloud = { email, callsign -> viewModel.restoreLicenseFromCloud(email, callsign) },
-            onSaveYooKassaSettings = { shopId, secretKey, isTest, price ->
-                viewModel.saveYooKassaSettings(shopId, secretKey, isTest, price)
-            },
-            onResendEmailKey = { email ->
-                viewModel.resendLicenseKeyToEmail(email)
-            },
-            onResetLicense = {
-                viewModel.resetLicense()
-            },
-            onDismiss = {
-                showPaymentProDialog = false
-                viewModel.clearIssuedPaymentKey()
-            }
-        )
+    if (showPaymentProDialog) {
+        if (BuildConfig.IS_UNIVERSAL_APP) {
+            UniversalProDialog(
+                entitlement = universalEntitlement,
+                backendConfigured = universalBackend.isConfigured,
+                hasPendingPayment = universalBackend.pendingPaymentId().isNotBlank(),
+                loading = universalSubscriptionLoading,
+                message = universalSubscriptionMessage,
+                onPay = {
+                    universalSubscriptionLoading = true
+                    universalSubscriptionMessage = null
+                    universalBackend.startMonthlyPayment { result ->
+                        universalSubscriptionLoading = false
+                        when (result) {
+                            is UniversalBackendResult.Success -> {
+                                try {
+                                    context.startActivity(
+                                        Intent(
+                                            Intent.ACTION_VIEW,
+                                            Uri.parse(result.value.confirmationUrl)
+                                        )
+                                    )
+                                } catch (_: Throwable) {
+                                    universalSubscriptionMessage =
+                                        "Не удалось открыть страницу оплаты"
+                                }
+                            }
+                            is UniversalBackendResult.Error -> {
+                                universalSubscriptionMessage = result.message
+                            }
+                        }
+                    }
+                },
+                onCheckPayment = {
+                    universalSubscriptionLoading = true
+                    universalSubscriptionMessage = null
+                    universalBackend.checkPendingPayment { result ->
+                        universalSubscriptionLoading = false
+                        when (result) {
+                            is UniversalBackendResult.Success -> {
+                                universalEntitlement = result.value
+                                universalSubscriptionMessage =
+                                    if (result.value.isProActive)
+                                        "Оплата подтверждена. PRO активирован."
+                                    else
+                                        "Платёж ещё не подтверждён."
+                            }
+                            is UniversalBackendResult.Error -> {
+                                universalSubscriptionMessage = result.message
+                            }
+                        }
+                    }
+                },
+                onDismiss = {
+                    showPaymentProDialog = false
+                    universalSubscriptionMessage = null
+                }
+            )
+        } else {
+            PersonalLicenseDialog(
+                profile = profile,
+                licenseStatus = licenseStatus,
+                yooKassaConfig = viewModel.yooKassaService.getConfig(),
+                issuedPaymentKey = issuedPaymentKey,
+                onPayYooKassaClick = { viewModel.startYooKassaPayment() },
+                onActivateLicenseKey = { key -> viewModel.activateLicenseKey(key) },
+                onTestPaymentConfirm = { viewModel.confirmPaymentAndActivateLicense() },
+                onRestoreSavedLicense = { viewModel.restoreSavedLicenseOnDevice() },
+                onRestoreFromCloud = { email, callsign -> viewModel.restoreLicenseFromCloud(email, callsign) },
+                onSaveYooKassaSettings = { shopId, secretKey, isTest, price ->
+                    viewModel.saveYooKassaSettings(shopId, secretKey, isTest, price)
+                },
+                onResendEmailKey = { email ->
+                    viewModel.resendLicenseKeyToEmail(email)
+                },
+                onResetLicense = {
+                    viewModel.resetLicense()
+                },
+                onDismiss = {
+                    showPaymentProDialog = false
+                    viewModel.clearIssuedPaymentKey()
+                }
+            )
+        }
     }
 
     if (showDevAuthPrompt) {
