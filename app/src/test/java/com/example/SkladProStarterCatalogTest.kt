@@ -25,4 +25,17 @@ class SkladProStarterCatalogTest {
             }
         }
     }
+
+    @Test
+    fun starterCatalogUsesHumanItemNamesInsteadOfGroupPlaceholders() {
+        WarehouseProfileCatalog.profiles.forEach { profile ->
+            val items = WarehouseStarterCatalog.itemsFor(profile.id)
+            items.take(6).forEach { item ->
+                assertTrue(
+                    "Starter name should be a real item for " + profile.id + ": " + item.subType,
+                    item.name.isNotBlank() && item.name != item.subType
+                )
+            }
+        }
+    }
 }
