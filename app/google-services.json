@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "98775459607",
+    "project_id": "sklad-pro-a1ec0",
+    "storage_bucket": "sklad-pro-a1ec0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:98775459607:android:314fa126e2a67f1482b952",
+        "android_client_info": {
+          "package_name": "com.aistudio.skladpro"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAuFsrthvLozx3KDEnIXkjMjxWszn0Gu40"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
