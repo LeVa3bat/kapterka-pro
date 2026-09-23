@@ -300,7 +300,12 @@ fun KapterkaAppRoot(
             catalogItems
         } else {
             catalogItems.filter {
-                it.profileId == activeProfileId || it.id in activePointStockItemIds
+                val belongsToWarehouse =
+                    it.warehouseId.isBlank() || it.warehouseId == activeWarehouse?.id
+                (
+                    it.profileId == activeProfileId &&
+                        (!it.isCustom || belongsToWarehouse)
+                ) || it.id in activePointStockItemIds
             }
         }
     }
