@@ -280,6 +280,16 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun saveUniversalProfile(profile: UserProfile) {
+        if (!BuildConfig.IS_UNIVERSAL_APP) return
+
+        viewModelScope.launch {
+            repository.saveUserProfile(
+                profile.copy(unitKey = "")
+            )
+        }
+    }
+
     fun setUniversalCloudSyncEnabled(enabled: Boolean) {
         if (!BuildConfig.IS_UNIVERSAL_APP) return
 
