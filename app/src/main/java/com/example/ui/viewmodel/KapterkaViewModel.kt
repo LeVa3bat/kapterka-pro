@@ -318,6 +318,11 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
 
         viewModelScope.launch {
             repository.ensureInitialized()
+            if (BuildConfig.IS_UNIVERSAL_APP) {
+                // Safe add-only refresh for APK updates: make newly prepared catalog
+                // entries available immediately without rewriting stock or operations.
+                repository.ensureUniversalStarterCatalog(activeWarehouseProfileId)
+            }
         }
     }
 
