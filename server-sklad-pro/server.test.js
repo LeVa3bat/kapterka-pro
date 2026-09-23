@@ -5,7 +5,8 @@ const {
   effectiveEntitlement,
   normalizeMoney,
   requireVerifiedEmail,
-  VALID_PROFILE_IDS
+  VALID_PROFILE_IDS,
+  normalizeDevicePayload
 } = require('./server');
 
 test('active paid subscription wins over trial state', () => {
@@ -74,4 +75,22 @@ test('workspace profile ids stay aligned with Android presets', () => {
     assert.equal(VALID_PROFILE_IDS.has(id), true);
   }
   assert.equal(VALID_PROFILE_IDS.has('unknown-profile'), false);
+});
+
+test('device payload accepts only bounded installation ids and metadata', () => {
+  const device = normalizeDevicePayload({
+    installationId: 'android-install-1234',
+    name: 'Телефон кладовщика',
+    model: 'Android Device',
+    appVersion: '0.3.0-alpha3'
+  });
+
+  assert.equal(device.installationId, 'android-install-1234');
+  assert.equal(device.platform, 'android');
+  assert.equal(device.appVersion, '0.3.0-alpha3');
+
+  assert.throws(
+    () => normalizeDevicePayload({ installationId: '../bad' }),
+    (error) => error.message === 'INVALID_INSTALLATION_ID' && error.statusCode === 400
+  );
 });

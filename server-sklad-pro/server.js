@@ -126,7 +126,7 @@ function setCors(req, res) {
     res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
     res.setHeader('Vary', 'Origin');
   }
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,DELETE,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Authorization,Content-Type,Idempotence-Key');
 }
 
@@ -312,6 +312,92 @@ async function createWorkspace(decoded, body) {
   });
 
   return { workspaceId, name, profileId, role: 'owner' };
+}
+
+function normalizeDevicePayload(body) {
+  const installationId = String(body?.installationId || '').trim();
+  const name = String(body?.name || '').trim().slice(0, 120);
+  const model = String(body?.model || '').trim().slice(0, 120);
+  const appVersion = String(body?.appVersion || '').trim().slice(0, 40);
+
+  if (!/^[A-Za-z0-9._:-]{8,128}$/.test(installationId)) {
+    const error = new Error('INVALID_INSTALLATION_ID');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return {
+    installationId,
+    name,
+    model,
+    appVersion,
+    platform: 'android'
+  };
+}
+
+async function registerDevice(decoded, body) {
+  const device = normalizeDevicePayload(body);
+  const ref = getFirestore()
+    .collection('users')
+    .doc(decoded.uid)
+    .collection('devices')
+    .doc(device.installationId);
+  const existing = await ref.get();
+  const now = Timestamp.now();
+
+  await ref.set({
+    ...device,
+    uid: decoded.uid,
+    email: decoded.email || '',
+    createdAt: existing.exists ? (existing.data()?.createdAt || now) : now,
+    lastSeenAt: now
+  }, { merge: true });
+
+  return {
+    ...device,
+    lastSeenAt: now.toMillis()
+  };
+}
+
+async function listDevices(decoded) {
+  const snap = await getFirestore()
+    .collection('users')
+    .doc(decoded.uid)
+    .collection('devices')
+    .get();
+
+  return snap.docs
+    .map((doc) => {
+      const data = doc.data() || {};
+      return {
+        installationId: doc.id,
+        name: data.name || '',
+        model: data.model || '',
+        appVersion: data.appVersion || '',
+        platform: data.platform || 'android',
+        createdAt: timestampMillis(data.createdAt),
+        lastSeenAt: timestampMillis(data.lastSeenAt)
+      };
+    })
+    .sort((a, b) => b.lastSeenAt - a.lastSeenAt);
+}
+
+async function deleteDevice(decoded, installationId) {
+  const cleanId = String(installationId || '').trim();
+  if (!/^[A-Za-z0-9._:-]{8,128}$/.test(cleanId)) {
+    const error = new Error('INVALID_INSTALLATION_ID');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  await getFirestore()
+    .collection('users')
+    .doc(decoded.uid)
+    .collection('devices')
+    .doc(cleanId)
+    .delete();
+
+  return { installationId: cleanId, deleted: true };
 }
 
 async function yooRequest(path, options = {}) {
@@ -616,6 +702,26 @@ const server = http.createServer(async (req, res) => {
       return json(res, 201, { ok: true, workspace });
     }
 
+    if (req.method === 'POST' && path === '/v1/devices') {
+      const decoded = await requireUser(req);
+      const body = await readJson(req);
+      const device = await registerDevice(decoded, body);
+      return json(res, 200, { ok: true, device });
+    }
+
+    if (req.method === 'GET' && path === '/v1/devices') {
+      const decoded = await requireUser(req);
+      const devices = await listDevices(decoded);
+      return json(res, 200, { ok: true, devices });
+    }
+
+    if (req.method === 'DELETE' && path.startsWith('/v1/devices/')) {
+      const decoded = await requireUser(req);
+      const installationId = decodeURIComponent(path.slice('/v1/devices/'.length));
+      const result = await deleteDevice(decoded, installationId);
+      return json(res, 200, { ok: true, ...result });
+    }
+
     if (req.method === 'POST' && path === '/v1/payments') {
       const decoded = await requireUser(req);
       const body = await readJson(req);
@@ -666,5 +772,6 @@ module.exports = {
   normalizeMoney,
   timestampMillis,
   requireVerifiedEmail,
-  VALID_PROFILE_IDS
+  VALID_PROFILE_IDS,
+  normalizeDevicePayload
 };

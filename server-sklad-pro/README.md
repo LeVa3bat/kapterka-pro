@@ -117,6 +117,12 @@ GET /v1/me — entitlement текущего пользователя. Требу
 
 POST /v1/workspaces — создание рабочего пространства. Требует Firebase Bearer token.
 
+POST /v1/devices — регистрация или heartbeat текущей Android-установки. `uid` берётся только из Firebase token.
+
+GET /v1/devices — список устройств текущего аккаунта.
+
+DELETE /v1/devices/{installationId} — удалить устройство из списка аккаунта.
+
 POST /v1/payments — создание платежа. Требует Firebase Bearer token. Рекомендуется UUID v4 в Idempotence-Key.
 
 GET /v1/payments/status?payment_id=... — серверная проверка платежа.
