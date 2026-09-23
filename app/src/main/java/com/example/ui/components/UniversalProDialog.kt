@@ -37,9 +37,9 @@ fun UniversalProDialog(
 ) {
     val statusTitle = when {
         entitlement?.isProActive == true ->
-            "PRO активен • \${entitlement.daysRemaining()} дн."
+            "PRO активен • ${entitlement.daysRemaining()} дн."
         entitlement?.isTrialActive == true ->
-            "Демо • \${entitlement.daysRemaining()} дн."
+            "Демо • ${entitlement.daysRemaining()} дн."
         entitlement?.isExpired == true ->
             "Демо завершено"
         else ->
