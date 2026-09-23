@@ -124,6 +124,26 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         editor.putBoolean("categories_v3_migration_complete", true).apply()
     }
 
+    private fun migrateThreeProfileCategoryPrefs(points: List<WarehousePoint>) {
+        if (!BuildConfig.IS_UNIVERSAL_APP) return
+        if (prefs.getBoolean("categories_v4_three_profiles_complete", false)) return
+
+        val editor = prefs.edit()
+        points.forEach { point ->
+            val oldProfileId = point.profileId.ifBlank { activeWarehouseProfileId }
+            val normalized = com.example.universal.WarehouseProfileCatalog.normalizeId(oldProfileId)
+            val oldKey = "saved_categories_v3_" + point.id + "_" + oldProfileId
+            val newKey = "saved_categories_v3_" + point.id + "_" + normalized
+
+            val oldSaved = prefs.getStringSet(oldKey, null).orEmpty()
+            val currentSaved = prefs.getStringSet(newKey, null).orEmpty()
+            if (oldSaved.isNotEmpty()) {
+                editor.putStringSet(newKey, (currentSaved + oldSaved).toSet())
+            }
+        }
+        editor.putBoolean("categories_v4_three_profiles_complete", true).apply()
+    }
+
     private fun saveCategoriesToPrefs(list: List<String>) {
         if (BuildConfig.IS_UNIVERSAL_APP) {
             prefs.edit()
@@ -354,12 +374,29 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             repository.ensureInitialized()
             if (BuildConfig.IS_UNIVERSAL_APP) {
+                val pointsBeforeProfileSimplification = repository.allPoints.first()
+                migrateUniversalCategoryPrefs(pointsBeforeProfileSimplification)
+                migrateThreeProfileCategoryPrefs(pointsBeforeProfileSimplification)
+
                 repository.prepareUniversalWarehouses(activeWarehouseProfileId)
                 repository.prepareUniversalCustomItemOwnership()
-                val existingPoints = repository.allPoints.first()
-                migrateUniversalCategoryPrefs(existingPoints)
+
+                val preparedPoints = repository.allPoints.first()
+                val selected = preparedPoints.firstOrNull { it.id == activeWarehouseId }
+                    ?: preparedPoints.firstOrNull()
+                if (selected != null) {
+                    activeWarehouseId = selected.id
+                    activeWarehouseProfileId =
+                        com.example.universal.WarehouseProfileCatalog.normalizeId(selected.profileId)
+                    _selectedPointId.value = selected.id
+                    prefs.edit()
+                        .putString("active_warehouse_id_v3", selected.id)
+                        .putString("active_warehouse_profile_id_v2", activeWarehouseProfileId)
+                        .apply()
+                }
+
                 _availableCategories.value = loadCategoriesForProfile(activeWarehouseProfileId)
-                // Safe add-only refresh for APK updates: make newly prepared catalog
+                // Safe add-only refresh for APK updates: make prepared catalog
                 // entries available immediately without rewriting stock or operations.
                 repository.ensureUniversalStarterCatalog(activeWarehouseProfileId)
             }

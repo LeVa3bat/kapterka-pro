@@ -91,11 +91,11 @@ class KapterkaRepository(
     suspend fun ensureUniversalStarterCatalog(profileId: String): Int {
         if (!BuildConfig.IS_UNIVERSAL_APP) return 0
 
-        claimUnassignedUniversalItems(profileId)
+        val safeProfile = com.example.universal.WarehouseProfileCatalog.normalizeId(profileId)
+        claimUnassignedUniversalItems(safeProfile)
 
         val allItems = dao.getAllItems().first()
-        val existing = allItems.filter { it.profileId == profileId }
-        val starters = com.example.universal.WarehouseStarterCatalog.itemsFor(profileId)
+        val starters = com.example.universal.WarehouseStarterCatalog.itemsFor(safeProfile)
         if (starters.isEmpty()) return 0
 
         var added = 0
@@ -269,23 +269,45 @@ class KapterkaRepository(
     suspend fun prepareUniversalWarehouses(defaultProfileId: String) {
         if (!BuildConfig.IS_UNIVERSAL_APP) return
 
-        val safeProfile = com.example.universal.WarehouseProfileCatalog.find(defaultProfileId).id
+        val safeProfile = com.example.universal.WarehouseProfileCatalog.normalizeId(defaultProfileId)
         val current = dao.getAllPoints().first()
         if (current.isEmpty()) return
 
+        val allItems = dao.getAllItems().first()
         current.forEach { point ->
-            val resolvedProfile = point.profileId.ifBlank { safeProfile }
+            val resolvedProfile = com.example.universal.WarehouseProfileCatalog.normalizeId(
+                point.profileId.ifBlank { safeProfile }
+            )
             val resolvedKey = point.syncKey.ifBlank { generateWarehouseSyncKey() }
             val metadataChanged =
                 resolvedProfile != point.profileId || resolvedKey != point.syncKey
+
             if (metadataChanged) {
+                val now = System.currentTimeMillis()
                 val updated = point.copy(
                     profileId = resolvedProfile,
                     syncKey = resolvedKey,
-                    updatedAt = System.currentTimeMillis()
+                    updatedAt = now
                 )
                 dao.updatePoint(updated)
                 syncManager?.pushWarehousePointAsync("", updated)
+
+                // Preserve warehouse-owned user rows while moving deprecated alpha
+                // profiles into one of the three supported modes.
+                allItems.asSequence()
+                    .filter { item ->
+                        item.isCustom &&
+                            item.warehouseId == point.id &&
+                            item.profileId != resolvedProfile
+                    }
+                    .forEach { item ->
+                        val migrated = item.copy(
+                            profileId = resolvedProfile,
+                            updatedAt = now
+                        )
+                        dao.insertItem(migrated)
+                        syncManager?.pushInventoryItemAsync("", migrated)
+                    }
             }
         }
     }

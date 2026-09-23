@@ -202,9 +202,42 @@ object WarehouseGroupCatalog {
         )
     )
 
-    fun groupsFor(profileId: String?, category: String): List<String> =
-        byProfile[profileId]?.get(category).orEmpty()
+    private val simplified: Map<String, Map<String, List<String>>> = mapOf(
+        "universal" to mapOf(
+            "Товары и имущество" to listOf("Основное", "Комплекты", "Инвентарь", "На хранении"),
+            "Материалы" to listOf("Сырьё", "Листовые", "Сыпучие", "Погонаж", "Химия"),
+            "Расходники" to listOf("Одноразовые", "Крепёж", "Абразивы", "Клей и герметики", "Смазки"),
+            "Инструменты" to listOf("Ручные", "Электроинструмент", "Оснастка", "Измерительные"),
+            "Оборудование" to listOf("Стационарное", "Переносное", "Электрическое", "Измерительное"),
+            "Запчасти" to listOf("Механика", "Электрика", "Подшипники", "Ремкомплекты"),
+            "Упаковка и тара" to listOf("Короба", "Пакеты", "Плёнка", "Скотч", "Паллеты и тара"),
+            "Прочее" to listOf("Хозяйственное", "Документы", "Прочие позиции")
+        ),
+        "retail" to mapOf(
+            "Товары для продажи" to listOf("Основной ассортимент", "Новинки", "Сезонные", "Акционные", "Комплекты"),
+            "Резерв" to listOf("Заказ клиента", "Предзаказ", "Интернет-заказ"),
+            "Возвраты" to listOf("От покупателя", "Поставщику", "На проверку"),
+            "Брак" to listOf("Повреждение", "Некомплект", "Просрочка", "Производственный дефект"),
+            "Упаковка" to listOf("Пакеты", "Короба", "Подарочная упаковка", "Скотч", "Наполнитель"),
+            "Расходные материалы" to listOf("Кассовые", "Этикетки", "Ценники", "Уборка"),
+            "Хозтовары" to listOf("Уборка", "Санитария", "Офис", "Инвентарь"),
+            "Прочее" to listOf("Реклама", "POS-материалы", "Прочие позиции")
+        )
+    )
 
-    fun groupCount(profileId: String?): Int =
-        byProfile[profileId]?.values?.sumOf { it.size } ?: 0
+    fun groupsFor(profileId: String?, category: String): List<String> {
+        val normalized = WarehouseProfileCatalog.normalizeId(profileId)
+        return when (normalized) {
+            "military" -> byProfile["military"]?.get(category).orEmpty()
+            else -> simplified[normalized]?.get(category).orEmpty()
+        }
+    }
+
+    fun groupCount(profileId: String?): Int {
+        val normalized = WarehouseProfileCatalog.normalizeId(profileId)
+        return when (normalized) {
+            "military" -> byProfile["military"]?.values?.sumOf { it.size } ?: 0
+            else -> simplified[normalized]?.values?.sumOf { it.size } ?: 0
+        }
+    }
 }

@@ -17,6 +17,8 @@ import com.example.data.model.SyncTombstone
 import com.example.data.model.WarehousePoint
 import com.example.data.sync.shouldKeepLocalWarehouseVersion
 import com.example.data.repository.KapterkaRepository
+import com.example.universal.WarehouseDataScope
+import com.example.universal.WarehouseProfileCatalog
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -991,6 +993,140 @@ class KapterkaDatabaseTest {
                 hasUserData = true
             )
         )
+    }
+
+    @Test
+    fun testUniversalAppExposesOnlyThreeClearProfiles() {
+        assertEquals(
+            listOf("universal", "retail", "military"),
+            WarehouseProfileCatalog.profiles.map { it.id }
+        )
+        assertEquals("universal", WarehouseProfileCatalog.normalizeId("auto"))
+        assertEquals("universal", WarehouseProfileCatalog.normalizeId("medical"))
+        assertEquals("retail", WarehouseProfileCatalog.normalizeId("wholesale"))
+        assertEquals("military", WarehouseProfileCatalog.normalizeId("military"))
+    }
+
+    @Test
+    fun testRetailWarehouseNeverShowsMilitaryItemEvenWhenItHasStock() {
+        val retailWarehouse = WarehousePoint(
+            id = "shop-1",
+            name = "Магазин",
+            profileId = "retail"
+        )
+        val retailItem = InventoryItem(
+            id = "retail-item",
+            name = "Товар",
+            serviceCategory = "Товары для продажи",
+            subType = "Основной ассортимент",
+            unit = "шт.",
+            profileId = "retail"
+        )
+        val militaryItem = InventoryItem(
+            id = "military-item",
+            name = "Военная позиция",
+            serviceCategory = "Служба РАВ",
+            subType = "Минометные мины 120мм",
+            unit = "шт.",
+            profileId = "military"
+        )
+        val allItems = listOf(retailItem, militaryItem)
+        val allStocks = listOf(
+            StockRecord(
+                pointId = retailWarehouse.id,
+                itemId = retailItem.id,
+                quantity = 5
+            ),
+            StockRecord(
+                pointId = retailWarehouse.id,
+                itemId = militaryItem.id,
+                quantity = 99
+            )
+        )
+
+        val visibleCatalog = WarehouseDataScope.catalogFor(
+            items = allItems,
+            warehouse = retailWarehouse
+        )
+        val visibleIds = visibleCatalog.map { it.id }.toSet()
+        val visibleStock = WarehouseDataScope.stockFor(
+            stocks = allStocks,
+            warehouse = retailWarehouse,
+            allowedItemIds = visibleIds
+        )
+
+        assertEquals(listOf(retailItem.id), visibleCatalog.map { it.id })
+        assertEquals(listOf(retailItem.id), visibleStock.map { it.itemId })
+        assertFalse(visibleIds.contains(militaryItem.id))
+    }
+
+    @Test
+    fun testPhysicalWarehouseOwnsItsCustomCatalogAndStock() {
+        val first = WarehousePoint(
+            id = "shop-1",
+            name = "Магазин 1",
+            profileId = "retail"
+        )
+        val second = WarehousePoint(
+            id = "shop-2",
+            name = "Магазин 2",
+            profileId = "retail"
+        )
+        val firstCustom = InventoryItem(
+            id = "custom-shop-1",
+            name = "Товар первого магазина",
+            serviceCategory = "Товары для продажи",
+            subType = "Основной ассортимент",
+            unit = "шт.",
+            isCustom = true,
+            profileId = "retail",
+            warehouseId = first.id
+        )
+        val secondCustom = firstCustom.copy(
+            id = "custom-shop-2",
+            name = "Товар второго магазина",
+            warehouseId = second.id
+        )
+
+        val visible = WarehouseDataScope.catalogFor(
+            items = listOf(firstCustom, secondCustom),
+            warehouse = first
+        )
+
+        assertEquals(listOf(firstCustom.id), visible.map { it.id })
+    }
+
+    @Test
+    fun testDeprecatedWarehouseProfileMigratesWithoutDeletingCustomItems() = runBlocking {
+        val repository = KapterkaRepository(dao, null)
+        val point = WarehousePoint(
+            id = "old-auto",
+            name = "Старый автосклад",
+            profileId = "auto",
+            syncKey = "SKL-AUTO-0001"
+        )
+        val item = InventoryItem(
+            id = "old-auto-item",
+            name = "Своя запчасть",
+            serviceCategory = "Запчасти",
+            subType = "Двигатель",
+            unit = "шт.",
+            isCustom = true,
+            profileId = "auto",
+            warehouseId = point.id
+        )
+        dao.insertPoint(point)
+        dao.insertItem(item)
+
+        repository.prepareUniversalWarehouses("universal")
+
+        val migratedPoint = dao.getAllPoints().first().first { it.id == point.id }
+        val migratedItem = dao.getItemById(item.id)
+
+        assertEquals("universal", migratedPoint.profileId)
+        assertNotNull(migratedItem)
+        assertEquals("universal", migratedItem!!.profileId)
+        assertEquals(point.id, migratedItem.warehouseId)
     }
 
 }

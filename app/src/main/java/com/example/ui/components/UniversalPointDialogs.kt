@@ -201,7 +201,7 @@ fun UniversalEditPointDialog(
         )
         Spacer(modifier = Modifier.height(5.dp))
         Text(
-            text = "Профиль можно изменить без удаления остатков и истории. Пользовательские позиции этого склада сохранятся.",
+            text = "Тип склада можно изменить без удаления истории. Несовместимые старые позиции сохранятся в данных, но не будут смешиваться с новым типом.",
             color = WarehouseMuted,
             fontSize = 9.5.sp,
             lineHeight = 13.sp
@@ -378,7 +378,7 @@ private fun UniversalWarehouseProfileSelector(
 
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
-            text = "Профиль склада",
+            text = "Тип склада",
             color = WarehouseInk,
             fontSize = 11.sp,
             fontWeight = FontWeight.SemiBold
@@ -411,7 +411,7 @@ private fun UniversalWarehouseProfileSelector(
             }
             Icon(
                 imageVector = Icons.Default.ArrowDropDown,
-                contentDescription = "Выбрать профиль",
+                contentDescription = "Выбрать тип склада",
                 tint = if (enabled) WarehousePrimary else WarehouseMuted
             )
         }

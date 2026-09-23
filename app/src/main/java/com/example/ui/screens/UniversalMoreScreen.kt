@@ -186,7 +186,7 @@ fun UniversalMoreScreen(
             Spacer(modifier = Modifier.height(10.dp))
             SettingsRow(
                 emoji = profile.emoji,
-                title = "Тип / профиль склада",
+                title = "Тип склада",
                 subtitle = profile.title + " • нажмите, чтобы изменить",
                 onClick = onChangeProfile
             )
@@ -243,14 +243,14 @@ fun UniversalMoreScreen(
                 ) {
                     Column(modifier = Modifier.padding(14.dp)) {
                         Text(
-                            text = "Военный профиль",
+                            text = "Военный склад",
                             color = Color(0xFF303846),
                             fontSize = 12.5.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Spacer(modifier = Modifier.height(3.dp))
                         Text(
-                            text = "Камера и фотографии отключены. Специализированные категории доступны только в этом профиле.",
+                            text = "Камера и фотографии отключены. Военные категории доступны только в военном складе.",
                             color = Color(0xFF687181),
                             fontSize = 10.5.sp,
                             lineHeight = 15.sp
