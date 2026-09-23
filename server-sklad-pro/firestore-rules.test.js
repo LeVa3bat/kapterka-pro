@@ -67,3 +67,23 @@ test('all client access requires a verified email identity', () => {
   assert.match(verified, /request\.auth\.token\.email_verified\s*==\s*true/);
   assert.doesNotMatch(rules, /function signedIn\(\)/);
 });
+
+
+test('workspace writes require manager access', () => {
+  for (const marker of [
+    'match /warehouses/{warehouseId}',
+    'match /items/{itemId}',
+    'match /stocks/{stockId}',
+    'match /tombstones/{tombstoneId}'
+  ]) {
+    const block = blockAfter(marker, 420);
+    assert.match(block, /allow create, update:\s*if isManager\(workspaceId\)/);
+  }
+
+  const operations = blockAfter('match /operations/{operationId}', 420);
+  assert.match(operations, /allow create:\s*if isManager\(workspaceId\)/);
+
+  const requisitions = blockAfter('match /requisitions/{requestId}', 520);
+  assert.match(requisitions, /allow create:\s*if isManager\(workspaceId\)/);
+  assert.match(requisitions, /allow update:\s*if isManager\(workspaceId\)/);
+});
