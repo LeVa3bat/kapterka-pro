@@ -98,13 +98,13 @@ fun UniversalProDialog(
 
                 if (entitlement?.isProActive == true) {
                     Text(
-                        text = "Подписка активна",
+                        text = "PRO активирован",
                         color = Color(0xFF16803A),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Можно продлить заранее: ещё 30 дней добавятся к уже оплаченному сроку.",
+                        text = "Платёж подтверждён сервером. Осталось " + entitlement.daysRemaining() + " дн.",
                         color = Color(0xFF596273),
                         fontSize = 11.sp,
                         lineHeight = 16.sp
