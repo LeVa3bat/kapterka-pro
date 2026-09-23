@@ -1,5 +1,7 @@
 package com.example.data.repository
 
+import com.example.BuildConfig
+
 import com.example.data.local.InitialData
 import com.example.data.local.KapterkaDao
 import com.example.data.model.InventoryItem
@@ -234,7 +236,8 @@ class KapterkaRepository(
     suspend fun recordExpenditure(fromPointId: String, pointName: String, docNumber: String, responsiblePerson: String, items: List<OperationItemEntry>, comment: String) {
         val summary = items.joinToString(", ") { "${it.itemName} - ${it.quantity} ${it.unit}" }
         val itemsJson = serializeOperationItems(items)
-        val op = OperationRecord(java.util.UUID.randomUUID().toString(), OperationType.EXPENDITURE, pointName, "Списание (ф. 8)", docNumber, responsiblePerson, comment, System.currentTimeMillis(), summary, itemsJson)
+        val destinationLabel = if (BuildConfig.IS_UNIVERSAL_APP) "Списание" else "Списание (ф. 8)"
+        val op = OperationRecord(java.util.UUID.randomUUID().toString(), OperationType.EXPENDITURE, pointName, destinationLabel, docNumber, responsiblePerson, comment, System.currentTimeMillis(), summary, itemsJson)
         val stagedStocks = linkedMapOf<String, StockRecord>()
         for (item in items) {
             stageAdjustedStock(stagedStocks, fromPointId, item.itemId, -item.quantity, isIncome = false)

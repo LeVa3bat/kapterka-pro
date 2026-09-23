@@ -1,6 +1,7 @@
 package com.example.ui.viewmodel
 
 import android.app.Application
+import com.example.BuildConfig
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.local.KapterkaDatabase
@@ -87,7 +88,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             current.add(clean)
             saveCategoriesToPrefs(current)
             viewModelScope.launch {
-                _toastEvent.emit("Группа «$clean» добавлена")
+                _toastEvent.emit(if (BuildConfig.IS_UNIVERSAL_APP) "Категория «$clean» добавлена" else "Группа «$clean» добавлена")
             }
         }
     }
@@ -167,7 +168,13 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
 
     init {
         val database = KapterkaDatabase.getDatabase(application, viewModelScope)
-        val syncManager = com.example.data.sync.FirebaseSyncManager(application, database.kapterkaDao(), viewModelScope)
+        // Sklad PRO must stay physically detached from the legacy production sync layer.
+        // Passing null means repository writes are local-only until the dedicated Sklad backend is wired.
+        val syncManager = if (BuildConfig.IS_UNIVERSAL_APP) {
+            null
+        } else {
+            com.example.data.sync.FirebaseSyncManager(application, database.kapterkaDao(), viewModelScope)
+        }
         repository = KapterkaRepository(database.kapterkaDao(), syncManager)
         
         repository.syncEvents?.let { eventsFlow ->
@@ -291,17 +298,27 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
     ) {
         viewModelScope.launch {
             val actor = userProfile.value?.callsign ?: "Ответственный"
-            repository.recordIncome(toPointId, toPointName, supplier, items, comment, actor)
+            val src = supplier.ifBlank {
+                if (BuildConfig.IS_UNIVERSAL_APP) "Поставщик не указан" else "Служба снабжения / Тыл"
+            }
+            repository.recordIncome(toPointId, toPointName, src, items, comment, actor)
             val summary = items.joinToString(", ") { "${it.itemName} (${it.quantity} ${it.unit})" }
-            val src = supplier.ifBlank { "Служба снабжения / Тыл" }
-            TacticalNotificationHelper.notifyIncome(
-                context = getApplication(),
-                toPoint = toPointName,
-                supplier = src,
-                itemsSummary = summary,
-                baseWarehouseStockSummary = getBaseStockSummary()
+            if (!BuildConfig.IS_UNIVERSAL_APP) {
+                TacticalNotificationHelper.notifyIncome(
+                    context = getApplication(),
+                    toPoint = toPointName,
+                    supplier = src,
+                    itemsSummary = summary,
+                    baseWarehouseStockSummary = getBaseStockSummary()
+                )
+            }
+            _toastEvent.emit(
+                if (BuildConfig.IS_UNIVERSAL_APP) {
+                    "Поступление сохранено • $toPointName\n$summary"
+                } else {
+                    "📥 ПРИВЕЗЛИ на $toPointName\nОткуда: $src\nПринято: $summary"
+                }
             )
-            _toastEvent.emit("📥 ПРИВЕЗЛИ на $toPointName\nОткуда: $src\nПринято: $summary")
         }
     }
 
@@ -317,14 +334,22 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             val actor = userProfile.value?.callsign ?: "Ответственный"
             repository.recordTransfer(fromPointId, fromPointName, toPointId, toPointName, items, comment, actor)
             val summary = items.joinToString(", ") { "${it.itemName} (${it.quantity} ${it.unit})" }
-            TacticalNotificationHelper.notifyTransfer(
-                context = getApplication(),
-                fromPoint = fromPointName,
-                toPoint = toPointName,
-                itemsSummary = summary,
-                baseWarehouseStockSummary = getBaseStockSummary()
+            if (!BuildConfig.IS_UNIVERSAL_APP) {
+                TacticalNotificationHelper.notifyTransfer(
+                    context = getApplication(),
+                    fromPoint = fromPointName,
+                    toPoint = toPointName,
+                    itemsSummary = summary,
+                    baseWarehouseStockSummary = getBaseStockSummary()
+                )
+            }
+            _toastEvent.emit(
+                if (BuildConfig.IS_UNIVERSAL_APP) {
+                    "Перемещение сохранено • $fromPointName → $toPointName\n$summary"
+                } else {
+                    "🔄 ПЕРЕМЕЩЕНИЕ:\nМаршрут: $fromPointName ➔ $toPointName\nПередано: $summary"
+                }
             )
-            _toastEvent.emit("🔄 ПЕРЕМЕЩЕНИЕ:\nМаршрут: $fromPointName ➔ $toPointName\nПередано: $summary")
         }
     }
 
@@ -337,19 +362,28 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         comment: String
     ) {
         viewModelScope.launch {
-            val actor = userProfile.value?.callsign ?: "Старшина подразделения"
+            val actor = userProfile.value?.callsign
+                ?: if (BuildConfig.IS_UNIVERSAL_APP) "Ответственный" else "Старшина подразделения"
             repository.recordIssue(fromPointId, fromPointName, toPointId, toPointName, items, comment, actor)
-            
+
             val summary = items.joinToString(", ") { "${it.itemName} (${it.quantity} ${it.unit})" }
-            TacticalNotificationHelper.notifyIssue(
-                context = getApplication(),
-                fromPoint = fromPointName,
-                toPoint = toPointName,
-                itemsSummary = summary,
-                baseWarehouseStockSummary = getBaseStockSummary()
+            if (!BuildConfig.IS_UNIVERSAL_APP) {
+                TacticalNotificationHelper.notifyIssue(
+                    context = getApplication(),
+                    fromPoint = fromPointName,
+                    toPoint = toPointName,
+                    itemsSummary = summary,
+                    baseWarehouseStockSummary = getBaseStockSummary()
+                )
+            }
+
+            _toastEvent.emit(
+                if (BuildConfig.IS_UNIVERSAL_APP) {
+                    "Выдача сохранена • $fromPointName → $toPointName\n$summary"
+                } else {
+                    "⬆️ ПОДНЯЛИ (ВЫДАНО):\nМаршрут: $fromPointName ➔ $toPointName\nВыдано: $summary"
+                }
             )
-            
-            _toastEvent.emit("⬆️ ПОДНЯЛИ (ВЫДАНО):\nМаршрут: $fromPointName ➔ $toPointName\nВыдано: $summary")
         }
     }
 
@@ -364,15 +398,23 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             repository.recordExpenditure(fromPointId, pointName, docNumber, responsiblePerson, items, comment)
             val summary = items.joinToString(", ") { "${it.itemName} (${it.quantity} ${it.unit})" }
-            TacticalNotificationHelper.notifyExpenditure(
-                context = getApplication(),
-                pointName = pointName,
-                docNumber = docNumber,
-                itemsSummary = summary,
-                reason = comment
-            )
+            if (!BuildConfig.IS_UNIVERSAL_APP) {
+                TacticalNotificationHelper.notifyExpenditure(
+                    context = getApplication(),
+                    pointName = pointName,
+                    docNumber = docNumber,
+                    itemsSummary = summary,
+                    reason = comment
+                )
+            }
             val docLabel = if (docNumber.isNotBlank()) " (Акт № $docNumber)" else ""
-            _toastEvent.emit("💥 РАСХОД (Ф. 8)$docLabel:\nТочка: $pointName\nСписано: $summary")
+            _toastEvent.emit(
+                if (BuildConfig.IS_UNIVERSAL_APP) {
+                    "Списание сохранено$docLabel • $pointName\n$summary"
+                } else {
+                    "💥 РАСХОД (Ф. 8)$docLabel:\nТочка: $pointName\nСписано: $summary"
+                }
+            )
         }
     }
 
@@ -380,21 +422,21 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
     fun addWarehousePoint(name: String, description: String) {
         viewModelScope.launch {
             repository.addWarehousePoint(name, description)
-            _toastEvent.emit("Точка «$name» добавлена в журнал")
+            _toastEvent.emit(if (BuildConfig.IS_UNIVERSAL_APP) "Склад «$name» добавлен" else "Точка «$name» добавлена в журнал")
         }
     }
 
     fun updateWarehousePoint(point: WarehousePoint) {
         viewModelScope.launch {
             repository.updateWarehousePoint(point)
-            _toastEvent.emit("Точка «${point.name}» обновлена")
+            _toastEvent.emit(if (BuildConfig.IS_UNIVERSAL_APP) "Склад «${point.name}» обновлён" else "Точка «${point.name}» обновлена")
         }
     }
 
     fun deleteWarehousePoint(pointId: String) {
         viewModelScope.launch {
             repository.deleteWarehousePoint(pointId)
-            _toastEvent.emit("Точка удалена")
+            _toastEvent.emit(if (BuildConfig.IS_UNIVERSAL_APP) "Склад удалён" else "Точка удалена")
         }
     }
 
