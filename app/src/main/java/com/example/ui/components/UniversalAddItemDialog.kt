@@ -156,36 +156,51 @@ fun UniversalAddItemDialog(
                 Spacer(modifier = Modifier.height(6.dp))
 
                 Box {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(15.dp))
-                            .background(Color(0xFFF9FAFB))
-                            .clickable { categoryExpanded = true }
-                            .padding(horizontal = 13.dp, vertical = 13.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Category,
-                            contentDescription = null,
-                            tint = ItemPrimary,
-                            modifier = Modifier.size(18.dp)
+                    OutlinedTextField(
+                        value = category,
+                        onValueChange = { value ->
+                            category = value
+                            group = ""
+                            categoryExpanded = true
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Category,
+                                contentDescription = null,
+                                tint = ItemPrimary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        },
+                        trailingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.ArrowDropDown,
+                                contentDescription = "Показать готовые категории",
+                                tint = ItemPrimary,
+                                modifier = Modifier.clickable { categoryExpanded = true }
+                            )
+                        },
+                        placeholder = {
+                            Text(
+                                "Выберите или введите свою категорию",
+                                color = Color(0xFF9CA3AF),
+                                fontSize = 11.5.sp
+                            )
+                        },
+                        shape = RoundedCornerShape(15.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = Color(0xFFF9FAFB),
+                            unfocusedContainerColor = Color(0xFFF9FAFB),
+                            focusedBorderColor = ItemPrimary,
+                            unfocusedBorderColor = ItemBorder,
+                            focusedTextColor = ItemInk,
+                            unfocusedTextColor = ItemInk
                         )
-                        Spacer(modifier = Modifier.width(9.dp))
-                        Text(
-                            text = category.ifBlank { "Выберите категорию" },
-                            color = if (category.isBlank()) Color(0xFF9CA3AF) else ItemInk,
-                            fontSize = 12.5.sp,
-                            fontWeight = FontWeight.Medium,
-                            modifier = Modifier.weight(1f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Icon(
-                            imageVector = Icons.Default.ArrowDropDown,
-                            contentDescription = null,
-                            tint = ItemMuted
-                        )
+                    )
+
+                    val filteredCategories = categories.filter {
+                        category.isBlank() || it.contains(category, ignoreCase = true)
                     }
 
                     DropdownMenu(
@@ -193,18 +208,39 @@ fun UniversalAddItemDialog(
                         onDismissRequest = { categoryExpanded = false },
                         modifier = Modifier.background(Color.White)
                     ) {
-                        categories.forEach { value ->
+                        if (filteredCategories.isEmpty() && category.isNotBlank()) {
                             DropdownMenuItem(
-                                text = { Text(value, color = ItemInk, fontSize = 12.sp) },
-                                onClick = {
-                                    category = value
-                                    group = ""
-                                    categoryExpanded = false
-                                }
+                                text = {
+                                    Text(
+                                        text = "Создать «${category.trim()}»",
+                                        color = ItemPrimary,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                },
+                                onClick = { categoryExpanded = false }
                             )
+                        } else {
+                            filteredCategories.forEach { value ->
+                                DropdownMenuItem(
+                                    text = { Text(value, color = ItemInk, fontSize = 12.sp) },
+                                    onClick = {
+                                        category = value
+                                        group = ""
+                                        categoryExpanded = false
+                                    }
+                                )
+                            }
                         }
                     }
                 }
+
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "Можно выбрать готовую категорию или создать свою.",
+                    color = ItemMuted,
+                    fontSize = 9.5.sp
+                )
 
                 Spacer(modifier = Modifier.height(12.dp))
 
@@ -224,7 +260,7 @@ fun UniversalAddItemDialog(
                         singleLine = true,
                         placeholder = {
                             Text(
-                                if (groupSuggestions.isEmpty()) "Введите свою группу" else "Выберите или введите свою",
+                                if (groupSuggestions.isEmpty()) "Введите свою группу / вид" else "Выберите готовую или введите свою",
                                 color = Color(0xFF9CA3AF),
                                 fontSize = 11.5.sp
                             )
