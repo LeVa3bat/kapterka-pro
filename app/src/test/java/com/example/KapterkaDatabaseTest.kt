@@ -336,6 +336,68 @@ class KapterkaDatabaseTest {
     }
 
     @Test
+    fun testMigration3To4PreservesCatalogRows() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val dbName = "migration_3_4_test.db"
+        context.deleteDatabase(dbName)
+
+        val helper = FrameworkSQLiteOpenHelperFactory().create(
+            SupportSQLiteOpenHelper.Configuration.builder(context)
+                .name(dbName)
+                .callback(object : SupportSQLiteOpenHelper.Callback(3) {
+                    override fun onCreate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                        db.execSQL(
+                            """
+                            CREATE TABLE inventory_items (
+                                id TEXT NOT NULL PRIMARY KEY,
+                                name TEXT NOT NULL,
+                                serviceCategory TEXT NOT NULL,
+                                subType TEXT NOT NULL,
+                                unit TEXT NOT NULL,
+                                categoryClass TEXT NOT NULL,
+                                standardCode TEXT NOT NULL,
+                                isCustom INTEGER NOT NULL
+                            )
+                            """.trimIndent()
+                        )
+                        db.execSQL(
+                            """
+                            INSERT INTO inventory_items(
+                                id, name, serviceCategory, subType, unit,
+                                categoryClass, standardCode, isCustom
+                            ) VALUES (
+                                'legacy-item', 'Сохранить меня', 'Служба РАВ',
+                                'Минометные мины 120мм', 'шт.', 'Кат. 1', '', 1
+                            )
+                            """.trimIndent()
+                        )
+                    }
+
+                    override fun onUpgrade(
+                        db: androidx.sqlite.db.SupportSQLiteDatabase,
+                        oldVersion: Int,
+                        newVersion: Int
+                    ) = Unit
+                })
+                .build()
+        )
+
+        val sqlite = helper.writableDatabase
+        KapterkaDatabase.MIGRATION_3_4.migrate(sqlite)
+
+        sqlite.query(
+            "SELECT name, profileId FROM inventory_items WHERE id='legacy-item'"
+        ).use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("Сохранить меня", cursor.getString(0))
+            assertEquals("", cursor.getString(1))
+        }
+
+        helper.close()
+        context.deleteDatabase(dbName)
+    }
+
+    @Test
     fun testInitialDataPopulateCompleteness() {
         assertTrue("Initial default points must not be empty", InitialData.getDefaultPoints().isNotEmpty())
         assertTrue("Universal app starts without forced demo inventory", InitialData.getDefaultItems().isEmpty())
