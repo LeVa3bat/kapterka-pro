@@ -1,0 +1,86 @@
+name: Android unit tests
+
+on:
+  push:
+    branches:
+      - main
+      - 'claude/**'
+    paths:
+      - 'app/**'
+      - 'gradle/**'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
+      - '.github/workflows/android-tests.yml'
+  pull_request:
+    paths:
+      - 'app/**'
+      - 'gradle/**'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
+      - '.github/workflows/android-tests.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Configure preinstalled Android SDK
+        shell: bash
+        run: |
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -path '*/bin/sdkmanager' 2>/dev/null | sort -V | tail -n 1)"
+          test -x "$SDKMANAGER"
+          echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "ANDROID_HOME=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "SDKMANAGER=$SDKMANAGER" >> "$GITHUB_ENV"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
+
+      - name: Install required Android SDK
+        shell: bash
+        run: |
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "build-tools;36.0.0" "platforms;android-36"
+          "$SDKMANAGER" "platforms;android-36.1"
+
+      - name: Run debug unit tests
+        run: gradle :app:testDebugUnitTest --no-daemon --stacktrace --continue
+
+      - name: Summarize test results
+        if: always()
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import glob, xml.etree.ElementTree as ET
+          total = failed = skipped = 0
+          lines = []
+          for f in sorted(glob.glob('app/build/test-results/testDebugUnitTest/*.xml')):
+              s = ET.parse(f).getroot()
+              t, fl, er, sk = (int(s.get(k, 0)) for k in ('tests', 'failures', 'errors', 'skipped'))
+              total += t; failed += fl + er; skipped += sk
+              for c in s.iter('testcase'):
+                  bad = c.find('failure') if c.find('failure') is not None else c.find('error')
+                  mark = 'FAIL' if bad is not None else ('SKIP' if c.find('skipped') is not None else 'ok')
+                  lines.append(f"{mark:4} {c.get('classname')}.{c.get('name')}")
+                  if bad is not None:
+                      lines.append('     ' + (bad.get('message') or '').splitlines()[0][:300] if bad.get('message') else '     (no message)')
+          print(f"TOTAL {total}  FAILED {failed}  SKIPPED {skipped}")
+          print('\n'.join(lines))
+          PY
