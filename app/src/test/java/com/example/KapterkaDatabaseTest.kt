@@ -431,4 +431,87 @@ class KapterkaDatabaseTest {
         assertEquals("p1", updated[1].id)
         assertEquals("p2", updated[2].id)
     }
+    @Test
+    fun testMigration3To4PreservesCatalogRowsAndAddsProfileId() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val dbName = "migration_3_4_test.db"
+        context.deleteDatabase(dbName)
+
+        val helper = FrameworkSQLiteOpenHelperFactory().create(
+            SupportSQLiteOpenHelper.Configuration.builder(context)
+                .name(dbName)
+                .callback(object : SupportSQLiteOpenHelper.Callback(3) {
+                    override fun onCreate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                        db.execSQL(
+                            """
+                            CREATE TABLE inventory_items (
+                                id TEXT NOT NULL PRIMARY KEY,
+                                name TEXT NOT NULL,
+                                serviceCategory TEXT NOT NULL,
+                                subType TEXT NOT NULL,
+                                unit TEXT NOT NULL,
+                                categoryClass TEXT NOT NULL,
+                                standardCode TEXT NOT NULL,
+                                isCustom INTEGER NOT NULL
+                            )
+                            """.trimIndent()
+                        )
+                        db.execSQL(
+                            "INSERT INTO inventory_items(id,name,serviceCategory,subType,unit,categoryClass,standardCode,isCustom) " +
+                                "VALUES ('row-1','Сохранить','Товары','Основное','шт.','Кат. 1','',0)"
+                        )
+                    }
+
+                    override fun onUpgrade(
+                        db: androidx.sqlite.db.SupportSQLiteDatabase,
+                        oldVersion: Int,
+                        newVersion: Int
+                    ) = Unit
+                })
+                .build()
+        )
+
+        val sqlite = helper.writableDatabase
+        KapterkaDatabase.MIGRATION_3_4.migrate(sqlite)
+
+        sqlite.query("SELECT name, profileId FROM inventory_items WHERE id='row-1'").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("Сохранить", cursor.getString(0))
+            assertEquals("", cursor.getString(1))
+        }
+
+        helper.close()
+        context.deleteDatabase(dbName)
+    }
+
+    @Test
+    fun testProfileCatalogsCanCoexistWithoutMixing() = runBlocking {
+        dao.insertItems(
+            listOf(
+                InventoryItem(
+                    id = "mil-1",
+                    name = "Военная позиция",
+                    serviceCategory = "Служба РАВ",
+                    subType = "Патроны",
+                    unit = "шт.",
+                    profileId = "military"
+                ),
+                InventoryItem(
+                    id = "auto-1",
+                    name = "Авто позиция",
+                    serviceCategory = "Запчасти",
+                    subType = "Двигатель",
+                    unit = "шт.",
+                    profileId = "auto"
+                )
+            )
+        )
+
+        val military = dao.getItemsForProfile("military").first()
+        val auto = dao.getItemsForProfile("auto").first()
+
+        assertEquals(listOf("mil-1"), military.map { it.id })
+        assertEquals(listOf("auto-1"), auto.map { it.id })
+    }
+
 }
