@@ -86,6 +86,7 @@ import com.example.ui.components.PersonalLicenseDialog
 import com.example.ui.components.TransferOperationDialog
 import com.example.ui.components.UnitKeySyncDialog
 import com.example.ui.components.UserManualDialog
+import com.example.ui.components.UniversalAddItemDialog
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -780,13 +781,24 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
     }
 
     if (showAddCustomItemDialog) {
-        AddCustomItemDialog(
-            availableCategories = availableCategories,
-            onDismiss = { showAddCustomItemDialog = false },
-            onConfirm = { name, service, subType, unit ->
-                viewModel.addCustomItem(name, service, subType, unit)
-            }
-        )
+        if (BuildConfig.IS_UNIVERSAL_APP) {
+            UniversalAddItemDialog(
+                warehouseProfileId = warehouseProfileId,
+                availableCategories = availableCategories,
+                onDismiss = { showAddCustomItemDialog = false },
+                onConfirm = { name, category, group, unit ->
+                    viewModel.addCustomItem(name, category, group, unit)
+                }
+            )
+        } else {
+            AddCustomItemDialog(
+                availableCategories = availableCategories,
+                onDismiss = { showAddCustomItemDialog = false },
+                onConfirm = { name, service, subType, unit ->
+                    viewModel.addCustomItem(name, service, subType, unit)
+                }
+            )
+        }
     }
 
     if (showUnitKeySyncDialog) {
