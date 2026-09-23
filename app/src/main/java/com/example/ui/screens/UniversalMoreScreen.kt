@@ -46,7 +46,10 @@ fun UniversalMoreScreen(
     points: List<WarehousePoint>,
     subscriptionTitle: String,
     subscriptionSubtitle: String,
+    syncTitle: String,
+    syncSubtitle: String,
     onSubscriptionClick: () -> Unit,
+    onSyncClick: () -> Unit,
     onAddWarehouse: () -> Unit,
     onEditWarehouse: (WarehousePoint) -> Unit,
     onChangeProfile: () -> Unit,
@@ -175,9 +178,9 @@ fun UniversalMoreScreen(
         item {
             SettingsRow(
                 emoji = "☁️",
-                title = "Синхронизация",
-                subtitle = "Аккаунт подключён; складские данные Alpha пока хранятся локально",
-                onClick = {}
+                title = syncTitle,
+                subtitle = syncSubtitle,
+                onClick = onSyncClick
             )
             Spacer(modifier = Modifier.height(10.dp))
         }
