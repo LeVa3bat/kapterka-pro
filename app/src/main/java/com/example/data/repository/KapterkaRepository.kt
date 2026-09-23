@@ -61,10 +61,17 @@ class KapterkaRepository(
         }
     }
 
+    suspend fun claimUnassignedUniversalItems(profileId: String) {
+        if (!BuildConfig.IS_UNIVERSAL_APP || profileId.isBlank()) return
+        dao.claimUnassignedItemsForProfile(profileId)
+    }
+
     suspend fun ensureUniversalStarterCatalog(profileId: String): Int {
         if (!BuildConfig.IS_UNIVERSAL_APP) return 0
 
-        val existing = dao.getAllItems().first()
+        claimUnassignedUniversalItems(profileId)
+
+        val existing = dao.getAllItems().first().filter { it.profileId == profileId }
         if (existing.isNotEmpty()) return 0
 
         val starters = com.example.universal.WarehouseStarterCatalog.itemsFor(profileId)
@@ -303,8 +310,23 @@ class KapterkaRepository(
         }
     }
 
-    suspend fun addCustomInventoryItem(name: String, category: String, subCategory: String, unit: String) {
-        val i = InventoryItem(java.util.UUID.randomUUID().toString(), name, category, subCategory, unit, "Кат. 1")
+    suspend fun addCustomInventoryItem(
+        name: String,
+        category: String,
+        subCategory: String,
+        unit: String,
+        profileId: String = ""
+    ) {
+        val i = InventoryItem(
+            id = java.util.UUID.randomUUID().toString(),
+            name = name,
+            serviceCategory = category,
+            subType = subCategory,
+            unit = unit,
+            categoryClass = "Кат. 1",
+            isCustom = true,
+            profileId = profileId
+        )
         dao.insertItem(i)
         syncManager?.pushInventoryItemAsync(getCurrentUnitKey(), i)
     }
