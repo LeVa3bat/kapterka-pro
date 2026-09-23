@@ -329,6 +329,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             repository.ensureInitialized()
             if (BuildConfig.IS_UNIVERSAL_APP) {
                 repository.prepareUniversalWarehouses(activeWarehouseProfileId)
+                repository.prepareUniversalCustomItemOwnership()
                 // Safe add-only refresh for APK updates: make newly prepared catalog
                 // entries available immediately without rewriting stock or operations.
                 repository.ensureUniversalStarterCatalog(activeWarehouseProfileId)
@@ -604,7 +605,8 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                 category = cleanCategory.ifBlank { serviceCategory },
                 subCategory = subType,
                 unit = unit,
-                profileId = if (BuildConfig.IS_UNIVERSAL_APP) activeWarehouseProfileId else ""
+                profileId = if (BuildConfig.IS_UNIVERSAL_APP) activeWarehouseProfileId else "",
+                warehouseId = if (BuildConfig.IS_UNIVERSAL_APP) activeWarehouseId else ""
             )
             _toastEvent.emit(
                 if (BuildConfig.IS_UNIVERSAL_APP) {
