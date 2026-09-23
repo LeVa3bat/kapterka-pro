@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,6 +22,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowDropUp
@@ -65,17 +67,35 @@ fun UniversalSearchableItemDropdown(
 ) {
     var expanded by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
+    var categoryFilter by remember { mutableStateOf<String?>(null) }
+    var groupFilter by remember { mutableStateOf<String?>(null) }
 
-    val filteredItems = remember(query, catalogItems) {
+    val categories = remember(catalogItems) {
+        catalogItems.map { it.serviceCategory }
+            .filter { it.isNotBlank() }
+            .distinct()
+    }
+    val groups = remember(catalogItems, categoryFilter) {
+        catalogItems
+            .asSequence()
+            .filter { categoryFilter == null || it.serviceCategory == categoryFilter }
+            .map { it.subType }
+            .filter { it.isNotBlank() }
+            .distinct()
+            .toList()
+    }
+
+    val filteredItems = remember(query, catalogItems, categoryFilter, groupFilter) {
         val normalized = query.trim().lowercase()
-        if (normalized.isBlank()) {
-            catalogItems
-        } else {
-            catalogItems.filter { item ->
-                item.name.lowercase().contains(normalized) ||
-                    item.serviceCategory.lowercase().contains(normalized) ||
-                    item.subType.lowercase().contains(normalized)
-            }
+        catalogItems.filter { item ->
+            (categoryFilter == null || item.serviceCategory == categoryFilter) &&
+                (groupFilter == null || item.subType == groupFilter) &&
+                (
+                    normalized.isBlank() ||
+                        item.name.lowercase().contains(normalized) ||
+                        item.serviceCategory.lowercase().contains(normalized) ||
+                        item.subType.lowercase().contains(normalized)
+                    )
         }
     }
 
@@ -212,6 +232,60 @@ fun UniversalSearchableItemDropdown(
                 elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
+                    if (categories.size > 1) {
+                        Text(
+                            text = "Категория",
+                            color = UniversalSelectMuted,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(start = 11.dp, end = 11.dp, top = 9.dp)
+                        )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState())
+                                .padding(horizontal = 8.dp, vertical = 6.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            UniversalSelectChip("Все", categoryFilter == null) {
+                                categoryFilter = null
+                                groupFilter = null
+                            }
+                            categories.forEach { value ->
+                                UniversalSelectChip(value, categoryFilter == value) {
+                                    categoryFilter = value
+                                    groupFilter = null
+                                }
+                            }
+                        }
+                    }
+
+                    if (categoryFilter != null && groups.isNotEmpty()) {
+                        Text(
+                            text = "Вид / группа",
+                            color = UniversalSelectMuted,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(start = 11.dp, end = 11.dp, top = 2.dp)
+                        )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState())
+                                .padding(horizontal = 8.dp, vertical = 6.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            UniversalSelectChip("Все виды", groupFilter == null) {
+                                groupFilter = null
+                            }
+                            groups.forEach { value ->
+                                UniversalSelectChip(value, groupFilter == value) {
+                                    groupFilter = value
+                                }
+                            }
+                        }
+                    }
+
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -306,4 +380,25 @@ fun UniversalSearchableItemDropdown(
             }
         }
     }
+}
+
+
+@Composable
+private fun UniversalSelectChip(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Text(
+        text = text,
+        color = if (selected) Color.White else UniversalSelectPrimary,
+        fontSize = 9.5.sp,
+        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+        maxLines = 1,
+        modifier = Modifier
+            .clip(RoundedCornerShape(100.dp))
+            .background(if (selected) UniversalSelectPrimary else UniversalSelectSoft)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 6.dp)
+    )
 }
