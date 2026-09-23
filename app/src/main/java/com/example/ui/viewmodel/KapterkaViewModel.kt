@@ -38,6 +38,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
 
 
     private val repository: KapterkaRepository
+    private var universalSyncManager: com.example.data.sync.UniversalFirestoreSyncManager? = null
 
     val userProfile: StateFlow<UserProfile?>
     val allPoints: StateFlow<List<WarehousePoint>>
@@ -179,14 +180,22 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
 
     init {
         val database = KapterkaDatabase.getDatabase(application, viewModelScope)
-        // Sklad PRO must stay physically detached from the legacy production sync layer.
-        // Passing null means repository writes are local-only until the dedicated Sklad backend is wired.
-        val syncManager = if (BuildConfig.IS_UNIVERSAL_APP) {
-            null
+        val syncGateway: com.example.data.sync.WarehouseSyncGateway = if (BuildConfig.IS_UNIVERSAL_APP) {
+            com.example.data.sync.UniversalFirestoreSyncManager(
+                application,
+                database.kapterkaDao(),
+                viewModelScope
+            ).also { universalSyncManager = it }
         } else {
-            com.example.data.sync.FirebaseSyncManager(application, database.kapterkaDao(), viewModelScope)
+            com.example.data.sync.LegacySyncGateway(
+                com.example.data.sync.FirebaseSyncManager(
+                    application,
+                    database.kapterkaDao(),
+                    viewModelScope
+                )
+            )
         }
-        repository = KapterkaRepository(database.kapterkaDao(), syncManager)
+        repository = KapterkaRepository(database.kapterkaDao(), syncGateway)
         
         repository.syncEvents?.let { eventsFlow ->
             viewModelScope.launch {
@@ -268,6 +277,20 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
 
         viewModelScope.launch {
             repository.ensureInitialized()
+        }
+    }
+
+    fun setUniversalCloudSyncEnabled(enabled: Boolean) {
+        if (!BuildConfig.IS_UNIVERSAL_APP) return
+
+        universalSyncManager?.setEnabled(enabled)
+        if (enabled) {
+            viewModelScope.launch {
+                val result = repository.triggerCloudSync()
+                if (result.first) {
+                    _toastEvent.emit("Облачная синхронизация PRO включена")
+                }
+            }
         }
     }
 
