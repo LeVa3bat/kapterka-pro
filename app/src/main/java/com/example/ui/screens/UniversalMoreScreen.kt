@@ -44,6 +44,9 @@ fun UniversalMoreScreen(
     userProfile: UserProfile?,
     warehouseProfileId: String?,
     points: List<WarehousePoint>,
+    subscriptionTitle: String,
+    subscriptionSubtitle: String,
+    onSubscriptionClick: () -> Unit,
     onAddWarehouse: () -> Unit,
     onEditWarehouse: (WarehousePoint) -> Unit,
     onChangeProfile: () -> Unit,
@@ -125,6 +128,16 @@ fun UniversalMoreScreen(
             }
 
             Spacer(modifier = Modifier.height(12.dp))
+        }
+
+        item {
+            SettingsRow(
+                emoji = "⭐",
+                title = subscriptionTitle,
+                subtitle = subscriptionSubtitle,
+                onClick = onSubscriptionClick
+            )
+            Spacer(modifier = Modifier.height(10.dp))
         }
 
         item {
