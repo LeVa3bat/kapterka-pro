@@ -159,7 +159,7 @@ fun UniversalMoreScreen(
             Spacer(modifier = Modifier.height(7.dp))
             SettingsRow(
                 emoji = profile.emoji,
-                title = "Тип склада",
+                title = "Профиль учёта",
                 subtitle = profile.title,
                 onClick = onChangeProfile
             )
@@ -349,13 +349,13 @@ private fun WarehouseSettingsCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Склады",
+                        text = "Физические склады",
                         color = Color(0xFF111827),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = if (points.isEmpty()) "Добавьте первый склад" else "Всего: ${points.size}",
+                        text = if (points.isEmpty()) "Добавьте место хранения" else "Мест хранения: ${points.size}",
                         color = Color(0xFF747D8C),
                         fontSize = 10.sp
                     )
