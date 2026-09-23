@@ -122,7 +122,11 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             _selectedCategory.value = "Все виды"
         }
         viewModelScope.launch {
-            repository.deleteCategory(categoryName, deleteItems)
+            repository.deleteCategory(
+                categoryName = categoryName,
+                deleteItems = deleteItems,
+                profileId = if (BuildConfig.IS_UNIVERSAL_APP) activeWarehouseProfileId else ""
+            )
             _toastEvent.emit("Группа «$categoryName» удалена")
         }
     }
