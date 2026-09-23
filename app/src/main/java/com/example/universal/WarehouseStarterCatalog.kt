@@ -3,139 +3,36 @@ package com.example.universal
 import com.example.data.model.InventoryItem
 
 /**
- * Safe starter nomenclature for a brand-new Sklad PRO workspace.
+ * Minimal starter nomenclature for a brand-new Sklad PRO workspace.
  *
- * Important:
- * - zero stock only; quantities are never invented;
- * - inserted only when the user's catalog is completely empty;
- * - never overwrites or deletes user-created items;
- * - changing warehouse profile never deletes existing data.
+ * It creates only zero-stock catalog rows from the selected profile template.
+ * No quantities or operations are invented. Existing user catalog data is never
+ * overwritten or removed.
  */
 object WarehouseStarterCatalog {
 
-    private data class Starter(
-        val name: String,
-        val category: String,
-        val group: String,
-        val unit: String
-    )
+    fun itemsFor(profileId: String?): List<InventoryItem> {
+        val profile = WarehouseProfileCatalog.find(profileId)
 
-    private fun items(profileId: String, values: List<Starter>): List<InventoryItem> =
-        values.mapIndexed { index, item ->
-            InventoryItem(
-                id = "starter_\${profileId}_\${index + 1}",
-                name = item.name,
-                serviceCategory = item.category,
-                subType = item.group,
-                unit = item.unit,
-                categoryClass = "Кат. 1",
-                standardCode = "",
-                isCustom = false
-            )
-        }
+        return profile.categories
+            .take(6)
+            .mapIndexed { index, category ->
+                val group = WarehouseGroupCatalog
+                    .groupsFor(profile.id, category)
+                    .firstOrNull()
+                    .orEmpty()
+                    .ifBlank { "Основное" }
 
-    fun itemsFor(profileId: String?): List<InventoryItem> = when (profileId) {
-        "retail" -> items("retail", listOf(
-            Starter("Основной товар", "Товары для продажи", "Основной ассортимент", "шт."),
-            Starter("Подарочный пакет", "Упаковка", "Пакеты", "шт."),
-            Starter("Этикетка", "Расходные материалы", "Этикетки", "рул."),
-            Starter("Резерв клиента", "Резерв", "Заказ клиента", "шт."),
-            Starter("Хозяйственный инвентарь", "Хозтовары", "Инвентарь", "шт.")
-        ))
-        "auto" -> items("auto", listOf(
-            Starter("Масляный фильтр", "Фильтры", "Масляные", "шт."),
-            Starter("Моторное масло", "Масла и жидкости", "Моторные масла", "л"),
-            Starter("Предохранитель", "Электрика", "Предохранители", "шт."),
-            Starter("Набор ключей", "Инструменты", "Ручной", "компл."),
-            Starter("Очиститель", "Расходники", "Очистители", "шт.")
-        ))
-        "construction" -> items("construction", listOf(
-            Starter("Цемент", "Стройматериалы", "Цемент", "меш."),
-            Starter("Саморезы", "Крепёж", "Саморезы", "уп."),
-            Starter("Кабель", "Электрика", "Кабель", "м"),
-            Starter("Перчатки защитные", "СИЗ", "Перчатки", "пар."),
-            Starter("Монтажная пена", "Расходники", "Монтажная пена", "шт.")
-        ))
-        "tools" -> items("tools", listOf(
-            Starter("Шуруповёрт", "Электроинструмент", "Дрели и шуруповёрты", "шт."),
-            Starter("Набор отвёрток", "Ручной инструмент", "Отвёртки", "компл."),
-            Starter("Набор бит", "Оснастка", "Биты", "компл."),
-            Starter("Рулетка", "Измерительный инструмент", "Рулетки", "шт."),
-            Starter("Защитные очки", "СИЗ", "Очки", "шт.")
-        ))
-        "manufacturing" -> items("manufacturing", listOf(
-            Starter("Листовой материал", "Материалы", "Листовые", "лист"),
-            Starter("Крепёжный комплект", "Комплектующие", "Крепёж", "компл."),
-            Starter("Заготовка", "Полуфабрикаты", "Заготовки", "шт."),
-            Starter("Готовое изделие", "Готовая продукция", "Основная продукция", "шт."),
-            Starter("Транспортный короб", "Упаковка", "Короба", "шт.")
-        ))
-        "food" -> items("food", listOf(
-            Starter("Вода питьевая", "Напитки", "Вода", "бут."),
-            Starter("Крупа", "Бакалея", "Крупы", "кг"),
-            Starter("Молочная продукция", "Охлаждённое", "Молочное", "шт."),
-            Starter("Овощи", "Овощи и фрукты", "Овощи", "кг"),
-            Starter("Контейнер пищевой", "Упаковка", "Контейнеры", "шт.")
-        ))
-        "medical" -> items("medical", listOf(
-            Starter("Антисептик", "Медикаменты", "Антисептики", "шт."),
-            Starter("Бинт", "Перевязочные материалы", "Бинты", "шт."),
-            Starter("Перчатки медицинские", "Медицинские расходники", "Перчатки", "пар."),
-            Starter("Термометр", "Инструменты", "Диагностические", "шт."),
-            Starter("Маска защитная", "СИЗ", "Маски", "шт.")
-        ))
-        "office_it" -> items("office_it", listOf(
-            Starter("Ноутбук", "Компьютеры", "Ноутбуки", "шт."),
-            Starter("Монитор", "Периферия", "Мониторы", "шт."),
-            Starter("Коммутатор", "Сетевое оборудование", "Коммутаторы", "шт."),
-            Starter("Кабель USB", "Кабели и адаптеры", "USB", "шт."),
-            Starter("Бумага А4", "Канцтовары", "Бумага", "пач.")
-        ))
-        "education" -> items("education", listOf(
-            Starter("Проектор", "Учебное оборудование", "Проекторы", "шт."),
-            Starter("Ноутбук", "Компьютерная техника", "Ноутбуки", "шт."),
-            Starter("Стул", "Мебель", "Стулья", "шт."),
-            Starter("Бумага А4", "Канцтовары", "Бумага", "пач."),
-            Starter("Спортивный мяч", "Спортинвентарь", "Мячи", "шт.")
-        ))
-        "wholesale" -> items("wholesale", listOf(
-            Starter("Товар поштучный", "Основной товар", "Поштучный", "шт."),
-            Starter("Товар коробочный", "Основной товар", "Коробочный", "кор."),
-            Starter("Европаллета", "Паллеты и тара", "Европаллеты", "шт."),
-            Starter("Стрейч-плёнка", "Упаковка", "Плёнка", "рул."),
-            Starter("Этикетка", "Расходники", "Этикетки", "рул.")
-        ))
-        "logistics" -> items("logistics", listOf(
-            Starter("Короб клиента", "Товар клиентов", "Коробочный", "кор."),
-            Starter("Паллета клиента", "Товар клиентов", "Паллетный", "пал."),
-            Starter("Европаллета", "Паллеты и тара", "Паллеты", "шт."),
-            Starter("Транспортный короб", "Упаковка", "Короба", "шт."),
-            Starter("Стрейч-плёнка", "Упаковка", "Плёнка", "рул.")
-        ))
-        "service" -> items("service", listOf(
-            Starter("Ремкомплект", "Запчасти", "Ремкомплекты", "компл."),
-            Starter("Кабель", "Материалы", "Кабель", "м"),
-            Starter("Смазка", "Расходники", "Смазки", "шт."),
-            Starter("Набор инструмента", "Инструменты", "Ручной", "компл."),
-            Starter("Измерительный прибор", "Инструменты", "Измерительный", "шт.")
-        ))
-        "military" -> items("military", listOf(
-            Starter("Радиостанция", "Служба связи и РЭБ", "Радиостанции", "шт."),
-            Starter("Аккумуляторная батарея", "Служба БПЛА и робототехники", "АКБ и питание", "шт."),
-            Starter("Аптечка", "Медицинская служба", "Аптечки", "компл."),
-            Starter("Бронежилет", "Вещевая служба и СИБЗ", "СИБЗ", "шт."),
-            Starter("Каска защитная", "Вещевая служба и СИБЗ", "СИБЗ", "шт."),
-            Starter("Канистра", "Служба ГСМ", "Тара и средства заправки", "шт."),
-            Starter("Набор инструмента", "Инженерная служба", "Инструменты", "компл."),
-            Starter("Сухой паёк", "Продовольственная служба", "Сухие пайки", "шт.")
-        ))
-        else -> items("universal", listOf(
-            Starter("Основной товар", "Товары", "Основной ассортимент", "шт."),
-            Starter("Расходный материал", "Расходники", "Одноразовые материалы", "шт."),
-            Starter("Набор инструмента", "Инструменты", "Ручной инструмент", "компл."),
-            Starter("Оборудование", "Оборудование", "Переносное", "шт."),
-            Starter("Запасная часть", "Запчасти", "Ремкомплекты", "шт."),
-            Starter("Транспортный короб", "Упаковка", "Короба", "шт.")
-        ))
+                InventoryItem(
+                    id = "starter_" + profile.id + "_" + (index + 1),
+                    name = group,
+                    serviceCategory = category,
+                    subType = group,
+                    unit = "шт.",
+                    categoryClass = "Кат. 1",
+                    standardCode = "",
+                    isCustom = false
+                )
+            }
     }
 }
