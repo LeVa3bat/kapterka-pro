@@ -77,10 +77,12 @@ fun UniversalDashboardScreen(
     userProfile: UserProfile?,
     warehouseProfileId: String?,
     points: List<WarehousePoint>,
+    selectedPointId: String,
     catalogItems: List<InventoryItem>,
     stockRecords: List<StockRecord>,
     operations: List<OperationRecord>,
     requisitions: List<RequisitionRequest>,
+    onSelectPoint: (String) -> Unit,
     onIncomeClick: () -> Unit,
     onTransferClick: () -> Unit,
     onIssueClick: () -> Unit,
@@ -92,12 +94,21 @@ fun UniversalDashboardScreen(
 ) {
     val profileTemplate = WarehouseProfileCatalog.find(warehouseProfileId)
     val vocab = profileTemplate.operations
-    val totalQuantity = remember(stockRecords) { stockRecords.sumOf { it.quantity.coerceAtLeast(0) } }
-    val activePositions = remember(stockRecords) {
-        stockRecords.filter { it.quantity > 0 }.map { it.itemId }.distinct().size
+    val selectedPoint = remember(points, selectedPointId) {
+        points.firstOrNull { it.id == selectedPointId } ?: points.firstOrNull()
     }
-    val zeroPositions = remember(catalogItems, stockRecords) {
-        val positiveIds = stockRecords
+    val selectedPointStocks = remember(stockRecords, selectedPoint?.id) {
+        val pointId = selectedPoint?.id
+        if (pointId == null) emptyList() else stockRecords.filter { it.pointId == pointId }
+    }
+    val totalQuantity = remember(selectedPointStocks) {
+        selectedPointStocks.sumOf { it.quantity.coerceAtLeast(0) }
+    }
+    val activePositions = remember(selectedPointStocks) {
+        selectedPointStocks.filter { it.quantity > 0 }.map { it.itemId }.distinct().size
+    }
+    val zeroPositions = remember(catalogItems, selectedPointStocks) {
+        val positiveIds = selectedPointStocks
             .filter { it.quantity > 0 }
             .map { it.itemId }
             .toSet()
@@ -105,6 +116,16 @@ fun UniversalDashboardScreen(
     }
     val pendingRequests = remember(requisitions) {
         requisitions.count { it.status == RequestStatus.PENDING }
+    }
+    val selectedPointOperations = remember(operations, selectedPoint?.name) {
+        val pointName = selectedPoint?.name.orEmpty()
+        if (pointName.isBlank()) {
+            operations
+        } else {
+            operations.filter {
+                it.fromPointName == pointName || it.toPointName == pointName
+            }
+        }
     }
     val todayStart = remember {
         Calendar.getInstance().apply {
@@ -114,8 +135,12 @@ fun UniversalDashboardScreen(
             set(Calendar.MILLISECOND, 0)
         }.timeInMillis
     }
-    val todayOps = remember(operations, todayStart) { operations.count { it.timestamp >= todayStart } }
-    val recentOperations = remember(operations) { operations.sortedByDescending { it.timestamp }.take(4) }
+    val todayOps = remember(selectedPointOperations, todayStart) {
+        selectedPointOperations.count { it.timestamp >= todayStart }
+    }
+    val recentOperations = remember(selectedPointOperations) {
+        selectedPointOperations.sortedByDescending { it.timestamp }.take(3)
+    }
     val formatter = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
 
     LazyColumn(
@@ -173,11 +198,32 @@ fun UniversalDashboardScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(18.dp))
+                Spacer(modifier = Modifier.height(14.dp))
+
+                if (points.isNotEmpty()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        points.forEach { point ->
+                            WarehouseMiniCard(
+                                point = point,
+                                quantity = stockRecords
+                                    .filter { it.pointId == point.id }
+                                    .sumOf { it.quantity.coerceAtLeast(0) },
+                                selected = point.id == selectedPoint?.id,
+                                onClick = { onSelectPoint(point.id) }
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
 
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(28.dp),
+                    shape = RoundedCornerShape(24.dp),
                     colors = CardDefaults.cardColors(containerColor = Color.Transparent),
                     elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                 ) {
@@ -189,41 +235,49 @@ fun UniversalDashboardScreen(
                                     listOf(Color(0xFF20265C), Color(0xFF5B5CE2))
                                 )
                             )
-                            .padding(20.dp)
+                            .padding(horizontal = 18.dp, vertical = 17.dp)
                     ) {
                         Column {
                             Text(
-                                text = "На складе сейчас",
-                                color = Color.White.copy(alpha = 0.72f),
-                                fontSize = 11.sp
+                                text = selectedPoint?.name ?: "Основной склад",
+                                color = Color.White,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
-                            Spacer(modifier = Modifier.height(3.dp))
-                            Row(verticalAlignment = Alignment.Bottom) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                verticalAlignment = Alignment.Bottom
+                            ) {
                                 Text(
                                     text = totalQuantity.toString(),
                                     color = Color.White,
-                                    fontSize = 38.sp,
+                                    fontSize = 34.sp,
                                     fontWeight = FontWeight.ExtraBold
                                 )
                                 Spacer(modifier = Modifier.width(7.dp))
                                 Text(
-                                    text = "единиц",
+                                    text = "ед. на остатке",
                                     color = Color.White.copy(alpha = 0.72f),
-                                    fontSize = 13.sp,
-                                    modifier = Modifier.padding(bottom = 6.dp)
+                                    fontSize = 12.sp,
+                                    modifier = Modifier.padding(bottom = 5.dp)
                                 )
                             }
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                HeroMetric(catalogItems.size.toString(), "в каталоге", Modifier.weight(1f))
-                                HeroMetric(activePositions.toString(), "с остатком", Modifier.weight(1f))
-                                HeroMetric(todayOps.toString(), "сегодня", Modifier.weight(1f))
-                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = activePositions.toString() +
+                                    " позиций с остатком • " +
+                                    todayOps.toString() +
+                                    " операций сегодня",
+                                color = Color.White.copy(alpha = 0.72f),
+                                fontSize = 10.5.sp
+                            )
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(18.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 SectionTitle("Быстрые действия")
 
@@ -232,7 +286,7 @@ fun UniversalDashboardScreen(
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     UniversalActionCard(
                         title = vocab.income,
-                        subtitle = "Добавить на остаток",
+                        subtitle = "",
                         icon = Icons.Default.ArrowDownward,
                         accent = UniversalGreen,
                         soft = UniversalGreenSoft,
@@ -241,7 +295,7 @@ fun UniversalDashboardScreen(
                     )
                     UniversalActionCard(
                         title = vocab.issue,
-                        subtitle = if (warehouseProfileId == "retail") "Оформить движение" else "Передать получателю",
+                        subtitle = "",
                         icon = Icons.Default.ArrowUpward,
                         accent = UniversalOrange,
                         soft = UniversalOrangeSoft,
@@ -255,7 +309,7 @@ fun UniversalDashboardScreen(
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     UniversalActionCard(
                         title = vocab.transfer,
-                        subtitle = "Между складами",
+                        subtitle = "",
                         icon = Icons.Default.SwapHoriz,
                         accent = UniversalBlue,
                         soft = UniversalBlueSoft,
@@ -264,7 +318,7 @@ fun UniversalDashboardScreen(
                     )
                     UniversalActionCard(
                         title = vocab.writeOff,
-                        subtitle = "Убрать с остатка",
+                        subtitle = "",
                         icon = Icons.Default.MoreHoriz,
                         accent = UniversalRed,
                         soft = UniversalRedSoft,
@@ -293,68 +347,29 @@ fun UniversalDashboardScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                SectionTitle("Требует внимания")
-                Spacer(modifier = Modifier.height(9.dp))
-
-                if (operations.isEmpty() && totalQuantity == 0) {
+                if (selectedPointOperations.isEmpty() && totalQuantity == 0) {
                     StarterGuideCard(
                         catalogCount = catalogItems.size,
                         onIncomeClick = onIncomeClick,
                         onOpenCatalog = onOpenCatalog
                     )
-                } else {
+                    Spacer(modifier = Modifier.height(16.dp))
+                } else if (zeroPositions > 0 || pendingRequests > 0) {
                     AttentionCard(
                         zeroPositions = zeroPositions,
                         pendingRequests = pendingRequests,
                         catalogIsEmpty = catalogItems.isEmpty()
                     )
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
-
-                Spacer(modifier = Modifier.height(20.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    SectionTitle("Склады", modifier = Modifier.weight(1f))
-                    Text(
-                        text = "Все",
-                        color = UniversalPrimary,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                Spacer(modifier = Modifier.height(9.dp))
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    points.forEach { point ->
-                        val quantity = stockRecords
-                            .filter { it.pointId == point.id }
-                            .sumOf { it.quantity.coerceAtLeast(0) }
-                        WarehouseMiniCard(point = point, quantity = quantity)
-                    }
-                    if (points.isEmpty()) {
-                        WarehouseMiniCard(
-                            point = WarehousePoint("empty", "Основной склад", "Добавьте место хранения", true),
-                            quantity = 0
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    SectionTitle("Последние операции", modifier = Modifier.weight(1f))
+                    SectionTitle("Последние операции • " + (selectedPoint?.name ?: "склад"), modifier = Modifier.weight(1f))
                     Text(
                         text = "Открыть журнал",
                         color = UniversalPrimary,
@@ -471,14 +486,16 @@ private fun UniversalActionCard(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            Spacer(modifier = Modifier.height(3.dp))
-            Text(
-                text = subtitle,
-                color = UniversalMuted,
-                fontSize = 9.5.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            if (subtitle.isNotBlank()) {
+                Spacer(modifier = Modifier.height(3.dp))
+                Text(
+                    text = subtitle,
+                    color = UniversalMuted,
+                    fontSize = 9.5.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
     }
 }
@@ -657,42 +674,38 @@ private fun AttentionCard(
 @Composable
 private fun WarehouseMiniCard(
     point: WarehousePoint,
-    quantity: Int
+    quantity: Int,
+    selected: Boolean,
+    onClick: () -> Unit
 ) {
-    Card(
-        modifier = Modifier.width(174.dp),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = UniversalSurface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(if (selected) UniversalPrimary else UniversalSurface)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 9.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(UniversalBlueSoft),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Warehouse,
-                    contentDescription = null,
-                    tint = UniversalBlue,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-            Spacer(modifier = Modifier.height(10.dp))
+        Icon(
+            imageVector = Icons.Default.Warehouse,
+            contentDescription = null,
+            tint = if (selected) Color.White else UniversalPrimary,
+            modifier = Modifier.size(16.dp)
+        )
+        Spacer(modifier = Modifier.width(7.dp))
+        Column {
             Text(
                 text = point.name,
-                color = UniversalInk,
-                fontSize = 12.sp,
+                color = if (selected) Color.White else UniversalInk,
+                fontSize = 10.5.sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = "$quantity ед. на остатке",
-                color = UniversalMuted,
-                fontSize = 9.5.sp
+                text = quantity.toString() + " ед.",
+                color = if (selected) Color.White.copy(alpha = 0.75f) else UniversalMuted,
+                fontSize = 8.5.sp
             )
         }
     }
