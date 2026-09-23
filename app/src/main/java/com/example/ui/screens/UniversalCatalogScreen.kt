@@ -73,6 +73,11 @@ fun UniversalCatalogScreen(
         stockRecords.groupBy { it.itemId }.mapValues { (_, rows) -> rows.sumOf { it.quantity } }
     }
 
+    val inStockCount = remember(items, quantities) {
+        items.count { (quantities[it.id] ?: 0) > 0 }
+    }
+    val zeroStockCount = (items.size - inStockCount).coerceAtLeast(0)
+
     val filtered = remember(items, query, category) {
         val q = query.trim().lowercase()
         items.filter { item ->
@@ -130,7 +135,27 @@ fun UniversalCatalogScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(15.dp))
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                CatalogMetric(
+                    value = items.size.toString(),
+                    label = "в каталоге",
+                    modifier = Modifier.weight(1f)
+                )
+                CatalogMetric(
+                    value = inStockCount.toString(),
+                    label = "с остатком",
+                    modifier = Modifier.weight(1f)
+                )
+                CatalogMetric(
+                    value = zeroStockCount.toString(),
+                    label = "нужно принять",
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
 
             OutlinedTextField(
                 value = query,
@@ -305,6 +330,35 @@ fun UniversalCatalogScreen(
                 editing = null
             }
         )
+    }
+}
+
+@Composable
+private fun CatalogMetric(
+    value: String,
+    label: String,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 11.dp)) {
+            Text(
+                text = value,
+                color = CatalogInk,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.ExtraBold
+            )
+            Text(
+                text = label,
+                color = CatalogMuted,
+                fontSize = 9.5.sp,
+                maxLines = 1
+            )
+        }
     }
 }
 
