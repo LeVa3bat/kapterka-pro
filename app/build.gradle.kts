@@ -16,13 +16,13 @@ android {
     minSdk = 24
     targetSdk = 34
     // Standalone universal product. It never updates/replaces "Каптёрка ПРО".
-    versionCode = 4
-    versionName = "0.4.0-alpha4"
+    versionCode = 5
+    versionName = "0.5.0-alpha5"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
     // Future payment client talks only to our backend; YooKassa secret never enters the APK.
-    val paymentApiUrl = "" // Universal alpha never calls the production payment backend.
+    val paymentApiUrl = System.getenv("SKLADPRO_API_URL")?.trim().orEmpty() // Dedicated Sklad PRO Worker only.
     buildConfigField("String", "PAYMENT_API_URL", "\"$paymentApiUrl\"")
     buildConfigField("String", "PAYMENT_CALLBACK_SCHEME", "\"skladpro\"")
     buildConfigField("boolean", "IS_NEXT_SAFE_TEST", "false")
