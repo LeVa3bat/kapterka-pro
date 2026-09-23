@@ -454,6 +454,7 @@ private fun OperationAccordionCard(
         OperationType.TRANSFER -> Triple(TacticalTealDark, TacticalTealText, "ПЕРЕМЕЩЕНИЕ")
         OperationType.ISSUE -> Triple(TacticalGoldDark, TacticalGoldText, "ВЫДАЧА")
         OperationType.EXPENDITURE -> Triple(TacticalRedDark, TacticalRedText, "СПИСАНИЕ")
+        OperationType.CORRECTION -> Triple(TacticalTealDark, TacticalTealText, "КОРРЕКТИРОВКА")
     }
 
     Card(
@@ -551,6 +552,10 @@ private fun OperationAccordionCard(
                 OperationType.EXPENDITURE -> Pair(
                     operation.fromPointName.ifBlank { operation.toPointName.ifBlank { "Позиция" } },
                     "Списание"
+                )
+                OperationType.CORRECTION -> Pair(
+                    operation.fromPointName.ifBlank { operation.toPointName.ifBlank { "Склад" } },
+                    "Корректировка"
                 )
             }
 

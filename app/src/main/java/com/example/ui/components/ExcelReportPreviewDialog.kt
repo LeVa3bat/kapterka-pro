@@ -852,6 +852,7 @@ private fun buildForm18OfficialReport(
             OperationType.TRANSFER -> "${op.fromPointName} ➔ ${op.toPointName}"
             OperationType.ISSUE -> "${op.fromPointName} ➔ ${op.toPointName} (Выдача)"
             OperationType.EXPENDITURE -> "${op.fromPointName} ➔ Расход (ф.8)"
+            OperationType.CORRECTION -> "${op.fromPointName} ➔ Корректировка остатка"
         }
 
         val prihodStr = if (op.type == OperationType.INCOME) sumQty.toString() else "-"

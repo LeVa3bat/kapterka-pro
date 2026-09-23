@@ -470,6 +470,7 @@ class FirebaseSyncManager(
                                 OperationType.TRANSFER -> "🔄 Перемещение: ${op.fromPointName.ifBlank { "Склад" }} ➔ ${op.toPointName}"
                                 OperationType.ISSUE -> "🎯 Выдача на «${op.toPointName}»"
                                 OperationType.EXPENDITURE -> "💥 Списание ф. 8 на «${op.fromPointName.ifBlank { op.toPointName }}»"
+                                OperationType.CORRECTION -> "🧾 Корректировка остатка на «${op.fromPointName.ifBlank { op.toPointName }}»"
                             }
                             val docPart = if (op.docNumber.isNotBlank() && !op.docNumber.trim().equals("документ", ignoreCase = true)) " • Акт № ${op.docNumber}" else ""
                             val summaryPart = if (op.itemsSummary.isNotBlank()) ": ${op.itemsSummary}" else ""
