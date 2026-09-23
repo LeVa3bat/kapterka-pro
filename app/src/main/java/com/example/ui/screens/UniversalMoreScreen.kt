@@ -31,9 +31,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.widget.Toast
 import com.example.BuildConfig
 import com.example.data.model.UserProfile
 import com.example.data.model.WarehousePoint
@@ -58,6 +62,8 @@ fun UniversalMoreScreen(
     onLogout: () -> Unit
 ) {
     val profile = WarehouseProfileCatalog.find(warehouseProfileId)
+    val clipboard = LocalClipboardManager.current
+    val context = LocalContext.current
 
     LazyColumn(
         modifier = Modifier
@@ -191,9 +197,17 @@ fun UniversalMoreScreen(
             item {
                 SettingsRow(
                     emoji = "🔑",
-                    title = "Код склада",
-                    subtitle = warehouse.syncKey.ifBlank { "Код будет создан автоматически" },
-                    onClick = onEditWarehouse.let { edit -> { edit(warehouse) } }
+                    title = "Ключ синхронизации склада",
+                    subtitle = warehouse.syncKey.ifBlank { "Ключ будет создан автоматически" },
+                    onClick = {
+                        val key = warehouse.syncKey.trim()
+                        if (key.isNotBlank()) {
+                            clipboard.setText(AnnotatedString(key))
+                            Toast.makeText(context, "Ключ склада скопирован", Toast.LENGTH_SHORT).show()
+                        } else {
+                            onEditWarehouse(warehouse)
+                        }
+                    }
                 )
                 Spacer(modifier = Modifier.height(10.dp))
             }
