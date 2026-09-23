@@ -115,7 +115,7 @@ fun UniversalMoreScreen(
                             )
                             Spacer(modifier = Modifier.size(5.dp))
                             Text(
-                                text = userProfile?.email?.takeIf { it.isNotBlank() } ?: "Локальный аккаунт",
+                                text = userProfile?.email?.takeIf { it.isNotBlank() } ?: "Email не указан",
                                 color = Color(0xFFC9CCFF),
                                 fontSize = 10.5.sp
                             )
@@ -150,7 +150,7 @@ fun UniversalMoreScreen(
             SettingsRow(
                 emoji = "☁️",
                 title = "Синхронизация",
-                subtitle = "Alpha работает локально; отдельное облако ещё не подключено",
+                subtitle = "Аккаунт подключён; складские данные Alpha пока хранятся локально",
                 onClick = {}
             )
             Spacer(modifier = Modifier.height(10.dp))
