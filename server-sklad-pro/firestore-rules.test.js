@@ -33,3 +33,11 @@ test('firestore rules keep a default-deny fallback', () => {
   const fallback = blockAfter('match /{document=**}', 180);
   assert.match(fallback, /allow read, write:\s*if false/);
 });
+
+test('all client access requires a verified email identity', () => {
+  const verified = blockAfter('function verifiedUser()', 240);
+  assert.match(verified, /request\.auth\s*!=\s*null/);
+  assert.match(verified, /request\.auth\.token\.email_verified\s*==\s*true/);
+
+  assert.doesNotMatch(rules, /function signedIn\(\)/);
+});
