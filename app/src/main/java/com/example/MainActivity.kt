@@ -87,6 +87,8 @@ import com.example.ui.components.TransferOperationDialog
 import com.example.ui.components.UnitKeySyncDialog
 import com.example.ui.components.UserManualDialog
 import com.example.ui.components.UniversalAddItemDialog
+import com.example.ui.components.UniversalAddPointDialog
+import com.example.ui.components.UniversalEditPointDialog
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -382,7 +384,7 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
     // MAIN SCAFFOLD WITH TACTICAL NAVIGATION BAR
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        containerColor = TacticalBg,
+        containerColor = if (BuildConfig.IS_UNIVERSAL_APP) Color(0xFFF5F7FB) else TacticalBg,
         bottomBar = {
             if (BuildConfig.IS_UNIVERSAL_APP) {
                 UniversalBottomNavigationBar(
@@ -648,6 +650,9 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                             UniversalMoreScreen(
                                 userProfile = profile,
                                 warehouseProfileId = warehouseProfileId,
+                                points = points,
+                                onAddWarehouse = { showAddPointDialog = true },
+                                onEditWarehouse = { editingPoint = it },
                                 onChangeProfile = {
                                     setupPrefs.edit().remove("warehouse_profile_id_v2").apply()
                                     warehouseProfileId = null
@@ -778,25 +783,47 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
     }
 
     if (showAddPointDialog) {
-        AddPointDialog(
-            onDismiss = { showAddPointDialog = false },
-            onConfirm = { name, desc ->
-                viewModel.addWarehousePoint(name, desc)
-            }
-        )
+        if (BuildConfig.IS_UNIVERSAL_APP) {
+            UniversalAddPointDialog(
+                onDismiss = { showAddPointDialog = false },
+                onConfirm = { name, desc ->
+                    viewModel.addWarehousePoint(name, desc)
+                }
+            )
+        } else {
+            AddPointDialog(
+                onDismiss = { showAddPointDialog = false },
+                onConfirm = { name, desc ->
+                    viewModel.addWarehousePoint(name, desc)
+                }
+            )
+        }
     }
 
     editingPoint?.let { pt ->
-        EditPointDialog(
-            point = pt,
-            onDismiss = { editingPoint = null },
-            onSave = { updated ->
-                viewModel.updateWarehousePoint(updated)
-            },
-            onDelete = { ptId ->
-                viewModel.deleteWarehousePoint(ptId)
-            }
-        )
+        if (BuildConfig.IS_UNIVERSAL_APP) {
+            UniversalEditPointDialog(
+                point = pt,
+                onDismiss = { editingPoint = null },
+                onSave = { updated ->
+                    viewModel.updateWarehousePoint(updated)
+                },
+                onDelete = { ptId ->
+                    viewModel.deleteWarehousePoint(ptId)
+                }
+            )
+        } else {
+            EditPointDialog(
+                point = pt,
+                onDismiss = { editingPoint = null },
+                onSave = { updated ->
+                    viewModel.updateWarehousePoint(updated)
+                },
+                onDelete = { ptId ->
+                    viewModel.deleteWarehousePoint(ptId)
+                }
+            )
+        }
     }
 
     if (showAddCustomItemDialog) {
