@@ -323,10 +323,11 @@ fun KapterkaAppRoot(
     if (BuildConfig.IS_UNIVERSAL_APP) {
         val finishUniversalAuth: (UniversalAuthResult.Authenticated) -> Unit = { account ->
             val current = profile ?: com.example.data.model.UserProfile()
-            viewModel.registerOrLoginProfile(
+            viewModel.saveUniversalProfile(
                 current.copy(
                     callsign = account.displayName.ifBlank { current.callsign },
                     email = account.email,
+                    unitKey = "",
                     isLoggedIn = true,
                     isOnline = false
                 )
@@ -416,7 +417,7 @@ fun KapterkaAppRoot(
                 currentProfile = profile,
                 warehouseProfileId = warehouseProfileId,
                 onComplete = { newProfile ->
-                    viewModel.registerOrLoginProfile(newProfile)
+                    viewModel.saveUniversalProfile(newProfile.copy(unitKey = ""))
                     setupPrefs.edit().putBoolean("universal_workspace_ready_v2", true).apply()
                     universalWorkspaceReady = true
                 }
@@ -907,9 +908,14 @@ fun KapterkaAppRoot(
                                     }
                                 },
                                 onLogout = {
+                                    viewModel.setUniversalCloudSyncEnabled(false)
                                     universalAuth.signOut()
-                                    viewModel.updateProfile(
-                                        (profile ?: com.example.data.model.UserProfile()).copy(isLoggedIn = false)
+                                    viewModel.saveUniversalProfile(
+                                        (profile ?: com.example.data.model.UserProfile()).copy(
+                                            unitKey = "",
+                                            isLoggedIn = false,
+                                            isOnline = false
+                                        )
                                     )
                                     setupPrefs.edit()
                                         .putBoolean("universal_authenticated_v2", false)
