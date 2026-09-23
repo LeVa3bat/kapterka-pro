@@ -881,9 +881,12 @@ fun KapterkaAppRoot(
                         if (BuildConfig.IS_UNIVERSAL_APP) {
                             UniversalCatalogScreen(
                                 warehouseProfileId = warehouseProfileId,
+                                points = points,
+                                selectedPointId = selectedPointId,
                                 items = profileCatalogItems,
                                 stockRecords = profileStockRecords,
                                 availableCategories = availableCategories,
+                                onSelectPoint = { viewModel.selectPoint(it) },
                                 onAddItem = {
                                     universalAccess(canUniversalCatalog, "изменения каталога") {
                                         showAddCustomItemDialog = true
@@ -949,9 +952,10 @@ fun KapterkaAppRoot(
                                     "Облачная синхронизация • PRO"
                             }
                             val syncSubtitle = if (universalEntitlement?.isProActive == true) {
-                                syncState.syncMessage
+                                syncState.syncMessage +
+                                    " • ключ склада не нужен: войдите на втором устройстве в тот же аккаунт"
                             } else {
-                                "Доступна после активации PRO. Локальные данные при этом не удаляются."
+                                "Доступна после активации PRO. Синхронизация привязана к аккаунту, локальные данные не удаляются."
                             }
 
                             UniversalMoreScreen(
