@@ -79,7 +79,9 @@ class KapterkaRepository(
                 profileId
             }
 
-            dao.insertItem(item.copy(profileId = resolvedProfile))
+            val claimed = item.copy(profileId = resolvedProfile)
+            dao.insertItem(claimed)
+            syncManager?.pushInventoryItemAsync("", claimed)
         }
     }
 
