@@ -36,8 +36,9 @@ env:
   EXPECTED_PACKAGE: com.aistudio.kapterka.jmwqve
   EXPECTED_VERSION_CODE: '32'
   EXPECTED_VERSION_NAME: '3.5.0'
-  KEYSTORE_BRANCH: recovery/historical-signer-2026-09-22
-  KEYSTORE_PATH: /tmp/kapterka-upload.p12
+  # Ключ подписи 3.4.9 хранится в секрете KAPTERKA_RELEASE_KEYSTORE_B64 (keystore в base64).
+  KEYSTORE_PATH: /tmp/kapterka-release.keystore
+  KEY_ALIAS: androiddebugkey
 
 jobs:
   build:
@@ -64,29 +65,30 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Fetch recovered keystore
+      - name: Restore release keystore from secret
+        env:
+          KEYSTORE_B64: ${{ secrets.KAPTERKA_RELEASE_KEYSTORE_B64 }}
         shell: bash
         run: |
-          git fetch --no-tags --depth=1 origin "$KEYSTORE_BRANCH"
-          git show FETCH_HEAD:my-upload-key.jks > "$KEYSTORE_PATH"
+          test -n "$KEYSTORE_B64" || { echo "::error::Secret KAPTERKA_RELEASE_KEYSTORE_B64 is not set"; exit 1; }
+          printf '%s' "$KEYSTORE_B64" | tr -d ' \r\n' | base64 -d > "$KEYSTORE_PATH"
           chmod 600 "$KEYSTORE_PATH"
           ls -l "$KEYSTORE_PATH"
 
       # Быстрая проверка до сборки: если ключ не тот, сборка бессмысленна.
       - name: Verify keystore signer identity (before build)
         env:
-          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          STORE_PASSWORD: android
         shell: bash
         run: |
-          test -n "$STORE_PASSWORD" || { echo "Secret STORE_PASSWORD is not set"; exit 1; }
-          keytool -list -v -keystore "$KEYSTORE_PATH" -storetype PKCS12 \
-            -storepass "$STORE_PASSWORD" -alias upload > /tmp/keytool.txt
+          keytool -list -v -keystore "$KEYSTORE_PATH" \
+            -storepass "$STORE_PASSWORD" -alias "$KEY_ALIAS" > /tmp/keytool.txt
           grep -E 'Owner:|SHA256:' /tmp/keytool.txt | head -n 2
           ACTUAL="$(grep -m1 'SHA256:' /tmp/keytool.txt | sed 's/.*SHA256:[[:space:]]*//' | tr -d ':' | tr '[:upper:]' '[:lower:]')"
           echo "Expected (published 3.4.9): $EXPECTED_SIGNER_SHA256"
           echo "Recovered keystore:         $ACTUAL"
           if [ "$ACTUAL" != "$EXPECTED_SIGNER_SHA256" ]; then
-            echo "::error::SIGNER MISMATCH — recovered keystore is NOT the key of published 3.4.9. An APK signed with it cannot update 3.4.9. Nothing was built or published."
+            echo "::error::SIGNER MISMATCH — keystore is NOT the key of published 3.4.9. An APK signed with it cannot update 3.4.9. Nothing was built or published."
             exit 1
           fi
           echo "Keystore matches the published signer."
@@ -116,8 +118,8 @@ jobs:
 
       - name: Build signed release APK
         env:
-          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          STORE_PASSWORD: android
+          KEY_PASSWORD: android
         run: gradle :app:assembleRelease --no-daemon --stacktrace
 
       - name: Verify APK version and signer identity
