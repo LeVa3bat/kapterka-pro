@@ -1,0 +1,47 @@
+name: Sklad PRO Firestore deploy
+
+on:
+  push:
+    branches:
+      - 'universal/alpha'
+    paths:
+      - 'server-sklad-pro/firestore.rules'
+      - 'firebase.json'
+      - '.github/workflows/sklad-pro-firestore-deploy.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: sklad-pro-firestore-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy-rules:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: 'sklad-pro-a1ec0'
+          workload_identity_provider: 'projects/98775459607/locations/global/workloadIdentityPools/github-sklad-pro/providers/kapterka-pro'
+          service_account: 'github-firestore-deployer@sklad-pro-a1ec0.iam.gserviceaccount.com'
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Deploy Firestore rules
+        env:
+          PROJECT_ID: 'sklad-pro-a1ec0'
+        run: |
+          set -euo pipefail
+          npx --yes firebase-tools@15.30.2 deploy             --only firestore:rules             --project "$PROJECT_ID"             --non-interactive
