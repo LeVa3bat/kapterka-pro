@@ -168,6 +168,33 @@ class KapterkaRepository(
     
 
 
+    suspend fun prepareUniversalCustomItemOwnership() {
+        if (!BuildConfig.IS_UNIVERSAL_APP) return
+
+        val items = dao.getAllItems().first()
+        val stocks = dao.getAllStockRecords().first()
+
+        items.asSequence()
+            .filter { it.isCustom && it.warehouseId.isBlank() }
+            .forEach { item ->
+                val warehouseIds = stocks
+                    .asSequence()
+                    .filter {
+                        it.itemId == item.id &&
+                            (it.quantity != 0 || it.incomeTotal != 0 || it.expenseTotal != 0)
+                    }
+                    .map { it.pointId }
+                    .distinct()
+                    .toList()
+
+                if (warehouseIds.size == 1) {
+                    val claimed = item.copy(warehouseId = warehouseIds.first())
+                    dao.insertItem(claimed)
+                    syncManager?.pushInventoryItemAsync("", claimed)
+                }
+            }
+    }
+
     suspend fun prepareUniversalWarehouses(defaultProfileId: String) {
         if (!BuildConfig.IS_UNIVERSAL_APP) return
 
@@ -405,7 +432,8 @@ class KapterkaRepository(
         category: String,
         subCategory: String,
         unit: String,
-        profileId: String = ""
+        profileId: String = "",
+        warehouseId: String = ""
     ) {
         val i = InventoryItem(
             id = java.util.UUID.randomUUID().toString(),
@@ -415,7 +443,8 @@ class KapterkaRepository(
             unit = unit,
             categoryClass = "Кат. 1",
             isCustom = true,
-            profileId = profileId
+            profileId = profileId,
+            warehouseId = warehouseId
         )
         dao.insertItem(i)
         syncManager?.pushInventoryItemAsync(getCurrentUnitKey(), i)
