@@ -48,6 +48,7 @@ import com.example.data.model.OperationType
 import com.example.universal.WarehouseProfileCatalog
 import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.Calendar
 import java.util.Locale
 
 private val OpsBg = Color(0xFFF5F7FB)
@@ -84,6 +85,17 @@ fun UniversalOperationsScreen(
     }
 
     val dateFormat = remember { SimpleDateFormat("dd MMM • HH:mm", Locale("ru")) }
+    val todayStart = remember {
+        Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+    }
+    val todayCount = remember(operations, todayStart) {
+        operations.count { it.timestamp >= todayStart }
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -101,11 +113,31 @@ fun UniversalOperationsScreen(
                 fontWeight = FontWeight.ExtraBold
             )
             Text(
-                text = "Вся история движения по складу",
+                text = "Журнал всех движений по складу",
                 color = OpsMuted,
                 fontSize = 12.sp
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OperationSummaryCard(
+                    value = operations.size.toString(),
+                    label = "всего",
+                    modifier = Modifier.weight(1f)
+                )
+                OperationSummaryCard(
+                    value = todayCount.toString(),
+                    label = "сегодня",
+                    modifier = Modifier.weight(1f)
+                )
+                OperationSummaryCard(
+                    value = filtered.size.toString(),
+                    label = "показано",
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
 
             OutlinedTextField(
                 value = query,
@@ -158,18 +190,19 @@ fun UniversalOperationsScreen(
                 ) {
                     Column(modifier = Modifier.padding(18.dp)) {
                         Text(
-                            text = if (operations.isEmpty()) "История пока пустая" else "Ничего не найдено",
+                            text = if (operations.isEmpty()) "Операций пока нет" else "Ничего не найдено",
                             color = OpsInk,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
                             text = if (operations.isEmpty())
-                                "Первая операция появится здесь автоматически."
+                                "После первого прихода, выдачи, перемещения или списания запись появится здесь автоматически."
                             else
                                 "Измените фильтр или поисковый запрос.",
                             color = OpsMuted,
-                            fontSize = 11.sp
+                            fontSize = 11.sp,
+                            lineHeight = 16.sp
                         )
                     }
                 }
@@ -265,6 +298,34 @@ fun UniversalOperationsScreen(
         }
 
         item { Spacer(modifier = Modifier.height(24.dp)) }
+    }
+}
+
+@Composable
+private fun OperationSummaryCard(
+    value: String,
+    label: String,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 11.dp)) {
+            Text(
+                text = value,
+                color = OpsInk,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.ExtraBold
+            )
+            Text(
+                text = label,
+                color = OpsMuted,
+                fontSize = 9.5.sp
+            )
+        }
     }
 }
 
