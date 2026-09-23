@@ -131,7 +131,8 @@ import com.example.ui.screens.UniversalOperationsScreen
 import com.example.ui.screens.UniversalCatalogScreen
 import com.example.ui.screens.UniversalRequestsScreen
 import com.example.ui.screens.UniversalSplashScreen
-import com.example.universal.UniversalLocalAuth
+import com.example.universal.UniversalAuthResult
+import com.example.universal.UniversalFirebaseAuth
 import com.example.ui.viewmodel.KapterkaViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -228,9 +229,12 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
     var warehouseProfileId by remember {
         mutableStateOf(setupPrefs.getString("warehouse_profile_id_v2", null))
     }
-    val universalAuth = remember(context) { UniversalLocalAuth(context) }
+    val universalAuth = remember(context) { UniversalFirebaseAuth(context) }
     var universalAuthenticated by remember {
-        mutableStateOf(setupPrefs.getBoolean("universal_authenticated_v2", false))
+        mutableStateOf(universalAuth.currentVerifiedAccount() != null)
+    }
+    var pendingVerificationEmail by remember {
+        mutableStateOf(universalAuth.currentUnverifiedEmail())
     }
     var universalWorkspaceReady by remember {
         mutableStateOf(setupPrefs.getBoolean("universal_workspace_ready_v2", false))
@@ -312,43 +316,80 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
     }
 
     if (BuildConfig.IS_UNIVERSAL_APP) {
+        val finishUniversalAuth: (UniversalAuthResult.Authenticated) -> Unit = { account ->
+            val current = profile ?: com.example.data.model.UserProfile()
+            viewModel.registerOrLoginProfile(
+                current.copy(
+                    callsign = account.displayName.ifBlank { current.callsign },
+                    email = account.email,
+                    isLoggedIn = true,
+                    isOnline = false
+                )
+            )
+            setupPrefs.edit().putBoolean("universal_authenticated_v2", true).apply()
+            pendingVerificationEmail = null
+            universalAuthenticated = true
+        }
+
         if (!universalAuthenticated) {
             UniversalAuthScreen(
-                hasAccount = universalAuth.hasAccount(),
-                savedEmail = universalAuth.registeredEmail(),
-                onRegister = { name, email, password ->
-                    val error = universalAuth.register(email, password)
-                    if (error == null) {
-                        viewModel.registerOrLoginProfile(
-                            (profile ?: com.example.data.model.UserProfile()).copy(
-                                callsign = name,
-                                email = email.trim().lowercase(),
-                                unitName = "",
-                                unitKey = "",
-                                isLoggedIn = true,
-                                isOnline = false
-                            )
-                        )
-                        setupPrefs.edit().putBoolean("universal_authenticated_v2", true).apply()
-                        universalAuthenticated = true
+                savedEmail = universalAuth.savedEmail(),
+                pendingVerificationEmail = pendingVerificationEmail,
+                onRegister = { name, email, password, complete ->
+                    universalAuth.register(name, email, password) { result ->
+                        when (result) {
+                            is UniversalAuthResult.Authenticated -> {
+                                finishUniversalAuth(result)
+                                complete(null)
+                            }
+                            is UniversalAuthResult.VerificationRequired -> {
+                                pendingVerificationEmail = result.email
+                                complete(null)
+                            }
+                            is UniversalAuthResult.Error -> complete(result.message)
+                        }
                     }
-                    error
                 },
-                onLogin = { email, password ->
-                    if (!universalAuth.verify(email, password)) {
-                        "Неверный email или пароль"
-                    } else {
-                        viewModel.registerOrLoginProfile(
-                            (profile ?: com.example.data.model.UserProfile()).copy(
-                                email = email.trim().lowercase(),
-                                isLoggedIn = true,
-                                isOnline = false
-                            )
-                        )
-                        setupPrefs.edit().putBoolean("universal_authenticated_v2", true).apply()
-                        universalAuthenticated = true
-                        null
+                onLogin = { email, password, complete ->
+                    universalAuth.login(email, password) { result ->
+                        when (result) {
+                            is UniversalAuthResult.Authenticated -> {
+                                finishUniversalAuth(result)
+                                complete(null)
+                            }
+                            is UniversalAuthResult.VerificationRequired -> {
+                                pendingVerificationEmail = result.email
+                                complete(null)
+                            }
+                            is UniversalAuthResult.Error -> complete(result.message)
+                        }
                     }
+                },
+                onCheckVerification = { complete ->
+                    universalAuth.refreshVerification { result ->
+                        when (result) {
+                            is UniversalAuthResult.Authenticated -> {
+                                finishUniversalAuth(result)
+                                complete(null)
+                            }
+                            is UniversalAuthResult.VerificationRequired -> {
+                                pendingVerificationEmail = result.email
+                                complete("Почта ещё не подтверждена. Откройте ссылку из письма.")
+                            }
+                            is UniversalAuthResult.Error -> complete(result.message)
+                        }
+                    }
+                },
+                onResendVerification = { complete ->
+                    universalAuth.resendVerification(complete)
+                },
+                onCancelVerification = {
+                    universalAuth.signOut()
+                    pendingVerificationEmail = null
+                    setupPrefs.edit().putBoolean("universal_authenticated_v2", false).apply()
+                },
+                onResetPassword = { email, complete ->
+                    universalAuth.sendPasswordReset(email, complete)
                 }
             )
             return
@@ -671,12 +712,14 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                                     currentDestination = AppDestination.HOME
                                 },
                                 onLogout = {
+                                    universalAuth.signOut()
                                     viewModel.updateProfile(
                                         (profile ?: com.example.data.model.UserProfile()).copy(isLoggedIn = false)
                                     )
                                     setupPrefs.edit()
                                         .putBoolean("universal_authenticated_v2", false)
                                         .apply()
+                                    pendingVerificationEmail = null
                                     universalAuthenticated = false
                                     currentDestination = AppDestination.HOME
                                 }
