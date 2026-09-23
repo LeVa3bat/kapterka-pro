@@ -569,4 +569,62 @@ class KapterkaDatabaseTest {
         context.deleteDatabase(dbName)
     }
 
+    @Test
+    fun testMigration5To6PreservesCatalogAndAddsWarehouseOwnership() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val dbName = "migration_5_6_test.db"
+        context.deleteDatabase(dbName)
+
+        val helper = FrameworkSQLiteOpenHelperFactory().create(
+            SupportSQLiteOpenHelper.Configuration.builder(context)
+                .name(dbName)
+                .callback(object : SupportSQLiteOpenHelper.Callback(5) {
+                    override fun onCreate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                        db.execSQL(
+                            """
+                            CREATE TABLE inventory_items (
+                                id TEXT NOT NULL PRIMARY KEY,
+                                name TEXT NOT NULL,
+                                serviceCategory TEXT NOT NULL,
+                                subType TEXT NOT NULL,
+                                unit TEXT NOT NULL,
+                                categoryClass TEXT NOT NULL,
+                                standardCode TEXT NOT NULL,
+                                isCustom INTEGER NOT NULL,
+                                profileId TEXT NOT NULL
+                            )
+                            """.trimIndent()
+                        )
+                        db.execSQL(
+                            "INSERT INTO inventory_items(" +
+                                "id,name,serviceCategory,subType,unit,categoryClass,standardCode,isCustom,profileId" +
+                                ") VALUES ('custom-old','Старая позиция','Запчасти','Двигатель','шт.','Кат. 1','',1,'auto')"
+                        )
+                    }
+
+                    override fun onUpgrade(
+                        db: androidx.sqlite.db.SupportSQLiteDatabase,
+                        oldVersion: Int,
+                        newVersion: Int
+                    ) = Unit
+                })
+                .build()
+        )
+
+        val sqlite = helper.writableDatabase
+        KapterkaDatabase.MIGRATION_5_6.migrate(sqlite)
+
+        sqlite.query(
+            "SELECT name, profileId, warehouseId FROM inventory_items WHERE id='custom-old'"
+        ).use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("Старая позиция", cursor.getString(0))
+            assertEquals("auto", cursor.getString(1))
+            assertEquals("", cursor.getString(2))
+        }
+
+        helper.close()
+        context.deleteDatabase(dbName)
+    }
+
 }
