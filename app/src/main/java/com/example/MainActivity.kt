@@ -431,6 +431,12 @@ fun KapterkaAppRoot(
             }
         }
 
+        LaunchedEffect(universalEntitlement?.isProActive) {
+            viewModel.setUniversalCloudSyncEnabled(
+                universalEntitlement?.isProActive == true
+            )
+        }
+
         LaunchedEffect(universalAuthenticated, universalWorkspaceReady) {
             if (
                 universalAuthenticated &&
