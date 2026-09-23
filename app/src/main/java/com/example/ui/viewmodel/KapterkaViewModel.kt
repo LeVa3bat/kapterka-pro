@@ -558,6 +558,21 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
     fun updateWarehousePoint(point: WarehousePoint) {
         viewModelScope.launch {
             repository.updateWarehousePoint(point)
+            if (BuildConfig.IS_UNIVERSAL_APP) {
+                repository.ensureUniversalStarterCatalog(point.profileId)
+                if (_selectedPointId.value == point.id) {
+                    activeWarehouseId = point.id
+                    activeWarehouseProfileId = com.example.universal.WarehouseProfileCatalog
+                        .find(point.profileId)
+                        .id
+                    prefs.edit()
+                        .putString("active_warehouse_id_v3", point.id)
+                        .putString("active_warehouse_profile_id_v2", activeWarehouseProfileId)
+                        .apply()
+                    _availableCategories.value = loadCategoriesForProfile(activeWarehouseProfileId)
+                    _selectedCategory.value = "Все виды"
+                }
+            }
             _toastEvent.emit(if (BuildConfig.IS_UNIVERSAL_APP) "Склад «${point.name}» обновлён" else "Точка «${point.name}» обновлена")
         }
     }

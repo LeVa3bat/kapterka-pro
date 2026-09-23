@@ -1,6 +1,7 @@
 package com.example.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Warehouse
@@ -22,6 +24,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -44,6 +48,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.data.model.WarehousePoint
+import com.example.universal.WarehouseProfileCatalog
 
 private val WarehousePrimary = Color(0xFF5B5CE2)
 private val WarehouseInk = Color(0xFF111827)
@@ -55,11 +60,13 @@ private val WarehouseDangerSoft = Color(0xFFFFEEEE)
 
 @Composable
 fun UniversalAddPointDialog(
+    initialProfileId: String = "universal",
     onDismiss: () -> Unit,
-    onConfirm: (name: String, description: String) -> Unit
+    onConfirm: (name: String, description: String, profileId: String) -> Unit
 ) {
     var name by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
+    var profileId by remember { mutableStateOf(WarehouseProfileCatalog.find(initialProfileId).id) }
 
     UniversalWarehouseDialogShell(
         title = "Новый склад",
@@ -90,12 +97,20 @@ fun UniversalAddPointDialog(
             placeholder = "Например: Центральное место хранения"
         )
 
+        Spacer(modifier = Modifier.height(12.dp))
+
+        UniversalWarehouseProfileSelector(
+            selectedProfileId = profileId,
+            enabled = true,
+            onSelected = { profileId = it }
+        )
+
         Spacer(modifier = Modifier.height(18.dp))
 
         Button(
             onClick = {
                 if (name.isNotBlank()) {
-                    onConfirm(name.trim(), description.trim())
+                    onConfirm(name.trim(), description.trim(), profileId)
                     onDismiss()
                 }
             },
@@ -124,12 +139,16 @@ fun UniversalAddPointDialog(
 @Composable
 fun UniversalEditPointDialog(
     point: WarehousePoint,
+    canChangeProfile: Boolean = true,
     onDismiss: () -> Unit,
     onSave: (WarehousePoint) -> Unit,
     onDelete: (String) -> Unit
 ) {
     var name by remember(point.id) { mutableStateOf(point.name) }
     var description by remember(point.id) { mutableStateOf(point.description) }
+    var profileId by remember(point.id) {
+        mutableStateOf(WarehouseProfileCatalog.find(point.profileId).id)
+    }
     var confirmDelete by remember(point.id) { mutableStateOf(false) }
 
     UniversalWarehouseDialogShell(
@@ -165,6 +184,23 @@ fun UniversalEditPointDialog(
             placeholder = "Необязательно"
         )
 
+        Spacer(modifier = Modifier.height(12.dp))
+
+        UniversalWarehouseProfileSelector(
+            selectedProfileId = profileId,
+            enabled = canChangeProfile,
+            onSelected = { profileId = it }
+        )
+        if (!canChangeProfile) {
+            Spacer(modifier = Modifier.height(5.dp))
+            Text(
+                text = "Профиль нельзя менять, пока на складе есть остатки. Сначала перенесите или спишите имущество.",
+                color = WarehouseMuted,
+                fontSize = 9.5.sp,
+                lineHeight = 13.sp
+            )
+        }
+
         Spacer(modifier = Modifier.height(18.dp))
 
         Row(
@@ -196,7 +232,7 @@ fun UniversalEditPointDialog(
             Button(
                 onClick = {
                     if (name.isNotBlank()) {
-                        onSave(point.copy(name = name.trim(), description = description.trim()))
+                        onSave(point.copy(name = name.trim(), description = description.trim(), profileId = profileId))
                         onDismiss()
                     }
                 },
@@ -320,6 +356,87 @@ private fun UniversalWarehouseDialogShell(
 
                 Spacer(modifier = Modifier.height(18.dp))
                 content()
+            }
+        }
+    }
+}
+
+@Composable
+private fun UniversalWarehouseProfileSelector(
+    selectedProfileId: String,
+    enabled: Boolean,
+    onSelected: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selected = WarehouseProfileCatalog.find(selectedProfileId)
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = "Профиль склада",
+            color = WarehouseInk,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(15.dp))
+                .background(Color(0xFFF9FAFB))
+                .clickable(enabled = enabled) { expanded = true }
+                .padding(horizontal = 13.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(selected.emoji, fontSize = 16.sp)
+            Spacer(modifier = Modifier.width(8.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = selected.title,
+                    color = WarehouseInk,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = selected.subtitle,
+                    color = WarehouseMuted,
+                    fontSize = 9.sp,
+                    maxLines = 1
+                )
+            }
+            Icon(
+                imageVector = Icons.Default.ArrowDropDown,
+                contentDescription = "Выбрать профиль",
+                tint = if (enabled) WarehousePrimary else WarehouseMuted
+            )
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(Color.White)
+        ) {
+            WarehouseProfileCatalog.profiles.forEach { profile ->
+                DropdownMenuItem(
+                    text = {
+                        Column {
+                            Text(
+                                text = profile.emoji + " " + profile.title,
+                                color = WarehouseInk,
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                text = profile.subtitle,
+                                color = WarehouseMuted,
+                                fontSize = 9.sp
+                            )
+                        }
+                    },
+                    onClick = {
+                        onSelected(profile.id)
+                        expanded = false
+                    }
+                )
             }
         }
     }

@@ -396,70 +396,7 @@ fun UniversalDashboardScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                if (selectedPointOperations.isEmpty() && activePositions == 0) {
-                    StarterGuideCard(
-                        catalogCount = catalogItems.size,
-                        onIncomeClick = onIncomeClick,
-                        onOpenCatalog = onOpenCatalog
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    SectionTitle("Последние операции • " + (selectedPoint?.name ?: "склад"), modifier = Modifier.weight(1f))
-                    Text(
-                        text = "Открыть журнал",
-                        color = UniversalPrimary,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.clickable(onClick = onOpenOperations)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(9.dp))
-
-                if (recentOperations.isEmpty()) {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = UniversalSurface)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                text = "Пока нет операций",
-                                color = UniversalInk,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            Text(
-                                text = "Начните с поступления или добавьте первую позицию.",
-                                color = UniversalMuted,
-                                fontSize = 11.sp
-                            )
-                        }
-                    }
-                } else {
-                    recentOperations.forEach { op ->
-                        RecentOperationRow(
-                            operation = op,
-                            label = when (op.type) {
-                                OperationType.INCOME -> vocab.income
-                                OperationType.TRANSFER -> vocab.transfer
-                                OperationType.ISSUE -> vocab.issue
-                                OperationType.EXPENDITURE -> vocab.writeOff
-                            },
-                            time = formatter.format(Date(op.timestamp))
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(26.dp))
+                Spacer(modifier = Modifier.height(22.dp))
             }
         }
     }
@@ -476,71 +413,108 @@ private fun DashboardStockRow(
         colors = CardDefaults.cardColors(containerColor = UniversalSurface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 13.dp, vertical = 11.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(horizontal = 13.dp, vertical = 11.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(38.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(UniversalPrimarySoft),
-                contentAlignment = Alignment.Center
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clip(RoundedCornerShape(11.dp))
+                        .background(UniversalPrimarySoft),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Inventory2,
+                        contentDescription = null,
+                        tint = UniversalPrimary,
+                        modifier = Modifier.size(17.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(9.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = item.name,
+                        color = UniversalInk,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = buildString {
+                            append(item.serviceCategory)
+                            if (item.subType.isNotBlank()) append(" • ").append(item.subType)
+                        },
+                        color = UniversalMuted,
+                        fontSize = 9.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.Inventory2,
-                    contentDescription = null,
-                    tint = UniversalPrimary,
-                    modifier = Modifier.size(18.dp)
+                DashboardStockMetric(
+                    label = "Пришло",
+                    value = stock.incomeTotal,
+                    unit = item.unit,
+                    accent = UniversalGreen,
+                    modifier = Modifier.weight(1f)
                 )
-            }
-
-            Spacer(modifier = Modifier.width(10.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = item.name,
-                    color = UniversalInk,
-                    fontSize = 12.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                DashboardStockMetric(
+                    label = "Ушло",
+                    value = stock.expenseTotal,
+                    unit = item.unit,
+                    accent = UniversalOrange,
+                    modifier = Modifier.weight(1f)
                 )
-                Text(
-                    text = buildString {
-                        append(item.serviceCategory)
-                        if (item.subType.isNotBlank()) append(" • ").append(item.subType)
-                    },
-                    color = UniversalMuted,
-                    fontSize = 9.5.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    text = "Остаток",
-                    color = UniversalMuted,
-                    fontSize = 8.5.sp
-                )
-                Text(
-                    text = stock.quantity.toString(),
-                    color = if (stock.quantity < 0) UniversalRed else UniversalInk,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.ExtraBold
-                )
-                Text(
-                    text = item.unit,
-                    color = UniversalMuted,
-                    fontSize = 9.5.sp
+                DashboardStockMetric(
+                    label = "Остаток",
+                    value = stock.quantity,
+                    unit = item.unit,
+                    accent = if (stock.quantity < 0) UniversalRed else UniversalPrimary,
+                    modifier = Modifier.weight(1f)
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun DashboardStockMetric(
+    label: String,
+    value: Int,
+    unit: String,
+    accent: Color,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color(0xFFF7F8FB))
+            .padding(horizontal = 8.dp, vertical = 7.dp)
+    ) {
+        Text(
+            text = label,
+            color = UniversalMuted,
+            fontSize = 8.5.sp
+        )
+        Text(
+            text = value.toString() + " " + unit,
+            color = accent,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.ExtraBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 
@@ -583,11 +557,11 @@ private fun UniversalActionCard(
         colors = CardDefaults.cardColors(containerColor = UniversalSurface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
+        Column(modifier = Modifier.padding(10.dp)) {
             Box(
                 modifier = Modifier
-                    .size(38.dp)
-                    .clip(RoundedCornerShape(13.dp))
+                    .size(32.dp)
+                    .clip(RoundedCornerShape(11.dp))
                     .background(soft),
                 contentAlignment = Alignment.Center
             ) {
@@ -595,14 +569,14 @@ private fun UniversalActionCard(
                     imageVector = icon,
                     contentDescription = null,
                     tint = accent,
-                    modifier = Modifier.size(19.dp)
+                    modifier = Modifier.size(17.dp)
                 )
             }
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = title,
                 color = UniversalInk,
-                fontSize = 13.sp,
+                fontSize = 11.5.sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis

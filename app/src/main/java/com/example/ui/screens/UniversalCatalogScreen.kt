@@ -86,16 +86,15 @@ fun UniversalCatalogScreen(
     val selectedPoint = remember(points, selectedPointId) {
         points.firstOrNull { it.id == selectedPointId } ?: points.firstOrNull()
     }
-    val quantities = remember(stockRecords, selectedPoint?.id) {
+    val stocksByItem = remember(stockRecords, selectedPoint?.id) {
         val pointId = selectedPoint?.id
         stockRecords
             .filter { pointId == null || it.pointId == pointId }
-            .groupBy { it.itemId }
-            .mapValues { (_, rows) -> rows.sumOf { it.quantity } }
+            .associateBy { it.itemId }
     }
 
-    val inStockCount = remember(items, quantities) {
-        items.count { (quantities[it.id] ?: 0) > 0 }
+    val inStockCount = remember(items, stocksByItem) {
+        items.count { (stocksByItem[it.id]?.quantity ?: 0) > 0 }
     }
     val zeroStockCount = (items.size - inStockCount).coerceAtLeast(0)
 
@@ -325,7 +324,8 @@ fun UniversalCatalogScreen(
             }
         } else {
             items(filtered, key = { it.id }) { item ->
-                val qty = quantities[item.id] ?: 0
+                val stock = stocksByItem[item.id]
+                val qty = stock?.quantity ?: 0
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(21.dp),
@@ -386,20 +386,22 @@ fun UniversalCatalogScreen(
 
                         Column(horizontalAlignment = Alignment.End) {
                             Text(
-                                text = "Остаток",
-                                color = CatalogMuted,
-                                fontSize = 8.5.sp
+                                text = "Пришло " + (stock?.incomeTotal ?: 0),
+                                color = Color(0xFF159A72),
+                                fontSize = 8.5.sp,
+                                fontWeight = FontWeight.SemiBold
                             )
                             Text(
-                                text = qty.toString(),
+                                text = "Ушло " + (stock?.expenseTotal ?: 0),
+                                color = Color(0xFFE88B22),
+                                fontSize = 8.5.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                text = "Остаток " + qty + " " + item.unit,
                                 color = if (qty > 0) CatalogInk else Color(0xFFD94C4C),
-                                fontSize = 18.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.ExtraBold
-                            )
-                            Text(
-                                text = item.unit,
-                                color = CatalogMuted,
-                                fontSize = 9.5.sp
                             )
                             Spacer(modifier = Modifier.height(5.dp))
                             IconButton(

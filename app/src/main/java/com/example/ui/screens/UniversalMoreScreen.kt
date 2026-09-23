@@ -43,6 +43,7 @@ import com.example.universal.WarehouseProfileCatalog
 fun UniversalMoreScreen(
     userProfile: UserProfile?,
     warehouseProfileId: String?,
+    selectedWarehouse: WarehousePoint?,
     points: List<WarehousePoint>,
     subscriptionTitle: String,
     subscriptionSubtitle: String,
@@ -53,6 +54,7 @@ fun UniversalMoreScreen(
     onAddWarehouse: () -> Unit,
     onEditWarehouse: (WarehousePoint) -> Unit,
     onChangeProfile: () -> Unit,
+    onReportClick: () -> Unit,
     onLogout: () -> Unit
 ) {
     val profile = WarehouseProfileCatalog.find(warehouseProfileId)
@@ -159,8 +161,8 @@ fun UniversalMoreScreen(
             Spacer(modifier = Modifier.height(7.dp))
             SettingsRow(
                 emoji = profile.emoji,
-                title = "Профиль учёта",
-                subtitle = profile.title,
+                title = "Профиль выбранного склада",
+                subtitle = (selectedWarehouse?.name?.let { "$it • " } ?: "") + profile.title,
                 onClick = onChangeProfile
             )
             Spacer(modifier = Modifier.height(10.dp))
@@ -173,6 +175,28 @@ fun UniversalMoreScreen(
                 onEditWarehouse = onEditWarehouse
             )
             Spacer(modifier = Modifier.height(10.dp))
+        }
+
+        item {
+            SettingsRow(
+                emoji = "📊",
+                title = "Отчёты выбранного склада",
+                subtitle = "Остатки, пришло, ушло и журнал операций • Excel .xlsx",
+                onClick = onReportClick
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+        }
+
+        selectedWarehouse?.let { warehouse ->
+            item {
+                SettingsRow(
+                    emoji = "🔑",
+                    title = "Код склада",
+                    subtitle = warehouse.syncKey.ifBlank { "Код будет создан автоматически" },
+                    onClick = onEditWarehouse.let { edit -> { edit(warehouse) } }
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+            }
         }
 
         item {
