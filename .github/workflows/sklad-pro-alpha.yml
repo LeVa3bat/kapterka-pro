@@ -139,12 +139,12 @@ jobs:
             echo "Dedicated Sklad PRO Worker URL not found in APK" >&2
             exit 1
           }
-          cp "$APK" "Sklad-PRO-0.5.0-alpha5.apk"
+          cp "$APK" "Sklad-PRO-0.6.0-alpha6.apk"
 
       - name: Upload alpha APK
         uses: actions/upload-artifact@v4
         with:
           name: sklad-pro-alpha
-          path: Sklad-PRO-0.5.0-alpha5.apk
+          path: Sklad-PRO-0.6.0-alpha6.apk
           if-no-files-found: error
           retention-days: 14
