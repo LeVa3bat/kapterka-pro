@@ -13,5 +13,6 @@ data class InventoryItem(
     val categoryClass: String = "Кат. 1", // e.g. "Кат. 1", "Кат. 2"
     val standardCode: String = "",        // e.g. "3ВОФ34"
     val isCustom: Boolean = false,
-    val profileId: String = ""
+    val profileId: String = "",
+    val warehouseId: String = ""
 )
