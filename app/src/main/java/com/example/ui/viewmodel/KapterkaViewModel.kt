@@ -61,23 +61,43 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
 
     private val prefs = application.getSharedPreferences("kapterka_app_prefs", android.content.Context.MODE_PRIVATE)
 
-    private val _availableCategories = MutableStateFlow<List<String>>(loadCategoriesFromPrefs())
+    private var activeWarehouseProfileId: String =
+        prefs.getString("active_warehouse_profile_id_v2", "universal")
+            .orEmpty()
+            .ifBlank { "universal" }
+
+    private val _availableCategories = MutableStateFlow<List<String>>(
+        loadCategoriesForProfile(activeWarehouseProfileId)
+    )
     val availableCategories: StateFlow<List<String>> = _availableCategories.asStateFlow()
 
-    private fun loadCategoriesFromPrefs(): List<String> {
-        val saved = prefs.getStringSet("saved_categories", null)
-        val defaultOrder = com.example.data.local.InitialData.getDefaultCategories()
-        return if (saved != null && saved.isNotEmpty()) {
-            val list = defaultOrder.toMutableList() // Always include default categories (to force new ones)
-            saved.filter { it !in defaultOrder }.forEach { list.add(it) }
-            list
-        } else {
-            defaultOrder
+    private fun categoriesKey(profileId: String): String =
+        "saved_categories_v2_" + profileId
+
+    private fun loadCategoriesForProfile(profileId: String): List<String> {
+        if (!BuildConfig.IS_UNIVERSAL_APP) {
+            val saved = prefs.getStringSet("saved_categories", null)
+            val defaults = com.example.data.local.InitialData.getDefaultCategories()
+            return if (saved != null && saved.isNotEmpty()) {
+                (defaults + saved.filter { it !in defaults }).distinct()
+            } else {
+                defaults
+            }
         }
+
+        val template = com.example.universal.WarehouseProfileCatalog.find(profileId)
+        val saved = prefs.getStringSet(categoriesKey(template.id), null).orEmpty()
+        return (template.categories + saved.filter { it !in template.categories }).distinct()
     }
 
     private fun saveCategoriesToPrefs(list: List<String>) {
-        prefs.edit().putStringSet("saved_categories", list.toSet()).apply()
+        if (BuildConfig.IS_UNIVERSAL_APP) {
+            prefs.edit()
+                .putStringSet(categoriesKey(activeWarehouseProfileId), list.toSet())
+                .apply()
+        } else {
+            prefs.edit().putStringSet("saved_categories", list.toSet()).apply()
+        }
         _availableCategories.value = list
     }
 
@@ -108,7 +128,12 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun resetCategoriesToDefault() {
-        saveCategoriesToPrefs(com.example.data.local.InitialData.getDefaultCategories())
+        val defaults = if (BuildConfig.IS_UNIVERSAL_APP) {
+            com.example.universal.WarehouseProfileCatalog.find(activeWarehouseProfileId).categories
+        } else {
+            com.example.data.local.InitialData.getDefaultCategories()
+        }
+        saveCategoriesToPrefs(defaults)
         viewModelScope.launch {
             _toastEvent.emit("Группы по умолчанию восстановлены")
         }
@@ -127,14 +152,24 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
 
     fun applyWarehouseProfile(profileId: String) {
         val template = com.example.universal.WarehouseProfileCatalog.find(profileId)
-        val customCategories = _availableCategories.value.filter {
-            it !in com.example.universal.WarehouseProfileCatalog.allPresetCategories
-        }
-        val merged = (template.categories + customCategories).distinct()
-        saveCategoriesToPrefs(merged)
+        activeWarehouseProfileId = template.id
+        prefs.edit()
+            .putString("active_warehouse_profile_id_v2", template.id)
+            .apply()
+
+        _availableCategories.value = loadCategoriesForProfile(template.id)
         _selectedCategory.value = "Все виды"
+
         viewModelScope.launch {
-            _toastEvent.emit("Профиль «${template.title}» применён")
+            repository.claimUnassignedUniversalItems(template.id)
+            val added = repository.ensureUniversalStarterCatalog(template.id)
+            _toastEvent.emit(
+                if (added > 0) {
+                    "Профиль «" + template.title + "» применён • каталог подготовлен"
+                } else {
+                    "Профиль «" + template.title + "» применён"
+                }
+            )
         }
     }
 
@@ -508,7 +543,13 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         }
 
         viewModelScope.launch {
-            repository.addCustomInventoryItem(name, cleanCategory.ifBlank { serviceCategory }, subType, unit)
+            repository.addCustomInventoryItem(
+                name = name,
+                category = cleanCategory.ifBlank { serviceCategory },
+                subCategory = subType,
+                unit = unit,
+                profileId = if (BuildConfig.IS_UNIVERSAL_APP) activeWarehouseProfileId else ""
+            )
             _toastEvent.emit(
                 if (BuildConfig.IS_UNIVERSAL_APP) {
                     "Позиция «$name» добавлена в каталог"
