@@ -773,6 +773,11 @@ fun KapterkaAppRoot(
                                 operations = profileOperations,
                                 requisitions = profileRequisitions,
                                 onSelectPoint = { viewModel.selectPoint(it) },
+                                onEditWarehouse = { point ->
+                                    universalAccess(canUniversalWarehouses, "управления складами") {
+                                        editingPoint = point
+                                    }
+                                },
                                 onIncomeClick = {
                                     universalAccess(canUniversalOperate, "операций склада") {
                                         showIncomeDialog = true
@@ -942,6 +947,19 @@ fun KapterkaAppRoot(
                                     universalAccess(canUniversalCatalog, "изменения каталога") {
                                         viewModel.deleteCatalogItem(id, name)
                                     }
+                                },
+                                onAdjustStock = { point, item, newQuantity, reason ->
+                                    universalAccess(canUniversalOperate, "корректировки остатков") {
+                                        viewModel.adjustUniversalStock(
+                                            pointId = point.id,
+                                            pointName = point.name,
+                                            itemId = item.id,
+                                            itemName = item.name,
+                                            unit = item.unit,
+                                            newQuantity = newQuantity,
+                                            reason = reason
+                                        )
+                                    }
                                 }
                             )
                         } else {
@@ -1029,6 +1047,9 @@ fun KapterkaAppRoot(
                                             "Подключение склада по ключу доступно в PRO."
                                         showPaymentProDialog = true
                                     }
+                                },
+                                onSelectWarehouse = { pointId ->
+                                    viewModel.selectPoint(pointId)
                                 },
                                 onAddWarehouse = {
                                     universalAccess(canUniversalWarehouses, "управления складами") {
@@ -1262,9 +1283,7 @@ fun KapterkaAppRoot(
         if (BuildConfig.IS_UNIVERSAL_APP) {
             UniversalEditPointDialog(
                 point = pt,
-                canChangeProfile = stockRecords.none {
-                    it.pointId == pt.id && it.quantity != 0
-                },
+                canChangeProfile = true,
                 onDismiss = { editingPoint = null },
                 onSave = { updated ->
                     viewModel.updateWarehousePoint(updated)

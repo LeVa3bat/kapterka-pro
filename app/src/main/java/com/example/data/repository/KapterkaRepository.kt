@@ -441,7 +441,7 @@ class KapterkaRepository(
         name: String,
         desc: String,
         profileId: String = ""
-    ) {
+    ): WarehousePoint {
         val resolvedProfile = if (BuildConfig.IS_UNIVERSAL_APP) {
             com.example.universal.WarehouseProfileCatalog.find(profileId).id
         } else {
@@ -456,11 +456,94 @@ class KapterkaRepository(
         )
         dao.insertPoint(p)
         syncManager?.pushWarehousePointAsync(getCurrentUnitKey(), p)
+        return p
     }
 
     suspend fun updateWarehousePoint(p: WarehousePoint) {
+        val old = dao.getAllPoints().first().firstOrNull { it.id == p.id }
         dao.updatePoint(p)
+
+        if (
+            BuildConfig.IS_UNIVERSAL_APP &&
+            old != null &&
+            old.profileId != p.profileId
+        ) {
+            dao.getAllItems().first()
+                .filter { it.isCustom && it.warehouseId == p.id }
+                .forEach { item ->
+                    val updatedItem = item.copy(profileId = p.profileId)
+                    dao.insertItem(updatedItem)
+                    syncManager?.pushInventoryItemAsync("", updatedItem)
+                }
+        }
+
         syncManager?.pushWarehousePointAsync(getCurrentUnitKey(), p)
+    }
+
+    suspend fun adjustUniversalPointStock(
+        pointId: String,
+        pointName: String,
+        itemId: String,
+        itemName: String,
+        unit: String,
+        newQuantity: Int,
+        reason: String,
+        actor: String
+    ): Pair<Int, Int> {
+        require(newQuantity >= 0) { "Остаток не может быть отрицательным" }
+
+        val current = dao.getStockItem(pointId, itemId)
+        val oldQuantity = current?.quantity ?: 0
+        if (oldQuantity == newQuantity) return oldQuantity to newQuantity
+
+        val delta = newQuantity - oldQuantity
+        val now = System.currentTimeMillis()
+        val nextStock = if (current != null) {
+            current.copy(
+                quantity = newQuantity,
+                incomeTotal = current.incomeTotal + if (delta > 0) delta else 0,
+                expenseTotal = current.expenseTotal + if (delta < 0) kotlin.math.abs(delta) else 0,
+                lastUpdated = now
+            )
+        } else {
+            StockRecord(
+                pointId = pointId,
+                itemId = itemId,
+                quantity = newQuantity,
+                incomeTotal = if (delta > 0) delta else 0,
+                expenseTotal = if (delta < 0) kotlin.math.abs(delta) else 0,
+                lastUpdated = now
+            )
+        }
+
+        val entry = OperationItemEntry(
+            itemId = itemId,
+            itemName = itemName,
+            unit = unit,
+            quantity = kotlin.math.abs(delta),
+            reason = reason
+        )
+        val op = OperationRecord(
+            id = java.util.UUID.randomUUID().toString(),
+            type = OperationType.CORRECTION,
+            fromPointName = pointName,
+            toPointName = pointName,
+            responsiblePerson = actor,
+            comment = buildString {
+                append(reason.ifBlank { "Инвентаризационная корректировка" })
+                append(" • Было ").append(oldQuantity)
+                append(" → Стало ").append(newQuantity)
+            },
+            timestamp = now,
+            itemsSummary = itemName + " • " + oldQuantity + " → " + newQuantity + " " + unit,
+            itemsJson = serializeOperationItems(listOf(entry)),
+            fromPointId = pointId,
+            toPointId = pointId
+        )
+
+        dao.commitOperationAndStocks(op, listOf(nextStock))
+        syncManager?.pushOperationAsync(getCurrentUnitKey(), op, listOf(nextStock))
+        return oldQuantity to newQuantity
     }
 
     suspend fun deleteWarehousePoint(id: String) {

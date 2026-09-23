@@ -708,4 +708,86 @@ class KapterkaDatabaseTest {
         assertEquals("sync-key-point", found!!.id)
     }
 
+    @Test
+    fun testUniversalWarehouseGetsAutomaticSyncKey() = runBlocking {
+        val repository = KapterkaRepository(dao, null)
+        val point = repository.addWarehousePoint(
+            name = "Тестовый склад",
+            desc = "",
+            profileId = "retail"
+        )
+
+        assertTrue(point.syncKey.matches(Regex("SKL-[A-Z0-9]{4}-[A-Z0-9]{4}")))
+        assertEquals("retail", point.profileId)
+
+        val stored = dao.getAllPoints().first().first { it.id == point.id }
+        assertEquals(point.syncKey, stored.syncKey)
+    }
+
+    @Test
+    fun testUniversalStockCorrectionIsAudited() = runBlocking {
+        val repository = KapterkaRepository(dao, null)
+        dao.insertOrUpdateStock(
+            StockRecord(
+                pointId = "warehouse-1",
+                itemId = "item-1",
+                quantity = 10,
+                incomeTotal = 10,
+                expenseTotal = 0
+            )
+        )
+
+        repository.adjustUniversalPointStock(
+            pointId = "warehouse-1",
+            pointName = "Склад 1",
+            itemId = "item-1",
+            itemName = "Товар",
+            unit = "шт.",
+            newQuantity = 7,
+            reason = "Инвентаризация",
+            actor = "Тест"
+        )
+
+        val stock = dao.getStockItem("warehouse-1", "item-1")
+        assertNotNull(stock)
+        assertEquals(7, stock!!.quantity)
+        assertEquals(3, stock.expenseTotal)
+
+        val operation = dao.getAllOperations().first().first()
+        assertEquals(OperationType.CORRECTION, operation.type)
+        assertEquals("warehouse-1", operation.fromPointId)
+        assertTrue(operation.itemsSummary.contains("10 → 7"))
+    }
+
+    @Test
+    fun testProfileChangeKeepsWarehouseCustomCatalog() = runBlocking {
+        val repository = KapterkaRepository(dao, null)
+        val point = WarehousePoint(
+            id = "warehouse-profile",
+            name = "Склад",
+            profileId = "retail",
+            syncKey = "SKL-AAAA-BBBB"
+        )
+        dao.insertPoint(point)
+        dao.insertItem(
+            InventoryItem(
+                id = "custom-owned",
+                name = "Своя позиция",
+                serviceCategory = "Товары для продажи",
+                subType = "Своя группа",
+                unit = "шт.",
+                isCustom = true,
+                profileId = "retail",
+                warehouseId = point.id
+            )
+        )
+
+        repository.updateWarehousePoint(point.copy(profileId = "auto"))
+
+        val item = dao.getItemById("custom-owned")
+        assertNotNull(item)
+        assertEquals("auto", item!!.profileId)
+        assertEquals(point.id, item.warehouseId)
+    }
+
 }

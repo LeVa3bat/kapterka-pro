@@ -63,6 +63,7 @@ fun UniversalMoreScreen(
     onSubscriptionClick: () -> Unit,
     onSyncClick: () -> Unit,
     onConnectWarehouseKey: (String) -> Unit,
+    onSelectWarehouse: (String) -> Unit,
     onAddWarehouse: () -> Unit,
     onEditWarehouse: (WarehousePoint) -> Unit,
     onChangeProfile: () -> Unit,
@@ -73,6 +74,7 @@ fun UniversalMoreScreen(
     val clipboard = LocalClipboardManager.current
     val context = LocalContext.current
     var showConnectKeyDialog by remember { mutableStateOf(false) }
+    var showWarehousePicker by remember { mutableStateOf(false) }
     var connectKey by remember { mutableStateOf("") }
 
     LazyColumn(
@@ -176,9 +178,16 @@ fun UniversalMoreScreen(
             )
             Spacer(modifier = Modifier.height(7.dp))
             SettingsRow(
+                emoji = "🏢",
+                title = "Текущий склад",
+                subtitle = (selectedWarehouse?.name ?: "Не выбран") + " • нажмите, чтобы сменить",
+                onClick = { showWarehousePicker = true }
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            SettingsRow(
                 emoji = profile.emoji,
-                title = "Профиль выбранного склада",
-                subtitle = (selectedWarehouse?.name?.let { "$it • " } ?: "") + profile.title,
+                title = "Тип / профиль склада",
+                subtitle = profile.title + " • нажмите, чтобы изменить",
                 onClick = onChangeProfile
             )
             Spacer(modifier = Modifier.height(10.dp))
@@ -319,6 +328,63 @@ fun UniversalMoreScreen(
         }
 
         item { Spacer(modifier = Modifier.height(24.dp)) }
+    }
+
+    if (showWarehousePicker) {
+        AlertDialog(
+            onDismissRequest = { showWarehousePicker = false },
+            title = {
+                Text(
+                    text = "Выберите склад",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column {
+                    points.forEach { point ->
+                        val pointProfile = WarehouseProfileCatalog.find(point.profileId)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(
+                                    if (point.id == selectedWarehouse?.id) Color(0xFFEEEEFF)
+                                    else Color(0xFFF7F8FA)
+                                )
+                                .clickable {
+                                    onSelectWarehouse(point.id)
+                                    showWarehousePicker = false
+                                }
+                                .padding(horizontal = 11.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(pointProfile.emoji, fontSize = 18.sp)
+                            Spacer(modifier = Modifier.size(9.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = point.name,
+                                    color = Color(0xFF111827),
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = pointProfile.title,
+                                    color = Color(0xFF667085),
+                                    fontSize = 8.8.sp
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showWarehousePicker = false }) {
+                    Text("Закрыть")
+                }
+            }
+        )
     }
 
     if (showConnectKeyDialog) {

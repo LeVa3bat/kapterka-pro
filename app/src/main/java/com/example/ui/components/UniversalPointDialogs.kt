@@ -105,6 +105,14 @@ fun UniversalAddPointDialog(
             onSelected = { profileId = it }
         )
 
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Ключ синхронизации SKL-XXXX-XXXX создастся автоматически после сохранения склада.",
+            color = WarehouseMuted,
+            fontSize = 9.5.sp,
+            lineHeight = 13.sp
+        )
+
         Spacer(modifier = Modifier.height(18.dp))
 
         Button(
@@ -191,15 +199,13 @@ fun UniversalEditPointDialog(
             enabled = canChangeProfile,
             onSelected = { profileId = it }
         )
-        if (!canChangeProfile) {
-            Spacer(modifier = Modifier.height(5.dp))
-            Text(
-                text = "Профиль нельзя менять, пока на складе есть остатки. Сначала перенесите или спишите имущество.",
-                color = WarehouseMuted,
-                fontSize = 9.5.sp,
-                lineHeight = 13.sp
-            )
-        }
+        Spacer(modifier = Modifier.height(5.dp))
+        Text(
+            text = "Профиль можно изменить без удаления остатков и истории. Пользовательские позиции этого склада сохранятся.",
+            color = WarehouseMuted,
+            fontSize = 9.5.sp,
+            lineHeight = 13.sp
+        )
 
         Spacer(modifier = Modifier.height(18.dp))
 

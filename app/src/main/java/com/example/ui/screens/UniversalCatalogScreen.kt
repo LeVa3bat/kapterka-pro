@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -27,6 +28,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Warehouse
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -46,6 +48,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -74,12 +77,14 @@ fun UniversalCatalogScreen(
     onSelectPoint: (String) -> Unit,
     onAddItem: () -> Unit,
     onUpdateItem: (InventoryItem) -> Unit,
-    onDeleteItem: (String, String) -> Unit
+    onDeleteItem: (String, String) -> Unit,
+    onAdjustStock: (WarehousePoint, InventoryItem, Int, String) -> Unit
 ) {
     var query by remember { mutableStateOf("") }
     var category by remember(warehouseProfileId, selectedPointId) { mutableStateOf<String?>(null) }
     var group by remember(warehouseProfileId, selectedPointId) { mutableStateOf<String?>(null) }
     var editing by remember { mutableStateOf<InventoryItem?>(null) }
+    var adjusting by remember { mutableStateOf<InventoryItem?>(null) }
     var showWarehousePicker by remember { mutableStateOf(false) }
 
     val selectedPoint = remember(points, selectedPointId) {
@@ -235,7 +240,8 @@ fun UniversalCatalogScreen(
                     CompactCatalogItem(
                         item = item,
                         stock = pointStocks[item.id],
-                        onEdit = { editing = item }
+                        onEdit = { editing = item },
+                        onAdjust = { adjusting = item }
                     )
                 }
             }
@@ -341,7 +347,8 @@ fun UniversalCatalogScreen(
                     CompactCatalogItem(
                         item = item,
                         stock = pointStocks[item.id],
-                        onEdit = { editing = item }
+                        onEdit = { editing = item },
+                        onAdjust = { adjusting = item }
                     )
                 }
             }
@@ -362,6 +369,22 @@ fun UniversalCatalogScreen(
             },
             onDismiss = { showWarehousePicker = false }
         )
+    }
+
+    adjusting?.let { item ->
+        val point = selectedPoint
+        if (point != null) {
+            UniversalAdjustStockDialog(
+                warehouseName = point.name,
+                item = item,
+                currentQuantity = pointStocks[item.id]?.quantity ?: 0,
+                onDismiss = { adjusting = null },
+                onConfirm = { newQuantity, reason ->
+                    onAdjustStock(point, item, newQuantity, reason)
+                    adjusting = null
+                }
+            )
+        }
     }
 
     editing?.let { item ->
@@ -508,7 +531,8 @@ private fun BreadcrumbRow(
 private fun CompactCatalogItem(
     item: InventoryItem,
     stock: StockRecord?,
-    onEdit: () -> Unit
+    onEdit: () -> Unit,
+    onAdjust: () -> Unit
 ) {
     val quantity = stock?.quantity ?: 0
     Card(
@@ -561,18 +585,34 @@ private fun CompactCatalogItem(
                     fontSize = 8.4.sp
                 )
             }
-            Column(horizontalAlignment = Alignment.End) {
+            Column(
+                horizontalAlignment = Alignment.End,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(10.dp))
+                    .clickable(onClick = onAdjust)
+                    .padding(horizontal = 5.dp, vertical = 3.dp)
+            ) {
                 Text(
                     text = quantity.toString() + " " + item.unit,
                     color = if (quantity > 0) CatalogInk else CatalogRed,
                     fontSize = 12.5.sp,
                     fontWeight = FontWeight.ExtraBold
                 )
-                Text(
-                    text = "остаток",
-                    color = CatalogMuted,
-                    fontSize = 8.2.sp
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Tune,
+                        contentDescription = null,
+                        tint = CatalogPrimary,
+                        modifier = Modifier.size(11.dp)
+                    )
+                    Spacer(Modifier.width(2.dp))
+                    Text(
+                        text = "остаток",
+                        color = CatalogPrimary,
+                        fontSize = 8.2.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
             Spacer(Modifier.width(4.dp))
             IconButton(onClick = onEdit, modifier = Modifier.size(28.dp)) {
@@ -677,6 +717,130 @@ private fun CatalogWarehousePicker(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun UniversalAdjustStockDialog(
+    warehouseName: String,
+    item: InventoryItem,
+    currentQuantity: Int,
+    onDismiss: () -> Unit,
+    onConfirm: (Int, String) -> Unit
+) {
+    var quantity by remember(item.id, currentQuantity) { mutableStateOf(currentQuantity.toString()) }
+    var reason by remember(item.id) { mutableStateOf("Инвентаризация / фактический пересчёт") }
+    val parsed = quantity.toIntOrNull()
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White)
+        ) {
+            Column(modifier = Modifier.padding(17.dp)) {
+                Text(
+                    text = "Корректировка остатка",
+                    color = CatalogInk,
+                    fontSize = 19.sp,
+                    fontWeight = FontWeight.ExtraBold
+                )
+                Text(
+                    text = warehouseName + " • " + item.name,
+                    color = CatalogMuted,
+                    fontSize = 10.sp
+                )
+                Spacer(Modifier.height(12.dp))
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    StockValueBox(
+                        title = "Сейчас",
+                        value = currentQuantity.toString() + " " + item.unit,
+                        modifier = Modifier.weight(1f)
+                    )
+                    StockValueBox(
+                        title = "После",
+                        value = (parsed ?: currentQuantity).toString() + " " + item.unit,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                Spacer(Modifier.height(10.dp))
+
+                OutlinedTextField(
+                    value = quantity,
+                    onValueChange = { quantity = it.filter(Char::isDigit) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    label = { Text("Фактический остаток") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    shape = RoundedCornerShape(14.dp)
+                )
+
+                Spacer(Modifier.height(9.dp))
+
+                OutlinedTextField(
+                    value = reason,
+                    onValueChange = { reason = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    label = { Text("Причина корректировки") },
+                    shape = RoundedCornerShape(14.dp)
+                )
+
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = "Изменение попадёт в журнал операций с датой и временем. Предыдущая история не удаляется.",
+                    color = CatalogMuted,
+                    fontSize = 9.2.sp,
+                    lineHeight = 13.sp
+                )
+
+                Spacer(Modifier.height(14.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFF2F4F7),
+                            contentColor = CatalogInk
+                        )
+                    ) {
+                        Text("Отмена")
+                    }
+                    Button(
+                        onClick = { parsed?.let { onConfirm(it, reason.trim()) } },
+                        enabled = parsed != null && parsed >= 0 && parsed != currentQuantity,
+                        modifier = Modifier.weight(1.4f),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = CatalogPrimary,
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Text("Сохранить", fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StockValueBox(
+    title: String,
+    value: String,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(14.dp))
+            .background(CatalogBg)
+            .padding(10.dp)
+    ) {
+        Text(title, color = CatalogMuted, fontSize = 8.5.sp)
+        Text(value, color = CatalogInk, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold)
     }
 }
 

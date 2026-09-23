@@ -7,7 +7,8 @@ enum class OperationType(val titleRu: String, val code: String) {
     INCOME("Поступление", "income"),
     TRANSFER("Перемещение", "transfer"),
     ISSUE("Выдача", "issue"),
-    EXPENDITURE("Списание", "expenditure")
+    EXPENDITURE("Списание", "expenditure"),
+    CORRECTION("Корректировка", "correction")
 }
 
 data class OperationItemEntry(

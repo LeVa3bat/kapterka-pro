@@ -115,6 +115,11 @@ fun UniversalIncomeOperationDialog(
     var supplier by remember { mutableStateOf("") }
     var comment by remember { mutableStateOf("") }
     val drafts = remember { mutableStateListOf(UniversalOperationDraft()) }
+    val currentStockMap = remember(selectedPoint.id, stockRecords) {
+        stockRecords
+            .filter { it.pointId == selectedPoint.id }
+            .associate { it.itemId to it.quantity }
+    }
     val suggestions = if (isMilitary) {
         listOf("Тыл / служба снабжения", "Центральная база хранения", "Соседнее подразделение", "Волонтёрская помощь")
     } else {
@@ -146,13 +151,22 @@ fun UniversalIncomeOperationDialog(
             suggestions = suggestions
         )
 
-        Spacer(Modifier.height(14.dp))
+        Spacer(Modifier.height(10.dp))
+
+        UniversalRouteSummary(
+            from = supplier.ifBlank { "Источник не указан" },
+            to = selectedPoint.name
+        )
+
+        Spacer(Modifier.height(12.dp))
 
         UniversalOperationItems(
             drafts = drafts,
             catalogItems = catalogItems,
-            stockMap = null,
-            reasonPresets = emptyList()
+            stockMap = currentStockMap,
+            reasonPresets = emptyList(),
+            balanceDirection = 1,
+            stockRestricted = false
         )
 
         Spacer(Modifier.height(12.dp))
@@ -790,7 +804,9 @@ private fun UniversalOperationItems(
     drafts: MutableList<UniversalOperationDraft>,
     catalogItems: List<InventoryItem>,
     stockMap: Map<String, Int>?,
-    reasonPresets: List<String>
+    reasonPresets: List<String>,
+    balanceDirection: Int = -1,
+    stockRestricted: Boolean = stockMap != null
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -799,7 +815,11 @@ private fun UniversalOperationItems(
         Column(modifier = Modifier.weight(1f)) {
             Text("Позиции", color = UOpInk, fontSize = 12.sp, fontWeight = FontWeight.Bold)
             Text(
-                text = if (stockMap == null) "Выберите товар и количество" else "Показываются позиции с доступным остатком",
+                text = when {
+                    stockMap == null -> "Выберите товар и количество"
+                    stockRestricted -> "Показываются позиции с доступным остатком"
+                    else -> "Для каждой позиции показан остаток до и после операции"
+                },
                 color = UOpMuted,
                 fontSize = 9.5.sp
             )
@@ -899,10 +919,34 @@ private fun UniversalOperationItems(
                     val item = draft.item
                     val available = item?.let { stockMap?.get(it.id) }
                     val requested = draft.quantity.toIntOrNull() ?: 0
-                    if (available != null && requested > available) {
+                    if (item != null && available != null) {
+                        val projected = available + (requested * balanceDirection)
+                        Spacer(Modifier.height(6.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(11.dp))
+                                .background(Color.White)
+                                .padding(horizontal = 9.dp, vertical = 7.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Было: " + available + " " + item.unit,
+                                color = UOpMuted,
+                                fontSize = 9.2.sp
+                            )
+                            Text(
+                                text = "После: " + projected + " " + item.unit,
+                                color = if (projected < 0) UOpRed else UOpInk,
+                                fontSize = 9.2.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                    if (stockRestricted && available != null && requested > available) {
                         Spacer(Modifier.height(6.dp))
                         Text(
-                            text = "Доступно: $available ${item.unit}. Указано: $requested.",
+                            text = "Доступно: " + available + " " + (item?.unit ?: "") + ". Указано: " + requested + ".",
                             color = UOpRed,
                             fontSize = 9.5.sp,
                             fontWeight = FontWeight.SemiBold
@@ -910,6 +954,48 @@ private fun UniversalOperationItems(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun UniversalRouteSummary(
+    from: String,
+    to: String
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(UOpSoft)
+            .padding(horizontal = 11.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text("ОТКУДА", color = UOpMuted, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+            Text(
+                text = from,
+                color = UOpInk,
+                fontSize = 10.5.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        Text("→", color = UOpPrimary, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+        Column(
+            modifier = Modifier.weight(1f),
+            horizontalAlignment = Alignment.End
+        ) {
+            Text("КУДА", color = UOpMuted, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+            Text(
+                text = to,
+                color = UOpInk,
+                fontSize = 10.5.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }

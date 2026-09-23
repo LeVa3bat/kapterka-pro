@@ -19,12 +19,17 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Warehouse
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -108,7 +113,7 @@ fun UniversalOperationsScreen(
             .toList()
     }
 
-    val dateFormat = remember { SimpleDateFormat("dd MMM • HH:mm", Locale("ru")) }
+    val dateFormat = remember { SimpleDateFormat("dd.MM.yyyy • HH:mm:ss", Locale("ru")) }
     val todayStart = remember {
         Calendar.getInstance().apply {
             set(Calendar.HOUR_OF_DAY, 0)
@@ -164,32 +169,16 @@ fun UniversalOperationsScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             if (points.isNotEmpty()) {
-                Text(
-                    text = "Склад",
-                    color = OpsMuted,
-                    fontSize = 9.5.sp,
-                    fontWeight = FontWeight.SemiBold
+                UniversalOperationsWarehouseSelector(
+                    points = points,
+                    selectedPoint = selectedPoint,
+                    showAllWarehouses = showAllWarehouses,
+                    onSelectAll = { showAllWarehouses = true },
+                    onSelectPoint = { point ->
+                        showAllWarehouses = false
+                        onSelectPoint(point.id)
+                    }
                 )
-                Spacer(modifier = Modifier.height(6.dp))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(7.dp)
-                ) {
-                    UniversalFilterChip("Все склады", showAllWarehouses) {
-                        showAllWarehouses = true
-                    }
-                    points.forEach { point ->
-                        UniversalFilterChip(
-                            point.name,
-                            !showAllWarehouses && point.id == selectedPoint?.id
-                        ) {
-                            showAllWarehouses = false
-                            onSelectPoint(point.id)
-                        }
-                    }
-                }
             }
 
             Spacer(modifier = Modifier.height(14.dp))
@@ -231,6 +220,7 @@ fun UniversalOperationsScreen(
                 UniversalFilterChip(vocab.issue, typeFilter == OperationType.ISSUE) { typeFilter = OperationType.ISSUE }
                 UniversalFilterChip(vocab.transfer, typeFilter == OperationType.TRANSFER) { typeFilter = OperationType.TRANSFER }
                 UniversalFilterChip(vocab.writeOff, typeFilter == OperationType.EXPENDITURE) { typeFilter = OperationType.EXPENDITURE }
+                UniversalFilterChip("Корректировки", typeFilter == OperationType.CORRECTION) { typeFilter = OperationType.CORRECTION }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -357,6 +347,88 @@ fun UniversalOperationsScreen(
 }
 
 @Composable
+private fun UniversalOperationsWarehouseSelector(
+    points: List<WarehousePoint>,
+    selectedPoint: WarehousePoint?,
+    showAllWarehouses: Boolean,
+    onSelectAll: () -> Unit,
+    onSelectPoint: (WarehousePoint) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Column {
+        Text(
+            text = "СКЛАД",
+            color = OpsMuted,
+            fontSize = 8.5.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.height(5.dp))
+
+        Box {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(15.dp))
+                    .background(Color.White)
+                    .clickable { expanded = true }
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Warehouse,
+                    contentDescription = null,
+                    tint = OpsPrimary,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.size(8.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = if (showAllWarehouses) "Все склады" else selectedPoint?.name ?: "Выберите склад",
+                        color = OpsInk,
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = if (showAllWarehouses) "Общая история операций" else "История только выбранного склада",
+                        color = OpsMuted,
+                        fontSize = 8.6.sp
+                    )
+                }
+                Icon(
+                    imageVector = Icons.Default.ArrowDropDown,
+                    contentDescription = null,
+                    tint = OpsPrimary
+                )
+            }
+
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                modifier = Modifier.background(Color.White)
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Все склады", color = OpsInk) },
+                    onClick = {
+                        onSelectAll()
+                        expanded = false
+                    }
+                )
+                points.forEach { point ->
+                    DropdownMenuItem(
+                        text = { Text(point.name, color = OpsInk) },
+                        onClick = {
+                            onSelectPoint(point)
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun OperationSummaryCard(
     value: String,
     label: String,
@@ -440,5 +512,11 @@ private fun operationVisual(
         Icons.Default.DeleteOutline,
         Color(0xFFD94C4C),
         Color(0xFFFFEEEE)
+    )
+    OperationType.CORRECTION -> OperationVisual(
+        "Корректировка",
+        Icons.Default.Tune,
+        Color(0xFF7A5AF8),
+        Color(0xFFF1EEFF)
     )
 }

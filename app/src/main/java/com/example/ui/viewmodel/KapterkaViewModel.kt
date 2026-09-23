@@ -553,6 +553,35 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun adjustUniversalStock(
+        pointId: String,
+        pointName: String,
+        itemId: String,
+        itemName: String,
+        unit: String,
+        newQuantity: Int,
+        reason: String
+    ) {
+        if (!BuildConfig.IS_UNIVERSAL_APP) return
+
+        viewModelScope.launch {
+            val actor = userProfile.value?.callsign?.ifBlank { "Ответственный" } ?: "Ответственный"
+            val result = repository.adjustUniversalPointStock(
+                pointId = pointId,
+                pointName = pointName,
+                itemId = itemId,
+                itemName = itemName,
+                unit = unit,
+                newQuantity = newQuantity,
+                reason = reason,
+                actor = actor
+            )
+            _toastEvent.emit(
+                "Остаток скорректирован • $itemName\n${result.first} → ${result.second} $unit"
+            )
+        }
+    }
+
     fun recordExpenditure(
         fromPointId: String,
         pointName: String,
@@ -591,9 +620,24 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         profileId: String = activeWarehouseProfileId
     ) {
         viewModelScope.launch {
-            repository.addWarehousePoint(name, description, profileId)
+            val createdPoint = repository.addWarehousePoint(name, description, profileId)
             repository.ensureUniversalStarterCatalog(profileId)
-            _toastEvent.emit(if (BuildConfig.IS_UNIVERSAL_APP) "Склад «$name» добавлен" else "Точка «$name» добавлена в журнал")
+            if (BuildConfig.IS_UNIVERSAL_APP) {
+                _selectedPointId.value = createdPoint.id
+                activeWarehouseId = createdPoint.id
+                activeWarehouseProfileId = createdPoint.profileId
+                prefs.edit()
+                    .putString("active_warehouse_id_v3", createdPoint.id)
+                    .putString("active_warehouse_profile_id_v2", createdPoint.profileId)
+                    .apply()
+                _availableCategories.value = loadCategoriesForProfile(createdPoint.profileId)
+                _selectedCategory.value = "Все виды"
+                _toastEvent.emit(
+                    "Склад «$name» создан • ключ ${createdPoint.syncKey}\nКлюч создан автоматически"
+                )
+            } else {
+                _toastEvent.emit("Точка «$name» добавлена в журнал")
+            }
         }
     }
 

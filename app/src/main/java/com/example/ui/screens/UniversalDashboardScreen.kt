@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Warehouse
@@ -82,6 +83,7 @@ fun UniversalDashboardScreen(
     operations: List<OperationRecord>,
     requisitions: List<RequisitionRequest>,
     onSelectPoint: (String) -> Unit,
+    onEditWarehouse: (WarehousePoint) -> Unit,
     onIncomeClick: () -> Unit,
     onTransferClick: () -> Unit,
     onIssueClick: () -> Unit,
@@ -336,6 +338,10 @@ fun UniversalDashboardScreen(
                 onSelectPoint(it.id)
                 showWarehousePicker = false
             },
+            onEdit = {
+                showWarehousePicker = false
+                onEditWarehouse(it)
+            },
             onDismiss = { showWarehousePicker = false }
         )
     }
@@ -423,6 +429,7 @@ private fun WarehousePickerDialog(
     points: List<WarehousePoint>,
     selectedPointId: String,
     onSelect: (WarehousePoint) -> Unit,
+    onEdit: (WarehousePoint) -> Unit,
     onDismiss: () -> Unit
 ) {
     Dialog(onDismissRequest = onDismiss) {
@@ -482,6 +489,17 @@ private fun WarehousePickerDialog(
                                         text = profile.title,
                                         color = HomeMuted,
                                         fontSize = 9.5.sp
+                                    )
+                                }
+                                IconButton(
+                                    onClick = { onEdit(point) },
+                                    modifier = Modifier.size(30.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Edit,
+                                        contentDescription = "Переименовать / изменить профиль",
+                                        tint = HomePrimary,
+                                        modifier = Modifier.size(16.dp)
                                     )
                                 }
                                 if (selected) {
