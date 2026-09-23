@@ -63,7 +63,24 @@ class KapterkaRepository(
 
     suspend fun claimUnassignedUniversalItems(profileId: String) {
         if (!BuildConfig.IS_UNIVERSAL_APP || profileId.isBlank()) return
-        dao.claimUnassignedItemsForProfile(profileId)
+
+        val unassigned = dao.getUnassignedItems()
+        if (unassigned.isEmpty()) return
+
+        for (item in unassigned) {
+            val candidates = com.example.universal.WarehouseProfileCatalog.profiles
+                .filter { template -> item.serviceCategory in template.categories }
+                .map { it.id }
+                .distinct()
+
+            val resolvedProfile = if (candidates.size == 1) {
+                candidates.first()
+            } else {
+                profileId
+            }
+
+            dao.insertItem(item.copy(profileId = resolvedProfile))
+        }
     }
 
     suspend fun ensureUniversalStarterCatalog(profileId: String): Int {
