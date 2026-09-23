@@ -15,7 +15,7 @@ import com.example.data.model.RequestStatus
 import com.example.data.model.StockRecord
 import com.example.data.model.UserProfile
 import com.example.data.model.WarehousePoint
-import com.example.data.sync.FirebaseSyncManager
+import com.example.data.sync.WarehouseSyncGateway
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
@@ -28,7 +28,7 @@ import java.util.UUID
 
 class KapterkaRepository(
     private val dao: KapterkaDao,
-    private val syncManager: FirebaseSyncManager? = null
+    private val syncManager: WarehouseSyncGateway? = null
 ) {
 
     val userProfile: Flow<UserProfile?> = dao.getUserProfile()
@@ -97,8 +97,12 @@ class KapterkaRepository(
         }
 
         // Launch online synchronization for this unit if unitKey is configured
-        if (activeProfile.unitKey.isNotBlank()) {
-            syncManager?.syncAndReconcileAll(activeProfile.unitKey, activeProfile.callsign, activeProfile.unitName)
+        if (BuildConfig.IS_UNIVERSAL_APP || activeProfile.unitKey.isNotBlank()) {
+            syncManager?.syncAndReconcileAll(
+                activeProfile.unitKey,
+                activeProfile.callsign,
+                activeProfile.unitName
+            )
         }
 
         // Add newly introduced standard items without overwriting existing user-edited rows.
@@ -196,8 +200,12 @@ class KapterkaRepository(
 
     suspend fun saveUserProfile(profile: UserProfile) {
         dao.saveUserProfile(profile)
-        if (profile.unitKey.isNotBlank()) {
-            syncManager?.syncAndReconcileAll(profile.unitKey, profile.callsign, profile.unitName)
+        if (BuildConfig.IS_UNIVERSAL_APP || profile.unitKey.isNotBlank()) {
+            syncManager?.syncAndReconcileAll(
+                profile.unitKey,
+                profile.callsign,
+                profile.unitName
+            )
         }
     }
 
@@ -285,7 +293,7 @@ class KapterkaRepository(
         }
         dao.insertPoints(updated)
         val unitKey = getCurrentUnitKey()
-        if (unitKey.isNotBlank()) {
+        if (BuildConfig.IS_UNIVERSAL_APP || unitKey.isNotBlank()) {
             updated.forEach { p ->
                 syncManager?.pushWarehousePointAsync(unitKey, p)
             }
