@@ -9,3 +9,14 @@ FIREBASE_PROJECT_ID = "sklad-pro-a1ec0"
 FIREBASE_API_KEY = "AIzaSyAuFsrthvLozx3KDEnIXkjMjxWszn0Gu40"
 SKLAD_PAYMENT_RETURN_URL = "skladpro://payment_success"
 SKLAD_YOOKASSA_SHOP_ID = "1473751"
+SKLAD_YOOKASSA_EXPECT_TEST = "true"
+SKLAD_PRO_MONTH_PRICE_RUB = "500.00"
+SKLAD_DEMO_DAYS = "3"
+
+[[durable_objects.bindings]]
+name = "ACCOUNTS"
+class_name = "SkladProAccount"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["SkladProAccount"]
