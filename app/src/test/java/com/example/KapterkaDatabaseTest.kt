@@ -719,6 +719,7 @@ class KapterkaDatabaseTest {
 
         assertTrue(point.syncKey.matches(Regex("SKL-[A-Z0-9]{4}-[A-Z0-9]{4}")))
         assertEquals("retail", point.profileId)
+        assertTrue(point.updatedAt > 0L)
 
         val stored = dao.getAllPoints().first().first { it.id == point.id }
         assertEquals(point.syncKey, stored.syncKey)
@@ -788,6 +789,7 @@ class KapterkaDatabaseTest {
         assertNotNull(item)
         assertEquals("auto", item!!.profileId)
         assertEquals(point.id, item.warehouseId)
+        assertTrue(item.updatedAt > 0L)
     }
 
     @Test
@@ -867,6 +869,92 @@ class KapterkaDatabaseTest {
 
         assertNull(dao.getItemById(first.id))
         assertNotNull(dao.getItemById(second.id))
+    }
+
+    @Test
+    fun testMigration7To8PreservesWarehousesAndItemsAndAddsUpdatedAt() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val dbName = "migration_7_8_test.db"
+        context.deleteDatabase(dbName)
+
+        val helper = FrameworkSQLiteOpenHelperFactory().create(
+            SupportSQLiteOpenHelper.Configuration.builder(context)
+                .name(dbName)
+                .callback(object : SupportSQLiteOpenHelper.Callback(7) {
+                    override fun onCreate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                        db.execSQL(
+                            """
+                            CREATE TABLE warehouse_points (
+                                id TEXT NOT NULL PRIMARY KEY,
+                                name TEXT NOT NULL,
+                                description TEXT NOT NULL,
+                                isBase INTEGER NOT NULL,
+                                orderIndex INTEGER NOT NULL,
+                                createdAt INTEGER NOT NULL,
+                                profileId TEXT NOT NULL,
+                                syncKey TEXT NOT NULL
+                            )
+                            """.trimIndent()
+                        )
+                        db.execSQL(
+                            """
+                            CREATE TABLE inventory_items (
+                                id TEXT NOT NULL PRIMARY KEY,
+                                name TEXT NOT NULL,
+                                serviceCategory TEXT NOT NULL,
+                                subType TEXT NOT NULL,
+                                unit TEXT NOT NULL,
+                                categoryClass TEXT NOT NULL,
+                                standardCode TEXT NOT NULL,
+                                isCustom INTEGER NOT NULL,
+                                profileId TEXT NOT NULL,
+                                warehouseId TEXT NOT NULL
+                            )
+                            """.trimIndent()
+                        )
+                        db.execSQL(
+                            "INSERT INTO warehouse_points(id,name,description,isBase,orderIndex,createdAt,profileId,syncKey) " +
+                                "VALUES ('w-old','Старый склад','Описание',1,0,123,'retail','SKL-OLD1-KEY1')"
+                        )
+                        db.execSQL(
+                            "INSERT INTO inventory_items(id,name,serviceCategory,subType,unit,categoryClass,standardCode,isCustom,profileId,warehouseId) " +
+                                "VALUES ('i-old','Старая позиция','Товары для продажи','Своя группа','шт.','Кат. 1','',1,'retail','w-old')"
+                        )
+                    }
+
+                    override fun onUpgrade(
+                        db: androidx.sqlite.db.SupportSQLiteDatabase,
+                        oldVersion: Int,
+                        newVersion: Int
+                    ) = Unit
+                })
+                .build()
+        )
+
+        val sqlite = helper.writableDatabase
+        KapterkaDatabase.MIGRATION_7_8.migrate(sqlite)
+
+        sqlite.query(
+            "SELECT name, profileId, syncKey, updatedAt FROM warehouse_points WHERE id='w-old'"
+        ).use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("Старый склад", cursor.getString(0))
+            assertEquals("retail", cursor.getString(1))
+            assertEquals("SKL-OLD1-KEY1", cursor.getString(2))
+            assertEquals(0L, cursor.getLong(3))
+        }
+
+        sqlite.query(
+            "SELECT name, warehouseId, updatedAt FROM inventory_items WHERE id='i-old'"
+        ).use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("Старая позиция", cursor.getString(0))
+            assertEquals("w-old", cursor.getString(1))
+            assertEquals(0L, cursor.getLong(2))
+        }
+
+        helper.close()
+        context.deleteDatabase(dbName)
     }
 
 }

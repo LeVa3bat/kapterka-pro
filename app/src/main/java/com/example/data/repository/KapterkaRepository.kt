@@ -79,7 +79,10 @@ class KapterkaRepository(
                 profileId
             }
 
-            val claimed = item.copy(profileId = resolvedProfile)
+            val claimed = item.copy(
+                profileId = resolvedProfile,
+                updatedAt = if (item.isCustom) System.currentTimeMillis() else item.updatedAt
+            )
             dao.insertItem(claimed)
             syncManager?.pushInventoryItemAsync("", claimed)
         }
@@ -188,7 +191,10 @@ class KapterkaRepository(
                     .toList()
 
                 if (warehouseIds.size == 1) {
-                    val claimed = item.copy(warehouseId = warehouseIds.first())
+                    val claimed = item.copy(
+                        warehouseId = warehouseIds.first(),
+                        updatedAt = System.currentTimeMillis()
+                    )
                     dao.insertItem(claimed)
                     syncManager?.pushInventoryItemAsync("", claimed)
                 }
@@ -241,15 +247,23 @@ class KapterkaRepository(
                 target.profileId.isBlank() -> safeProfile
                 else -> target.profileId
             },
-            syncKey = target.syncKey.ifBlank { generateWarehouseSyncKey() }
+            syncKey = target.syncKey.ifBlank { generateWarehouseSyncKey() },
+            updatedAt = System.currentTimeMillis()
         )
 
-        if (updated != target) {
+        val changed =
+            updated.name != target.name ||
+            updated.description != target.description ||
+            updated.profileId != target.profileId ||
+            updated.syncKey != target.syncKey
+
+        if (changed) {
             dao.updatePoint(updated)
             syncManager?.pushWarehousePointAsync("", updated)
+            return updated
         }
 
-        return updated
+        return target
     }
 
     suspend fun prepareUniversalWarehouses(defaultProfileId: String) {
@@ -260,11 +274,16 @@ class KapterkaRepository(
         if (current.isEmpty()) return
 
         current.forEach { point ->
-            val updated = point.copy(
-                profileId = point.profileId.ifBlank { safeProfile },
-                syncKey = point.syncKey.ifBlank { generateWarehouseSyncKey() }
-            )
-            if (updated != point) {
+            val resolvedProfile = point.profileId.ifBlank { safeProfile }
+            val resolvedKey = point.syncKey.ifBlank { generateWarehouseSyncKey() }
+            val metadataChanged =
+                resolvedProfile != point.profileId || resolvedKey != point.syncKey
+            if (metadataChanged) {
+                val updated = point.copy(
+                    profileId = resolvedProfile,
+                    syncKey = resolvedKey,
+                    updatedAt = System.currentTimeMillis()
+                )
                 dao.updatePoint(updated)
                 syncManager?.pushWarehousePointAsync("", updated)
             }
@@ -519,12 +538,15 @@ class KapterkaRepository(
         } else {
             ""
         }
+        val now = System.currentTimeMillis()
         val p = WarehousePoint(
             id = java.util.UUID.randomUUID().toString(),
             name = name,
             description = desc,
+            createdAt = now,
             profileId = resolvedProfile,
-            syncKey = if (BuildConfig.IS_UNIVERSAL_APP) generateWarehouseSyncKey() else ""
+            syncKey = if (BuildConfig.IS_UNIVERSAL_APP) generateWarehouseSyncKey() else "",
+            updatedAt = now
         )
         dao.insertPoint(p)
         syncManager?.pushWarehousePointAsync(getCurrentUnitKey(), p)
@@ -533,23 +555,28 @@ class KapterkaRepository(
 
     suspend fun updateWarehousePoint(p: WarehousePoint) {
         val old = dao.getAllPoints().first().firstOrNull { it.id == p.id }
-        dao.updatePoint(p)
+        val now = System.currentTimeMillis()
+        val stamped = p.copy(updatedAt = now)
+        dao.updatePoint(stamped)
 
         if (
             BuildConfig.IS_UNIVERSAL_APP &&
             old != null &&
-            old.profileId != p.profileId
+            old.profileId != stamped.profileId
         ) {
             dao.getAllItems().first()
-                .filter { it.isCustom && it.warehouseId == p.id }
+                .filter { it.isCustom && it.warehouseId == stamped.id }
                 .forEach { item ->
-                    val updatedItem = item.copy(profileId = p.profileId)
+                    val updatedItem = item.copy(
+                        profileId = stamped.profileId,
+                        updatedAt = now
+                    )
                     dao.insertItem(updatedItem)
                     syncManager?.pushInventoryItemAsync("", updatedItem)
                 }
         }
 
-        syncManager?.pushWarehousePointAsync(getCurrentUnitKey(), p)
+        syncManager?.pushWarehousePointAsync(getCurrentUnitKey(), stamped)
     }
 
     suspend fun adjustUniversalPointStock(
@@ -627,8 +654,9 @@ class KapterkaRepository(
     }
 
     suspend fun reorderWarehousePoints(orderedPoints: List<WarehousePoint>) {
+        val now = System.currentTimeMillis()
         val updated = orderedPoints.mapIndexed { index, p ->
-            p.copy(orderIndex = index)
+            p.copy(orderIndex = index, updatedAt = now)
         }
         dao.insertPoints(updated)
         val unitKey = getCurrentUnitKey()
@@ -647,6 +675,7 @@ class KapterkaRepository(
         profileId: String = "",
         warehouseId: String = ""
     ) {
+        val now = System.currentTimeMillis()
         val i = InventoryItem(
             id = java.util.UUID.randomUUID().toString(),
             name = name,
@@ -656,7 +685,8 @@ class KapterkaRepository(
             categoryClass = "Кат. 1",
             isCustom = true,
             profileId = profileId,
-            warehouseId = warehouseId
+            warehouseId = warehouseId,
+            updatedAt = now
         )
         dao.insertItem(i)
         syncManager?.pushInventoryItemAsync(getCurrentUnitKey(), i)
@@ -666,8 +696,13 @@ class KapterkaRepository(
         if (BuildConfig.IS_UNIVERSAL_APP && !i.isCustom) {
             return
         }
-        dao.insertItem(i)
-        syncManager?.pushInventoryItemAsync(getCurrentUnitKey(), i)
+        val stamped = if (BuildConfig.IS_UNIVERSAL_APP) {
+            i.copy(updatedAt = System.currentTimeMillis())
+        } else {
+            i
+        }
+        dao.insertItem(stamped)
+        syncManager?.pushInventoryItemAsync(getCurrentUnitKey(), stamped)
     }
 
     suspend fun deleteInventoryItem(id: String) {

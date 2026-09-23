@@ -27,7 +27,7 @@ import kotlinx.coroutines.launch
         UserProfile::class,
         SyncTombstone::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -109,6 +109,19 @@ abstract class KapterkaDatabase : RoomDatabase() {
             }
         }
 
+        internal val MIGRATION_7_8 = object : androidx.room.migration.Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Add-only conflict-resolution timestamps for mutable universal data.
+                // Existing rows and all user balances/history are preserved.
+                db.execSQL(
+                    "ALTER TABLE warehouse_points ADD COLUMN updatedAt INTEGER NOT NULL DEFAULT 0"
+                )
+                db.execSQL(
+                    "ALTER TABLE inventory_items ADD COLUMN updatedAt INTEGER NOT NULL DEFAULT 0"
+                )
+            }
+        }
+
         fun getDatabase(context: Context, scope: CoroutineScope): KapterkaDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -116,7 +129,7 @@ abstract class KapterkaDatabase : RoomDatabase() {
                     KapterkaDatabase::class.java,
                     "kapterka_database"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
                     .addCallback(DatabaseCallback(scope))
                     .build()
                 INSTANCE = instance

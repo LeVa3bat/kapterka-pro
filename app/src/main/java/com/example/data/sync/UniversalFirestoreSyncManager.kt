@@ -12,6 +12,7 @@ import com.example.data.model.StockRecord
 import com.example.data.model.SyncTombstone
 import com.example.data.model.WarehousePoint
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
@@ -225,25 +226,44 @@ class UniversalFirestoreSyncManager(
         }
     }
 
+    private fun cloudUpdatedAt(doc: DocumentSnapshot): Long {
+        // Legacy cloud rows have only a server Timestamp and local v7 rows have no
+        // comparable client timestamp. Treat both as version 0 so an existing local
+        // row is never destroyed by an ambiguous legacy pull. A clean device still
+        // accepts the cloud row because it has no local copy.
+        return doc.getLong("updatedAtMs") ?: 0L
+    }
+
     private suspend fun tombstoned(uid: String, type: String, entityId: String): Boolean {
         val id = SyncTombstone.create(uid, type, entityId, 1L).id
         return dao.getSyncTombstoneById(id) != null
     }
 
     private suspend fun pullWarehouses(uid: String) {
+        val localById = dao.getAllPoints().first().associateBy { it.id }
         val docs = workspace(uid).collection("warehouses").get().await()
         for (doc in docs.documents) {
             if (tombstoned(uid, POINT, doc.id)) continue
+
+            val local = localById[doc.id]
+            val cloudUpdated = cloudUpdatedAt(doc)
+            if (local != null && local.updatedAt >= cloudUpdated) {
+                continue
+            }
+
             dao.insertPoint(
                 WarehousePoint(
                     id = doc.id,
-                    name = doc.getString("name").orEmpty(),
+                    name = doc.getString("name").orEmpty().ifBlank { local?.name.orEmpty() },
                     description = doc.getString("description").orEmpty(),
-                    isBase = doc.getBoolean("isBase") ?: false,
-                    orderIndex = doc.getLong("orderIndex")?.toInt() ?: 0,
-                    createdAt = doc.getLong("createdAt") ?: System.currentTimeMillis(),
-                    profileId = doc.getString("profileId").orEmpty(),
+                    isBase = doc.getBoolean("isBase") ?: local?.isBase ?: false,
+                    orderIndex = doc.getLong("orderIndex")?.toInt() ?: local?.orderIndex ?: 0,
+                    createdAt = doc.getLong("createdAt") ?: local?.createdAt ?: System.currentTimeMillis(),
+                    profileId = doc.getString("profileId").orEmpty()
+                        .ifBlank { local?.profileId.orEmpty() },
                     syncKey = doc.getString("syncKey").orEmpty()
+                        .ifBlank { local?.syncKey.orEmpty() },
+                    updatedAt = cloudUpdated
                 )
             )
         }
@@ -253,7 +273,18 @@ class UniversalFirestoreSyncManager(
         val docs = workspace(uid).collection("items").get().await()
         for (doc in docs.documents) {
             if (tombstoned(uid, ITEM, doc.id)) continue
+
+            // Standard catalog rows are shipped with the app and are read-only templates.
+            // Only user-created rows belong to cloud account data.
+            val cloudIsCustom = doc.getBoolean("isCustom") ?: false
+            if (!cloudIsCustom) continue
+
             val local = dao.getItemById(doc.id)
+            val cloudUpdated = cloudUpdatedAt(doc)
+            if (local != null && local.updatedAt >= cloudUpdated) {
+                continue
+            }
+
             val cloudProfileId = doc.getString("profileId").orEmpty()
             dao.insertItem(
                 InventoryItem(
@@ -264,10 +295,11 @@ class UniversalFirestoreSyncManager(
                     unit = doc.getString("unit") ?: "шт.",
                     categoryClass = doc.getString("categoryClass") ?: "Кат. 1",
                     standardCode = doc.getString("standardCode").orEmpty(),
-                    isCustom = doc.getBoolean("isCustom") ?: false,
+                    isCustom = true,
                     profileId = cloudProfileId.ifBlank { local?.profileId.orEmpty() },
                     warehouseId = doc.getString("warehouseId").orEmpty()
-                        .ifBlank { local?.warehouseId.orEmpty() }
+                        .ifBlank { local?.warehouseId.orEmpty() },
+                    updatedAt = cloudUpdated
                 )
             )
         }
@@ -353,7 +385,9 @@ class UniversalFirestoreSyncManager(
     private suspend fun pushAllLocal(uid: String) {
         for (t in dao.getSyncTombstonesForUnit(uid)) publishTombstone(uid, t)
         for (p in dao.getAllPoints().first()) pushWarehouse(uid, p)
-        for (i in dao.getAllItems().first()) pushItem(uid, i)
+        for (i in dao.getAllItems().first()) {
+            if (i.isCustom) pushItem(uid, i)
+        }
         for (s in dao.getAllStockRecords().first()) pushStock(uid, s)
         for (o in dao.getAllOperations().first()) pushOperation(uid, o)
         for (r in dao.getAllRequisitions().first()) pushRequisition(uid, r)
@@ -371,6 +405,7 @@ class UniversalFirestoreSyncManager(
                 "createdAt" to point.createdAt,
                 "profileId" to point.profileId,
                 "syncKey" to point.syncKey,
+                "updatedAtMs" to point.updatedAt,
                 "updatedAt" to FieldValue.serverTimestamp()
             ),
             SetOptions.merge()
@@ -378,6 +413,7 @@ class UniversalFirestoreSyncManager(
     }
 
     private suspend fun pushItem(uid: String, item: InventoryItem) {
+        if (!item.isCustom) return
         if (tombstoned(uid, ITEM, item.id)) return
         workspace(uid).collection("items").document(item.id).set(
             hashMapOf(
@@ -391,6 +427,7 @@ class UniversalFirestoreSyncManager(
                 "isCustom" to item.isCustom,
                 "profileId" to item.profileId,
                 "warehouseId" to item.warehouseId,
+                "updatedAtMs" to item.updatedAt,
                 "updatedAt" to FieldValue.serverTimestamp()
             ),
             SetOptions.merge()
