@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.data.model.InventoryItem
 import com.example.data.model.StockRecord
+import com.example.data.model.WarehousePoint
 import com.example.universal.WarehouseGroupCatalog
 
 private val CatalogBg = Color(0xFFF5F7FB)
@@ -60,9 +61,12 @@ private val CatalogSoft = Color(0xFFEEEEFF)
 @Composable
 fun UniversalCatalogScreen(
     warehouseProfileId: String?,
+    points: List<WarehousePoint>,
+    selectedPointId: String,
     items: List<InventoryItem>,
     stockRecords: List<StockRecord>,
     availableCategories: List<String>,
+    onSelectPoint: (String) -> Unit,
     onAddItem: () -> Unit,
     onUpdateItem: (InventoryItem) -> Unit,
     onDeleteItem: (String, String) -> Unit
@@ -72,8 +76,15 @@ fun UniversalCatalogScreen(
     var group by remember(warehouseProfileId) { mutableStateOf<String?>(null) }
     var editing by remember { mutableStateOf<InventoryItem?>(null) }
 
-    val quantities = remember(stockRecords) {
-        stockRecords.groupBy { it.itemId }.mapValues { (_, rows) -> rows.sumOf { it.quantity } }
+    val selectedPoint = remember(points, selectedPointId) {
+        points.firstOrNull { it.id == selectedPointId } ?: points.firstOrNull()
+    }
+    val quantities = remember(stockRecords, selectedPoint?.id) {
+        val pointId = selectedPoint?.id
+        stockRecords
+            .filter { pointId == null || it.pointId == pointId }
+            .groupBy { it.itemId }
+            .mapValues { (_, rows) -> rows.sumOf { it.quantity } }
     }
 
     val inStockCount = remember(items, quantities) {
@@ -119,9 +130,14 @@ fun UniversalCatalogScreen(
                         fontWeight = FontWeight.ExtraBold
                     )
                     Text(
-                        text = "${items.size} позиций в каталоге",
+                        text = if (selectedPoint == null)
+                            items.size.toString() + " позиций в каталоге"
+                        else
+                            items.size.toString() + " позиций • " + selectedPoint.name,
                         color = CatalogMuted,
-                        fontSize = 12.sp
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
                 Button(
@@ -161,6 +177,33 @@ fun UniversalCatalogScreen(
                     label = "без остатка",
                     modifier = Modifier.weight(1f)
                 )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            if (points.isNotEmpty()) {
+                Text(
+                    text = "Склад",
+                    color = CatalogMuted,
+                    fontSize = 9.5.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(7.dp)
+                ) {
+                    points.forEach { point ->
+                        CatalogChip(
+                            text = point.name,
+                            selected = point.id == selectedPoint?.id
+                        ) {
+                            onSelectPoint(point.id)
+                        }
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(14.dp))
