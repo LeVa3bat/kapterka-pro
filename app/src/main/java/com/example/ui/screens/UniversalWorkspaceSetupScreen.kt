@@ -166,7 +166,7 @@ fun UniversalWorkspaceSetupScreen(
                         text = if (template.id == "military")
                             "Военный профиль: камера и фотографии отключены."
                         else
-                            "Alpha работает локально и не использует серверы «Каптёрки ПРО».",
+                            "Аккаунт уже защищён отдельным Firebase. Складские данные Alpha пока остаются локальными и не используют серверы «Каптёрки ПРО».",
                         color = Color(0xFF505A6B),
                         fontSize = 11.sp,
                         lineHeight = 16.sp,
