@@ -251,6 +251,8 @@ class UniversalFirestoreSyncManager(
         val docs = workspace(uid).collection("items").get().await()
         for (doc in docs.documents) {
             if (tombstoned(uid, ITEM, doc.id)) continue
+            val local = dao.getItemById(doc.id)
+            val cloudProfileId = doc.getString("profileId").orEmpty()
             dao.insertItem(
                 InventoryItem(
                     id = doc.id,
@@ -261,7 +263,7 @@ class UniversalFirestoreSyncManager(
                     categoryClass = doc.getString("categoryClass") ?: "Кат. 1",
                     standardCode = doc.getString("standardCode").orEmpty(),
                     isCustom = doc.getBoolean("isCustom") ?: false,
-                    profileId = doc.getString("profileId").orEmpty()
+                    profileId = cloudProfileId.ifBlank { local?.profileId.orEmpty() }
                 )
             )
         }
