@@ -1,0 +1,37 @@
+name: Sklad PRO cloud bootstrap
+
+on:
+  push:
+    branches:
+      - 'universal/alpha'
+    paths:
+      - '.github/workflows/sklad-pro-cloud-bootstrap.yml'
+      - 'server-sklad-pro/setup-cloud-run.sh'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate with existing keyless Firebase deployer
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: 'sklad-pro-a1ec0'
+          workload_identity_provider: 'projects/98775459607/locations/global/workloadIdentityPools/github-sklad-pro/providers/kapterka-pro'
+          service_account: 'github-firestore-deployer@sklad-pro-a1ec0.iam.gserviceaccount.com'
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Bootstrap dedicated Cloud Run identities and permissions
+        shell: bash
+        run: bash server-sklad-pro/setup-cloud-run.sh
