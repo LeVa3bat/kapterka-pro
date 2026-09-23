@@ -188,6 +188,13 @@ fun UniversalDashboardScreen(
                 Spacer(modifier = Modifier.height(14.dp))
 
                 if (points.isNotEmpty()) {
+                    Text(
+                        text = "МЕСТО ХРАНЕНИЯ",
+                        color = UniversalMuted,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
