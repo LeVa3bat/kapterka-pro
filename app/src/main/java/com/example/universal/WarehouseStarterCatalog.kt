@@ -48,7 +48,7 @@ object WarehouseStarterCatalog {
             WarehouseGroupCatalog.groupsFor(profile.id, category).forEach { group ->
                 WarehouseItemPresetCatalog.namesFor(profile.id, category, group).forEach { name ->
                     detailed += InventoryItem(
-                        id = "preset_military_" + counter++,
+                        id = "starter_military_preset_" + counter++,
                         name = name,
                         serviceCategory = category,
                         subType = group,
