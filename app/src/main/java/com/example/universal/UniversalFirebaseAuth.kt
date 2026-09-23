@@ -100,9 +100,9 @@ class UniversalFirebaseAuth(context: Context) {
                             )
                         } else {
                             callback(
-                                UniversalAuthResult.Error(
-                                    "Аккаунт создан, но письмо подтверждения не отправилось. " +
-                                        "Нажмите «Отправить ещё раз»."
+                                UniversalAuthResult.VerificationRequired(
+                                    email = normalizedEmail,
+                                    message = "Аккаунт создан. Письмо не отправилось — нажмите «Отправить ещё раз»."
                                 )
                             )
                         }
