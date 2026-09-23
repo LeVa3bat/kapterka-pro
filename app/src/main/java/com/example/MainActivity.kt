@@ -437,6 +437,23 @@ fun KapterkaAppRoot(
                         is UniversalBackendResult.Success -> {
                             universalEntitlement = result.value
                             universalSubscriptionMessage = null
+
+                            if (universalBackend.pendingPaymentId().isNotBlank()) {
+                                universalBackend.checkPendingPayment { pendingResult ->
+                                    when (pendingResult) {
+                                        is UniversalBackendResult.Success -> {
+                                            universalEntitlement = pendingResult.value
+                                            if (pendingResult.value.isProActive) {
+                                                universalSubscriptionMessage =
+                                                    "Оплата подтверждена. PRO активирован."
+                                            }
+                                        }
+                                        is UniversalBackendResult.Error -> {
+                                            universalSubscriptionMessage = pendingResult.message
+                                        }
+                                    }
+                                }
+                            }
                         }
                         is UniversalBackendResult.Error -> {
                             universalSubscriptionMessage = result.message
