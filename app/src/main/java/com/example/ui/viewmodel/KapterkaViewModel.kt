@@ -290,6 +290,15 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun syncUniversalNow() {
+        if (!BuildConfig.IS_UNIVERSAL_APP) return
+
+        viewModelScope.launch {
+            val result = repository.triggerCloudSync()
+            _toastEvent.emit(result.second)
+        }
+    }
+
     fun setUniversalCloudSyncEnabled(enabled: Boolean) {
         if (!BuildConfig.IS_UNIVERSAL_APP) return
 
