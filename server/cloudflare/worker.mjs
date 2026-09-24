@@ -69,7 +69,7 @@ export function getConfig(env = {}) {
     mailRelayUrl: /^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(String(env.MAIL_RELAY_URL || '').trim())
       ? String(env.MAIL_RELAY_URL).trim()
       : '',
-    mailRelaySecret: String(env.MAIL_RELAY_SECRET || ''),
+    mailRelaySecret: String(env.MAIL_RELAY_SECRET || '').trim(),
     senderEmail: String(env.EMAIL_SENDER_EMAIL || ''),
     senderName: String(env.EMAIL_SENDER_NAME || 'Каптёрка ПРО'),
     tgBot: String(env.TG_BOT_TOKEN || ''),

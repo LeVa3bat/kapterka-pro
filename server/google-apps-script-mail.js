@@ -20,8 +20,8 @@ const SENDER_NAME = 'Каптёрка ПРО';
 function doPost(e) {
   try {
     const msg = JSON.parse((e && e.postData && e.postData.contents) || '{}');
-    const secret = PropertiesService.getScriptProperties().getProperty('RELAY_SECRET') || '';
-    if (secret.length < 16 || msg.secret !== secret) return json_({ ok: false, error: 'FORBIDDEN' });
+    const secret = String(PropertiesService.getScriptProperties().getProperty('RELAY_SECRET') || '').trim();
+    if (secret.length < 16 || String(msg.secret || '').trim() !== secret) return json_({ ok: false, error: 'FORBIDDEN' });
 
     const to = String(msg.to || '').trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) return json_({ ok: false, error: 'INVALID_EMAIL' });
