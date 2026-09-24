@@ -336,8 +336,21 @@ class Firestore {
     });
   }
 
+  // `collection` may be a nested path such as "units/<key>/members".
+  collPath(collection) {
+    return '/' + String(collection).split('/').map(encodeURIComponent).join('/');
+  }
+
   docPath(collection, id) {
-    return `/${encodeURIComponent(collection)}/${encodeURIComponent(id)}`;
+    return `${this.collPath(collection)}/${encodeURIComponent(id)}`;
+  }
+
+  async hasAnyDocument(collection) {
+    const r = await this.request('GET', `${this.collPath(collection)}?pageSize=1`);
+    if (r.status === 404) return false;
+    if (!r.ok) throw new Error(`Firestore list failed: HTTP ${r.status}`);
+    const parsed = await r.json();
+    return Array.isArray(parsed.documents) && parsed.documents.length > 0;
   }
 
   async get(collection, id) {
@@ -402,7 +415,7 @@ class Firestore {
     let pageToken = '';
     for (let page = 0; page < 20; page++) {
       const qs = `?pageSize=${pageSize}` + (pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : '');
-      const r = await this.request('GET', `/${encodeURIComponent(collection)}${qs}`);
+      const r = await this.request('GET', `${this.collPath(collection)}${qs}`);
       if (!r.ok) throw new Error(`Firestore list failed: HTTP ${r.status}`);
       const parsed = await r.json();
       for (const doc of parsed.documents || []) {
@@ -496,6 +509,68 @@ function paymentTimestampMillis(payment) {
   const parsed = Date.parse(payment?.captured_at || payment?.created_at || '');
   return Number.isFinite(parsed) ? parsed : Date.now();
 }
+
+// ---------------------------------------------------------------- Firebase ID tokens
+
+const FIREBASE_JWKS_URL =
+  'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com';
+let cachedJwks = { keys: null, expiresAt: 0 };
+
+function decodeJwtPart(part) {
+  const b64 = part.replace(/-/g, '+').replace(/_/g, '/');
+  return JSON.parse(new TextDecoder().decode(base64ToBytes(b64 + '==='.slice((b64.length + 3) % 4))));
+}
+
+async function firebaseJwks() {
+  const now = Date.now();
+  if (cachedJwks.keys && cachedJwks.expiresAt > now) return cachedJwks.keys;
+  const r = await fetchWithTimeout(FIREBASE_JWKS_URL);
+  if (!r.ok) throw new Error(`JWKS HTTP ${r.status}`);
+  const parsed = await r.json();
+  const maxAge = Number((/max-age=(\d+)/.exec(r.headers.get('Cache-Control') || '') || [])[1] || 3600);
+  cachedJwks = { keys: parsed.keys || [], expiresAt: now + Math.min(maxAge, 6 * 3600) * 1000 };
+  return cachedJwks.keys;
+}
+
+// Returns the Firebase uid for a valid ID token of this project, or '' otherwise.
+export async function verifyFirebaseIdToken(cfg, token) {
+  const parts = String(token || '').split('.');
+  if (parts.length !== 3 || token.length > 4096) return '';
+  let header;
+  let claims;
+  try {
+    header = decodeJwtPart(parts[0]);
+    claims = decodeJwtPart(parts[1]);
+  } catch (_) {
+    return '';
+  }
+  if (header.alg !== 'RS256' || !header.kid) return '';
+  const nowSec = Math.floor(Date.now() / 1000);
+  if (
+    claims.aud !== cfg.projectId ||
+    claims.iss !== `https://securetoken.google.com/${cfg.projectId}` ||
+    !(Number(claims.exp) > nowSec) ||
+    !(Number(claims.iat) <= nowSec + 300) ||
+    typeof claims.sub !== 'string' || !claims.sub || claims.sub.length > 128
+  ) {
+    return '';
+  }
+  const jwk = (await firebaseJwks()).find((k) => k.kid === header.kid);
+  if (!jwk) return '';
+  const key = await crypto.subtle.importKey(
+    'jwk', { kty: jwk.kty, n: jwk.n, e: jwk.e, alg: 'RS256', ext: true },
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify']
+  );
+  const sig = base64ToBytes(parts[2].replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((parts[2].length + 3) % 4));
+  const valid = await crypto.subtle.verify(
+    'RSASSA-PKCS1-v1_5', key, sig, new TextEncoder().encode(`${parts[0]}.${parts[1]}`)
+  );
+  return valid ? claims.sub : '';
+}
+
+// Unit keys are Firestore document ids chosen by clients. Legacy keys are short.
+const UNIT_KEY_RE = /^[A-Za-z0-9_\-Ѐ-ӿ]{3,120}$/;
+const UNIT_DATA_COLLECTIONS = ['devices', 'warehouse_points', 'stock_records', 'operation_records', 'inventory_items'];
 
 // ---------------------------------------------------------------- admin session
 
@@ -722,6 +797,56 @@ const handlers = {
       'Ключ: <code>' + escapeHtml(maskKey(licenseKey)) + '</code>'
     );
     return ctx.ok({ ok: true });
+  },
+
+  // A device proves its Firebase identity and becomes a member of a unit.
+  // Firestore rules (strict phase) only let members read/write unit data, so
+  // guessing a unit key is only possible through this rate-limited endpoint.
+  async unit_join(ctx) {
+    const { body, db, cfg, ip } = ctx;
+    if (!(await bindingAllows(ctx.env.AUTH_LIMITER, 'join:' + ip))) {
+      return ctx.fail(429, 'RATE_LIMITED', { retry_after_seconds: 60 });
+    }
+    const uid = await verifyFirebaseIdToken(cfg, body.id_token);
+    if (!uid) return ctx.fail(401, 'AUTH_REQUIRED');
+    if (!(await bindingAllows(ctx.env.AUTH_LIMITER, 'join-uid:' + uid))) {
+      return ctx.fail(429, 'RATE_LIMITED', { retry_after_seconds: 60 });
+    }
+    const unitKey = cleanText(body.unit_key, 120);
+    if (!UNIT_KEY_RE.test(unitKey)) return ctx.fail(400, 'INVALID_UNIT_KEY');
+
+    const membersPath = `units/${unitKey}/members`;
+    const now = Date.now();
+    const member = {
+      uid,
+      fighterId: cleanText(body.fighter_id, 100),
+      callsign: cleanText(body.callsign, 80),
+      deviceId: cleanText(body.device_id, 64),
+      lastJoinAt: now
+    };
+
+    if (await db.get(membersPath, uid)) {
+      await db.patch(membersPath, uid, member);
+      return ctx.ok({ ok: true, unit_key: unitKey, member: true, created: false });
+    }
+
+    let exists = Boolean(await db.get('units', unitKey));
+    for (const coll of UNIT_DATA_COLLECTIONS) {
+      if (exists) break;
+      exists = await db.hasAnyDocument(`units/${unitKey}/${coll}`);
+    }
+    let created = false;
+    if (!exists) {
+      if (body.create !== true) return ctx.fail(404, 'UNIT_NOT_FOUND');
+      created = true;
+    }
+    try {
+      await db.patch('units', unitKey, { unitKey, createdAt: now, createdBy: uid }, { mustExist: false });
+    } catch (error) {
+      if (error?.code !== 'ALREADY_EXISTS') throw error;
+    }
+    await db.patch(membersPath, uid, { ...member, joinedAt: now });
+    return ctx.ok({ ok: true, unit_key: unitKey, member: true, created });
   },
 
   async admin_auth(ctx) {
@@ -1029,6 +1154,7 @@ export default {
 export const __test = {
   reset() {
     cachedGoogleToken = { value: '', expiresAt: 0, account: '' };
+    cachedJwks = { keys: null, expiresAt: 0 };
     adminAuthFailures.clear();
     licenseEmailLastSentAt.clear();
   }

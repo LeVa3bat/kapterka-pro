@@ -16,6 +16,25 @@ const { privateKey } = await crypto.subtle.generateKey(
 const pkcs8 = Buffer.from(await crypto.subtle.exportKey('pkcs8', privateKey)).toString('base64');
 const pem = `-----BEGIN PRIVATE KEY-----\n${pkcs8.match(/.{1,64}/g).join('\n')}\n-----END PRIVATE KEY-----\n`;
 
+// Fake Firebase Auth signing key (stands in for Google's securetoken keys).
+const authPair = await crypto.subtle.generateKey(
+  { name: 'RSASSA-PKCS1-v1_5', modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: 'SHA-256' },
+  true,
+  ['sign', 'verify']
+);
+const jwkPublic = { ...(await crypto.subtle.exportKey('jwk', authPair.publicKey)), kid: 'test-kid', alg: 'RS256', use: 'sig' };
+const b64u = (buf) => Buffer.from(buf).toString('base64url');
+async function idToken(uid, overrides = {}, signer = authPair.privateKey) {
+  const now = Math.floor(Date.now() / 1000);
+  const head = b64u(JSON.stringify({ alg: 'RS256', kid: 'test-kid', typ: 'JWT' }));
+  const body = b64u(JSON.stringify({
+    aud: 'kapterka-pro', iss: 'https://securetoken.google.com/kapterka-pro',
+    sub: uid, iat: now, exp: now + 3600, firebase: { sign_in_provider: 'anonymous' }, ...overrides
+  }));
+  const sig = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', signer, new TextEncoder().encode(`${head}.${body}`));
+  return `${head}.${body}.${b64u(sig)}`;
+}
+
 const SECRETS = {
   yookassa: 'unit-test-yookassa-secret',
   session: 'unit-test-admin-session-secret',
@@ -94,10 +113,12 @@ globalThis.fetch = async (input, init = {}) => {
       return jsonResponse(200, rows);
     }
     const parts = path.replace(/^\//, '').split('/');
-    if (parts.length === 1) {
-      const documents = [...state.docs].filter(([k]) => k.startsWith(parts[0] + '/'))
+    if (parts.length % 2 === 1) {
+      const coll = parts.join('/');
+      const documents = [...state.docs]
+        .filter(([k]) => k.startsWith(coll + '/') && k.split('/').length === parts.length + 1)
         .map(([k, doc]) => ({ name: `${prefix}/${k}`, fields: toFields(doc) }));
-      return jsonResponse(200, { documents });
+      return jsonResponse(200, documents.length ? { documents } : {});
     }
     const key = parts.join('/');
     if (method === 'GET') {
@@ -127,6 +148,13 @@ globalThis.fetch = async (input, init = {}) => {
     const id = decodeURIComponent(url.pathname.split('/').pop());
     const p = state.payments.get(id);
     return p ? jsonResponse(200, p) : jsonResponse(404, { description: 'secret upstream detail' });
+  }
+
+  if (url.hostname === 'www.googleapis.com' && url.pathname.includes('securetoken')) {
+    return new Response(JSON.stringify({ keys: [jwkPublic] }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=3600' }
+    });
   }
 
   if (url.hostname === 'api.brevo.com') {
@@ -369,6 +397,61 @@ test('key derivation matches the 3.5.0 backend', async () => {
   const k = await keyForPayment('2e5b9c1a-000f-5000-9000-1a2b3c4d5e6f');
   assert.match(k, /^KAPT-[0-9A-F]{4}-[0-9A-F]{4}-[2-9A-Z]{4}$/);
   assert.equal(k, await keyForPayment('2E5B9C1A000F500090001A2B3C4D5E6F'));
+});
+
+
+test('unit_join: requires a valid Firebase identity', async () => {
+  assert.equal((await call('unit_join', { unit_key: 'kapt_abc123' })).status, 401);
+  assert.equal((await call('unit_join', { unit_key: 'kapt_abc123', id_token: 'a.b.c' })).status, 401);
+  const expired = await idToken('uid-exp', { exp: Math.floor(Date.now() / 1000) - 10 });
+  assert.equal((await call('unit_join', { unit_key: 'kapt_abc123', id_token: expired })).status, 401);
+  const otherProject = await idToken('uid-x', { aud: 'evil-project', iss: 'https://securetoken.google.com/evil-project' });
+  assert.equal((await call('unit_join', { unit_key: 'kapt_abc123', id_token: otherProject })).status, 401);
+  const forged = await idToken('uid-forged', {}, privateKey); // signed by a key Google never published
+  assert.equal((await call('unit_join', { unit_key: 'kapt_abc123', id_token: forged })).status, 401);
+});
+
+test('unit_join: unknown unit is not created by a guess', async () => {
+  const token = await idToken('uid-guesser');
+  const r = await call('unit_join', { unit_key: 'kapt_000000', id_token: token });
+  assert.equal(r.status, 404);
+  assert.ok(![...state.docs.keys()].some((k) => k.startsWith('units/kapt_000000')));
+  assert.equal((await call('unit_join', { unit_key: 'bad/key', id_token: token })).status, 400);
+});
+
+test('unit_join: legacy unit with data admits the key holder', async () => {
+  state.docs.set('units/kapt_a1b2c3/devices/dev_1', { deviceId: 'dev_1' });
+  const token = await idToken('uid-member');
+  const r = await call('unit_join', { unit_key: 'kapt_a1b2c3', id_token: token, fighter_id: 'БОЕЦ-M', callsign: 'Сова' });
+  assert.equal(r.status, 200);
+  assert.equal(r.body.created, false);
+  const m = state.docs.get('units/kapt_a1b2c3/members/uid-member');
+  assert.equal(m.callsign, 'Сова');
+  assert.ok(state.docs.get('units/kapt_a1b2c3').createdAt > 0);
+  const again = await call('unit_join', { unit_key: 'kapt_a1b2c3', id_token: token });
+  assert.equal(again.status, 200, 'rejoin is idempotent');
+});
+
+test('unit_join: create=true makes a new unit with an owner', async () => {
+  const token = await idToken('uid-owner');
+  const r = await call('unit_join', { unit_key: 'kapt_0123456789abcdef0123', id_token: token, create: true });
+  assert.equal(r.status, 200);
+  assert.equal(r.body.created, true);
+  assert.equal(state.docs.get('units/kapt_0123456789abcdef0123').createdBy, 'uid-owner');
+  // A second creator cannot take ownership.
+  const t2 = await idToken('uid-late');
+  await call('unit_join', { unit_key: 'kapt_0123456789abcdef0123', id_token: t2, create: true });
+  assert.equal(state.docs.get('units/kapt_0123456789abcdef0123').createdBy, 'uid-owner');
+});
+
+test('unit_join: guessing is rate limited', async () => {
+  const limiterEnv = { ...env, AUTH_LIMITER: (() => { let n = 0; return { limit: async () => ({ success: ++n <= 5 }) }; })() };
+  const token = await idToken('uid-brute');
+  const codes = [];
+  for (let i = 0; i < 8; i++) {
+    codes.push((await call('unit_join', { unit_key: 'kapt_ff00' + i + '0', id_token: token }, { envOverride: limiterEnv })).status);
+  }
+  assert.deepEqual(codes.slice(5), [429, 429, 429]);
 });
 
 // ------------------------------------------------------------------ run
