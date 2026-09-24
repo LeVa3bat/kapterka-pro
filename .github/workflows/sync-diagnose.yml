@@ -1,0 +1,63 @@
+name: Sync diagnostics (read-only, no personal data)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['claude/**']
+    paths: ['.github/workflows/sync-diagnose.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Recent device activity per unit (masked)
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          cat > d.mjs <<'JS'
+          import crypto from 'node:crypto';
+          const sa = JSON.parse(process.env.SA);
+          const b64 = (o) => Buffer.from(typeof o === 'string' ? o : JSON.stringify(o)).toString('base64url');
+          const now = Math.floor(Date.now() / 1000);
+          const unsigned = b64({ alg: 'RS256', typ: 'JWT' }) + '.' + b64({
+            iss: sa.client_email, scope: 'https://www.googleapis.com/auth/datastore',
+            aud: 'https://oauth2.googleapis.com/token', iat: now, exp: now + 600 });
+          const sig = crypto.createSign('RSA-SHA256').update(unsigned).sign(sa.private_key).toString('base64url');
+          const tok = await (await fetch('https://oauth2.googleapis.com/token', { method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer', assertion: `${unsigned}.${sig}` }) })).json();
+          const H = { Authorization: 'Bearer ' + tok.access_token, 'Content-Type': 'application/json' };
+          const base = `https://firestore.googleapis.com/v1/projects/${sa.project_id}/databases/(default)/documents`;
+          const mask = (k) => k.length > 7 ? k.slice(0, 5) + '***' + k.slice(-2) : '***';
+          const t = (ms) => ms ? new Date(ms).toISOString().replace('T', ' ').slice(0, 16) + 'Z' : '-';
+          const q = async (parent, body) => (await (await fetch(`${parent}:runQuery`, { method: 'POST', headers: H, body: JSON.stringify(body) })).json());
+          // Newest device presence pings across all units.
+          const rows = await q(base, { structuredQuery: { from: [{ collectionId: 'devices', allDescendants: true }],
+            orderBy: [{ field: { fieldPath: 'timestampMillis' }, direction: 'DESCENDING' }], limit: 12 } });
+          const units = new Map();
+          for (const r of rows) {
+            if (!r.document) continue;
+            const parts = r.document.name.split('/documents/')[1].split('/');
+            const unit = parts[1];
+            const ms = Number(r.document.fields?.timestampMillis?.integerValue || 0);
+            if (!units.has(unit)) units.set(unit, []);
+            units.get(unit).push(ms);
+          }
+          for (const [unit, pings] of units) {
+            console.log(`\nUnit ${mask(unit)}: device pings ${pings.map(t).join(', ')}`);
+            for (const c of ['members', 'warehouse_points', 'stock_records', 'operation_records', 'inventory_items', 'requisitions', 'sync_tombstones', 'devices']) {
+              const res = await q(`${base}/units/${encodeURIComponent(unit)}`, { structuredQuery: { from: [{ collectionId: c }], limit: 500 } });
+              const docs = res.filter((x) => x.document);
+              const newest = Math.max(0, ...docs.map((x) => Date.parse(x.document.updateTime) || 0));
+              console.log(`  ${c.padEnd(18)} ${String(docs.length).padStart(4)} docs, last write ${t(newest)}`);
+            }
+          }
+          JS
+          node d.mjs
