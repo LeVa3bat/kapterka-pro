@@ -974,7 +974,8 @@ fun MainDashboardScreen(
                                             }
                                         }
                                         Text(
-                                            text = "${pointRows.size} наим. • остаток: $pointStockSum ед.",
+                                            text = "${pointRows.size} наим. • приход +${pointRows.sumOf { it.incomeTotal }}" +
+                                                " • расход −${pointRows.sumOf { it.expenseTotal }}",
                                             color = TacticalTextMuted,
                                             fontSize = 11.sp
                                         )
@@ -1148,167 +1149,155 @@ private fun PointStockTableView(
         return
     }
 
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        rows.forEach { rowData ->
-            val isZero = rowData.quantity <= 0
+    // Compact table: one line per item, numbers in aligned columns.
+    val totalIncome = rows.sumOf { it.incomeTotal }
+    val totalExpense = rows.sumOf { it.expenseTotal }
+    val totalQty = rows.sumOf { it.quantity }
 
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = TacticalSurface),
-                border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorderSubtle),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-            ) {
-                Column(
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(TacticalSurface)
+            .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(14.dp))
+    ) {
+        CompactStockRow(
+            name = "Наименование",
+            income = "Приход",
+            expense = "Расход",
+            balance = "Остаток",
+            isHeader = true
+        )
+        rows.forEachIndexed { index, rowData ->
+            if (index > 0) {
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(13.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.Top
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = rowData.item.name,
-                                color = TacticalTextPrimary,
-                                fontSize = 13.5.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis
-                            )
+                        .height(1.dp)
+                        .background(TacticalBorderSubtle.copy(alpha = 0.6f))
+                )
+            }
+            CompactStockRow(
+                name = rowData.item.name,
+                subtitle = listOfNotNull(
+                    rowData.item.unit.takeIf { it.isNotBlank() },
+                    rowData.pointName.takeIf { showPointColumn }
+                ).joinToString(" • "),
+                income = rowData.incomeTotal.toString(),
+                expense = rowData.expenseTotal.toString(),
+                balance = rowData.quantity.toString(),
+                balanceIsZero = rowData.quantity <= 0,
+                striped = index % 2 == 1,
+                onClick = { onAdjustClick(rowData) }
+            )
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(SageGreenPrimary.copy(alpha = 0.4f))
+        )
+        CompactStockRow(
+            name = "Итого: ${rows.size} наим.",
+            income = totalIncome.toString(),
+            expense = totalExpense.toString(),
+            balance = totalQty.toString(),
+            isTotal = true
+        )
+    }
+    Text(
+        text = "Нажмите на строку, чтобы изменить остаток",
+        color = TacticalTextMuted,
+        fontSize = 10.sp,
+        modifier = Modifier.padding(start = 4.dp, top = 6.dp)
+    )
+}
 
-                            Spacer(modifier = Modifier.height(3.dp))
-
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(5.dp)
-                            ) {
-                                if (rowData.item.subType.isNotBlank()) {
-                                    Text(
-                                        text = rowData.item.subType,
-                                        color = TacticalTextMuted,
-                                        fontSize = 10.5.sp,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                                if (rowData.item.standardCode.isNotBlank()) {
-                                    Text(
-                                        text = "• ${rowData.item.standardCode}",
-                                        color = TacticalTextMuted,
-                                        fontSize = 10.5.sp,
-                                        maxLines = 1
-                                    )
-                                }
-                            }
-
-                            if (showPointColumn) {
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = rowData.pointName,
-                                    color = SageGreenPrimary,
-                                    fontSize = 10.5.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.width(10.dp))
-
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text(
-                                text = "Остаток",
-                                color = TacticalTextMuted,
-                                fontSize = 9.5.sp
-                            )
-                            Row(verticalAlignment = Alignment.Bottom) {
-                                Text(
-                                    text = rowData.quantity.toString(),
-                                    color = if (isZero) TacticalRedText else TacticalTextPrimary,
-                                    fontSize = 22.sp,
-                                    fontWeight = FontWeight.ExtraBold
-                                )
-                                Spacer(modifier = Modifier.width(3.dp))
-                                Text(
-                                    text = rowData.item.unit,
-                                    color = TacticalTextMuted,
-                                    fontSize = 10.sp,
-                                    modifier = Modifier.padding(bottom = 3.dp)
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(7.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(SageGreenDark)
-                                .padding(horizontal = 9.dp, vertical = 6.dp)
-                        ) {
-                            Text(
-                                text = "Приход +${rowData.incomeTotal}",
-                                color = SageGreenBright,
-                                fontSize = 10.5.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(if (rowData.expenseTotal > 0) TacticalRedDark else TacticalSurfaceLight)
-                                .padding(horizontal = 9.dp, vertical = 6.dp)
-                        ) {
-                            Text(
-                                text = "Расход −${rowData.expenseTotal}",
-                                color = if (rowData.expenseTotal > 0) TacticalRedText else TacticalTextMuted,
-                                fontSize = 10.5.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.weight(1f))
-
-                        Row(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(TacticalSurfaceLight)
-                                .clickable { onAdjustClick(rowData) }
-                                .padding(horizontal = 9.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Tune,
-                                contentDescription = "Изменить остаток",
-                                tint = SageGreenPrimary,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "Изменить",
-                                color = TacticalTextSecondary,
-                                fontSize = 10.5.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                    }
-                }
+@Composable
+private fun CompactStockRow(
+    name: String,
+    income: String,
+    expense: String,
+    balance: String,
+    subtitle: String = "",
+    isHeader: Boolean = false,
+    isTotal: Boolean = false,
+    balanceIsZero: Boolean = false,
+    striped: Boolean = false,
+    onClick: (() -> Unit)? = null
+) {
+    val labelColor = TacticalTextMuted
+    val background = when {
+        isHeader -> TacticalSurfaceLight
+        isTotal -> SageGreenDark.copy(alpha = 0.55f)
+        striped -> TacticalSurfaceLight.copy(alpha = 0.35f)
+        else -> Color.Transparent
+    }
+    val numberSize = if (isHeader) 10.sp else 13.sp
+    val weight = if (isHeader) FontWeight.SemiBold else FontWeight.Bold
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(background)
+            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
+            .padding(horizontal = 12.dp, vertical = if (isHeader) 7.dp else 9.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = name,
+                color = if (isHeader) labelColor else TacticalTextPrimary,
+                fontSize = if (isHeader) 10.sp else 12.5.sp,
+                fontWeight = if (isHeader || isTotal) FontWeight.SemiBold else FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            if (subtitle.isNotBlank()) {
+                Text(
+                    text = subtitle,
+                    color = TacticalTextMuted,
+                    fontSize = 10.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
+        Text(
+            text = if (isHeader) income else "+$income",
+            color = if (isHeader) labelColor else SageGreenBright,
+            fontSize = numberSize,
+            fontWeight = weight,
+            fontFamily = if (isHeader) FontFamily.Default else FontFamily.Monospace,
+            textAlign = TextAlign.End,
+            modifier = Modifier.width(58.dp)
+        )
+        Text(
+            text = if (isHeader) expense else "−$expense",
+            color = when {
+                isHeader -> labelColor
+                expense != "0" -> TacticalRedText
+                else -> TacticalTextMuted
+            },
+            fontSize = numberSize,
+            fontWeight = weight,
+            fontFamily = if (isHeader) FontFamily.Default else FontFamily.Monospace,
+            textAlign = TextAlign.End,
+            modifier = Modifier.width(58.dp)
+        )
+        Text(
+            text = balance,
+            color = when {
+                isHeader -> labelColor
+                balanceIsZero -> TacticalRedText
+                isTotal -> SageGreenBright
+                else -> TacticalTextPrimary
+            },
+            fontSize = if (isHeader) 10.sp else 15.sp,
+            fontWeight = if (isHeader) FontWeight.SemiBold else FontWeight.ExtraBold,
+            fontFamily = if (isHeader) FontFamily.Default else FontFamily.Monospace,
+            textAlign = TextAlign.End,
+            modifier = Modifier.width(64.dp)
+        )
     }
 }
 
