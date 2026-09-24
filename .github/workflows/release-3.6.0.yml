@@ -2,7 +2,7 @@ name: Kapterka PRO 3.6.0 release build
 
 # Сборка-кандидат 3.6.0 (build 33): подпись ключом опубликованных 3.4.9/3.5.0,
 # проверка пакета/версии/подписи, APK как артефакт. НИЧЕГО не публикует —
-# публикация на сайт добавляется отдельно, только после команды владельца.
+# публикация на сайт — только ручной запуск с publish = true после команды владельца.
 
 on:
   push:
@@ -15,6 +15,11 @@ on:
       - 'gradle.properties'
       - '.github/workflows/release-3.6.0.yml'
   workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Опубликовать APK 3.6.0 на сайте (только после команды владельца «публикуй»)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -174,3 +179,73 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  publish:
+    needs: build
+    if: github.event_name == 'workflow_dispatch' && inputs.publish == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout main (full history)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      # main получает код 3.6.0, иначе аудит сравнит APK 33 с Gradle 32.
+      - name: Merge release branch into main
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch --no-tags origin claude/secure-3.6
+          git merge --no-edit FETCH_HEAD -m "Слияние claude/secure-3.6 в main (релиз 3.6.0)"
+          grep -q '?: 33' app/build.gradle.kts
+
+      - name: Download verified APK
+        uses: actions/download-artifact@v4
+        with:
+          name: kapterka-pro-3.6.0
+
+      - name: Re-check APK hash
+        env:
+          APK_SHA256: ${{ needs.build.outputs.apk_sha256 }}
+        shell: bash
+        run: echo "$APK_SHA256  kapterka-pro-3.6.0.apk" | sha256sum -c -
+
+      - name: Update APK and site metadata
+        env:
+          APK_SIZE: ${{ needs.build.outputs.apk_size }}
+          APK_SHA256: ${{ needs.build.outputs.apk_sha256 }}
+        shell: bash
+        run: |
+          mv kapterka-pro-3.6.0.apk docs/kapterka-pro.apk
+          node .github/scripts/update-release-360.mjs "$APK_SIZE" "$APK_SHA256" "$EXPECTED_SIGNER_SHA256" "$(date -u +%F)"
+
+      - name: Install APK inspection tools
+        shell: bash
+        run: |
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -path '*/bin/sdkmanager' 2>/dev/null | sort -V | tail -n 1)"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "build-tools;36.0.0"
+          echo "$SDK_ROOT/build-tools/36.0.0" >> "$GITHUB_PATH"
+
+      # Те же проверки, что запускаются на main. Если хоть одна падает — push не делается.
+      - name: Run release and site audits before push
+        shell: bash
+        run: |
+          apksigner verify --verbose --print-certs docs/kapterka-pro.apk > /tmp/apk-signature.txt
+          aapt dump badging docs/kapterka-pro.apk > /tmp/apk-badging.txt
+          node .github/scripts/release-artifact-audit.mjs /tmp/apk-badging.txt /tmp/apk-signature.txt
+          node .github/scripts/site-smoke.mjs
+          node .github/scripts/android-invariants.mjs
+
+      - name: Commit and push to main
+        shell: bash
+        run: |
+          git add -A docs .github/scripts
+          git status --short
+          git commit -m "Релиз 3.6.0 (33): новый интерфейс, подтверждение почты, защищённая синхронизация"
+          git push origin HEAD:main
