@@ -657,7 +657,12 @@ class FirebaseSyncManager(
             val db = firestore
             val unitRef = db.collection("units").document(cleanKey)
 
-            syncTombstones(cleanKey)
+            try {
+                syncTombstones(cleanKey)
+            } catch (e: Exception) {
+                // Deletion markers are best-effort; they must not block the rest of sync.
+                Log.w(TAG, "Tombstone sync failed, continuing", e)
+            }
 
             // 1. Fetch Cloud Stock Records first to know which points have inventory
             val cloudStocksSnap = unitRef.collection("stock_records").get().await()
@@ -831,8 +836,11 @@ class FirebaseSyncManager(
             Log.e(TAG, "Error in syncAndReconcileAll", e)
             _syncState.value = _syncState.value.copy(
                 isSyncing = false,
-                syncMessage = "Ошибка синхронизации: ${e.message}"
+                syncMessage = "Ошибка синхронизации: ${e.javaClass.simpleName}: ${e.message}"
             )
+            // A failed full reconcile must not leave the device offline: realtime
+            // listeners still deliver every change from other devices.
+            startSyncForUnit(cleanKey, callsign, unitName)
             Pair(false, "Сбой связи: ${e.localizedMessage}")
         }
     }

@@ -18,3 +18,19 @@
 -dontwarn org.conscrypt.**
 -dontwarn org.bouncycastle.**
 -dontwarn org.openjsse.**
+
+# --- Firebase / Firestore transport -------------------------------------------
+# Firestore talks over gRPC, whose transport is discovered at runtime through
+# java.util.ServiceLoader. R8 full mode can strip or rename those providers,
+# which silently disables all cloud sync. Keep the transport stack intact.
+-keep class io.grpc.** { *; }
+-keepnames class io.grpc.** { *; }
+-keep class com.google.firebase.firestore.** { *; }
+-keep class com.google.firestore.** { *; }
+-keep class com.google.protobuf.** { *; }
+-keepclassmembers class * extends com.google.protobuf.GeneratedMessageLite { <fields>; }
+-keep class com.google.firebase.auth.** { *; }
+-keep class * implements com.google.firebase.components.ComponentRegistrar { *; }
+-dontwarn io.grpc.**
+-dontwarn com.google.protobuf.**
+-dontwarn com.squareup.okhttp.**
