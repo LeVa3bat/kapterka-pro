@@ -464,8 +464,8 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                             onAddPointClick = { showAddPointDialog = true },
                             onEditPointClick = { editingPoint = it },
                             onAddCustomItemClick = { showAddCustomItemDialog = true },
-                            onAdjustStock = { pointId, pointName, itemId, itemName, newQty ->
-                                viewModel.adjustPointStock(pointId, pointName, itemId, itemName, newQty)
+                            onAdjustStock = { pointId, pointName, itemId, itemName, unit, newQty, comment ->
+                                viewModel.adjustPointStock(pointId, pointName, itemId, itemName, unit, newQty, comment)
                             },
                             onSyncClick = { viewModel.simulateCloudSync() },
                             onSecondPhoneClick = { showUnitKeySyncDialog = true },

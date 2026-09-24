@@ -1030,9 +1030,10 @@ fun AdjustStockDialog(
     currentQuantity: Int,
     unit: String,
     onDismiss: () -> Unit,
-    onConfirm: (pointId: String, pointName: String, itemId: String, itemName: String, newQuantity: Int) -> Unit
+    onConfirm: (pointId: String, pointName: String, itemId: String, itemName: String, unit: String, newQuantity: Int, comment: String) -> Unit
 ) {
     var qtyText by remember { mutableStateOf(currentQuantity.toString()) }
+    var comment by remember { mutableStateOf("") }
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -1129,12 +1130,21 @@ fun AdjustStockDialog(
                     placeholder = "0"
                 )
 
+                Spacer(modifier = Modifier.height(10.dp))
+
+                TacticalInputField(
+                    label = "Причина корректировки (попадёт в операции)",
+                    value = comment,
+                    onValueChange = { comment = it },
+                    placeholder = "Например: пересчёт при инвентаризации"
+                )
+
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Button(
                     onClick = {
                         val finalQty = qtyText.toIntOrNull() ?: currentQuantity
-                        onConfirm(pointId, pointName, itemId, itemName, finalQty)
+                        onConfirm(pointId, pointName, itemId, itemName, unit, finalQty, comment)
                         onDismiss()
                     },
                     modifier = Modifier
