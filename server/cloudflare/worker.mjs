@@ -1356,7 +1356,18 @@ const handlers = {
     if (!paymentId || !/^[A-Za-z0-9-]{8,100}$/.test(paymentId)) return ctx.fail(400, 'MISSING_PAYMENT_ID');
     if (!(await ctx.limit('check:' + ctx.ip))) return ctx.fail(429, 'RATE_LIMITED');
 
-    const payment = await requestYooKassa(cfg, 'GET', `/v3/payments/${encodeURIComponent(paymentId)}`);
+    let payment;
+    try {
+      payment = await requestYooKassa(cfg, 'GET', `/v3/payments/${encodeURIComponent(paymentId)}`);
+    } catch (error) {
+      // Unknown payment: not paid (also proves the shop credentials work).
+      if (error?.status === 404) return ctx.ok({ ok: true, paid: false, status: 'not_found' });
+      if (error?.status === 401 || error?.status === 403) {
+        console.error('YooKassa rejected the shop credentials');
+        return ctx.fail(502, 'PAYMENT_GATEWAY_AUTH');
+      }
+      throw error;
+    }
     const status = payment.status || 'unknown';
     if (!(status === 'succeeded' && payment.paid === true)) return ctx.ok({ ok: true, paid: false, status });
     if (!amountMatchesTariff(payment, cfg.amountRub)) {

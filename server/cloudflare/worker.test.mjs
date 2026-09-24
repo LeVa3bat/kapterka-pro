@@ -158,6 +158,7 @@ globalThis.fetch = async (input, init = {}) => {
     }
     const id = decodeURIComponent(url.pathname.split('/').pop());
     const p = state.payments.get(id);
+    if (id.startsWith('boom-')) return jsonResponse(500, { description: 'secret upstream detail' });
     return p ? jsonResponse(200, p) : jsonResponse(404, { description: 'secret upstream detail' });
   }
 
@@ -419,10 +420,16 @@ test('telegram notifications escape HTML and mask keys', async () => {
   assert.ok(!state.telegram.some((t) => /KAPT-[A-Z0-9]{4}-[A-Z0-9]{4}-/.test(t)), 'full keys must not reach Telegram');
 });
 
-test('upstream errors are not leaked', async () => {
-  const r = await call('check', { payment_id: 'unknown-payment-id' });
+test('upstream errors are not leaked; unknown payment is simply unpaid', async () => {
+  const r = await call('check', { payment_id: 'boom-payment-id' });
   assert.equal(r.status, 502);
   assert.equal(r.body.error, 'UPSTREAM_ERROR');
+  assert.ok(!JSON.stringify(r.body).includes('secret upstream detail'));
+  const u = await call('check', { payment_id: 'unknown-payment-id' });
+  assert.equal(u.status, 200);
+  assert.equal(u.body.paid, false);
+  assert.equal(u.body.status, 'not_found');
+  assert.ok(!JSON.stringify(u.body).includes('secret upstream detail'));
 });
 
 test('key derivation matches the 3.5.0 backend', async () => {
