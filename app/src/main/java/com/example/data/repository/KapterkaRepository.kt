@@ -394,26 +394,59 @@ class KapterkaRepository(
         return newRecord
     }
 
-    suspend fun setStockAbsoluteQuantity(pointId: String, itemId: String, absoluteQuantity: Int): StockRecord {
+    /**
+     * Corrects a point's stock to [absoluteQuantity]. Unlike a blind overwrite, this records
+     * the difference as a normal INCOME/EXPENDITURE operation (so it shows up in the journal,
+     * Form 8/18 reports, and incomeTotal/expenseTotal), same as support tells people to do
+     * manually by hand.
+     */
+    suspend fun setStockAbsoluteQuantity(
+        pointId: String,
+        pointName: String,
+        itemId: String,
+        itemName: String,
+        unit: String,
+        absoluteQuantity: Int,
+        comment: String,
+        actor: String
+    ): Int {
         val current = dao.getStockItem(pointId, itemId)
-        val newRecord = if (current != null) {
-            current.copy(
-                quantity = absoluteQuantity,
-                lastUpdated = System.currentTimeMillis()
-            )
-        } else {
-            StockRecord(
-                pointId = pointId,
-                itemId = itemId,
-                quantity = absoluteQuantity,
-                incomeTotal = absoluteQuantity,
-                expenseTotal = 0,
-                lastUpdated = System.currentTimeMillis()
-            )
-        }
-        dao.insertOrUpdateStock(newRecord)
-        syncManager?.pushStockRecordAsync(getCurrentUnitKey(), newRecord)
-        return newRecord
+        val currentQuantity = current?.quantity ?: 0
+        val delta = absoluteQuantity - currentQuantity
+        if (delta == 0) return 0
+
+        val reason = comment.ifBlank { "Корректировка остатка" }
+        val entry = OperationItemEntry(
+            itemId = itemId,
+            itemName = itemName,
+            unit = unit,
+            quantity = kotlin.math.abs(delta),
+            reason = reason
+        )
+        val itemsJson = serializeOperationItems(listOf(entry))
+        val summary = "$itemName - ${kotlin.math.abs(delta)} $unit"
+        val type = if (delta > 0) OperationType.INCOME else OperationType.EXPENDITURE
+        val src = if (delta > 0) "Корректировка остатка" else pointName
+        val dest = if (delta > 0) pointName else "Корректировка остатка"
+        val op = OperationRecord(
+            java.util.UUID.randomUUID().toString(),
+            type,
+            src,
+            dest,
+            "",
+            actor,
+            reason,
+            System.currentTimeMillis(),
+            summary,
+            itemsJson
+        )
+
+        val stagedStocks = linkedMapOf<String, StockRecord>()
+        stageAdjustedStock(stagedStocks, pointId, itemId, delta, isIncome = delta > 0)
+        val updatedStocks = stagedStocks.values.toList()
+        dao.commitOperationAndStocks(op, updatedStocks)
+        syncManager?.pushOperationAsync(getCurrentUnitKey(), op, updatedStocks)
+        return delta
     }
 
     fun generateForm8ExcelText(ops: List<OperationRecord>, unit: String): String = "Отчет"

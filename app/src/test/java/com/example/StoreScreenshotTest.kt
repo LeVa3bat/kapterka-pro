@@ -150,7 +150,7 @@ class StoreScreenshotTest {
             onExpenditureClick = {},
             onAddPointClick = {},
             onEditPointClick = {},
-            onAdjustStock = { _, _, _, _, _ -> },
+            onAdjustStock = { _, _, _, _, _, _, _ -> },
             onSyncClick = {},
             onExportClick = {},
             onBannerClick = {},

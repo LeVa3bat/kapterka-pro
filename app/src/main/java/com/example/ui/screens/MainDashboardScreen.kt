@@ -150,7 +150,7 @@ fun MainDashboardScreen(
     onAddPointClick: () -> Unit,
     onEditPointClick: (WarehousePoint) -> Unit,
     onAddCustomItemClick: () -> Unit = {},
-    onAdjustStock: (pointId: String, pointName: String, itemId: String, itemName: String, newQuantity: Int) -> Unit,
+    onAdjustStock: (pointId: String, pointName: String, itemId: String, itemName: String, unit: String, newQuantity: Int, comment: String) -> Unit,
     onSyncClick: () -> Unit,
     onSecondPhoneClick: () -> Unit = {},
     onExportClick: () -> Unit,
@@ -879,8 +879,8 @@ fun MainDashboardScreen(
             currentQuantity = adj.quantity,
             unit = adj.unit,
             onDismiss = { adjustingStock = null },
-            onConfirm = { pId, pName, iId, iName, newQty ->
-                onAdjustStock(pId, pName, iId, iName, newQty)
+            onConfirm = { pId, pName, iId, iName, itemUnit, newQty, comment ->
+                onAdjustStock(pId, pName, iId, iName, itemUnit, newQty, comment)
                 adjustingStock = null
             }
         )
