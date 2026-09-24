@@ -384,8 +384,21 @@ test('admin: wrong secret, brute force limit, token checks', async () => {
   assert.equal(extend.body.expires_at, grant.body.expires_at + 5 * 86400000);
   assert.equal((await call('admin_grant_license', { admin_token: token, fighter_id: 'БОЕЦ-GHOST' })).status, 404);
 
-  assert.equal((await call('admin_delete_fighter', { admin_token: token, fighter_id: 'БОЕЦ-UP' })).status, 200);
-  assert.ok(!state.docs.has('srv_fighters/БОЕЦ-UP'));
+  // Licensed = real user: cannot be deleted, is marked non-deletable.
+  const del = await call('admin_delete_fighter', { admin_token: token, fighter_id: 'БОЕЦ-UP' });
+  assert.equal(del.status, 409);
+  assert.equal(del.body.error, 'FIGHTER_HAS_LICENSE');
+  assert.ok(state.docs.has('srv_fighters/БОЕЦ-UP'));
+  const list2 = await call('admin_list_fighters', { admin_token: token });
+  assert.equal(list2.body.fighters.find((f) => f.id === 'БОЕЦ-UP').deletable, false);
+
+  // A test account without any licence can be removed.
+  assert.equal((await call('fighter_upsert', { fighter_id: 'БОЕЦ-TEST', email: 'qa@x.ru', callsign: 'Тест' }, { ip: '6.1.1.1' })).status, 200);
+  const list3 = await call('admin_list_fighters', { admin_token: token });
+  assert.equal(list3.body.fighters.find((f) => f.id === 'БОЕЦ-TEST').deletable, true);
+  assert.equal((await call('admin_delete_fighter', { admin_token: token, fighter_id: 'БОЕЦ-TEST' })).status, 200);
+  assert.ok(!state.docs.has('srv_fighters/БОЕЦ-TEST'));
+  assert.equal((await call('admin_delete_fighter', { admin_token: token, fighter_id: 'БОЕЦ-TEST' })).status, 404);
   assert.ok(state.docs.has('srv_licenses/' + grant.body.license_key), 'licenses are preserved');
 });
 

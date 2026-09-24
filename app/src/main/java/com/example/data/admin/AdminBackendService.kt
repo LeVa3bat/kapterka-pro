@@ -147,7 +147,8 @@ class AdminBackendService {
                                     lastSeenFormatted = if (lastSeen > 0L) sdf.format(Date(lastSeen)) else "",
                                     isOnline = lastSeen > 0L && now - lastSeen < 15L * 60L * 1000L,
                                     email = obj.optString("email"),
-                                    deviceModel = obj.optString("device_model")
+                                    deviceModel = obj.optString("device_model"),
+                                    deletable = obj.optBoolean("deletable", false)
                                 )
                             )
                         }
@@ -285,6 +286,7 @@ class AdminBackendService {
         "ADMIN_SESSION_NOT_CONFIGURED" -> "Серверная админ-сессия не настроена."
         "MISSING_FIGHTER_ID" -> "Не выбран пользователь."
         "FIGHTER_NOT_FOUND" -> "Пользователь больше не найден в серверном реестре."
+        "FIGHTER_HAS_LICENSE" -> "Это реальный пользователь с лицензией — удалять его нельзя."
         else -> "Сервер отклонил административную операцию."
     }
 }

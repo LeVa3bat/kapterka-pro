@@ -891,7 +891,7 @@ fun DeveloperAdminDialog(
             onDismissRequest = { fighterToDelete = null },
             title = {
                 Text(
-                    text = "Удалить пользователя?",
+                    text = "Удалить тестового пользователя?",
                     color = TacticalTextPrimary,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold
@@ -899,7 +899,7 @@ fun DeveloperAdminDialog(
             },
             text = {
                 Text(
-                    text = "Удалить запись «${fighter.callsign}» из служебного реестра? Лицензия и складские данные не удаляются; при следующей регистрации запись может появиться снова.",
+                    text = "«${fighter.callsign}» (${fighter.email.ifBlank { "без почты" }}) — тестовая запись без лицензии. Она будет удалена из реестра. Реальных пользователей с лицензией сервер удалить не даст.",
                     color = TacticalTextSecondary,
                     fontSize = 12.sp
                 )
@@ -1015,16 +1015,39 @@ private fun FighterAdminCard(
 
                     Spacer(modifier = Modifier.width(4.dp))
 
-                    // Кнопка удаления пользователя
-                    IconButton(
-                        onClick = onDeleteClick,
-                        modifier = Modifier.size(24.dp)
+                    // Only test accounts (no licence ever) can be removed.
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(3.dp))
+                            .background(if (record.deletable) Color(0xFF3A2A12) else Color(0xFF16263A))
+                            .padding(horizontal = 5.dp, vertical = 2.dp)
                     ) {
+                        Text(
+                            text = if (record.deletable) "ТЕСТ" else "РЕАЛЬНЫЙ",
+                            fontSize = 8.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (record.deletable) Color(0xFFE0B25A) else Color(0xFF7FB2FF)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(2.dp))
+                    if (record.deletable) {
+                        IconButton(
+                            onClick = onDeleteClick,
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Удалить тестового пользователя",
+                                tint = Color(0xFFD9534F),
+                                modifier = Modifier.size(17.dp)
+                            )
+                        }
+                    } else {
                         Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = "Удалить",
-                            tint = Color(0xFFD9534F),
-                            modifier = Modifier.size(15.dp)
+                            imageVector = Icons.Default.Lock,
+                            contentDescription = "Защищён: есть лицензия",
+                            tint = TacticalTextMuted,
+                            modifier = Modifier.padding(6.dp).size(14.dp)
                         )
                     }
                 }

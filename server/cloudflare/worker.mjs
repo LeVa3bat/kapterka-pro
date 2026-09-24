@@ -590,6 +590,14 @@ function normalizeFighter(doc) {
   };
 }
 
+// A registry entry is a real user once any licence is tied to it.
+export function fighterHasLicense(fighter, licenses = []) {
+  if (!fighter) return false;
+  if (fighter.licenseKey || fighter.expiresAt > 0) return true;
+  const email = cleanEmail(fighter.email);
+  return licenses.some((l) => (l.fighterId && l.fighterId === fighter.id) || (email && cleanEmail(l.email) === email));
+}
+
 function isActive(license, now = Date.now()) {
   return Boolean(license && license.status === 'ACTIVE' && license.expiresAt > now);
 }
@@ -1116,10 +1124,14 @@ const handlers = {
 
   async admin_list_fighters(ctx) {
     if (!(await verifyAdminToken(ctx.cfg, ctx.body.admin_token))) return ctx.fail(403, 'ADMIN_SESSION_INVALID');
-    const fighters = (await ctx.db.list(FIGHTERS)).map(normalizeFighter);
+    const [fighters, licenses] = await Promise.all([
+      ctx.db.list(FIGHTERS).then((rows) => rows.map(normalizeFighter)),
+      ctx.db.list(LICENSES).then((rows) => rows.map(normalizeLicense)).catch(() => [])
+    ]);
     return ctx.ok({
       ok: true,
       fighters: fighters.map((f) => ({
+        deletable: !fighterHasLicense(f, licenses),
         id: f.id,
         callsign: f.callsign,
         role: f.role,
@@ -1267,12 +1279,25 @@ const handlers = {
     return ctx.ok({ ok: true, license_key: licenseKey, expires_at: expiresAt, days });
   },
 
+  // Only test accounts can be removed: anyone who ever had a licence (paid,
+  // granted or legacy key) is a real user and stays in the registry.
   async admin_delete_fighter(ctx) {
+    const { db } = ctx;
     if (!(await verifyAdminToken(ctx.cfg, ctx.body.admin_token))) return ctx.fail(403, 'ADMIN_SESSION_INVALID');
     const fighterId = cleanText(ctx.body.fighter_id, 100);
     if (!fighterId) return ctx.fail(400, 'MISSING_FIGHTER_ID');
-    // Registry entry only. Licenses and unit data are intentionally preserved.
-    await ctx.db.remove(FIGHTERS, fighterId);
+    const fighter = normalizeFighter(await db.get(FIGHTERS, fighterId));
+    if (!fighter) return ctx.fail(404, 'FIGHTER_NOT_FOUND');
+    const email = cleanEmail(fighter.email);
+    const owned = [
+      ...(await db.queryEqual(LICENSES, 'fighterId', fighterId, 5)),
+      ...(email ? await db.queryEqual(LICENSES, 'email', email, 5) : [])
+    ];
+    if (fighterHasLicense(fighter, owned.map(normalizeLicense))) {
+      return ctx.fail(409, 'FIGHTER_HAS_LICENSE');
+    }
+    await db.remove(FIGHTERS, fighterId);
+    if (email) await db.remove(EMAIL_CODES, await sha256Hex(email)).catch(() => {});
     return ctx.ok({ ok: true });
   },
 

@@ -32,7 +32,9 @@ data class FighterAdminRecord(
     val lastSeenFormatted: String = "",
     val isOnline: Boolean = false,
     val email: String = "",
-    val deviceModel: String = ""
+    val deviceModel: String = "",
+    /** Server verdict: no licence ever tied to this user — a test account that may be removed. */
+    val deletable: Boolean = false
 )
 
 class FighterRegistryManager(
