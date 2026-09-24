@@ -214,11 +214,12 @@ fun UnitKeySyncDialog(
                     OutlinedButton(
                         onClick = { scanLauncher() },
                         modifier = Modifier.weight(1f).height(46.dp),
-                        shape = RoundedCornerShape(14.dp)
+                        shape = RoundedCornerShape(14.dp),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp)
                     ) {
                         Icon(Icons.Rounded.QrCodeScanner, contentDescription = null, tint = SageGreenBright, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Сканировать", color = SageGreenBright, fontSize = 13.sp)
+                        Text("Сканировать", color = SageGreenBright, fontSize = 13.sp, maxLines = 1, softWrap = false)
                     }
                     Button(
                         onClick = {
@@ -233,11 +234,12 @@ fun UnitKeySyncDialog(
                         enabled = manualKeyInput.length >= 4,
                         modifier = Modifier.weight(1f).height(46.dp),
                         shape = RoundedCornerShape(14.dp),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = SageGreenPrimary, contentColor = Color.White)
                     ) {
                         Icon(Icons.Rounded.Login, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Подключить", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        Text("Подключить", fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
                     }
                 }
                 Spacer(modifier = Modifier.height(6.dp))
