@@ -64,6 +64,7 @@ const state = {
   docs: new Map(), // "collection/id" -> fields object (plain values)
   payments: new Map(),
   telegram: [],
+  relayed: [],
   emails: [],
   firestoreDown: false
 };
@@ -165,6 +166,13 @@ globalThis.fetch = async (input, init = {}) => {
       status: 200,
       headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=3600' }
     });
+  }
+
+  if (url.hostname === 'script.google.com') {
+    const msg = JSON.parse(body);
+    if (msg.secret !== 'relay-secret-0123456789') return jsonResponse(200, { ok: false, error: 'FORBIDDEN' });
+    state.relayed.push(msg);
+    return jsonResponse(200, { ok: true });
   }
 
   if (url.hostname === 'api.brevo.com') {
@@ -572,6 +580,21 @@ test('email provider missing is reported, not hidden', async () => {
   const r = await call('email_code_send', { email: 'a@b.ru', fighter_id: 'X' }, { envOverride: { ...env, BREVO_API_KEY: '' } });
   assert.equal(r.status, 503);
   assert.equal(r.body.error, 'EMAIL_PROVIDER_UNAVAILABLE');
+});
+
+
+test('e-mail via the owner Gmail relay (Apps Script)', async () => {
+  const relayEnv = { ...env, BREVO_API_KEY: '', MAIL_RELAY_URL: 'https://script.google.com/macros/s/AKfy-test_123/exec', MAIL_RELAY_SECRET: 'relay-secret-0123456789' };
+  assert.equal((await call('health', {}, { method: 'GET', envOverride: relayEnv })).body.emailConfigured, true);
+  const r = await call('email_code_send', { email: 'relay@x.ru', fighter_id: 'БОЕЦ-R' }, { envOverride: relayEnv, ip: '8.8.1.1' });
+  assert.equal(r.status, 200);
+  const m = state.relayed.at(-1);
+  assert.equal(m.to, 'relay@x.ru');
+  assert.match(m.subject, /\d{6}/);
+  const badUrl = { ...relayEnv, MAIL_RELAY_URL: 'https://evil.example/exec' };
+  assert.equal((await call('health', {}, { method: 'GET', envOverride: badUrl })).body.emailConfigured, false);
+  const r2 = await call('email_code_send', { email: 'relay2@x.ru', fighter_id: 'БОЕЦ-R2' }, { envOverride: { ...relayEnv, MAIL_RELAY_SECRET: 'wrong-secret-0000000' }, ip: '8.8.1.2' });
+  assert.equal(r2.status, 503);
 });
 
 // ------------------------------------------------------------------ run

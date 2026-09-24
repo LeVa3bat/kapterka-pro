@@ -63,6 +63,11 @@ export function getConfig(env = {}) {
       (String(env.ADMIN_PASSWORD || '').length >= 12 ? `kapterka-admin-session|${env.ADMIN_PASSWORD}` : '')
     ),
     brevoKey: String(env.BREVO_API_KEY || ''),
+    // Alternative mail route: the owner's Gmail via a Google Apps Script web app.
+    mailRelayUrl: /^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(String(env.MAIL_RELAY_URL || '').trim())
+      ? String(env.MAIL_RELAY_URL).trim()
+      : '',
+    mailRelaySecret: String(env.MAIL_RELAY_SECRET || ''),
     senderEmail: String(env.EMAIL_SENDER_EMAIL || ''),
     senderName: String(env.EMAIL_SENDER_NAME || 'Каптёрка ПРО'),
     tgBot: String(env.TG_BOT_TOKEN || ''),
@@ -487,9 +492,31 @@ function emailHtml(title, lines, highlight) {
 <p style="margin:18px 0 0;color:#94a3b8;font-size:12px">Если вы не запрашивали это письмо, просто удалите его. Сайт: https://kapterka-pro.ru/</p></div></div></body></html>`;
 }
 
+export function emailReady(cfg) {
+  return Boolean((cfg.mailRelayUrl && cfg.mailRelaySecret.length >= 16) || (cfg.brevoKey && cfg.senderEmail));
+}
+
 async function sendEmail(cfg, { toEmail, toName, subject, title, lines, highlight }) {
-  if (!cfg.brevoKey || !cfg.senderEmail) throw new Error('Email provider is not configured');
+  if (!emailReady(cfg)) throw new Error('Email provider is not configured');
   const text = [title, '', ...lines, ...(highlight ? ['', highlight] : []), '', 'https://kapterka-pro.ru/'].join('\n');
+  if (cfg.mailRelayUrl && cfg.mailRelaySecret.length >= 16) {
+    const r = await fetchWithTimeout(cfg.mailRelayUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        secret: cfg.mailRelaySecret,
+        to: toEmail,
+        name: toName || '',
+        subject,
+        text,
+        html: emailHtml(title, lines, highlight)
+      }),
+      redirect: 'follow'
+    });
+    const parsed = await r.json().catch(() => ({}));
+    if (!r.ok || parsed.ok !== true) throw new Error(`Mail relay failed: HTTP ${r.status} ${parsed.error || ''}`);
+    return true;
+  }
   const r = await fetchWithTimeout('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'api-key': cfg.brevoKey },
@@ -707,7 +734,7 @@ const handlers = {
       licenseRegistryConfigured: Boolean(cfg.serviceAccount),
       adminAuthConfigured: /^[a-f0-9]{64}$/.test(cfg.adminSecretSha256) || cfg.adminPassword.length >= 12,
       adminSessionConfigured: Boolean(cfg.adminSessionSecret),
-      emailConfigured: Boolean(cfg.brevoKey && cfg.senderEmail),
+      emailConfigured: emailReady(cfg),
       telegramConfigured: Boolean(cfg.tgBot && cfg.tgChat)
     });
   },
@@ -801,7 +828,7 @@ const handlers = {
     const fighterId = cleanText(body.fighter_id, 100);
     if (!email) return ctx.fail(400, 'INVALID_EMAIL');
     if (!fighterId) return ctx.fail(400, 'MISSING_FIGHTER_ID');
-    if (!cfg.brevoKey || !cfg.senderEmail) return ctx.fail(503, 'EMAIL_PROVIDER_UNAVAILABLE');
+    if (!emailReady(cfg)) return ctx.fail(503, 'EMAIL_PROVIDER_UNAVAILABLE');
     if (!(await bindingAllows(ctx.env.AUTH_LIMITER, 'mail:' + ip))) return ctx.fail(429, 'RATE_LIMITED', { retry_after_seconds: 60 });
 
     const id = await sha256Hex(email);
