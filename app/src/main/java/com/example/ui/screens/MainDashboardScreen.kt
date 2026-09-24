@@ -83,6 +83,7 @@ import com.example.data.model.OperationRecord
 import com.example.data.model.StockRecord
 import com.example.data.model.UserProfile
 import com.example.data.model.WarehousePoint
+import com.example.ui.components.PointActionsSheet
 import com.example.ui.components.AdjustStockDialog
 import com.example.ui.components.DemoBanner
 import com.example.ui.components.ReorderPointsDialog
