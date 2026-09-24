@@ -31,8 +31,8 @@
      Secret `FIREBASE_SERVICE_ACCOUNT_JSON` (то же содержимое).
    После этого удалите файл с телефона или компьютера.
 3. Cloudflare → kapterka-api → Secrets:
-   - `ADMIN_API_SECRET_SHA256` — SHA-256 от вашей админ-фразы;
-   - `ADMIN_SESSION_SECRET` — длинная случайная строка;
+   - `ADMIN_PASSWORD` — пароль админ-панели, не короче 12 символов (либо, для
+     продвинутых, `ADMIN_API_SECRET_SHA256` + `ADMIN_SESSION_SECRET`);
    - по желанию: `BREVO_API_KEY` + `EMAIL_SENDER_EMAIL` (письма с ключом),
      `TG_BOT_TOKEN` + `TG_ADMIN_CHAT_ID` (уведомления).
 4. Cloudflare → My Profile → API Tokens → Create Token → шаблон **«Edit Cloudflare Workers»**.

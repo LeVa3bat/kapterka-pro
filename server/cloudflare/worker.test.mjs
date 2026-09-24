@@ -487,6 +487,20 @@ test('user upgrading from 3.5.0 is reported as an upgrade', async () => {
   assert.ok(state.docs.has('fighters/БОЕЦ-OLD'), 'legacy record is left untouched');
 });
 
+
+test('admin: single ADMIN_PASSWORD secret is enough', async () => {
+  const pwEnv = { ...env, ADMIN_API_SECRET_SHA256: '', ADMIN_SESSION_SECRET: '', ADMIN_PASSWORD: 'Очень-длинный-пароль-42' };
+  const h = await call('health', {}, { method: 'GET', envOverride: pwEnv });
+  assert.equal(h.body.adminAuthConfigured, true);
+  assert.equal(h.body.adminSessionConfigured, true);
+  assert.equal((await call('admin_auth', { secret: 'wrong' }, { envOverride: pwEnv, ip: '9.9.9.1' })).status, 403);
+  const ok = await call('admin_auth', { secret: 'Очень-длинный-пароль-42' }, { envOverride: pwEnv, ip: '9.9.9.2' });
+  assert.equal(ok.status, 200);
+  assert.equal((await call('admin_list_fighters', { admin_token: ok.body.admin_token }, { envOverride: pwEnv })).status, 200);
+  const shortEnv = { ...pwEnv, ADMIN_PASSWORD: 'short' };
+  assert.equal((await call('health', {}, { method: 'GET', envOverride: shortEnv })).body.adminAuthConfigured, false);
+});
+
 // ------------------------------------------------------------------ run
 
 let failed = 0;

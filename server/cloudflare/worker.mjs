@@ -51,7 +51,12 @@ export function getConfig(env = {}) {
     projectId: String(env.FIREBASE_PROJECT_ID || 'kapterka-pro'),
     serviceAccount: readServiceAccount(env),
     adminSecretSha256: String(env.ADMIN_API_SECRET_SHA256 || '').trim().toLowerCase(),
-    adminSessionSecret: String(env.ADMIN_SESSION_SECRET || ''),
+    // Simpler alternative for the owner: one plain ADMIN_PASSWORD secret.
+    adminPassword: String(env.ADMIN_PASSWORD || ''),
+    adminSessionSecret: String(
+      env.ADMIN_SESSION_SECRET ||
+      (String(env.ADMIN_PASSWORD || '').length >= 12 ? `kapterka-admin-session|${env.ADMIN_PASSWORD}` : '')
+    ),
     brevoKey: String(env.BREVO_API_KEY || ''),
     senderEmail: String(env.EMAIL_SENDER_EMAIL || ''),
     senderName: String(env.EMAIL_SENDER_NAME || 'Каптёрка ПРО'),
@@ -595,8 +600,11 @@ const UNIT_DATA_COLLECTIONS = ['devices', 'warehouse_points', 'stock_records', '
 // ---------------------------------------------------------------- admin session
 
 async function adminSecretMatches(cfg, secret) {
-  if (!/^[a-f0-9]{64}$/.test(cfg.adminSecretSha256)) return false;
-  return constantTimeEqual(await sha256Hex(String(secret || '')), cfg.adminSecretSha256);
+  const expected = /^[a-f0-9]{64}$/.test(cfg.adminSecretSha256)
+    ? cfg.adminSecretSha256
+    : cfg.adminPassword.length >= 12 ? await sha256Hex(cfg.adminPassword) : '';
+  if (!expected) return false;
+  return constantTimeEqual(await sha256Hex(String(secret || '')), expected);
 }
 
 async function issueAdminToken(cfg) {
@@ -659,7 +667,7 @@ const handlers = {
       apiVersion: API_VERSION,
       secretConfigured: Boolean(cfg.secretKey),
       licenseRegistryConfigured: Boolean(cfg.serviceAccount),
-      adminAuthConfigured: /^[a-f0-9]{64}$/.test(cfg.adminSecretSha256),
+      adminAuthConfigured: /^[a-f0-9]{64}$/.test(cfg.adminSecretSha256) || cfg.adminPassword.length >= 12,
       adminSessionConfigured: Boolean(cfg.adminSessionSecret),
       emailConfigured: Boolean(cfg.brevoKey && cfg.senderEmail),
       telegramConfigured: Boolean(cfg.tgBot && cfg.tgChat)
