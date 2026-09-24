@@ -82,8 +82,33 @@ import androidx.compose.ui.platform.LocalContext
 @Composable
 fun AuthScreen(
     currentProfile: UserProfile?,
-    onCompleteAuth: (UserProfile) -> Unit
+    onCompleteAuth: (UserProfile) -> Unit,
+    onSendEmailCode: suspend (String) -> com.example.data.auth.EmailCodeResult = {
+        com.example.data.auth.EmailCodeResult(false, "Подтверждение недоступно", canSkip = true)
+    },
+    onVerifyEmailCode: suspend (UserProfile, String) -> com.example.data.auth.EmailCodeResult = { _, _ ->
+        com.example.data.auth.EmailCodeResult(false, "Подтверждение недоступно", canSkip = true)
+    }
 ) {
+    // Profile waiting for e-mail confirmation before sign-in completes.
+    var pendingProfile by remember { mutableStateOf<UserProfile?>(null) }
+    pendingProfile?.let { pending ->
+        com.example.ui.components.EmailCodeDialog(
+            email = pending.email,
+            onSendCode = { onSendEmailCode(pending.email) },
+            onVerifyCode = { code -> onVerifyEmailCode(pending, code) },
+            onVerified = {
+                pendingProfile = null
+                onCompleteAuth(pending)
+            },
+            onSkip = {
+                pendingProfile = null
+                onCompleteAuth(pending)
+            },
+            onDismiss = { pendingProfile = null }
+        )
+    }
+
     val context = LocalContext.current
     
 
@@ -452,7 +477,8 @@ fun AuthScreen(
                                 email = cleanEmail,
                                 isLoggedIn = true
                             )
-                            onCompleteAuth(prof)
+                            // Confirm the e-mail with a code before signing in.
+                            pendingProfile = prof
                         },
                         modifier = Modifier
                             .fillMaxWidth()

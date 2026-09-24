@@ -282,7 +282,9 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
             currentProfile = profile,
             onCompleteAuth = { newProfile ->
                 viewModel.registerOrLoginProfile(newProfile)
-            }
+            },
+            onSendEmailCode = { email -> viewModel.sendEmailCode(email) },
+            onVerifyEmailCode = { prof, code -> viewModel.verifyEmailCode(prof, code) }
         )
         return
     }

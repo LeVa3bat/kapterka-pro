@@ -469,6 +469,21 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
     }
 
     // User Profile / Settings / Auth
+    private val emailVerification = com.example.data.auth.EmailVerificationService()
+
+    suspend fun sendEmailCode(email: String): com.example.data.auth.EmailCodeResult =
+        emailVerification.sendCode(email, licenseManager.getFighterPersonalId())
+
+    suspend fun verifyEmailCode(profile: UserProfile, code: String): com.example.data.auth.EmailCodeResult =
+        emailVerification.verifyCode(
+            email = profile.email,
+            fighterId = licenseManager.getFighterPersonalId(),
+            code = code,
+            callsign = profile.callsign,
+            unitName = profile.unitName,
+            unitKey = profile.unitKey
+        )
+
     fun registerOrLoginProfile(profile: UserProfile, isNewRegistration: Boolean = false) {
         viewModelScope.launch {
             var resolvedKey = profile.unitKey.trim()
