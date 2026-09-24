@@ -323,6 +323,10 @@ class FirebaseSyncManager(
             sendPresencePing(cleanKey, callsign, unitName)
             return
         }
+        if (activeUnitKey == cleanKey && connectJob?.isActive == true) {
+            // Membership check for this unit is already in flight.
+            return
+        }
 
         stopSync()
         activeUnitKey = cleanKey
