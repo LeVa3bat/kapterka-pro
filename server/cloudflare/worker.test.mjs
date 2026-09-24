@@ -534,6 +534,46 @@ test('admin_stats: owner dashboard numbers', async () => {
   assert.ok(!raw.includes('kapt_stats'), 'no unit keys in stats');
 });
 
+
+test('email confirmation code: send, wrong, right, welcome letter', async () => {
+  const before = state.emails.length;
+  const sent = await call('email_code_send', { email: 'New@Boec.ru', fighter_id: 'БОЕЦ-MAIL' }, { ip: '7.7.7.1' });
+  assert.equal(sent.status, 200);
+  const letter = state.emails.at(-1);
+  assert.equal(letter.to[0].email, 'new@boec.ru');
+  const code = (letter.subject.match(/(\d{6})/) || [])[1];
+  assert.ok(code, 'code in subject');
+  assert.ok(letter.htmlContent.includes(code));
+  // Resend within a minute is refused.
+  assert.equal((await call('email_code_send', { email: 'new@boec.ru', fighter_id: 'БОЕЦ-MAIL' }, { ip: '7.7.7.2' })).status, 429);
+  // Wrong code, other fighter.
+  const wrong = await call('email_code_verify', { email: 'new@boec.ru', fighter_id: 'БОЕЦ-MAIL', code: code === '111111' ? '222222' : '111111' });
+  assert.equal(wrong.status, 403);
+  assert.equal(wrong.body.attempts_left, 4);
+  assert.equal((await call('email_code_verify', { email: 'new@boec.ru', fighter_id: 'БОЕЦ-EVE', code })).status, 403);
+  const ok = await call('email_code_verify', { email: 'new@boec.ru', fighter_id: 'БОЕЦ-MAIL', code, unit_key: 'kapt_0123456789abcdef0123', callsign: 'Новый' });
+  assert.equal(ok.status, 200);
+  assert.equal(state.docs.get('srv_fighters/БОЕЦ-MAIL').emailVerified, true);
+  assert.ok(state.emails.at(-1).htmlContent.includes('kapt_0123456789abcdef0123'), 'welcome letter carries the unit key');
+  assert.equal(state.emails.length, before + 2);
+  // Code is single-use.
+  assert.equal((await call('email_code_verify', { email: 'new@boec.ru', fighter_id: 'БОЕЦ-MAIL', code })).status, 410);
+});
+
+test('email confirmation code: brute force stops after 5 attempts', async () => {
+  await call('email_code_send', { email: 'brute@x.ru', fighter_id: 'БОЕЦ-B' }, { ip: '7.7.7.3' });
+  const code = (state.emails.at(-1).subject.match(/(\d{6})/) || [])[1];
+  const bad = code === '000000' ? '999999' : '000000';
+  for (let i = 0; i < 5; i++) await call('email_code_verify', { email: 'brute@x.ru', fighter_id: 'БОЕЦ-B', code: bad });
+  assert.equal((await call('email_code_verify', { email: 'brute@x.ru', fighter_id: 'БОЕЦ-B', code })).status, 429);
+});
+
+test('email provider missing is reported, not hidden', async () => {
+  const r = await call('email_code_send', { email: 'a@b.ru', fighter_id: 'X' }, { envOverride: { ...env, BREVO_API_KEY: '' } });
+  assert.equal(r.status, 503);
+  assert.equal(r.body.error, 'EMAIL_PROVIDER_UNAVAILABLE');
+});
+
 // ------------------------------------------------------------------ run
 
 let failed = 0;

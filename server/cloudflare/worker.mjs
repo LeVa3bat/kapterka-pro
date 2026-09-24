@@ -29,6 +29,11 @@ const UPSTREAM_TIMEOUT_MS = 12000;
 // `licenses` / `fighters` collections directly, so nothing there is trusted.
 const LICENSES = 'srv_licenses';
 const FIGHTERS = 'srv_fighters';
+const EMAIL_CODES = 'srv_email_codes';
+const EMAIL_CODE_TTL_MS = 10 * 60 * 1000;
+const EMAIL_CODE_RESEND_MS = 60 * 1000;
+const EMAIL_CODE_MAX_ATTEMPTS = 5;
+const EMAIL_CODES_PER_HOUR = 5;
 // Read-only: only used to tell an upgrade from a new registration in Telegram.
 const LEGACY_FIGHTERS = 'fighters';
 const LICENSE_KEY_RE = /^KAPT-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/;
@@ -469,29 +474,49 @@ class Firestore {
   }
 }
 
-async function sendLicenseEmail(cfg, { toEmail, callsign, licenseKey, days }) {
+function emailHtml(title, lines, highlight) {
+  const esc = (v) => escapeHtml(v).replace(/"/g, '&quot;');
+  const body = lines.map((l) => `<p style="margin:0 0 12px;color:#334155;font-size:15px;line-height:1.5">${esc(l)}</p>`).join('');
+  const box = highlight
+    ? `<div style="margin:18px 0;padding:16px;border-radius:14px;background:#0f2a1f;color:#6ee7b7;font:700 26px/1.2 monospace;letter-spacing:3px;text-align:center">${esc(highlight)}</div>`
+    : '';
+  return `<!doctype html><html><body style="margin:0;background:#f1f5f9;font-family:Segoe UI,Roboto,Arial,sans-serif">
+<div style="max-width:520px;margin:24px auto;background:#fff;border-radius:18px;overflow:hidden;border:1px solid #e2e8f0">
+<div style="padding:20px 24px;background:linear-gradient(135deg,#1f7a57,#0f766e);color:#fff;font-weight:800;font-size:20px">Каптёрка ПРО</div>
+<div style="padding:24px"><h2 style="margin:0 0 14px;color:#0f172a;font-size:19px">${esc(title)}</h2>${body}${box}
+<p style="margin:18px 0 0;color:#94a3b8;font-size:12px">Если вы не запрашивали это письмо, просто удалите его. Сайт: https://kapterka-pro.ru/</p></div></div></body></html>`;
+}
+
+async function sendEmail(cfg, { toEmail, toName, subject, title, lines, highlight }) {
   if (!cfg.brevoKey || !cfg.senderEmail) throw new Error('Email provider is not configured');
-  const text = [
-    `Здравствуйте, ${callsign || 'пользователь'}!`,
-    '',
-    'Ваш лицензионный ключ «Каптёрка ПРО»:',
-    licenseKey,
-    '',
-    `Срок действия: ${days} суток.`,
-    'Официальный сайт: https://kapterka-pro.ru/'
-  ].join('\n');
+  const text = [title, '', ...lines, ...(highlight ? ['', highlight] : []), '', 'https://kapterka-pro.ru/'].join('\n');
   const r = await fetchWithTimeout('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'api-key': cfg.brevoKey },
     body: JSON.stringify({
       sender: { name: cfg.senderName, email: cfg.senderEmail },
-      to: [{ email: toEmail, name: callsign || 'Пользователь' }],
-      subject: `Ваш лицензионный ключ «Каптёрка ПРО» (${days} дней)`,
-      textContent: text
+      to: [{ email: toEmail, name: toName || 'Пользователь' }],
+      subject,
+      textContent: text,
+      htmlContent: emailHtml(title, lines, highlight)
     })
   });
   if (!r.ok) throw new Error(`Brevo HTTP ${r.status}`);
   return true;
+}
+
+async function sendLicenseEmail(cfg, { toEmail, callsign, licenseKey, days }) {
+  return sendEmail(cfg, {
+    toEmail,
+    toName: callsign,
+    subject: `Ваш лицензионный ключ «Каптёрка ПРО» (${days} дн.)`,
+    title: `Здравствуйте, ${callsign || 'пользователь'}!`,
+    lines: [
+      'Спасибо за оплату. Ваш лицензионный ключ «Каптёрка ПРО»:',
+      `Срок действия: ${days} суток. Ключ привязан к вашему устройству — сохраните это письмо.`
+    ],
+    highlight: licenseKey
+  });
 }
 
 // ---------------------------------------------------------------- domain
@@ -767,6 +792,101 @@ const handlers = {
     const storedEmail = cleanEmail(fighter.email);
     if (!storedEmail || storedEmail !== email) return ctx.fail(403, 'FIGHTER_IDENTITY_MISMATCH');
     return ctx.ok({ ok: true, fighter: { id: fighter.id, unit_name: fighter.unitName, unit_key: fighter.unitKey } });
+  },
+
+  // Registration: send a 6-digit confirmation code to the e-mail.
+  async email_code_send(ctx) {
+    const { body, db, cfg, ip } = ctx;
+    const email = cleanEmail(body.email);
+    const fighterId = cleanText(body.fighter_id, 100);
+    if (!email) return ctx.fail(400, 'INVALID_EMAIL');
+    if (!fighterId) return ctx.fail(400, 'MISSING_FIGHTER_ID');
+    if (!cfg.brevoKey || !cfg.senderEmail) return ctx.fail(503, 'EMAIL_PROVIDER_UNAVAILABLE');
+    if (!(await bindingAllows(ctx.env.AUTH_LIMITER, 'mail:' + ip))) return ctx.fail(429, 'RATE_LIMITED', { retry_after_seconds: 60 });
+
+    const id = await sha256Hex(email);
+    const now = Date.now();
+    const prev = await db.get(EMAIL_CODES, id);
+    if (prev && now - Number(prev.sentAt || 0) < EMAIL_CODE_RESEND_MS) {
+      return ctx.fail(429, 'EMAIL_CODE_TOO_SOON', {
+        retry_after_seconds: Math.ceil((EMAIL_CODE_RESEND_MS - (now - Number(prev.sentAt))) / 1000)
+      });
+    }
+    const hourStart = prev && now - Number(prev.hourStart || 0) < 3600_000 ? Number(prev.hourStart) : now;
+    const hourCount = prev && hourStart === Number(prev.hourStart) ? Number(prev.hourCount || 0) : 0;
+    if (hourCount >= EMAIL_CODES_PER_HOUR) return ctx.fail(429, 'EMAIL_CODE_HOURLY_LIMIT', { retry_after_seconds: 3600 });
+
+    const buf = new Uint32Array(1);
+    crypto.getRandomValues(buf);
+    const code = String(100000 + (buf[0] % 900000));
+    await db.patch(EMAIL_CODES, id, {
+      codeHash: await sha256Hex(`${code}|${email}|${fighterId}`),
+      fighterId,
+      expiresAt: now + EMAIL_CODE_TTL_MS,
+      attempts: 0,
+      sentAt: now,
+      hourStart,
+      hourCount: hourCount + 1
+    });
+    try {
+      await sendEmail(cfg, {
+        toEmail: email,
+        subject: `Код подтверждения «Каптёрка ПРО»: ${code}`,
+        title: 'Подтверждение почты',
+        lines: ['Введите этот код в приложении, чтобы завершить регистрацию. Код действует 10 минут.'],
+        highlight: code
+      });
+    } catch (error) {
+      console.error('Code email error:', error?.message || error);
+      return ctx.fail(503, 'EMAIL_PROVIDER_UNAVAILABLE');
+    }
+    return ctx.ok({ ok: true, expires_in_seconds: EMAIL_CODE_TTL_MS / 1000 });
+  },
+
+  // Registration: check the code; on success the e-mail is verified and a
+  // welcome letter with the unit key is sent.
+  async email_code_verify(ctx) {
+    const { body, db, cfg } = ctx;
+    const email = cleanEmail(body.email);
+    const fighterId = cleanText(body.fighter_id, 100);
+    const code = cleanText(body.code, 12).replace(/\D/g, '');
+    if (!email || !fighterId || code.length !== 6) return ctx.fail(400, 'INVALID_CODE');
+
+    const id = await sha256Hex(email);
+    const rec = await db.get(EMAIL_CODES, id);
+    const now = Date.now();
+    if (!rec || Number(rec.expiresAt || 0) < now) return ctx.fail(410, 'CODE_EXPIRED');
+    if (Number(rec.attempts || 0) >= EMAIL_CODE_MAX_ATTEMPTS) return ctx.fail(429, 'TOO_MANY_ATTEMPTS');
+    const ok = rec.fighterId === fighterId &&
+      constantTimeEqual(await sha256Hex(`${code}|${email}|${fighterId}`), String(rec.codeHash || ''));
+    if (!ok) {
+      await db.patch(EMAIL_CODES, id, { attempts: Number(rec.attempts || 0) + 1 });
+      return ctx.fail(403, 'WRONG_CODE', { attempts_left: EMAIL_CODE_MAX_ATTEMPTS - Number(rec.attempts || 0) - 1 });
+    }
+    await db.remove(EMAIL_CODES, id);
+    await db.patch(FIGHTERS, fighterId, { fighterId, email, emailVerified: true, emailVerifiedAt: now });
+
+    const callsign = cleanText(body.callsign, 80);
+    const unitKey = cleanText(body.unit_key, 120);
+    const unitName = cleanText(body.unit_name, 120);
+    try {
+      await sendEmail(cfg, {
+        toEmail: email,
+        toName: callsign,
+        subject: 'Регистрация в «Каптёрка ПРО» подтверждена',
+        title: `Добро пожаловать${callsign ? ', ' + callsign : ''}!`,
+        lines: [
+          'Ваша почта подтверждена. Сохраните это письмо — в нём данные для подключения.',
+          unitName ? `Подразделение: ${unitName}` : '',
+          `ID бойца: ${fighterId}`,
+          'Ключ подразделения (нужен, чтобы подключить второй телефон):'
+        ].filter(Boolean),
+        highlight: unitKey || '—'
+      });
+    } catch (error) {
+      console.error('Welcome email error:', error?.message || error);
+    }
+    return ctx.ok({ ok: true, verified: true });
   },
 
   async license_verify(ctx) {
@@ -1212,6 +1332,18 @@ const handlers = {
         });
       } catch (error) {
         console.error('Fighter license mirror error:', error?.message || error);
+      }
+    }
+    if (email) {
+      try {
+        await sendLicenseEmail(cfg, {
+          toEmail: email,
+          callsign,
+          licenseKey,
+          days: Math.max(1, Math.ceil((expiresAt - Date.now()) / DAY_MS))
+        });
+      } catch (error) {
+        console.error('Licence email after payment failed:', error?.message || error);
       }
     }
     await sendTelegram(cfg,
