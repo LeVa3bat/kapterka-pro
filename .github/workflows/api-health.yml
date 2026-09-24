@@ -19,3 +19,10 @@ jobs:
       - run: |
           curl -sS --max-time 40 -X POST -H 'Content-Type: application/json' -d '{}' "https://kapterka-api.alex-666-881.workers.dev/?action=mail_diag"
           echo
+      # Payment gateway check without paying: an unknown payment id must be
+      # answered by YooKassa as "not found" (credentials OK), never 401.
+      - run: |
+          curl -sS --max-time 30 -o /tmp/pay.json -w "check http=%{http_code}\n" -X POST -H 'Content-Type: application/json' \
+            -d '{"payment_id":"2f000000-000f-5000-8000-000000000000","fighter_id":"HEALTHCHECK"}' \
+            "https://kapterka-api.alex-666-881.workers.dev/?action=check"
+          cat /tmp/pay.json; echo
