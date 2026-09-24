@@ -1,0 +1,45 @@
+// KAPTERKA PRO — Firestore rules, PHASE B (strict).
+//
+// Deploy ONLY on the owner's command, once most users run 3.6+.
+// After this, app versions ≤3.5.0 can no longer sync (their local data stays).
+//
+// A device may touch a unit only if the server has registered its Firebase
+// identity as a member (action unit_join, rate limited). Knowing or guessing a
+// unit key is no longer enough.
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isMember(unitKey) {
+      return request.auth != null &&
+        exists(/databases/$(database)/documents/units/$(unitKey)/members/$(request.auth.uid));
+    }
+
+    match /units/{unitKey} {
+      // The root document is created by the server at unit_join. Members may
+      // refresh presence fields (unitName, lastActivity) but not ownership.
+      allow get: if isMember(unitKey);
+      allow update: if isMember(unitKey) &&
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['createdBy', 'createdAt', 'unitKey']);
+      allow list, create, delete: if false;
+
+      match /members/{uid} {
+        allow read: if isMember(unitKey);
+        allow write: if false;
+      }
+
+      match /warehouse_points/{docId}  { allow read, write: if isMember(unitKey); }
+      match /inventory_items/{docId}   { allow read, write: if isMember(unitKey); }
+      match /stock_records/{docId}     { allow read, write: if isMember(unitKey); }
+      match /operation_records/{docId} { allow read, write: if isMember(unitKey); }
+      match /requisitions/{docId}      { allow read, write: if isMember(unitKey); }
+      match /devices/{docId}           { allow read, write: if isMember(unitKey); }
+      match /sync_tombstones/{docId}   { allow read, write: if isMember(unitKey); }
+    }
+
+    // srv_*, legacy fighters/licenses and anything else: no client access.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

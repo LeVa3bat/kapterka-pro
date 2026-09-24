@@ -1,0 +1,58 @@
+// KAPTERKA PRO — Firestore rules, PHASE A (transition).
+//
+// Deploy together with the 3.6 release. Old app versions (≤3.5.0) keep syncing,
+// but the registries they used to leak are no longer readable by clients.
+//
+// - srv_*           : server-only (Cloudflare worker, service account).
+// - fighters        : legacy write-only. Reading/listing leaked every unit key
+//                     and e-mail, so it is closed.
+// - licenses        : legacy. Single-key lookup stays for ≤3.5.0 activation,
+//                     listing (every key + e-mail) is closed. Never trusted by
+//                     the server.
+// - units/**        : still open for ≤3.5.0 clients; membership records are
+//                     written only by the server (unit_join).
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isMember(unitKey) {
+      return request.auth != null &&
+        exists(/databases/$(database)/documents/units/$(unitKey)/members/$(request.auth.uid));
+    }
+
+    match /srv_licenses/{id} { allow read, write: if false; }
+    match /srv_fighters/{id} { allow read, write: if false; }
+
+    match /fighters/{fighterId} {
+      allow create, update: if true;
+      allow get, list, delete: if false;
+    }
+
+    match /licenses/{licenseKey} {
+      allow get, create, update: if true;
+      allow list, delete: if false;
+    }
+
+    match /units/{unitKey} {
+      allow get, create, update, delete: if true;
+      allow list: if false;
+
+      match /members/{uid} {
+        allow read: if isMember(unitKey);
+        allow write: if false;
+      }
+
+      match /warehouse_points/{docId}  { allow read, write: if true; }
+      match /inventory_items/{docId}   { allow read, write: if true; }
+      match /stock_records/{docId}     { allow read, write: if true; }
+      match /operation_records/{docId} { allow read, write: if true; }
+      match /requisitions/{docId}      { allow read, write: if true; }
+      match /devices/{docId}           { allow read, write: if true; }
+      match /sync_tombstones/{docId}   { allow read, write: if true; }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,70 @@
+name: Firestore rules
+
+on:
+  push:
+    paths:
+      - 'server/firestore/**'
+      - '.github/workflows/firestore-rules.yml'
+  pull_request:
+    paths:
+      - 'server/firestore/**'
+  workflow_dispatch:
+    inputs:
+      phase:
+        description: 'Какие правила выложить в Firebase'
+        required: true
+        default: 'test-only'
+        type: choice
+        options:
+          - 'test-only'
+          - 'transition'   # фаза A: вместе с 3.6, старые версии работают
+          - 'strict'       # фаза B: только по команде владельца
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save firebase@11 @firebase/rules-unit-testing@4 firebase-tools@14
+      - name: Rules tests in the emulator (both phases)
+        run: npx firebase emulators:exec --only firestore --config server/firestore/firebase.json --project demo-kapterka "node server/firestore/rules.test.mjs"
+
+  deploy:
+    needs: test
+    if: github.event_name == 'workflow_dispatch' && inputs.phase != 'test-only'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Write service account
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          [ -n "$FIREBASE_SERVICE_ACCOUNT" ] || { echo "GitHub secret FIREBASE_SERVICE_ACCOUNT is missing"; exit 1; }
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/sa.json"
+          node -e "const j=require(process.argv[1]); if(j.project_id!=='kapterka-pro') throw new Error('service account is for '+j.project_id)" "$RUNNER_TEMP/sa.json"
+      - name: Deploy ${{ inputs.phase }} rules
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
+        run: |
+          cd server/firestore
+          printf '{"firestore":{"rules":"%s.rules"}}' "${{ inputs.phase }}" > firebase.deploy.json
+          npx --yes firebase-tools@14 deploy --only firestore:rules --project kapterka-pro --config firebase.deploy.json --non-interactive
+      - name: Remove credentials
+        if: always()
+        run: rm -f "$RUNNER_TEMP/sa.json"

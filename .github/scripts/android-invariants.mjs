@@ -148,16 +148,22 @@ if (!daoSource.includes('@Transaction') || !daoSource.includes('commitOperationA
   ok('core operation history and stock mutations are committed atomically');
 }
 
-const backendSource = read('server/yandex-cloud-function.js');
-const restoreStart = backendSource.indexOf("if (action === 'license_restore')");
-const restoreEnd = backendSource.indexOf("if (action === 'send_license_email')", restoreStart);
+const backendSource = read('server/cloudflare/worker.mjs');
+const restoreStart = backendSource.indexOf('async license_restore(ctx)');
+const restoreEnd = backendSource.indexOf('async send_license_email(ctx)', restoreStart);
 const restoreSource = backendSource.slice(restoreStart, restoreEnd);
-if (!restoreSource.includes("MISSING_FIGHTER_ID") ||
-    !restoreSource.includes("LICENSE_RESTORE_IDENTITY_MISMATCH") ||
-    !restoreSource.includes("license.fighterId !== fighterId")) {
+if (restoreStart < 0 ||
+    !restoreSource.includes('MISSING_FIGHTER_ID') ||
+    !restoreSource.includes('LICENSE_RESTORE_IDENTITY_MISMATCH') ||
+    !restoreSource.includes('activeLicenseByEmail(db, email, fighterId)')) {
   fail('license restore is not bound to the existing fighter identity');
 } else {
   ok('license restore is identity-bound and does not disclose keys by email alone');
+}
+if (!backendSource.includes("const LICENSES = 'srv_licenses'") || /'licenses'|'fighters'/.test(backendSource)) {
+  fail('backend must use only server-only registry collections');
+} else {
+  ok('backend trusts only server-only registry collections');
 }
 
 const viewModelSource = read('app/src/main/java/com/example/ui/viewmodel/KapterkaViewModel.kt');

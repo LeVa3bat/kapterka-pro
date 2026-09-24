@@ -25,6 +25,10 @@ const ADMIN_AUTH_MAX_FAILURES = 5;
 const LICENSE_EMAIL_RATE_LIMIT_MS = 60 * 1000;
 const MAX_REQUEST_BODY_BYTES = 64 * 1024;
 const UPSTREAM_TIMEOUT_MS = 12000;
+// Server-only registry collections. Older app versions write to the legacy
+// `licenses` / `fighters` collections directly, so nothing there is trusted.
+const LICENSES = 'srv_licenses';
+const FIGHTERS = 'srv_fighters';
 const LICENSE_KEY_RE = /^KAPT-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/;
 const ALLOWED_ORIGINS = new Set(['https://kapterka-pro.ru', 'https://www.kapterka-pro.ru']);
 
@@ -493,7 +497,7 @@ function isActive(license, now = Date.now()) {
 }
 
 async function activeLicenseByEmail(db, email, fighterId = '') {
-  const rows = (await db.queryEqual('licenses', 'email', email, 20)).map(normalizeLicense);
+  const rows = (await db.queryEqual(LICENSES, 'email', email, 20)).map(normalizeLicense);
   return rows
     .filter((l) => isActive(l) && (!fighterId || l.fighterId === fighterId))
     .sort((a, b) => b.expiresAt - a.expiresAt)[0] || null;
@@ -657,15 +661,15 @@ const handlers = {
     if (!fighterId) return ctx.fail(400, 'MISSING_FIGHTER_ID');
 
     const now = Date.now();
-    const existing = normalizeFighter(await db.get('fighters', fighterId));
+    const existing = normalizeFighter(await db.get(FIGHTERS, fighterId));
     if (existing) {
       const storedEmail = cleanEmail(existing.email);
       if (storedEmail && email && storedEmail === email) {
         // Profile metadata only. License fields are never accepted from a client.
-        await db.patch('fighters', fighterId, { callsign, unitName, unitKey, lastSeenAt: now, deviceModel });
+        await db.patch(FIGHTERS, fighterId, { callsign, unitName, unitKey, lastSeenAt: now, deviceModel });
         return ctx.ok({ ok: true, existing: true, profile_updated: true });
       }
-      await db.patch('fighters', fighterId, { lastSeenAt: now, deviceModel });
+      await db.patch(FIGHTERS, fighterId, { lastSeenAt: now, deviceModel });
       return ctx.ok({ ok: true, existing: true, profile_updated: false });
     }
 
@@ -677,7 +681,7 @@ const handlers = {
         active = null;
       }
     }
-    await db.patch('fighters', fighterId, {
+    await db.patch(FIGHTERS, fighterId, {
       fighterId,
       callsign,
       role: 'Старшина подразделения',
@@ -708,7 +712,7 @@ const handlers = {
     if (!email) return ctx.fail(400, 'INVALID_EMAIL');
     if (!(await ctx.limit('lookup:' + ctx.ip))) return ctx.fail(429, 'RATE_LIMITED');
 
-    const fighter = normalizeFighter(await db.get('fighters', fighterId));
+    const fighter = normalizeFighter(await db.get(FIGHTERS, fighterId));
     if (!fighter || fighter.id !== fighterId) return ctx.fail(404, 'FIGHTER_NOT_FOUND');
     const storedEmail = cleanEmail(fighter.email);
     if (!storedEmail || storedEmail !== email) return ctx.fail(403, 'FIGHTER_IDENTITY_MISMATCH');
@@ -722,14 +726,14 @@ const handlers = {
     if (!LICENSE_KEY_RE.test(licenseKey)) return ctx.fail(400, 'INVALID_LICENSE_KEY');
     if (!(await ctx.limit('verify:' + ctx.ip))) return ctx.fail(429, 'RATE_LIMITED');
 
-    const license = normalizeLicense(await db.get('licenses', licenseKey));
+    const license = normalizeLicense(await db.get(LICENSES, licenseKey));
     if (!isActive(license)) return ctx.fail(404, 'LICENSE_NOT_ACTIVE');
     if (license.fighterId && license.fighterId !== fighterId) return ctx.fail(403, 'FIGHTER_MISMATCH');
 
     // A license bought by a 3.5.0 client has no fighter yet: the first verified
     // 3.6+ installation claims it, so the same key cannot be spread further.
     if (!license.fighterId && fighterId) {
-      await db.patch('licenses', licenseKey, { fighterId, boundAt: Date.now() }, { mustExist: true });
+      await db.patch(LICENSES, licenseKey, { fighterId, boundAt: Date.now() }, { mustExist: true });
       license.fighterId = fighterId;
     }
     return ctx.ok({
@@ -764,7 +768,7 @@ const handlers = {
     const email = cleanEmail(body.email);
     if (!LICENSE_KEY_RE.test(licenseKey) || !email) return ctx.fail(400, 'INVALID_LICENSE_EMAIL_REQUEST');
 
-    const license = normalizeLicense(await db.get('licenses', licenseKey));
+    const license = normalizeLicense(await db.get(LICENSES, licenseKey));
     if (!isActive(license)) return ctx.fail(404, 'LICENSE_NOT_ACTIVE');
     if (!license.email || license.email.toLowerCase() !== email) return ctx.fail(403, 'LICENSE_EMAIL_MISMATCH');
 
@@ -866,7 +870,7 @@ const handlers = {
 
   async admin_list_fighters(ctx) {
     if (!(await verifyAdminToken(ctx.cfg, ctx.body.admin_token))) return ctx.fail(403, 'ADMIN_SESSION_INVALID');
-    const fighters = (await ctx.db.list('fighters')).map(normalizeFighter);
+    const fighters = (await ctx.db.list(FIGHTERS)).map(normalizeFighter);
     return ctx.ok({
       ok: true,
       fighters: fighters.map((f) => ({
@@ -892,21 +896,21 @@ const handlers = {
     const days = Math.min(365, Math.max(1, Number.parseInt(body.days, 10) || 30));
     if (!fighterId) return ctx.fail(400, 'MISSING_FIGHTER_ID');
 
-    const fighter = normalizeFighter(await db.get('fighters', fighterId));
+    const fighter = normalizeFighter(await db.get(FIGHTERS, fighterId));
     if (!fighter) return ctx.fail(404, 'FIGHTER_NOT_FOUND');
 
     const now = Date.now();
     let licenseKey = cleanText(fighter.licenseKey, 40).toUpperCase();
-    const existing = LICENSE_KEY_RE.test(licenseKey) ? normalizeLicense(await db.get('licenses', licenseKey)) : null;
+    const existing = LICENSE_KEY_RE.test(licenseKey) ? normalizeLicense(await db.get(LICENSES, licenseKey)) : null;
     let expiresAt;
     if (isActive(existing, now) && existing.fighterId === fighterId) {
       // "+N days" extends the current license and keeps the same key.
       expiresAt = existing.expiresAt + days * DAY_MS;
-      await db.patch('licenses', licenseKey, { expiresAt, status: 'ACTIVE' }, { mustExist: true });
+      await db.patch(LICENSES, licenseKey, { expiresAt, status: 'ACTIVE' }, { mustExist: true });
     } else {
       licenseKey = generateAdminLicenseKey();
       expiresAt = now + days * DAY_MS;
-      await db.patch('licenses', licenseKey, {
+      await db.patch(LICENSES, licenseKey, {
         licenseKey,
         fighterId,
         callsign: cleanText(fighter.callsign, 80),
@@ -920,7 +924,7 @@ const handlers = {
         source: 'Admin server grant'
       }, { mustExist: false });
     }
-    await db.patch('fighters', fighterId, { licenseKey, expiresAt, isProActive: true });
+    await db.patch(FIGHTERS, fighterId, { licenseKey, expiresAt, isProActive: true });
     return ctx.ok({ ok: true, license_key: licenseKey, expires_at: expiresAt, days });
   },
 
@@ -929,7 +933,7 @@ const handlers = {
     const fighterId = cleanText(ctx.body.fighter_id, 100);
     if (!fighterId) return ctx.fail(400, 'MISSING_FIGHTER_ID');
     // Registry entry only. Licenses and unit data are intentionally preserved.
-    await ctx.db.remove('fighters', fighterId);
+    await ctx.db.remove(FIGHTERS, fighterId);
     return ctx.ok({ ok: true });
   },
 
@@ -1004,7 +1008,7 @@ const handlers = {
 
     let existing;
     try {
-      existing = normalizeLicense(await db.get('licenses', licenseKey));
+      existing = normalizeLicense(await db.get(LICENSES, licenseKey));
     } catch (error) {
       console.error('Existing license read error:', error?.message || error);
       return ctx.fail(503, 'LICENSE_REGISTRY_UNAVAILABLE', { paid: true, status });
@@ -1022,11 +1026,11 @@ const handlers = {
     let expiresAt = activatedAt + LICENSE_DURATION_MS;
     try {
       if (fighterId) {
-        const fighter = normalizeFighter(await db.get('fighters', fighterId));
+        const fighter = normalizeFighter(await db.get(FIGHTERS, fighterId));
         // Renewal keeps unused paid/admin time.
         if (fighter && fighter.expiresAt > activatedAt) expiresAt = fighter.expiresAt + LICENSE_DURATION_MS;
       }
-      await db.patch('licenses', licenseKey, {
+      await db.patch(LICENSES, licenseKey, {
         licenseKey,
         fighterId,
         callsign,
@@ -1042,7 +1046,7 @@ const handlers = {
     } catch (error) {
       if (error?.code === 'ALREADY_EXISTS') {
         // A concurrent check created it first — return that record unchanged.
-        const winner = normalizeLicense(await db.get('licenses', licenseKey));
+        const winner = normalizeLicense(await db.get(LICENSES, licenseKey));
         if (!winner || !(winner.expiresAt > 0)) {
           return ctx.fail(503, 'LICENSE_REGISTRY_UNAVAILABLE', { paid: true, status });
         }
@@ -1057,7 +1061,7 @@ const handlers = {
 
     if (fighterId) {
       try {
-        await db.patch('fighters', fighterId, {
+        await db.patch(FIGHTERS, fighterId, {
           licenseKey,
           expiresAt,
           isProActive: expiresAt > Date.now(),

@@ -296,7 +296,7 @@ test('check: legacy 3.5.0 flow (no fighter) then first 3.6 device claims it', as
 });
 
 test('check: renewal keeps unused time', async () => {
-  state.docs.set('fighters/БОЕЦ-RENEW', { fighterId: 'БОЕЦ-RENEW', email: 'renew@x.ru', expiresAt: Date.now() + 10 * 86400000 });
+  state.docs.set('srv_fighters/БОЕЦ-RENEW', { fighterId: 'БОЕЦ-RENEW', email: 'renew@x.ru', expiresAt: Date.now() + 10 * 86400000 });
   const c = await call('create', { email: 'renew@x.ru', fighter_id: 'БОЕЦ-RENEW' });
   pay(c.body.payment_id);
   const r = await call('check', { payment_id: c.body.payment_id, fighter_id: 'БОЕЦ-RENEW' });
@@ -322,13 +322,13 @@ test('license_restore needs matching fighter and email', async () => {
 test('fighter_upsert never trusts client license fields', async () => {
   const r = await call('fighter_upsert', { fighter_id: 'БОЕЦ-UP', email: 'up@x.ru', callsign: 'Ап', license_key: 'KAPT-FAKE-FAKE-FAKE', expires_at: 9e15, isProActive: true });
   assert.equal(r.status, 200);
-  const doc = state.docs.get('fighters/БОЕЦ-UP');
+  const doc = state.docs.get('srv_fighters/БОЕЦ-UP');
   assert.equal(doc.licenseKey, '');
   assert.equal(doc.isProActive, false);
   // Different email cannot hijack the profile.
   await call('fighter_upsert', { fighter_id: 'БОЕЦ-UP', email: 'attacker@x.ru', unit_key: 'kapt_attacker' });
-  assert.equal(state.docs.get('fighters/БОЕЦ-UP').email, 'up@x.ru');
-  assert.notEqual(state.docs.get('fighters/БОЕЦ-UP').unitKey, 'kapt_attacker');
+  assert.equal(state.docs.get('srv_fighters/БОЕЦ-UP').email, 'up@x.ru');
+  assert.notEqual(state.docs.get('srv_fighters/БОЕЦ-UP').unitKey, 'kapt_attacker');
 });
 
 test('fighter_lookup requires registered email', async () => {
@@ -366,8 +366,8 @@ test('admin: wrong secret, brute force limit, token checks', async () => {
   assert.equal((await call('admin_grant_license', { admin_token: token, fighter_id: 'БОЕЦ-GHOST' })).status, 404);
 
   assert.equal((await call('admin_delete_fighter', { admin_token: token, fighter_id: 'БОЕЦ-UP' })).status, 200);
-  assert.ok(!state.docs.has('fighters/БОЕЦ-UP'));
-  assert.ok(state.docs.has('licenses/' + grant.body.license_key), 'licenses are preserved');
+  assert.ok(!state.docs.has('srv_fighters/БОЕЦ-UP'));
+  assert.ok(state.docs.has('srv_licenses/' + grant.body.license_key), 'licenses are preserved');
 });
 
 test('send_license_email: owner only, rate limited', async () => {
@@ -452,6 +452,17 @@ test('unit_join: guessing is rate limited', async () => {
     codes.push((await call('unit_join', { unit_key: 'kapt_ff00' + i + '0', id_token: token }, { envOverride: limiterEnv })).status);
   }
   assert.deepEqual(codes.slice(5), [429, 429, 429]);
+});
+
+
+test('forged records in legacy client-writable collections are ignored', async () => {
+  state.docs.set('licenses/KAPT-HACK-HACK-2222', { licenseKey: 'KAPT-HACK-HACK-2222', status: 'ACTIVE', expiresAt: Date.now() + 1e12 });
+  assert.equal((await call('license_verify', { license_key: 'KAPT-HACK-HACK-2222', fighter_id: 'x' })).status, 404);
+  state.docs.set('fighters/БОЕЦ-HACK', { fighterId: 'БОЕЦ-HACK', expiresAt: Date.now() + 1e12 });
+  const c = await call('create', { email: 'h@x.ru', fighter_id: 'БОЕЦ-HACK' });
+  pay(c.body.payment_id);
+  const r = await call('check', { payment_id: c.body.payment_id, fighter_id: 'БОЕЦ-HACK' });
+  assert.ok((r.body.expires_at - Date.now()) / 86400000 < 31, 'legacy fighter expiry must not be trusted');
 });
 
 // ------------------------------------------------------------------ run
