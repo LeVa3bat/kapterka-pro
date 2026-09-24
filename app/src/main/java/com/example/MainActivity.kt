@@ -634,6 +634,8 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
             onRegenerateKey = { viewModel.regenerateUnitKey() },
             onUpdateUnitKey = { newKey -> viewModel.updateUnitKey(newKey) },
             onForceSync = { viewModel.simulateCloudSync() },
+            onMakeReference = { viewModel.makeThisPhoneReference() },
+            onLoadFromCloud = { viewModel.loadEverythingFromCloud() },
             onDismiss = { showUnitKeySyncDialog = false }
         )
     }

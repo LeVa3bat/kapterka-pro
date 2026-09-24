@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -38,6 +39,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -76,6 +78,8 @@ fun UnitKeySyncDialog(
     onRegenerateKey: () -> Unit,
     onUpdateUnitKey: (String) -> Unit = {},
     onForceSync: () -> Unit,
+    onMakeReference: () -> Unit = {},
+    onLoadFromCloud: () -> Unit = {},
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
@@ -83,6 +87,18 @@ fun UnitKeySyncDialog(
     val unitKeyDisplay = unitKey.ifBlank { "Код не настроен" }
     val unitName = profile?.unitName?.takeIf { it.isNotBlank() } ?: "Подразделение не настроено"
     var manualKeyInput by remember { mutableStateOf("") }
+    var confirmAction by remember { mutableStateOf<String?>(null) }
+
+    confirmAction?.let { action ->
+        SyncConfirmDialog(
+            action = action,
+            onConfirm = {
+                if (action == "reference") onMakeReference() else onLoadFromCloud()
+                onDismiss()
+            },
+            onDismiss = { confirmAction = null }
+        )
+    }
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -366,9 +382,66 @@ fun UnitKeySyncDialog(
                         Text("Синхр. базы", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                 }
+
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    "Если на телефонах разные данные",
+                    color = TacticalTextSecondary,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                OutlinedButton(
+                    onClick = { confirmAction = "reference" },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("Этот телефон — эталон (отправить в облако)", fontSize = 11.sp, color = SageGreenBright)
+                }
+                OutlinedButton(
+                    onClick = { confirmAction = "load" },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("Загрузить всё из облака на этот телефон", fontSize = 11.sp, color = TacticalGold)
+                }
             }
         }
     }
+}
+
+@Composable
+private fun SyncConfirmDialog(
+    action: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val isReference = action == "reference"
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(if (isReference) "Сделать этот телефон эталоном?" else "Загрузить всё из облака?")
+        },
+        text = {
+            Text(
+                if (isReference) {
+                    "Облако станет точной копией ЭТОГО телефона. Точки, остатки и операции, " +
+                        "которых нет на этом телефоне, будут удалены из облака и со всех " +
+                        "телефонов подразделения версии 3.6. Делайте это на телефоне с правильными данными."
+                } else {
+                    "ЭТОТ телефон станет точной копией облака. Точки, остатки и операции, " +
+                        "которых нет в облаке, будут удалены с этого телефона."
+                }
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(); onDismiss() }) {
+                Text(if (isReference) "Да, отправить" else "Да, загрузить")
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Отмена") } }
+    )
 }
 
 private fun copyToClipboard(context: Context, text: String) {

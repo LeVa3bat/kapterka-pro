@@ -845,6 +845,221 @@ class FirebaseSyncManager(
         }
     }
 
+    /**
+     * "Сделать этот телефон эталоном": the cloud becomes an exact copy of this
+     * device. Cloud rows missing here are removed together with an explicit
+     * tombstone, so every other 3.6+ device deletes them too.
+     */
+    suspend fun publishLocalAsReference(unitKey: String): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val cleanKey = unitKey.trim()
+        if (!productionCloudEnabled || cleanKey.isEmpty()) {
+            return@withContext Pair(false, "Синхронизация недоступна: не указан ключ подразделения")
+        }
+        try {
+            val unitRef = firestore.collection("units").document(cleanKey)
+            val points = dao.getAllPoints().first()
+            val stocks = dao.getAllStockRecords().first()
+            val operations = dao.getAllOperations().first()
+            val requisitions = dao.getAllRequisitions().first()
+            val customItems = dao.getAllItems().first().filter { it.isCustom }
+
+            val localPointIds = points.map { it.id }.toSet()
+            val localStockIds = stocks.map { "${it.pointId}___${it.itemId}" }.toSet()
+            val localOpIds = operations.map { it.id }.toSet()
+            val localReqIds = requisitions.map { it.id }.toSet()
+            val localItemIds = dao.getAllItems().first().map { it.id }.toSet()
+
+            var removed = 0
+            for (doc in unitRef.collection("warehouse_points").get().await().documents) {
+                if (doc.id != "base_sklad" && doc.id !in localPointIds) {
+                    prepareDeletionTombstone(cleanKey, TOMBSTONE_POINT, doc.id)
+                    doc.reference.delete().await()
+                    removed++
+                }
+            }
+            for (doc in unitRef.collection("stock_records").get().await().documents) {
+                if (doc.id !in localStockIds) {
+                    val pointId = doc.getString("pointId") ?: doc.id.substringBefore("___")
+                    val itemId = doc.getString("itemId") ?: doc.id.substringAfter("___")
+                    prepareDeletionTombstone(cleanKey, TOMBSTONE_STOCK, "$pointId:::$itemId")
+                    doc.reference.delete().await()
+                    removed++
+                }
+            }
+            for (doc in unitRef.collection("operation_records").get().await().documents) {
+                if (doc.id !in localOpIds) {
+                    prepareDeletionTombstone(cleanKey, TOMBSTONE_OPERATION, doc.id)
+                    doc.reference.delete().await()
+                    removed++
+                }
+            }
+            for (doc in unitRef.collection("requisitions").get().await().documents) {
+                if (doc.id !in localReqIds) {
+                    prepareDeletionTombstone(cleanKey, TOMBSTONE_REQUISITION, doc.id)
+                    doc.reference.delete().await()
+                    removed++
+                }
+            }
+            for (doc in unitRef.collection("inventory_items").get().await().documents) {
+                if (doc.id !in localItemIds && (doc.getBoolean("isCustom") ?: false)) {
+                    prepareDeletionTombstone(cleanKey, TOMBSTONE_ITEM, doc.id)
+                    doc.reference.delete().await()
+                    removed++
+                }
+            }
+
+            points.forEach { pushWarehousePointAsync(cleanKey, it) }
+            customItems.forEach { pushInventoryItemAsync(cleanKey, it) }
+            stocks.forEach { pushStockRecordAsync(cleanKey, it) }
+            operations.forEach { pushOperationAsync(cleanKey, it, emptyList()) }
+            requisitions.forEach { pushRequisitionAsync(cleanKey, it) }
+
+            _syncState.value = _syncState.value.copy(
+                lastSyncTime = System.currentTimeMillis(),
+                syncMessage = "Облако обновлено по этому телефону"
+            )
+            Pair(
+                true,
+                "Готово: облако = этот телефон. Отправлено точек: ${points.size}, остатков: ${stocks.size}, " +
+                    "операций: ${operations.size}. Удалено устаревших записей: $removed."
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "publishLocalAsReference failed", e)
+            Pair(false, "Не удалось обновить облако: ${e.javaClass.simpleName}. Проверьте интернет и повторите.")
+        }
+    }
+
+    /**
+     * "Загрузить данные из облака": this device becomes an exact copy of the
+     * cloud. Local rows that the cloud no longer has are removed.
+     */
+    suspend fun replaceLocalWithCloud(unitKey: String): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val cleanKey = unitKey.trim()
+        if (!productionCloudEnabled || cleanKey.isEmpty()) {
+            return@withContext Pair(false, "Синхронизация недоступна: не указан ключ подразделения")
+        }
+        try {
+            val unitRef = firestore.collection("units").document(cleanKey)
+            // Read everything first: nothing local is touched unless the whole
+            // cloud snapshot arrived.
+            val cloudPoints = unitRef.collection("warehouse_points").get().await().documents
+            val cloudStocks = unitRef.collection("stock_records").get().await().documents
+            val cloudOps = unitRef.collection("operation_records").get().await().documents
+            val cloudReqs = unitRef.collection("requisitions").get().await().documents
+            val cloudItems = unitRef.collection("inventory_items").get().await().documents
+
+            val points = cloudPoints.mapNotNull { doc ->
+                val name = doc.getString("name").orEmpty()
+                if (name.isBlank()) null else WarehousePoint(
+                    id = doc.id,
+                    name = name,
+                    description = doc.getString("description") ?: "",
+                    isBase = doc.getBoolean("isBase") ?: false,
+                    orderIndex = doc.getLong("orderIndex")?.toInt() ?: 0,
+                    createdAt = doc.getLong("createdAt") ?: 0L
+                )
+            }
+            val stocks = cloudStocks.mapNotNull { doc ->
+                val pointId = doc.getString("pointId") ?: doc.id.substringBefore("___", "")
+                val itemId = doc.getString("itemId") ?: doc.id.substringAfter("___", "")
+                if (pointId.isBlank() || itemId.isBlank()) null else StockRecord(
+                    pointId = pointId,
+                    itemId = itemId,
+                    quantity = doc.getLong("quantity")?.toInt() ?: 0,
+                    incomeTotal = doc.getLong("incomeTotal")?.toInt() ?: 0,
+                    expenseTotal = doc.getLong("expenseTotal")?.toInt() ?: 0,
+                    lastUpdated = doc.getLong("lastUpdated") ?: 0L
+                )
+            }
+            val operations = cloudOps.map { doc ->
+                OperationRecord(
+                    id = doc.id,
+                    type = runCatching { OperationType.valueOf(doc.getString("type") ?: "INCOME") }
+                        .getOrDefault(OperationType.INCOME),
+                    fromPointName = doc.getString("fromPointName") ?: "",
+                    toPointName = doc.getString("toPointName") ?: "",
+                    docNumber = doc.getString("docNumber") ?: "",
+                    responsiblePerson = doc.getString("responsiblePerson") ?: "",
+                    comment = doc.getString("comment") ?: "",
+                    timestamp = doc.getLong("timestamp") ?: 0L,
+                    itemsSummary = doc.getString("itemsSummary") ?: "",
+                    itemsJson = doc.getString("itemsJson") ?: ""
+                )
+            }
+            val requisitions = cloudReqs.map { doc ->
+                RequisitionRequest(
+                    id = doc.id,
+                    pointName = doc.getString("pointName") ?: "",
+                    applicantName = doc.getString("applicantName") ?: "",
+                    status = runCatching { RequestStatus.valueOf(doc.getString("status") ?: "PENDING") }
+                        .getOrDefault(RequestStatus.PENDING),
+                    comment = doc.getString("comment") ?: "",
+                    timestamp = doc.getLong("timestamp") ?: 0L,
+                    itemsSummary = doc.getString("itemsSummary") ?: "",
+                    itemsJson = doc.getString("itemsJson") ?: ""
+                )
+            }
+            val items = cloudItems.map { doc ->
+                InventoryItem(
+                    id = doc.id,
+                    name = doc.getString("name") ?: "",
+                    serviceCategory = doc.getString("serviceCategory") ?: "",
+                    subType = doc.getString("subType") ?: "",
+                    unit = doc.getString("unit") ?: "шт.",
+                    categoryClass = doc.getString("categoryClass") ?: "Кат. 1",
+                    standardCode = doc.getString("standardCode") ?: "",
+                    isCustom = doc.getBoolean("isCustom") ?: false
+                )
+            }.filter { it.name.isNotBlank() }
+
+            val cloudPointIds = points.map { it.id }.toSet()
+            val cloudStockKeys = stocks.map { "${it.pointId}:::${it.itemId}" }.toSet()
+            val cloudOpIds = operations.map { it.id }.toSet()
+            val cloudReqIds = requisitions.map { it.id }.toSet()
+            val cloudItemIds = items.map { it.id }.toSet()
+
+            for (p in dao.getAllPoints().first()) {
+                if (p.id != "base_sklad" && p.id !in cloudPointIds) {
+                    dao.deleteStockForPoint(p.id)
+                    dao.deletePoint(p.id)
+                }
+            }
+            for (st in dao.getAllStockRecords().first()) {
+                if ("${st.pointId}:::${st.itemId}" !in cloudStockKeys) dao.deleteStockRecord(st.pointId, st.itemId)
+            }
+            for (op in dao.getAllOperations().first()) {
+                if (op.id !in cloudOpIds) dao.deleteOperation(op.id)
+            }
+            for (r in dao.getAllRequisitions().first()) {
+                if (r.id !in cloudReqIds) dao.deleteRequisition(r.id)
+            }
+            for (item in dao.getAllItems().first()) {
+                if (item.isCustom && item.id !in cloudItemIds) {
+                    dao.deleteStockForItem(item.id)
+                    dao.deleteItem(item.id)
+                }
+            }
+
+            dao.insertPoints(points)
+            items.forEach { dao.insertItem(it) }
+            dao.insertOrUpdateStockList(stocks)
+            operations.forEach { dao.insertOperation(it) }
+            requisitions.forEach { dao.insertRequisition(it) }
+
+            _syncState.value = _syncState.value.copy(
+                lastSyncTime = System.currentTimeMillis(),
+                syncMessage = "Телефон загружен из облака"
+            )
+            Pair(
+                true,
+                "Готово: телефон = облако. Точек: ${points.size}, остатков: ${stocks.size}, операций: ${operations.size}."
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "replaceLocalWithCloud failed", e)
+            Pair(false, "Не удалось загрузить из облака: ${e.javaClass.simpleName}. Данные на телефоне не изменены.")
+        }
+    }
+
     fun pushOperationAsync(unitKey: String, op: OperationRecord, updatedStocks: List<StockRecord>) {
         if (!productionCloudEnabled) return
         if (unitKey.isEmpty()) return

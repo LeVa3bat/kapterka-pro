@@ -684,6 +684,24 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    /** This phone becomes the reference: the cloud is overwritten with its data. */
+    fun makeThisPhoneReference() {
+        viewModelScope.launch {
+            _toastEvent.emit("Отправляю данные этого телефона в облако...")
+            val (_, msg) = repository.publishLocalAsCloudReference()
+            _toastEvent.emit(msg)
+        }
+    }
+
+    /** This phone is overwritten with the data stored in the cloud. */
+    fun loadEverythingFromCloud() {
+        viewModelScope.launch {
+            _toastEvent.emit("Загружаю данные подразделения из облака...")
+            val (_, msg) = repository.replaceLocalWithCloud()
+            _toastEvent.emit(msg)
+        }
+    }
+
     fun simulateCloudSync() {
         viewModelScope.launch {
             _toastEvent.emit("Запуск онлайн-синхронизации базы...")

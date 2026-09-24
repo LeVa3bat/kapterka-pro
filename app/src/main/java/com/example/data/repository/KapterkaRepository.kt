@@ -120,6 +120,16 @@ class KapterkaRepository(
 
     val syncState: kotlinx.coroutines.flow.StateFlow<com.example.data.sync.SyncState> = syncManager?.syncState ?: kotlinx.coroutines.flow.MutableStateFlow(com.example.data.sync.SyncState())
 
+    suspend fun publishLocalAsCloudReference(): Pair<Boolean, String> {
+        val p = dao.getUserProfile().first() ?: return Pair(false, "Профиль не найден")
+        return syncManager?.publishLocalAsReference(p.unitKey) ?: Pair(false, "Синхронизация отключена")
+    }
+
+    suspend fun replaceLocalWithCloud(): Pair<Boolean, String> {
+        val p = dao.getUserProfile().first() ?: return Pair(false, "Профиль не найден")
+        return syncManager?.replaceLocalWithCloud(p.unitKey) ?: Pair(false, "Синхронизация отключена")
+    }
+
     suspend fun triggerCloudSync(): Pair<Boolean, String> {
         val p = dao.getUserProfile().first() ?: return Pair(false, "Профиль не найден")
         return syncManager?.syncAndReconcileAll(p.unitKey, p.callsign, p.unitName) ?: Pair(false, "Синхронизация отключена")
