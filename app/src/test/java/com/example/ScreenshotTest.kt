@@ -159,6 +159,18 @@ class ScreenshotTest {
     }
 
     @Test
+    fun splash_dark() {
+        compose.mainClock.autoAdvance = false
+        compose.setContent {
+            MyApplicationTheme(darkTheme = true) {
+                com.example.ui.screens.SplashScreen(onInitializationComplete = {})
+            }
+        }
+        compose.mainClock.advanceTimeBy(1_600)
+        compose.onRoot().captureRoboImage("screenshots/splash_dark.png")
+    }
+
+    @Test
     fun dashboard_light() {
         dashboard(dark = false)
         compose.onRoot().captureRoboImage("screenshots/dashboard_light.png")
