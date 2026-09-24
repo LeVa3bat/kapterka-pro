@@ -10,6 +10,7 @@ on:
       - 'app/src/main/java/com/example/ui/**'
       - 'app/src/main/java/com/example/MainActivity.kt'
       - 'app/src/test/java/com/example/ScreenshotTest.kt'
+      - 'app/src/test/java/com/example/StoreScreenshotTest.kt'
       - '.github/workflows/ui-screenshots.yml'
   workflow_dispatch:
 
@@ -43,7 +44,7 @@ jobs:
         with:
           gradle-version: '9.3.1'
       - name: Render screens
-        run: gradle :app:recordRoborazziDebug --tests 'com.example.ScreenshotTest' --no-daemon --stacktrace
+        run: gradle :app:recordRoborazziDebug --tests 'com.example.ScreenshotTest' --tests 'com.example.StoreScreenshotTest' --no-daemon --stacktrace
       - name: Publish to ui-screenshots branch
         shell: bash
         run: |
