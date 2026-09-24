@@ -1,0 +1,52 @@
+/* Каптёрка PRO 3.6 — cleaner home page, phone-frame gallery, mobile fixes. */
+
+/* Hero: real phone proportions instead of a cropped strip. */
+.neo-phone{width:236px}
+.neo-phone img{height:auto;aspect-ratio:1080/2340;object-fit:cover;border-radius:28px;border:6px solid #1b211e;box-shadow:0 30px 60px rgba(0,0,0,.45)}
+@media (max-width:900px){.neo-phone{width:180px}}
+
+/* Features: calm cards, emoji icon, no fake buttons. */
+.s36-features .neo-feature{cursor:default;align-items:flex-start}
+.s36-features .neo-feature b{font-size:1.35rem;line-height:1;opacity:1;min-width:34px}
+.s36-features .neo-feature strong{font-size:1rem}
+.s36-features .neo-feature small{font-size:.82rem;line-height:1.45}
+.s36-lead{margin:-4px 0 16px;color:#93a39a;font-size:.95rem;line-height:1.55;max-width:720px}
+
+/* Gallery: horizontal strip of full phone screenshots. */
+.s36-gallery .neo-shot-row{display:flex;gap:18px;overflow-x:auto;scroll-snap-type:x mandatory;padding:6px 2px 14px;scrollbar-width:none}
+.s36-gallery .neo-shot-row::-webkit-scrollbar{display:none}
+.s36-gallery .neo-shot{flex:0 0 212px;display:flex;flex-direction:column;align-items:stretch;gap:10px;padding:0;border:0;background:transparent;scroll-snap-align:start;text-align:left}
+.s36-gallery .neo-shot img{width:100%;height:auto;aspect-ratio:1080/2340;object-fit:cover;border-radius:24px;border:5px solid #1b211e;box-shadow:0 16px 36px rgba(0,0,0,.4);transition:transform .25s ease}
+.s36-gallery .neo-shot:hover img,.s36-gallery .neo-shot.active img{transform:translateY(-4px)}
+.s36-gallery .neo-shot span{padding:0 4px}
+@media (max-width:560px){.s36-gallery .neo-shot{flex-basis:62%}}
+
+/* How to start: inline link. */
+.neo-start-grid small a{color:#6ee7b7;text-decoration:none;font-weight:700;white-space:nowrap}
+
+/* Payment tab: columns must shrink to the phone width. */
+#tabPayment .checkout-grid>div{min-width:0}
+#tabPayment .payment-method-pills{flex-wrap:wrap}
+#tabPayment .v2-payment-warning,#tabPayment .v2-payment-footnote,#tabPayment .v3-legal-line{overflow-wrap:anywhere}
+
+/* Long words never push the page sideways. */
+.app-view-tab{overflow-wrap:break-word}
+@media (max-width:700px){
+  #tabPayment .checkout-grid{grid-template-columns:minmax(0,1fr)!important}
+  #tabPayment .checkout-grid>div{min-width:0!important;max-width:100%!important}
+  #tabPayment .payment-method-pills{flex-wrap:wrap!important;overflow:visible!important}
+}
+
+/* Gallery wins over older mobile rules. */
+.neo-home .s36-gallery .neo-shot-row{display:flex!important;grid-template-columns:none!important;gap:16px!important;overflow-x:auto!important}
+.neo-home .s36-gallery .neo-shot{flex:0 0 212px!important;display:flex!important;flex-direction:column!important;grid-template-columns:none!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important}
+.neo-home .s36-gallery .neo-shot img{width:100%!important;height:auto!important;aspect-ratio:1080/2340;border-radius:24px!important}
+@media (max-width:560px){.neo-home .s36-gallery .neo-shot{flex-basis:58%!important}}
+
+/* Feature icons aligned with the text. */
+.s36-features .neo-feature{display:flex!important;gap:12px!important}
+.s36-features .neo-feature b{flex:0 0 30px;min-width:30px!important;padding-top:2px}
+
+/* Compact trust row: three links under the hero. */
+.s36-trust .neo-trust-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+@media (max-width:560px){.s36-trust .neo-trust-grid{grid-template-columns:1fr 1fr 1fr!important;gap:6px!important}.s36-trust .neo-trust-item small{display:none}.s36-trust .neo-trust-item strong{font-size:.72rem!important}}

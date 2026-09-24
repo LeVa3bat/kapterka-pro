@@ -317,7 +317,7 @@ const missingSitemapUrls = requiredSitemapUrls.filter(url => !sitemap.includes('
 if (missingSitemapUrls.length) fail('sitemap is missing URLs: ' + missingSitemapUrls.join(', '));
 else ok('sitemap contains all public indexable pages');
 
-if (!index.includes('class="neo-trust"') || !index.includes('id="why-kapterka"') || !index.includes('class="neo-resource-strip"')) {
+if (!index.includes('class="neo-trust') || !index.includes('class="neo-resource-strip"') || !index.includes('href="security.html"') || !index.includes('href="updates.html"')) {
   fail('professional trust/security/update surfaces are missing from homepage');
 }
 const securityPage = read('docs/security.html');
