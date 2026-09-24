@@ -1,0 +1,43 @@
+name: research forms 8/18 (read-only)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['claude/**']
+    paths: ['.github/workflows/research-forms.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Fetch public legal texts and print the parts about forms 8 and 18
+        run: |
+          pip install -q beautifulsoup4 >/dev/null
+          cat > x.py <<'PY'
+          import re, sys, subprocess
+          from bs4 import BeautifulSoup
+          urls = [
+            "https://base.garant.ru/12165201/53f89421bbdaf741eb2d1ecc4ddb4c33/",
+            "https://normativ.kontur.ru/document?moduleId=1&documentId=482067",
+            "http://docs.cntd.ru/document/902144111",
+            "https://voen-pravo.ru/voennoe_pravo/documents/projects-ppa/7329/",
+            "http://www.compancommand.com/index/uchet_imushhestva/0-150",
+            "https://www.consultant.ru/document/cons_doc_LAW_83153/3a052af0a01367343ab427b8fb4d9d1953a4cb76/",
+            "https://dokipedia.ru/print/5187187",
+          ]
+          for u in urls:
+            r = subprocess.run(["curl","-sSL","-m","40","-A","Mozilla/5.0",u],capture_output=True)
+            html = r.stdout.decode("utf-8","ignore") or r.stdout.decode("cp1251","ignore")
+            if "charset=windows-1251" in html.lower():
+              html = r.stdout.decode("cp1251","ignore")
+            t = BeautifulSoup(html,"html.parser").get_text("\n")
+            t = re.sub(r"\n\s*\n+","\n",t)
+            print("\n\n######## ", u, " len=", len(t))
+            for m in re.finditer(r"(Форма\s*(N|№)?\s*(8|18)\b)", t):
+              s = max(0, m.start()-300); print("---- @", m.start()); print(t[s:m.start()+2500])
+          PY
+          python3 x.py | head -c 400000
