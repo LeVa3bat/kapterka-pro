@@ -3,10 +3,20 @@ package com.example.data.model
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
-enum class RequestStatus(val titleRu: String) {
-    PENDING("В обработке"),
-    COLLECTED("Собрана"),
-    ISSUED("Выдана")
+/**
+ * Stored by name. ASSEMBLING was added in 3.6 and is declared last so older
+ * data keeps its meaning; older app versions read an unknown status as PENDING.
+ * [step] is the position in the pipeline.
+ */
+enum class RequestStatus(val titleRu: String, val step: Int) {
+    PENDING("Новая", 0),
+    COLLECTED("Собрана", 2),
+    ISSUED("Выдана", 3),
+    ASSEMBLING("Собирается", 1);
+
+    companion object {
+        val pipeline: List<RequestStatus> = values().sortedBy { it.step }
+    }
 }
 
 data class RequisitionItemEntry(

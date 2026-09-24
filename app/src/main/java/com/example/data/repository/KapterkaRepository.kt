@@ -241,6 +241,24 @@ class KapterkaRepository(
         syncManager?.pushOperationAsync(getCurrentUnitKey(), op, updatedStocks)
     }
 
+    /**
+     * Issue to a person (not a warehouse point): stock leaves [fromPointId]
+     * and nothing is added anywhere. Recorded as ISSUE so it lands in the
+     * journal and in Form 8 (раздаточная ведомость) with the recipient name.
+     */
+    suspend fun recordIssueToPerson(fromPointId: String, fromPointName: String, recipient: String, items: List<OperationItemEntry>, comment: String, actor: String) {
+        val summary = items.joinToString(", ") { "${it.itemName} - ${it.quantity} ${it.unit}" }
+        val itemsJson = serializeOperationItems(items)
+        val op = OperationRecord(java.util.UUID.randomUUID().toString(), OperationType.ISSUE, fromPointName, recipient, "", actor, comment, System.currentTimeMillis(), summary, itemsJson)
+        val stagedStocks = linkedMapOf<String, StockRecord>()
+        for (item in items) {
+            stageAdjustedStock(stagedStocks, fromPointId, item.itemId, -item.quantity, isIncome = false)
+        }
+        val updatedStocks = stagedStocks.values.toList()
+        dao.commitOperationAndStocks(op, updatedStocks)
+        syncManager?.pushOperationAsync(getCurrentUnitKey(), op, updatedStocks)
+    }
+
     suspend fun recordExpenditure(fromPointId: String, pointName: String, docNumber: String, responsiblePerson: String, items: List<OperationItemEntry>, comment: String) {
         val summary = items.joinToString(", ") { "${it.itemName} - ${it.quantity} ${it.unit}" }
         val itemsJson = serializeOperationItems(items)

@@ -1,5 +1,14 @@
+@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+
 package com.example.ui.screens
 
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import kotlinx.coroutines.launch
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -136,8 +145,15 @@ fun HistoryScreen(
     var selectedCategoryFilter by remember { mutableStateOf("Все категории") }
     val expandedOpIds = remember { mutableStateMapOf<String, Boolean>() }
 
-    LaunchedEffect(filterType, selectedCategoryFilter, searchQuery) {
+    // 0 = всё время, 1 = сегодня, 2 = 7 дней, 3 = 30 дней
+    var period by remember { mutableIntStateOf(0) }
+    var visibleLimit by remember { mutableIntStateOf(PAGE_SIZE) }
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(filterType, selectedCategoryFilter, searchQuery, period) {
         expandedOpIds.clear()
+        visibleLimit = PAGE_SIZE
     }
 
     val filteredOperations = remember(operations, filterType, selectedCategoryFilter, searchQuery, catalogItems) {
@@ -166,11 +182,17 @@ fun HistoryScreen(
                                     resolveItemCategory(it, catalogItems).lowercase().contains(q) 
                         }
             }
-            matchesType && matchesCategory && matchesQuery
-        }
+            matchesType && matchesCategory && matchesQuery && matchesPeriod(op.timestamp, period)
+        }.sortedByDescending { it.timestamp }
+    }
+    // Day groups of the visible page: newest day first.
+    val dayGroups = remember(filteredOperations, visibleLimit) {
+        filteredOperations.take(visibleLimit).groupBy { dayStart(it.timestamp) }.toList()
     }
 
+    Box(modifier = Modifier.fillMaxSize()) {
     LazyColumn(
+        state = listState,
         modifier = Modifier
             .fillMaxSize()
             .background(TacticalBg)
@@ -224,6 +246,33 @@ fun HistoryScreen(
                 )
             )
 
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                listOf("Всё время", "Сегодня", "7 дней", "30 дней").forEachIndexed { i, label ->
+                    val selected = period == i
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(if (selected) SageGreenPrimary else TacticalSurface)
+                            .border(1.dp, if (selected) SageGreenBright else TacticalBorder, RoundedCornerShape(12.dp))
+                            .clickable { period = i }
+                            .padding(vertical = 8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            label,
+                            color = if (selected) Color.White else TacticalTextSecondary,
+                            fontSize = 12.sp,
+                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                            maxLines = 1
+                        )
+                    }
+                }
+            }
             Spacer(modifier = Modifier.height(8.dp))
         }
 
@@ -424,24 +473,128 @@ fun HistoryScreen(
                 }
             }
         } else {
-            items(filteredOperations, key = { it.id }) { op ->
-                val isOpExpanded = expandedOpIds[op.id] ?: false
-                OperationAccordionCard(
-                    operation = op,
-                    dateFormat = dateFormat,
-                    catalogItems = catalogItems,
-                    parseItems = parseItems,
-                    isExpanded = isOpExpanded,
-                    onToggleExpand = {
-                        expandedOpIds[op.id] = !isOpExpanded
+            dayGroups.forEach { (day, ops) ->
+                stickyHeader(key = "day_$day") {
+                    DayHeader(day = day, count = ops.size, types = ops.groupingBy { it.type }.eachCount())
+                }
+                items(ops, key = { it.id }) { op ->
+                    val isOpExpanded = expandedOpIds[op.id] ?: false
+                    Box(modifier = Modifier.animateItem()) {
+                        OperationAccordionCard(
+                            operation = op,
+                            dateFormat = dateFormat,
+                            catalogItems = catalogItems,
+                            parseItems = parseItems,
+                            isExpanded = isOpExpanded,
+                            onToggleExpand = {
+                                expandedOpIds[op.id] = !isOpExpanded
+                            }
+                        )
                     }
-                )
-                Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            }
+            val hidden = filteredOperations.size - visibleLimit
+            if (hidden > 0) {
+                item(key = "more") {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(TacticalSurface)
+                            .border(1.dp, TacticalBorder, RoundedCornerShape(14.dp))
+                            .clickable { visibleLimit += PAGE_SIZE }
+                            .padding(vertical = 12.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            "Показать ещё ${minOf(hidden, PAGE_SIZE)} из $hidden",
+                            color = SageGreenBright,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
             }
         }
 
         item {
             Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+
+    // "Up" button once the user has scrolled down a bit.
+    val showUp by remember { derivedStateOf { listState.firstVisibleItemIndex > 6 } }
+    androidx.compose.animation.AnimatedVisibility(
+        visible = showUp,
+        enter = androidx.compose.animation.scaleIn() + androidx.compose.animation.fadeIn(),
+        exit = androidx.compose.animation.scaleOut() + androidx.compose.animation.fadeOut(),
+        modifier = Modifier.align(Alignment.BottomEnd).padding(18.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(CircleShape)
+                .background(SageGreenPrimary)
+                .clickable { scope.launch { listState.animateScrollToItem(0) } },
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Наверх", tint = Color.White, modifier = Modifier.size(26.dp))
+        }
+    }
+    }
+}
+
+private const val PAGE_SIZE = 60
+private const val DAY_MS = 24L * 60 * 60 * 1000
+
+private fun dayStart(ms: Long): Long {
+    val c = java.util.Calendar.getInstance()
+    c.timeInMillis = ms
+    c.set(java.util.Calendar.HOUR_OF_DAY, 0)
+    c.set(java.util.Calendar.MINUTE, 0)
+    c.set(java.util.Calendar.SECOND, 0)
+    c.set(java.util.Calendar.MILLISECOND, 0)
+    return c.timeInMillis
+}
+
+private fun matchesPeriod(ts: Long, period: Int): Boolean {
+    if (period == 0) return true
+    val today = dayStart(System.currentTimeMillis())
+    val from = when (period) {
+        1 -> today
+        2 -> today - 6 * DAY_MS
+        else -> today - 29 * DAY_MS
+    }
+    return ts >= from
+}
+
+@Composable
+private fun DayHeader(day: Long, count: Int, types: Map<OperationType, Int>) {
+    val today = dayStart(System.currentTimeMillis())
+    val label = when (day) {
+        today -> "Сегодня"
+        today - DAY_MS -> "Вчера"
+        else -> SimpleDateFormat("d MMMM, EEEE", Locale("ru")).format(java.util.Date(day))
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(TacticalBg)
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(label, color = TacticalTextPrimary, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
+        Spacer(modifier = Modifier.width(8.dp))
+        Text("$count", color = TacticalTextMuted, fontSize = 12.sp)
+        Spacer(modifier = Modifier.weight(1f))
+        types.entries.sortedBy { it.key.ordinal }.forEach { (type, n) ->
+            Text(
+                "${opEmojiFor(type)}$n",
+                color = TacticalTextSecondary,
+                fontSize = 11.sp,
+                modifier = Modifier.padding(start = 6.dp)
+            )
         }
     }
 }
@@ -858,3 +1011,10 @@ private fun OperationAccordionCard(
     }
 }
 
+
+private fun opEmojiFor(type: OperationType): String = when (type) {
+    OperationType.INCOME -> "＋"
+    OperationType.ISSUE -> "→"
+    OperationType.TRANSFER -> "⇄"
+    OperationType.EXPENDITURE -> "−"
+}

@@ -93,6 +93,10 @@ object TacticalNotificationHelper {
                 "🚚 Заявка ВЫДАНА (${req.pointName})",
                 "Имущество выдано подразделению (${req.applicantName})"
             )
+            RequestStatus.ASSEMBLING -> Pair(
+                "🧺 Заявка СОБИРАЕТСЯ (${req.pointName})",
+                "Склад начал сборку заявки для ${req.applicantName}"
+            )
             RequestStatus.PENDING -> Pair(
                 "📋 Новая заявка на снабжение",
                 "Заявка для ${req.pointName} от ${req.applicantName}"

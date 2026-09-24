@@ -512,7 +512,8 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                                 viewModel.updateRequisitionStatus(req, nextStatus)
                             },
                             onDeleteRequisition = { viewModel.deleteRequisition(it) },
-                            parseItems = { viewModel.parseRequisitionItems(it) }
+                            parseItems = { viewModel.parseRequisitionItems(it) },
+                            onIssueRequisition = { viewModel.issueRequisition(it) }
                         )
                     }
 

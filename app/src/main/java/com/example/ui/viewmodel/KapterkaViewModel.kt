@@ -439,6 +439,51 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    /**
+     * Issues a collected requisition: stock leaves the requisition's warehouse
+     * (to another point if the recipient is a point, otherwise to the person),
+     * the operation appears in the journal, and the request becomes ISSUED.
+     * Positions not found in the catalogue are reported and skipped.
+     */
+    fun issueRequisition(req: RequisitionRequest) {
+        viewModelScope.launch {
+            val points = allPoints.value
+            val source = points.firstOrNull { it.name == req.pointName } ?: points.firstOrNull { it.isBase }
+            if (source == null) {
+                _toastEvent.emit("Не удалось выдать: склад «${req.pointName}» не найден")
+                return@launch
+            }
+            val catalog = allCatalogItems.value
+            val wanted = parseRequisitionItems(req.itemsJson).ifEmpty {
+                // Old requests store only a summary line.
+                emptyList()
+            }
+            val matched = wanted.mapNotNull { w ->
+                val item = catalog.firstOrNull { it.name.equals(w.itemName, ignoreCase = true) } ?: return@mapNotNull null
+                OperationItemEntry(item.id, item.name, item.unit.ifBlank { w.unit }, w.quantity, item.categoryClass.ifBlank { "Кат. 1" })
+            }
+            val skipped = wanted.size - matched.size
+            if (matched.isEmpty()) {
+                _toastEvent.emit("Не удалось выдать: позиции заявки не найдены в каталоге. Статус не изменён.")
+                return@launch
+            }
+            val actor = userProfile.value?.callsign ?: "Старшина подразделения"
+            val comment = "По заявке от ${req.applicantName}" + if (req.comment.isNotBlank()) " • ${req.comment}" else ""
+            val target = points.firstOrNull { it.name == req.applicantName && it.id != source.id }
+            if (target != null) {
+                repository.recordIssue(source.id, source.name, target.id, target.name, matched, comment, actor)
+            } else {
+                repository.recordIssueToPerson(source.id, source.name, req.applicantName, matched, comment, actor)
+            }
+            repository.updateRequisitionStatus(req.id, RequestStatus.ISSUED)
+            TacticalNotificationHelper.notifyRequisitionStatus(getApplication(), req, RequestStatus.ISSUED)
+            _toastEvent.emit(
+                "Заявка выдана: ${matched.size} поз. со склада «${source.name}» → ${req.applicantName}" +
+                    if (skipped > 0) ". Не найдено в каталоге: $skipped поз. — выдайте их вручную" else ""
+            )
+        }
+    }
+
     fun deleteRequisition(reqId: String) {
         viewModelScope.launch {
             repository.deleteRequisition(reqId)

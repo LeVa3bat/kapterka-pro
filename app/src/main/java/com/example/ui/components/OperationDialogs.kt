@@ -1232,7 +1232,7 @@ private fun ItemsDraftListSection(
 
 /** Big −/+ buttons around an editable number: fast on a phone, works with gloves. */
 @Composable
-private fun QuantityStepper(
+internal fun QuantityStepper(
     value: String,
     onValueChange: (String) -> Unit,
     unit: String,
