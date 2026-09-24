@@ -9,6 +9,8 @@ plugins {
   alias(libs.plugins.google.services)
 }
 
+val hasLocalDebugKeystore = rootProject.file("debug.keystore").exists()
+
 android {
   namespace = "com.example"
   compileSdk { version = release(36) { minorApiLevel = 1 } }
@@ -82,14 +84,16 @@ android {
       applicationIdSuffix = ".nextsafe"
       versionNameSuffix = "-nextsafe"
       matchingFallbacks += listOf("debug")
-      signingConfig = signingConfigs.getByName("debugConfig")
+      if (hasLocalDebugKeystore) signingConfig = signingConfigs.getByName("debugConfig")
       resValue("string", "app_name", "Каптёрка PRO NEXT-SAFE")
       buildConfigField("String", "PAYMENT_CALLBACK_SCHEME", "\"kapterka-nextsafe\"")
       buildConfigField("boolean", "IS_NEXT_SAFE_TEST", "true")
       manifestPlaceholders["paymentScheme"] = "kapterka-nextsafe"
     }
 
-    debug { signingConfig = signingConfigs.getByName("debugConfig") }
+    // Local debug.keystore is optional (never committed); without it the
+    // standard Android debug key is used.
+    debug { if (hasLocalDebugKeystore) signingConfig = signingConfigs.getByName("debugConfig") }
   }
   compileOptions {
     sourceCompatibility = JavaVersion.VERSION_11
