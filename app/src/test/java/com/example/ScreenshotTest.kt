@@ -206,12 +206,18 @@ class ScreenshotTest {
                     stockRecords = stocks,
                     requisitions = listOf(
                         com.example.data.model.RequisitionRequest("r1", "1 взвод", "Сокол", comment = "Срочно", timestamp = 1_727_160_000_000L, itemsSummary = "Аптечка АИ-4 — 10 шт."),
-                        com.example.data.model.RequisitionRequest("r2", "Склад ГСМ", "Кедр", status = com.example.data.model.RequestStatus.COLLECTED, timestamp = 1_727_150_000_000L, itemsSummary = "Дизельное топливо — 200 л.")
+                        com.example.data.model.RequisitionRequest("r2", "Склад ГСМ", "Кедр", status = com.example.data.model.RequestStatus.COLLECTED, timestamp = 1_727_150_000_000L, itemsSummary = "Дизельное топливо — 200 л."),
+                        com.example.data.model.RequisitionRequest("r3", "Базовый склад (КЗ)", "1 взвод", comment = "[СРОЧНО] до вечера", timestamp = 1_727_170_000_000L, itemsJson = "r3")
                     ),
                     onCreateRequisition = { _, _, _, _ -> },
                     onUpdateStatus = { _, _ -> },
                     onDeleteRequisition = {},
-                    parseItems = { emptyList() }
+                    parseItems = {
+                        if (it == "r3") listOf(
+                            com.example.data.model.RequisitionItemEntry("Граната РГД-5", 10, "шт."),
+                            com.example.data.model.RequisitionItemEntry("Аптечка индивидуальная АИ-4", 5, "шт.")
+                        ) else emptyList()
+                    }
                 )
             }
         }
@@ -330,6 +336,41 @@ class ScreenshotTest {
         }
         compose.waitForIdle()
         com.github.takahirom.roborazzi.captureScreenRoboImage("screenshots/manual.png")
+    }
+
+    @Test
+    fun license_demo_dark() {
+        compose.setContent {
+            MyApplicationTheme(darkTheme = true) {
+                com.example.ui.components.PersonalLicenseDialog(
+                    profile = profile.copy(isProActive = false, email = "lev@example.ru"),
+                    licenseStatus = com.example.data.license.FighterLicenseStatus(isDemoActive = true, demoDaysLeft = 2),
+                    yooKassaConfig = com.example.data.payment.YooKassaConfig(),
+                    onPayYooKassaClick = {},
+                    onActivateLicenseKey = {},
+                    onTestPaymentConfirm = {},
+                    onDismiss = {}
+                )
+            }
+        }
+        compose.waitForIdle()
+        com.github.takahirom.roborazzi.captureScreenRoboImage("screenshots/license_demo.png")
+    }
+
+    @Test
+    fun unit_dialog_dark() {
+        compose.setContent {
+            MyApplicationTheme(darkTheme = true) {
+                com.example.ui.components.UnitKeySyncDialog(
+                    profile = profile,
+                    onRegenerateKey = {},
+                    onForceSync = {},
+                    onDismiss = {}
+                )
+            }
+        }
+        compose.waitForIdle()
+        com.github.takahirom.roborazzi.captureScreenRoboImage("screenshots/unit_dialog.png")
     }
 
     @Test

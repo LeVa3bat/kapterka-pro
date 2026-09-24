@@ -1,10 +1,20 @@
 package com.example.ui.components
 
-import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.widget.Toast
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -19,52 +29,45 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.CloudDownload
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.HelpOutline
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Key
-import androidx.compose.material.icons.filled.Payment
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.VerifiedUser
+import androidx.compose.material.icons.rounded.CloudDownload
+import androidx.compose.material.icons.rounded.ContentCopy
+import androidx.compose.material.icons.rounded.Description
+import androidx.compose.material.icons.rounded.ExpandMore
+import androidx.compose.material.icons.rounded.Key
+import androidx.compose.material.icons.rounded.MarkEmailRead
+import androidx.compose.material.icons.rounded.PhoneAndroid
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Shield
+import androidx.compose.material.icons.rounded.Sync
+import androidx.compose.material.icons.rounded.WorkspacePremium
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
-import androidx.compose.material3.TabRowDefaults
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -75,25 +78,30 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.example.data.license.FighterLicenseStatus
 import com.example.data.model.UserProfile
 import com.example.data.payment.YooKassaConfig
 import com.example.ui.theme.SageGreenBright
-import com.example.ui.theme.SageGreenDark
 import com.example.ui.theme.SageGreenPrimary
-import com.example.ui.theme.TacticalBg
-import com.example.ui.theme.TacticalBorder
 import com.example.ui.theme.TacticalBorderSubtle
-import com.example.ui.theme.TacticalGold
-import com.example.ui.theme.TacticalGoldDark
 import com.example.ui.theme.TacticalGoldText
+import com.example.ui.theme.TacticalRedText
 import com.example.ui.theme.TacticalSurface
 import com.example.ui.theme.TacticalSurfaceLight
-import com.example.ui.theme.TacticalTextDim
+import com.example.ui.theme.TacticalTealText
 import com.example.ui.theme.TacticalTextMuted
 import com.example.ui.theme.TacticalTextPrimary
 import com.example.ui.theme.TacticalTextSecondary
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
+/**
+ * "Каптёрка PRO": status on top (days ring when active, demo days / price
+ * otherwise), what PRO gives, three steps of how payment works, one big pay
+ * button, then "I paid — check". Entering an existing key and restoring a
+ * paid licence are folded below so the main path stays simple.
+ */
 @Composable
 fun PersonalLicenseDialog(
     profile: UserProfile?,
@@ -105,940 +113,359 @@ fun PersonalLicenseDialog(
     onTestPaymentConfirm: () -> Unit,
     onRestoreSavedLicense: () -> Unit = {},
     onRestoreFromCloud: (email: String, callsign: String) -> Unit = { _, _ -> },
-    onSaveYooKassaSettings: (shopId: String, secretKey: String, isTestMode: Boolean, priceRubles: Int) -> Unit,
+    @Suppress("UNUSED_PARAMETER") onSaveYooKassaSettings: (shopId: String, secretKey: String, isTestMode: Boolean, priceRubles: Int) -> Unit = { _, _, _, _ -> },
     onResendEmailKey: (String) -> Unit = {},
-    onResetLicense: () -> Unit = {},
+    @Suppress("UNUSED_PARAMETER") onResetLicense: () -> Unit = {},
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
-    val clipboardManager = LocalClipboardManager.current
-    val coroutineScope = rememberCoroutineScope()
-    var selectedTab by remember { mutableIntStateOf(if (licenseStatus.isProActive || licenseStatus.licenseKey.isNotEmpty() || licenseStatus.lastSavedKey.isNotEmpty()) 0 else 1) }
+    val clipboard = LocalClipboardManager.current
+    val scope = rememberCoroutineScope()
+    var paymentStarted by remember { mutableStateOf(false) }
+    var verifying by remember { mutableStateOf(false) }
+    var showKeyEntry by remember { mutableStateOf(false) }
+    var showRestore by remember { mutableStateOf(false) }
     var enteredKey by remember { mutableStateOf("") }
-    var copiedNotice by remember { mutableStateOf(false) }
-    var showLostKeyHelp by remember { mutableStateOf(false) }
-    var isPaymentStarted by remember { mutableStateOf(false) }
-    var isVerifyingPayment by remember { mutableStateOf(false) }
+    var copied by remember { mutableStateOf(false) }
 
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
+    val isPro = licenseStatus.isProActive
+    val justPaidKey = issuedPaymentKey?.takeIf { it.isNotBlank() }
+    val activeKey = justPaidKey ?: licenseStatus.licenseKey.takeIf { it.isNotBlank() }
+    val email = profile?.email?.trim().orEmpty()
+    val callsign = profile?.callsign?.trim().orEmpty()
+    val price = yooKassaConfig.priceRubles
+
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Column(
             modifier = Modifier
-                .fillMaxWidth(0.98f)
-                .padding(vertical = 8.dp),
-            shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(containerColor = TacticalSurface),
-            border = BorderStroke(1.dp, TacticalBorder)
+                .fillMaxWidth(0.94f)
+                .clip(RoundedCornerShape(28.dp))
+                .background(TacticalSurface)
+                .verticalScroll(rememberScrollState())
         ) {
-            Column(
+            // HERO
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp)
+                    .background(
+                        Brush.linearGradient(
+                            if (isPro || justPaidKey != null) listOf(Color(0xFF1F7A57), Color(0xFF0F766E))
+                            else listOf(Color(0xFF3B2A0E), Color(0xFF5A3D0A))
+                        )
+                    )
+                    .padding(20.dp)
             ) {
-                // Header
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(TacticalGoldDark),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Security,
-                                contentDescription = "Лицензия",
-                                tint = TacticalGoldText,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column {
-                            Text(
-                                text = "ЛИЦЕНЗИЯ БОЙЦА (30 ДНЕЙ)",
-                                color = TacticalGoldText,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "Персональный доступ • ЮKassa №1450722",
-                                color = TacticalTextSecondary,
-                                fontSize = 11.sp
-                            )
-                        }
-                    }
-
-                    IconButton(
-                        onClick = onDismiss,
-                        modifier = Modifier.size(28.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Закрыть",
-                            tint = TacticalTextMuted
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Вкладки: 0 - Лицензия бойца, 1 - Оплата и СБП
-                TabRow(
-                    selectedTabIndex = selectedTab,
-                    containerColor = TacticalBg,
-                    contentColor = SageGreenBright,
-                    indicator = { tabPositions ->
-                        TabRowDefaults.SecondaryIndicator(
-                            Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
-                            color = SageGreenPrimary
-                        )
-                    },
-                    modifier = Modifier.clip(RoundedCornerShape(8.dp))
-                ) {
-                    Tab(
-                        selected = selectedTab == 0,
-                        onClick = { selectedTab = 0 },
-                        text = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Default.VerifiedUser,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(15.dp),
-                                    tint = if (selectedTab == 0) SageGreenBright else TacticalTextMuted
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = "ЛИЦЕНЗИЯ БОЙЦА",
-                                    fontSize = 11.sp,
-                                    fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal,
-                                    color = if (selectedTab == 0) SageGreenBright else TacticalTextMuted
-                                )
-                            }
-                        }
-                    )
-                    Tab(
-                        selected = selectedTab == 1,
-                        onClick = { selectedTab = 1 },
-                        text = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Default.Payment,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(15.dp),
-                                    tint = if (selectedTab == 1) TacticalGoldText else TacticalTextMuted
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = "ОПЛАТА И СБП",
-                                    fontSize = 11.sp,
-                                    fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal,
-                                    color = if (selectedTab == 1) TacticalGoldText else TacticalTextMuted
-                                )
-                            }
-                        }
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                // ВКЛАДКА 0: ЛИЦЕНЗИЯ БОЙЦА (Отображение персонального ключа)
-                if (selectedTab == 0) {
-                    val activeOrSavedKey = licenseStatus.licenseKey.ifEmpty { licenseStatus.lastSavedKey }
-
-                    if (activeOrSavedKey.isNotBlank()) {
-                        // Карточка с ключом лицензии
-                        Surface(
-                            color = Color(0xFF14241B),
-                            shape = RoundedCornerShape(10.dp),
-                            border = BorderStroke(1.5.dp, SageGreenPrimary),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column(modifier = Modifier.padding(14.dp)) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(
-                                            imageVector = Icons.Default.Key,
-                                            contentDescription = null,
-                                            tint = SageGreenBright,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text(
-                                            text = "ВАШ ПЕРСОНАЛЬНЫЙ КЛЮЧ ЛИЦЕНЗИИ",
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = SageGreenBright,
-                                            fontFamily = FontFamily.Monospace
-                                        )
-                                    }
-
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(4.dp))
-                                            .background(if (licenseStatus.isProActive) SageGreenDark else TacticalGoldDark)
-                                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                                    ) {
-                                        Text(
-                                            text = if (licenseStatus.isProActive) "30 ДН. АКТИВНО" else "СОХРАНЕН В СЕЙФЕ",
-                                            fontSize = 9.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = if (licenseStatus.isProActive) SageGreenBright else TacticalGoldText
-                                        )
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.height(10.dp))
-
-                                // Отображение самого военного ключа крупно
-                                Surface(
-                                    color = Color(0xFF0C1711),
-                                    shape = RoundedCornerShape(8.dp),
-                                    border = BorderStroke(1.dp, SageGreenPrimary.copy(alpha = 0.5f)),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 12.dp, vertical = 10.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            text = activeOrSavedKey,
-                                            fontSize = 15.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = TacticalGoldText,
-                                            fontFamily = FontFamily.Monospace,
-                                            letterSpacing = 1.sp
-                                        )
-
-                                        Row {
-                                            // Кнопка Копировать
-                                            IconButton(
-                                                onClick = {
-                                                    clipboardManager.setText(AnnotatedString(activeOrSavedKey))
-                                                    copiedNotice = true
-                                                    Toast.makeText(context, "Ключ лицензии скопирован!", Toast.LENGTH_SHORT).show()
-                                                },
-                                                modifier = Modifier.size(32.dp)
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.ContentCopy,
-                                                    contentDescription = "Скопировать ключ",
-                                                    tint = SageGreenBright,
-                                                    modifier = Modifier.size(18.dp)
-                                                )
-                                            }
-
-                                            // Кнопка Поделиться
-                                            IconButton(
-                                                onClick = {
-                                                    val sendIntent = Intent().apply {
-                                                        action = Intent.ACTION_SEND
-                                                        putExtra(
-                                                            Intent.EXTRA_TEXT,
-                                                            "Мой персональный ключ лицензии Каптёрка ПРО:\n$activeOrSavedKey\n(Срок действия: 30 дней, боец: ${profile?.callsign ?: "Боец"})"
-                                                        )
-                                                        type = "text/plain"
-                                                    }
-                                                    context.startActivity(Intent.createChooser(sendIntent, "Сохранить ключ лицензии"))
-                                                },
-                                                modifier = Modifier.size(32.dp)
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Share,
-                                                    contentDescription = "Поделиться ключом",
-                                                    tint = TacticalGoldText,
-                                                    modifier = Modifier.size(18.dp)
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-
-                                if (copiedNotice) {
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = "✓ Ключ скопирован в буфер обмена",
-                                        color = SageGreenBright,
-                                        fontSize = 10.sp
-                                    )
-                                }
-
-                                Spacer(modifier = Modifier.height(8.dp))
-
-                                // Памятка для бойца
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(6.dp))
-                                        .background(TacticalSurfaceLight)
-                                        .padding(8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Info,
-                                        contentDescription = null,
-                                        tint = TacticalGold,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = "ВАЖНО: Сохраните этот ключ! Если вы забудете пароль или ключ подразделения, просто введите этот ключ для мгновенного входа.",
-                                        color = TacticalTextPrimary,
-                                        fontSize = 10.sp,
-                                        lineHeight = 14.sp
-                                    )
-                                }
-
-                                Spacer(modifier = Modifier.height(10.dp))
-                            }
-                        }
-                    } else {
-                        // Ключ еще не создан/не получен
-                        Card(
-                            colors = CardDefaults.cardColors(containerColor = Color(0xFF241C12)),
-                            border = BorderStroke(1.dp, TacticalGold.copy(alpha = 0.5f)),
-                            shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column(modifier = Modifier.padding(14.dp)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(imageVector = Icons.Default.Key, contentDescription = null, tint = TacticalGold, modifier = Modifier.size(20.dp))
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text("КЛЮЧ ЕЩЕ НЕ ПОЛУЧЕН", color = TacticalGoldText, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                                }
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Text(
-                                    text = "После оплаты через ЮKassa военный ключ лицензии (KAPT-XXXX-XXXX-XXXX) будет сформирован автоматически и навсегда сохранится здесь.",
-                                    color = TacticalTextSecondary,
-                                    fontSize = 11.sp,
-                                    lineHeight = 15.sp
-                                )
-                                Spacer(modifier = Modifier.height(10.dp))
-                                Button(
-                                    onClick = { selectedTab = 1 },
-                                    colors = ButtonDefaults.buttonColors(containerColor = TacticalGold, contentColor = Color.White),
-                                    shape = RoundedCornerShape(6.dp),
-                                    modifier = Modifier.fillMaxWidth().height(38.dp)
-                                ) {
-                                    Text("Перейти к оплате через ЮKassa / СБП (490 ₽)", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                }
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    // Данные профиля и статус устройства
-                    Surface(
-                        color = TacticalSurfaceLight,
-                        shape = RoundedCornerShape(8.dp),
-                        border = BorderStroke(1.dp, TacticalBorderSubtle),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            Text("ДАННЫЕ БОЙЦА В СИСТЕМЕ", color = TacticalTextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text("Позывной:", color = TacticalTextSecondary, fontSize = 11.sp)
-                                Text(profile?.callsign ?: "Боец", color = TacticalTextPrimary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                            }
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text("Подразделение:", color = TacticalTextSecondary, fontSize = 11.sp)
-                                Text(profile?.unitName ?: "1-е Подразделение", color = TacticalTextPrimary, fontSize = 11.sp)
-                            }
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text("Ключ подразделения:", color = TacticalTextSecondary, fontSize = 11.sp)
-                                Text(profile?.unitKey?.takeIf { it.isNotBlank() } ?: "не настроен", color = TacticalGoldText, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
-                            }
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text("ID устройства:", color = TacticalTextSecondary, fontSize = 11.sp)
-                                Text(licenseStatus.fighterId, color = TacticalTextPrimary, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
-                            }
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text("Статус лицензии:", color = TacticalTextSecondary, fontSize = 11.sp)
-                                Text(
-                                    if (licenseStatus.isProActive) "Активна (${licenseStatus.daysRemaining} дн. до ${licenseStatus.expiresAtDateFormatted})" else "Не активна",
-                                    color = if (licenseStatus.isProActive) SageGreenBright else TacticalGoldText,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    // Кнопка восстановления из облачной базы
-                    Button(
-                        onClick = {
-                            onRestoreFromCloud(profile?.email.orEmpty(), profile?.callsign.orEmpty())
-                        },
-                        modifier = Modifier.fillMaxWidth().height(42.dp),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = SageGreenPrimary,
-                            contentColor = Color.White
-                        )
-                    ) {
-                        Icon(imageVector = Icons.Default.CloudDownload, contentDescription = null, modifier = Modifier.size(17.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("☁️ Восстановить оплаченную лицензию из базы", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    }
-
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    // Кнопка восстановления из сейфа устройства
-                    OutlinedButton(
-                        onClick = onRestoreSavedLicense,
-                        modifier = Modifier.fillMaxWidth().height(36.dp),
-                        shape = RoundedCornerShape(6.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = SageGreenBright),
-                        border = BorderStroke(1.dp, SageGreenPrimary.copy(alpha = 0.5f))
-                    ) {
-                        Icon(imageVector = Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(15.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Восстановить из сейфа устройства", fontSize = 11.sp)
-                    }
-
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    Text(
-                        text = "Потеряли ключ? Сначала попробуйте восстановление из облака по Email. Для поддержки откройте Личный кабинет на сайте https://kapterka-pro.ru/",
-                        color = TacticalTextMuted,
-                        fontSize = 10.sp,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                try {
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://kapterka-pro.ru/#tabCabinet"))
-                                    context.startActivity(intent)
-                                } catch (e: Exception) {}
-                            }
-                    )
-                }
-
-                // ВКЛАДКА 1: ОПЛАТА И СБП
-                if (selectedTab == 1) {
-                    Card(
-                        shape = RoundedCornerShape(10.dp),
-                        colors = CardDefaults.cardColors(containerColor = TacticalSurfaceLight),
-                        border = BorderStroke(1.dp, TacticalBorderSubtle),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = Icons.Default.Payment,
-                                        contentDescription = null,
-                                        tint = TacticalGold,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Column {
-                                        Text(
-                                            text = "Оплата через ЮKassa",
-                                            fontSize = 13.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = TacticalTextPrimary
-                                        )
-                                        Text(
-                                            text = "СБП (без комиссии), Карты МИР, SberPay",
-                                            fontSize = 10.sp,
-                                            color = TacticalTextSecondary
-                                        )
-                                    }
-                                }
-
-                                Text(
-                                    text = "${yooKassaConfig.priceRubles} ₽/мес",
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = TacticalGoldText
-                                )
-                            }
-
+                Icon(
+                    Icons.Rounded.Close,
+                    contentDescription = "Закрыть",
+                    tint = Color.White.copy(alpha = 0.8f),
+                    modifier = Modifier.align(Alignment.TopEnd).clip(CircleShape).clickable(onClick = onDismiss).padding(4.dp)
+                )
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                    when {
+                        justPaidKey != null -> {
+                            AnimatedCheck(key = justPaidKey, color = Color.White, size = 72.dp)
                             Spacer(modifier = Modifier.height(10.dp))
-
+                            Text("Оплата прошла!", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold)
+                            Text("PRO включена на 30 дней", color = Color.White.copy(alpha = 0.85f), fontSize = 14.sp)
+                        }
+                        isPro -> {
+                            DaysRing(days = licenseStatus.daysRemaining)
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text("PRO активна", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold)
+                            Text("до ${licenseStatus.expiresAtDateFormatted}", color = Color.White.copy(alpha = 0.85f), fontSize = 14.sp)
+                        }
+                        else -> {
+                            PulsingBadge()
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text("Каптёрка PRO", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold)
                             Text(
-                                text = "✓ Персональный военный ключ на 30 дней в реестре\n" +
-                                       "✓ Автоматическое отображение во вкладке «Лицензия бойца»\n" +
-                                       "✓ Полный оффлайн-доступ ко всем складам и отчетам Excel",
-                                fontSize = 11.sp,
-                                color = TacticalTextPrimary,
-                                lineHeight = 16.sp
+                                if (licenseStatus.isDemoActive) "Демо: осталось ${licenseStatus.demoDaysLeft} дн." else "Демо-период закончился",
+                                color = if (licenseStatus.isDemoActive) Color.White.copy(alpha = 0.85f) else Color(0xFFFFC2B3),
+                                fontSize = 14.sp
                             )
-
                             Spacer(modifier = Modifier.height(12.dp))
-
-                            if (!isPaymentStarted) {
-                                // ШАГ 1: Единственная понятная кнопка оплаты
-                                Button(
-                                    onClick = {
-                                        isPaymentStarted = true
-                                        onPayYooKassaClick()
-                                    },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(48.dp)
-                                        .testTag("yookassa_pay_button"),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = TacticalGold,
-                                        contentColor = Color.White
-                                    ),
-                                    shape = RoundedCornerShape(8.dp)
-                                ) {
-                                    Icon(imageVector = Icons.Default.Payment, contentDescription = null, modifier = Modifier.size(20.dp))
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = "Оплатить ${yooKassaConfig.priceRubles} ₽ через ЮKassa / СБП",
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 14.sp
-                                    )
-                                }
-
-                                Text(
-                                    text = "После перехода в ЮKassa откроется СБП или банковская карта. Ключ активируется автоматически.",
-                                    color = TacticalTextMuted,
-                                    fontSize = 10.sp,
-                                    lineHeight = 14.sp,
-                                    modifier = Modifier.padding(top = 6.dp)
-                                )
-                            } else {
-                                if (licenseStatus.isProActive || !issuedPaymentKey.isNullOrBlank()) {
-                                    // ШАГ 3: МГНОВЕННЫЙ РЕЗУЛЬТАТ — КЛЮЧ ВЫДАН И АКТИВИРОВАН
-                                    val activeKey = if (!issuedPaymentKey.isNullOrBlank()) issuedPaymentKey else licenseStatus.licenseKey
-                                    Surface(
-                                        color = Color(0xFF132819),
-                                        shape = RoundedCornerShape(10.dp),
-                                        border = BorderStroke(1.5.dp, SageGreenBright),
-                                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
-                                    ) {
-                                        Column(
-                                            modifier = Modifier.padding(14.dp),
-                                            horizontalAlignment = Alignment.CenterHorizontally
-                                        ) {
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Check,
-                                                    contentDescription = null,
-                                                    tint = SageGreenBright,
-                                                    modifier = Modifier.size(24.dp)
-                                                )
-                                                Spacer(modifier = Modifier.width(8.dp))
-                                                Text(
-                                                    text = "🎉 ОПЛАТА УСПЕШНО ЗАВЕРШЕНА!",
-                                                    color = SageGreenBright,
-                                                    fontSize = 13.sp,
-                                                    fontWeight = FontWeight.Bold
-                                                )
-                                            }
-                                            Spacer(modifier = Modifier.height(6.dp))
-                                            Text(
-                                                text = "Ваш персональный лицензионный ключ (30 дней):",
-                                                color = TacticalTextSecondary,
-                                                fontSize = 11.sp
-                                            )
-                                            Spacer(modifier = Modifier.height(8.dp))
-                                            Surface(
-                                                color = Color(0xFF0C160F),
-                                                shape = RoundedCornerShape(6.dp),
-                                                border = BorderStroke(1.dp, TacticalGold.copy(alpha = 0.6f)),
-                                                modifier = Modifier.fillMaxWidth()
-                                            ) {
-                                                Row(
-                                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                                                    verticalAlignment = Alignment.CenterVertically,
-                                                    horizontalArrangement = Arrangement.SpaceBetween
-                                                ) {
-                                                    Text(
-                                                        text = activeKey,
-                                                        color = TacticalGoldText,
-                                                        fontSize = 13.sp,
-                                                        fontWeight = FontWeight.Bold,
-                                                        fontFamily = FontFamily.Monospace
-                                                    )
-                                                    IconButton(
-                                                        onClick = {
-                                                            clipboardManager.setText(AnnotatedString(activeKey))
-                                                            Toast.makeText(context, "Ключ скопирован в буфер обмена!", Toast.LENGTH_SHORT).show()
-                                                        },
-                                                        modifier = Modifier.size(28.dp)
-                                                    ) {
-                                                        Icon(
-                                                            imageVector = Icons.Default.ContentCopy,
-                                                            contentDescription = "Скопировать ключ",
-                                                            tint = TacticalGold,
-                                                            modifier = Modifier.size(16.dp)
-                                                        )
-                                                    }
-                                                }
-                                            }
-                                            Spacer(modifier = Modifier.height(6.dp))
-                                            val recipientEmail = (profile?.email?.ifBlank { null } ?: "alex.666.881@gmail.com").trim()
-                                            Surface(
-                                                color = Color(0xFF0F1A13),
-                                                shape = RoundedCornerShape(6.dp),
-                                                border = BorderStroke(1.dp, SageGreenPrimary.copy(alpha = 0.4f)),
-                                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
-                                            ) {
-                                                Column(modifier = Modifier.padding(8.dp)) {
-                                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                                        Icon(
-                                                            imageVector = Icons.Default.Email,
-                                                            contentDescription = null,
-                                                            tint = TacticalGold,
-                                                            modifier = Modifier.size(15.dp)
-                                                        )
-                                                        Spacer(modifier = Modifier.width(6.dp))
-                                                        Text(
-                                                            text = "Письмо с ключом и чеком 54-ФЗ:",
-                                                            color = TacticalTextPrimary,
-                                                            fontSize = 11.sp,
-                                                            fontWeight = FontWeight.Bold
-                                                        )
-                                                    }
-                                                    Spacer(modifier = Modifier.height(2.dp))
-                                                    Text(
-                                                        text = recipientEmail,
-                                                        color = TacticalGoldText,
-                                                        fontSize = 11.sp,
-                                                        fontFamily = FontFamily.Monospace
-                                                    )
-                                                    Spacer(modifier = Modifier.height(6.dp))
-                                                    Row(
-                                                        modifier = Modifier.fillMaxWidth(),
-                                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                                    ) {
-                                                        OutlinedButton(
-                                                            onClick = {
-                                                                com.example.data.notification.EmailDeliveryService.openEmailClientWithKey(
-                                                                    context = context,
-                                                                    toEmail = recipientEmail,
-                                                                    callsign = profile?.callsign ?: "Боец",
-                                                                    licenseKey = activeKey
-                                                                )
-                                                            },
-                                                            modifier = Modifier.weight(1f).height(34.dp),
-                                                            colors = ButtonDefaults.outlinedButtonColors(contentColor = SageGreenBright),
-                                                            border = BorderStroke(1.dp, SageGreenPrimary.copy(alpha = 0.6f)),
-                                                            shape = RoundedCornerShape(6.dp)
-                                                        ) {
-                                                            Text("✉️ Открыть в почте", fontSize = 10.sp)
-                                                        }
-                                                        OutlinedButton(
-                                                            onClick = {
-                                                                onResendEmailKey(recipientEmail)
-                                                            },
-                                                            modifier = Modifier.weight(1f).height(34.dp),
-                                                            colors = ButtonDefaults.outlinedButtonColors(contentColor = TacticalGoldText),
-                                                            border = BorderStroke(1.dp, TacticalGold.copy(alpha = 0.6f)),
-                                                            shape = RoundedCornerShape(6.dp)
-                                                        ) {
-                                                            Text("🔄 Выслать повторно", fontSize = 10.sp)
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                            Spacer(modifier = Modifier.height(6.dp))
-                                            Text(
-                                                text = "✓ Ключ уже привязан к вашему позывному «${profile?.callsign?.ifBlank { "Боец" } ?: "Боец"}» и сохранен в безопасный сейф.",
-                                                color = SageGreenBright,
-                                                fontSize = 10.sp,
-                                                textAlign = TextAlign.Center
-                                            )
-                                            Spacer(modifier = Modifier.height(10.dp))
-                                            Button(
-                                                onClick = {
-                                                    selectedTab = 0
-                                                },
-                                                modifier = Modifier.fillMaxWidth().height(42.dp),
-                                                colors = ButtonDefaults.buttonColors(
-                                                    containerColor = SageGreenPrimary,
-                                                    contentColor = Color.White
-                                                ),
-                                                shape = RoundedCornerShape(8.dp)
-                                            ) {
-                                                Icon(imageVector = Icons.Default.VerifiedUser, contentDescription = null, modifier = Modifier.size(16.dp))
-                                                Spacer(modifier = Modifier.width(6.dp))
-                                                Text("🚀 Начать работу с ПРО", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                                            }
-                                        }
-                                    }
-                                } else {
-                                    // ШАГ 2: Автоматическое появление кнопки проверки и выдачи ключа
-                                    Surface(
-                                        color = Color(0xFF132219),
-                                        shape = RoundedCornerShape(8.dp),
-                                        border = BorderStroke(1.dp, SageGreenPrimary.copy(alpha = 0.6f)),
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Column(modifier = Modifier.padding(10.dp)) {
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Check,
-                                                    contentDescription = null,
-                                                    tint = SageGreenBright,
-                                                    modifier = Modifier.size(16.dp)
-                                                )
-                                                Spacer(modifier = Modifier.width(6.dp))
-                                                Text(
-                                                    text = "Окно оплаты ЮKassa открыто",
-                                                    color = SageGreenBright,
-                                                    fontSize = 12.sp,
-                                                    fontWeight = FontWeight.Bold
-                                                )
-                                            }
-                                            Spacer(modifier = Modifier.height(4.dp))
-                                            Text(
-                                                text = "Завершите оплату в приложении банка (СБП/Карта). Сразу после оплаты нажмите кнопку ниже для мгновенной выдачи ключа:",
-                                                color = TacticalTextSecondary,
-                                                fontSize = 11.sp,
-                                                lineHeight = 14.sp
-                                            )
-                                        }
-                                    }
-
-                                    Spacer(modifier = Modifier.height(10.dp))
-
-                                    Button(
-                                        onClick = {
-                                            if (!isVerifyingPayment) {
-                                                isVerifyingPayment = true
-                                                onTestPaymentConfirm()
-                                                coroutineScope.launch {
-                                                    kotlinx.coroutines.delay(1200)
-                                                    isVerifyingPayment = false
-                                                }
-                                            }
-                                        },
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(48.dp)
-                                            .testTag("verify_payment_button"),
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = SageGreenBright,
-                                            contentColor = Color.White
-                                        ),
-                                        shape = RoundedCornerShape(8.dp),
-                                        enabled = !isVerifyingPayment
-                                    ) {
-                                        if (isVerifyingPayment) {
-                                            CircularProgressIndicator(
-                                                modifier = Modifier.size(18.dp),
-                                                color = Color(0xFF0F1B14),
-                                                strokeWidth = 2.dp
-                                            )
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Text("Запрос статуса в банке ЮKassa...", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                                        } else {
-                                            Icon(imageVector = Icons.Default.Key, contentDescription = null, modifier = Modifier.size(18.dp))
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Text("⚡ Я оплатил — Проверить поступление", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                                        }
-                                    }
-
-                                    Spacer(modifier = Modifier.height(6.dp))
-
-                                    TextButton(
-                                        onClick = { onPayYooKassaClick() },
-                                        modifier = Modifier.fillMaxWidth().height(32.dp)
-                                    ) {
-                                        Text("Окно закрылось? Открыть ЮKassa снова", color = TacticalGoldText, fontSize = 11.sp)
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    Text(
-                        text = "ИЛИ АКТИВИРОВАТЬ ГОТОВЫЙ КЛЮЧ БОЙЦА",
-                        color = TacticalTextMuted,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily.Monospace
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        OutlinedTextField(
-                            value = enteredKey,
-                            onValueChange = { enteredKey = it.uppercase() },
-                            placeholder = { Text("Введите готовый ключ: KAPT-XXXX-XXXX-XXXX", color = TacticalTextDim, fontSize = 12.sp) },
-                            singleLine = true,
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(50.dp),
-                            shape = RoundedCornerShape(8.dp),
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Key,
-                                    contentDescription = null,
-                                    tint = TacticalGold,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            },
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = TacticalSurfaceLight,
-                                unfocusedContainerColor = TacticalSurfaceLight,
-                                focusedBorderColor = TacticalGold,
-                                unfocusedBorderColor = TacticalBorderSubtle,
-                                focusedTextColor = TacticalTextPrimary,
-                                unfocusedTextColor = TacticalTextPrimary
-                            )
-                        )
-
-                        Spacer(modifier = Modifier.width(8.dp))
-
-                        Button(
-                            onClick = {
-                                val clean = enteredKey.trim().uppercase()
-                                if (clean.isNotBlank()) {
-                                    onActivateLicenseKey(clean)
-                                    enteredKey = ""
-                                    selectedTab = 0
-                                }
-                            },
-                            enabled = enteredKey.trim().length >= 3,
-                            modifier = Modifier.height(50.dp),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = SageGreenPrimary,
-                                contentColor = Color.White
-                            )
-                        ) {
-                            Text("Ввести", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    // БЛОК: ПОТЕРЯЛИ КЛЮЧ ЛИЦЕНЗИИ?
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF131E18)),
-                        border = BorderStroke(1.dp, if (showLostKeyHelp) TacticalGold else SageGreenPrimary.copy(alpha = 0.4f)),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { showLostKeyHelp = !showLostKeyHelp },
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = Icons.Default.HelpOutline,
-                                        contentDescription = null,
-                                        tint = TacticalGold,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = "ПОТЕРЯЛИ КЛЮЧ ЛИЦЕНЗИИ?",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = TacticalGoldText,
-                                        fontFamily = FontFamily.Monospace
-                                    )
-                                }
-                                Text(
-                                    text = if (showLostKeyHelp) "▲ Скрыть" else "▼ Как восстановить",
-                                    fontSize = 10.sp,
-                                    color = TacticalTextSecondary
-                                )
-                            }
-
-                            if (showLostKeyHelp) {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = "1. Если вы уже активировали ключ на этом телефоне ранее, нажмите кнопку «Восстановить из сейфа» ниже.\n\n" +
-                                           "2. Для оплаченной лицензии используйте «Восстановить из базы (по Email)» — приложение проверит облачный реестр лицензий.\n\n" +
-                                           "3. Если восстановление не помогло — напишите в поддержку Telegram @kapterka_help_bot и укажите Email и примерное время оплаты.",
-                                    fontSize = 10.sp,
-                                    color = TacticalTextPrimary,
-                                    lineHeight = 14.sp
-                                )
-                                Spacer(modifier = Modifier.height(10.dp))
-                                Button(
-                                    onClick = {
-                                        onRestoreFromCloud(profile?.email.orEmpty(), profile?.callsign.orEmpty())
-                                        selectedTab = 0
-                                    },
-                                    modifier = Modifier.fillMaxWidth().height(38.dp),
-                                    shape = RoundedCornerShape(6.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = SageGreenDark, contentColor = SageGreenBright),
-                                    border = BorderStroke(1.dp, SageGreenPrimary)
-                                ) {
-                                    Icon(imageVector = Icons.Default.CloudDownload, contentDescription = null, modifier = Modifier.size(14.dp))
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text("☁️ Восстановить из базы (по Email)", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                }
-
-                                Spacer(modifier = Modifier.height(6.dp))
-
-                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    OutlinedButton(
-                                        onClick = {
-                                            onRestoreSavedLicense()
-                                            selectedTab = 0
-                                        },
-                                        modifier = Modifier.weight(1f).height(38.dp),
-                                        shape = RoundedCornerShape(6.dp),
-                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = SageGreenBright),
-                                        border = BorderStroke(1.dp, SageGreenPrimary)
-                                    ) {
-                                        Icon(imageVector = Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(14.dp))
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text("Из сейфа", fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                                    }
-
-                                    Button(
-                                        onClick = {
-                                            try {
-                                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://kapterka-pro.ru/#tabCabinet"))
-                                                context.startActivity(intent)
-                                            } catch (e: Exception) {
-                                                Toast.makeText(context, "Сайт: https://kapterka-pro.ru/", Toast.LENGTH_LONG).show()
-                                            }
-                                        },
-                                        modifier = Modifier.weight(1.2f).height(38.dp),
-                                        shape = RoundedCornerShape(6.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = TacticalGoldDark, contentColor = TacticalGoldText),
-                                        border = BorderStroke(1.dp, TacticalGold.copy(alpha = 0.5f))
-                                    ) {
-                                        Text("Кабинет сайта ➔", fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                                    }
-                                }
+                            Row(verticalAlignment = Alignment.Bottom) {
+                                Text("$price ₽", color = Color.White, fontSize = 40.sp, fontWeight = FontWeight.Black)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("за 30 дней", color = Color.White.copy(alpha = 0.8f), fontSize = 14.sp, modifier = Modifier.padding(bottom = 8.dp))
                             }
                         }
                     }
                 }
             }
+
+            Column(modifier = Modifier.padding(18.dp)) {
+                // Active key
+                if (activeKey != null) {
+                    Text("Ваш ключ", color = TacticalTextMuted, fontSize = 12.sp)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(TacticalSurfaceLight)
+                            .clickable {
+                                clipboard.setText(AnnotatedString(activeKey))
+                                copied = true
+                            }
+                            .padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(activeKey, color = SageGreenBright, fontSize = 17.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace, modifier = Modifier.weight(1f))
+                        Icon(Icons.Rounded.ContentCopy, contentDescription = "Копировать", tint = TacticalTextMuted, modifier = Modifier.size(20.dp))
+                    }
+                    Text(
+                        if (copied) "✓ Скопировано" else "Ключ также отправлен на почту ${email.ifBlank { "" }}".trim(),
+                        color = if (copied) SageGreenBright else TacticalTextMuted,
+                        fontSize = 11.sp,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+
+                if (justPaidKey != null) {
+                    Button(
+                        onClick = onDismiss,
+                        modifier = Modifier.fillMaxWidth().height(54.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = SageGreenPrimary, contentColor = Color.White)
+                    ) { Text("Начать работу с PRO", fontSize = 16.sp, fontWeight = FontWeight.Bold) }
+                } else {
+                    // What PRO gives
+                    Text("Что даёт PRO", color = TacticalTextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Benefit(Icons.Rounded.Description, "Списание и отчёты Excel", "формы 8 и 18, сводные ведомости")
+                    Benefit(Icons.Rounded.Sync, "Все функции без ограничений", "склады, операции, заявки, синхронизация")
+                    Benefit(Icons.Rounded.Shield, "Лицензия на сервере", "не пропадёт при переустановке и смене телефона")
+                    Benefit(Icons.Rounded.MarkEmailRead, "Ключ на почту", "и чек об оплате по 54-ФЗ")
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    if (!paymentStarted) {
+                        Text(if (isPro) "Продлить ещё на 30 дней" else "Как оплатить", color = TacticalTextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Step(1, "Нажмите «Оплатить» — откроется ЮKassa")
+                        Step(2, "Оплатите через СБП, картой МИР или SberPay")
+                        Step(3, "Вернитесь сюда и нажмите «Я оплатил»")
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Button(
+                            onClick = {
+                                paymentStarted = true
+                                onPayYooKassaClick()
+                            },
+                            modifier = Modifier.fillMaxWidth().height(56.dp).testTag("yookassa_pay_button"),
+                            shape = RoundedCornerShape(18.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0A63A), contentColor = Color(0xFF1C1405))
+                        ) {
+                            Text("Оплатить $price ₽", fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
+                        }
+                    } else {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(18.dp))
+                                .background(TacticalSurfaceLight)
+                                .border(1.dp, TacticalGoldText.copy(alpha = 0.5f), RoundedCornerShape(18.dp))
+                                .padding(14.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text("Ждём оплату", color = TacticalGoldText, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            Text(
+                                "Завершите оплату в банке, вернитесь в приложение и нажмите кнопку ниже.",
+                                color = TacticalTextSecondary,
+                                fontSize = 13.sp,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Button(
+                                onClick = {
+                                    if (!verifying) {
+                                        verifying = true
+                                        onTestPaymentConfirm()
+                                        scope.launch { delay(2500); verifying = false }
+                                    }
+                                },
+                                enabled = !verifying,
+                                modifier = Modifier.fillMaxWidth().height(54.dp).testTag("verify_payment_button"),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = SageGreenPrimary, contentColor = Color.White)
+                            ) {
+                                if (verifying) {
+                                    CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Проверяем платёж…", fontWeight = FontWeight.Bold)
+                                } else {
+                                    Text("Я оплатил — проверить", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                            TextButton(onClick = onPayYooKassaClick) {
+                                Text("Открыть оплату снова", color = TacticalGoldText, fontSize = 13.sp)
+                            }
+                        }
+                    }
+                    Text(
+                        "Платёж обрабатывает ЮKassa. Данные карты приложение не видит.",
+                        color = TacticalTextMuted,
+                        fontSize = 11.sp,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Have a key
+                FoldHeader(Icons.Rounded.Key, "У меня уже есть ключ", showKeyEntry) { showKeyEntry = !showKeyEntry }
+                AnimatedVisibility(visible = showKeyEntry, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
+                    Column(modifier = Modifier.padding(top = 8.dp)) {
+                        OutlinedTextField(
+                            value = enteredKey,
+                            onValueChange = { enteredKey = it.uppercase().take(24) },
+                            placeholder = { Text("KAPT-XXXX-XXXX-XXXX", color = TacticalTextMuted, fontFamily = FontFamily.Monospace) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp),
+                            textStyle = androidx.compose.ui.text.TextStyle(fontFamily = FontFamily.Monospace, fontSize = 16.sp, color = TacticalTextPrimary),
+                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = SageGreenBright, unfocusedBorderColor = TacticalBorderSubtle)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(
+                            onClick = {
+                                onActivateLicenseKey(enteredKey.trim())
+                                enteredKey = ""
+                            },
+                            enabled = enteredKey.trim().length >= 19,
+                            modifier = Modifier.fillMaxWidth().height(48.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = SageGreenPrimary, contentColor = Color.White)
+                        ) { Text("Активировать ключ", fontWeight = FontWeight.Bold) }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Restore
+                FoldHeader(Icons.Rounded.PhoneAndroid, "Сменили телефон или потеряли ключ", showRestore) { showRestore = !showRestore }
+                AnimatedVisibility(visible = showRestore, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
+                    Column(modifier = Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        RestoreRow(Icons.Rounded.CloudDownload, "Найти оплату по почте", if (email.isNotBlank()) email else "укажите почту в профиле", enabled = email.isNotBlank()) {
+                            onRestoreFromCloud(email, callsign)
+                        }
+                        RestoreRow(Icons.Rounded.Key, "Из памяти этого телефона", "если ключ уже вводили здесь") { onRestoreSavedLicense() }
+                        if (isPro && email.isNotBlank()) {
+                            RestoreRow(Icons.Rounded.MarkEmailRead, "Выслать ключ на почту", email) { onResendEmailKey(email) }
+                        }
+                        RestoreRow(Icons.Rounded.WorkspacePremium, "Написать в поддержку", "Telegram-бот @kapterka_help_bot") {
+                            runCatching {
+                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(AppLinks.SUPPORT_BOT)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DaysRing(days: Int) {
+    val sweep = remember { Animatable(0f) }
+    LaunchedEffect(days) { sweep.animateTo((days.coerceIn(0, 30) / 30f), tween(1100, easing = FastOutSlowInEasing)) }
+    Box(modifier = Modifier.size(96.dp), contentAlignment = Alignment.Center) {
+        Canvas(modifier = Modifier.size(96.dp)) {
+            val stroke = 9.dp.toPx()
+            drawArc(Color.White.copy(alpha = 0.2f), -90f, 360f, false, style = Stroke(stroke, cap = StrokeCap.Round),
+                topLeft = androidx.compose.ui.geometry.Offset(stroke / 2, stroke / 2),
+                size = androidx.compose.ui.geometry.Size(size.width - stroke, size.height - stroke))
+            drawArc(Color.White, -90f, 360f * sweep.value, false, style = Stroke(stroke, cap = StrokeCap.Round),
+                topLeft = androidx.compose.ui.geometry.Offset(stroke / 2, stroke / 2),
+                size = androidx.compose.ui.geometry.Size(size.width - stroke, size.height - stroke))
+        }
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("$days", color = Color.White, fontSize = 30.sp, fontWeight = FontWeight.Black)
+            Text("дней", color = Color.White.copy(alpha = 0.8f), fontSize = 11.sp)
+        }
+    }
+}
+
+@Composable
+private fun PulsingBadge() {
+    val t = rememberInfiniteTransition(label = "badge")
+    val s by t.animateFloat(1f, 1.08f, infiniteRepeatable(tween(900), RepeatMode.Reverse), label = "s")
+    Box(
+        modifier = Modifier
+            .size(64.dp)
+            .graphicsLayer { scaleX = s; scaleY = s }
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color.White.copy(alpha = 0.18f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(Icons.Rounded.WorkspacePremium, contentDescription = null, tint = Color(0xFFFFD27A), modifier = Modifier.size(38.dp))
+    }
+}
+
+@Composable
+private fun Benefit(icon: ImageVector, title: String, subtitle: String) {
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier.size(36.dp).clip(RoundedCornerShape(11.dp)).background(Brush.linearGradient(listOf(SageGreenPrimary, TacticalTealText))),
+            contentAlignment = Alignment.Center
+        ) { Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp)) }
+        Spacer(modifier = Modifier.width(12.dp))
+        Column {
+            Text(title, color = TacticalTextPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+            Text(subtitle, color = TacticalTextMuted, fontSize = 12.sp)
+        }
+    }
+}
+
+@Composable
+private fun Step(n: Int, text: String) {
+    Row(modifier = Modifier.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier.size(26.dp).clip(CircleShape).background(TacticalGoldText.copy(alpha = 0.2f)),
+            contentAlignment = Alignment.Center
+        ) { Text("$n", color = TacticalGoldText, fontSize = 13.sp, fontWeight = FontWeight.Bold) }
+        Spacer(modifier = Modifier.width(10.dp))
+        Text(text, color = TacticalTextSecondary, fontSize = 13.sp)
+    }
+}
+
+@Composable
+private fun FoldHeader(icon: ImageVector, title: String, open: Boolean, onClick: () -> Unit) {
+    val rot by androidx.compose.animation.core.animateFloatAsState(if (open) 180f else 0f, label = "fold")
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(TacticalSurfaceLight)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(icon, contentDescription = null, tint = SageGreenBright, modifier = Modifier.size(20.dp))
+        Spacer(modifier = Modifier.width(10.dp))
+        Text(title, color = TacticalTextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
+        Icon(Icons.Rounded.ExpandMore, contentDescription = null, tint = TacticalTextMuted, modifier = Modifier.graphicsLayer { rotationZ = rot })
+    }
+}
+
+@Composable
+private fun RestoreRow(icon: ImageVector, title: String, subtitle: String, enabled: Boolean = true, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(14.dp))
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(12.dp)
+            .graphicsLayer { alpha = if (enabled) 1f else 0.5f },
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(icon, contentDescription = null, tint = if (enabled) SageGreenBright else TacticalRedText, modifier = Modifier.size(20.dp))
+        Spacer(modifier = Modifier.width(10.dp))
+        Column {
+            Text(title, color = TacticalTextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            Text(subtitle, color = TacticalTextMuted, fontSize = 11.sp)
         }
     }
 }
