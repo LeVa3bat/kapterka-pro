@@ -42,6 +42,7 @@ import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.ReceiptLong
 import androidx.compose.material.icons.outlined.SpaceDashboard
 import androidx.compose.material.icons.rounded.Widgets
+import androidx.compose.material.icons.rounded.WarningAmber
 import androidx.compose.material.icons.rounded.AssignmentTurnedIn
 import androidx.compose.material.icons.rounded.Inventory2
 import androidx.compose.material.icons.rounded.ReceiptLong
@@ -333,7 +334,9 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
             // TACTICAL IN-APP POPUP BANNER ("Всплывающее сообщение о проводке")
             AnimatedVisibility(
                 visible = inAppToastMessage != null,
-                enter = fadeIn() + slideInVertically { -it },
+                enter = fadeIn() + slideInVertically(
+                    androidx.compose.animation.core.spring(dampingRatio = 0.7f, stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow)
+                ) { -it },
                 exit = fadeOut() + slideOutVertically { -it },
                 modifier = Modifier
                     .align(Alignment.TopCenter)
@@ -341,14 +344,18 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                     .padding(horizontal = 14.dp, vertical = 10.dp)
             ) {
                 inAppToastMessage?.let { msg ->
+                    // Problems get an amber warning style instead of the success check.
+                    val isProblem = listOf("не удалось", "ошибк", "нельзя", "нет связи", "отклон", "истек", "истёк", "недоступ", "неверн")
+                        .any { msg.contains(it, ignoreCase = true) }
+                    val accent = if (isProblem) com.example.ui.theme.TacticalGoldText else SageGreenBright
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { inAppToastMessage = null },
                         colors = CardDefaults.cardColors(containerColor = TacticalSurfaceLight),
-                        border = BorderStroke(1.5.dp, SageGreenPrimary),
-                        shape = RoundedCornerShape(10.dp),
-                        elevation = CardDefaults.cardElevation(8.dp)
+                        border = BorderStroke(1.dp, accent.copy(alpha = 0.7f)),
+                        shape = RoundedCornerShape(18.dp),
+                        elevation = CardDefaults.cardElevation(12.dp)
                     ) {
                         Row(
                             modifier = Modifier
@@ -356,25 +363,25 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                                 .padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(SageGreenDark),
-                                contentAlignment = Alignment.Center
-                            ) {
+                            if (isProblem) {
                                 Icon(
-                                    imageVector = Icons.Default.CheckCircle,
+                                    imageVector = Icons.Rounded.WarningAmber,
                                     contentDescription = null,
-                                    tint = SageGreenBright,
-                                    modifier = Modifier.size(22.dp)
+                                    tint = accent,
+                                    modifier = Modifier.size(34.dp)
+                                )
+                            } else {
+                                com.example.ui.components.AnimatedCheck(
+                                    key = msg,
+                                    color = SageGreenBright,
+                                    size = 38.dp
                                 )
                             }
                             Spacer(modifier = Modifier.width(10.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "ОПЕРАЦИЯ ЗАФИКСИРОВАНА",
-                                    color = SageGreenBright,
+                                    text = if (isProblem) "ВНИМАНИЕ" else "ГОТОВО",
+                                    color = accent,
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.ExtraBold,
                                     letterSpacing = 0.5.sp

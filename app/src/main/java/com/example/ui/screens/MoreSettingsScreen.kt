@@ -720,7 +720,7 @@ fun MoreSettingsScreen(
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = TacticalGoldText),
                         border = BorderStroke(1.dp, TacticalGold.copy(alpha = 0.6f))
                     ) {
-                        Text("☁️ Восстановить оплаченную лицензию из базы", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text("Восстановить оплаченную лицензию", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
