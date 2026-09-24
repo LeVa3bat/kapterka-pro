@@ -3,6 +3,7 @@ package com.example
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onLast
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import com.example.data.model.InventoryItem
@@ -279,6 +280,36 @@ class ScreenshotTest {
         }
         compose.waitForIdle()
         com.github.takahirom.roborazzi.captureScreenRoboImage("screenshots/income_dialog_dark.png")
+    }
+
+    @Test
+    fun history_period_filter_really_filters() {
+        val now = System.currentTimeMillis()
+        val fresh = ops.first().copy(id = "today_op", timestamp = now)
+        compose.setContent {
+            MyApplicationTheme(darkTheme = true) {
+                com.example.ui.screens.HistoryScreen(
+                    operations = ops + fresh,
+                    filterType = null,
+                    searchQuery = "",
+                    catalogItems = items,
+                    availableCategories = items.map { it.serviceCategory }.distinct(),
+                    onFilterChange = {},
+                    onSearchChange = {},
+                    parseItems = { emptyList() }
+                )
+            }
+        }
+        // Old operations (2024) are visible under "Всё время".
+        compose.onAllNodesWithText("24.09.2024", substring = true).fetchSemanticsNodes().let { assert(it.isNotEmpty()) }
+        compose.onAllNodesWithText("Сегодня").onFirst().performClick()
+        compose.waitForIdle()
+        // Only today's operation remains.
+        assert(compose.onAllNodesWithText("24.09.2024", substring = true).fetchSemanticsNodes().isEmpty())
+        // Tapping the day header folds the day.
+        compose.onAllNodesWithText("Сегодня").onLast().performClick()
+        compose.waitForIdle()
+        compose.onRoot().captureRoboImage("screenshots/history_today_folded.png")
     }
 
     private val reportOps = listOf(

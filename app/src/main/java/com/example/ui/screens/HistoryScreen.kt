@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Person
@@ -150,13 +151,15 @@ fun HistoryScreen(
     var visibleLimit by remember { mutableIntStateOf(PAGE_SIZE) }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
+    // Days folded by tapping their header.
+    val collapsedDays = remember { androidx.compose.runtime.mutableStateListOf<Long>() }
 
     LaunchedEffect(filterType, selectedCategoryFilter, searchQuery, period) {
         expandedOpIds.clear()
         visibleLimit = PAGE_SIZE
     }
 
-    val filteredOperations = remember(operations, filterType, selectedCategoryFilter, searchQuery, catalogItems) {
+    val filteredOperations = remember(operations, filterType, selectedCategoryFilter, searchQuery, catalogItems, period) {
         operations.filter { op ->
             val matchesType = filterType == null || op.type == filterType
             val parsedItems = parseItems(op.itemsJson)
@@ -474,10 +477,17 @@ fun HistoryScreen(
             }
         } else {
             dayGroups.forEach { (day, ops) ->
+                val folded = day in collapsedDays
                 stickyHeader(key = "day_$day") {
-                    DayHeader(day = day, count = ops.size, types = ops.groupingBy { it.type }.eachCount())
+                    DayHeader(
+                        day = day,
+                        count = ops.size,
+                        types = ops.groupingBy { it.type }.eachCount(),
+                        folded = folded,
+                        onToggle = { if (folded) collapsedDays.remove(day) else collapsedDays.add(day) }
+                    )
                 }
-                items(ops, key = { it.id }) { op ->
+                items(if (folded) emptyList() else ops, key = { it.id }) { op ->
                     val isOpExpanded = expandedOpIds[op.id] ?: false
                     Box(modifier = Modifier.animateItem()) {
                         OperationAccordionCard(
@@ -570,7 +580,7 @@ private fun matchesPeriod(ts: Long, period: Int): Boolean {
 }
 
 @Composable
-private fun DayHeader(day: Long, count: Int, types: Map<OperationType, Int>) {
+private fun DayHeader(day: Long, count: Int, types: Map<OperationType, Int>, folded: Boolean, onToggle: () -> Unit) {
     val today = dayStart(System.currentTimeMillis())
     val label = when (day) {
         today -> "Сегодня"
@@ -581,6 +591,7 @@ private fun DayHeader(day: Long, count: Int, types: Map<OperationType, Int>) {
         modifier = Modifier
             .fillMaxWidth()
             .background(TacticalBg)
+            .clickable(onClick = onToggle)
             .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -596,6 +607,13 @@ private fun DayHeader(day: Long, count: Int, types: Map<OperationType, Int>) {
                 modifier = Modifier.padding(start = 6.dp)
             )
         }
+        val rot by androidx.compose.animation.core.animateFloatAsState(if (folded) -90f else 0f, label = "dayFold")
+        Icon(
+            Icons.Default.ExpandMore,
+            contentDescription = if (folded) "Развернуть день" else "Свернуть день",
+            tint = TacticalTextMuted,
+            modifier = Modifier.padding(start = 6.dp).size(20.dp).graphicsLayer { rotationZ = rot }
+        )
     }
 }
 
