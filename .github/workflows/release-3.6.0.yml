@@ -138,6 +138,16 @@ jobs:
             exit 1
           fi
 
+          # Облачная синхронизация: gRPC ищет транспорт по точному имени класса.
+          # Если R8 его переименовал, Firestore молча не работает — сборку не пропускаем.
+          DEXDUMP="$(ls -d "$ANDROID_SDK_ROOT"/build-tools/*/dexdump | sort -V | tail -1)"
+          rm -rf /tmp/apkx && mkdir /tmp/apkx && unzip -q "$APK" -d /tmp/apkx
+          for d in /tmp/apkx/classes*.dex; do "$DEXDUMP" "$d" | grep "Class descriptor"; done > /tmp/classes.txt
+          for c in 'Lio/grpc/okhttp/OkHttpChannelProvider;' 'Lio/grpc/ManagedChannelProvider;' 'Lcom/google/firebase/firestore/FirebaseFirestore;' 'Lcom/google/firebase/auth/FirebaseAuth;'; do
+            grep -qF "$c" /tmp/classes.txt || { echo "::error::R8 stripped/renamed $c — cloud sync would be broken"; exit 1; }
+          done
+          echo "Cloud transport classes present."
+
           # Старый боевой ключ ЮKassa не должен попасть в новую сборку.
           if unzip -p "$APK" 'classes*.dex' | grep -a -q 'oBs99BEUyDFyi5Hp'; then
             echo "::error::Old YooKassa secret found inside APK"
