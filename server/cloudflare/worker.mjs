@@ -25,6 +25,8 @@ const ADMIN_AUTH_MAX_FAILURES = 5;
 const LICENSE_EMAIL_RATE_LIMIT_MS = 60 * 1000;
 const MAX_REQUEST_BODY_BYTES = 64 * 1024;
 const UPSTREAM_TIMEOUT_MS = 12000;
+// Google Apps Script can take 10-20 s on a cold start.
+const MAIL_RELAY_TIMEOUT_MS = 28000;
 // Server-only registry collections. Older app versions write to the legacy
 // `licenses` / `fighters` collections directly, so nothing there is trusted.
 const LICENSES = 'srv_licenses';
@@ -198,9 +200,9 @@ function randomHex(bytes) {
   return bytesToHex(buf);
 }
 
-async function fetchWithTimeout(url, init = {}) {
+async function fetchWithTimeout(url, init = {}, timeoutMs = UPSTREAM_TIMEOUT_MS) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     return await fetch(url, { ...init, signal: controller.signal });
   } finally {
@@ -512,7 +514,7 @@ async function sendEmail(cfg, { toEmail, toName, subject, title, lines, highligh
         html: emailHtml(title, lines, highlight)
       }),
       redirect: 'follow'
-    });
+    }, MAIL_RELAY_TIMEOUT_MS);
     const raw = await r.text().catch(() => '');
     let parsed = {};
     try { parsed = JSON.parse(raw); } catch (_) { /* HTML login page etc. */ }
@@ -772,22 +774,27 @@ const handlers = {
     };
     if (!cfg.mailRelayUrl) return ctx.ok(out);
     const probe = async (init) => {
+      const t0 = Date.now();
       try {
-        const r = await fetchWithTimeout(cfg.mailRelayUrl, { redirect: 'follow', ...init });
+        const r = await fetchWithTimeout(cfg.mailRelayUrl, { redirect: 'follow', ...init }, MAIL_RELAY_TIMEOUT_MS);
         const raw = await r.text();
         let j = null;
         try { j = JSON.parse(raw); } catch (_) {}
-        return { status: r.status, json: Boolean(j), ok: j?.ok ?? null, error: j?.error ?? null, html: /<html/i.test(raw) };
+        return { status: r.status, ms: Date.now() - t0, json: Boolean(j), ok: j?.ok ?? null, error: j?.error ?? null, html: /<html/i.test(raw) };
       } catch (e) {
-        return { status: 0, failed: String(e?.name || 'Error') };
+        return { status: 0, ms: Date.now() - t0, failed: String(e?.name || 'Error') };
       }
     };
-    out.get = await probe({ method: 'GET' });
-    out.post_wrong_secret = await probe({
+    const post = (secret) => probe({
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ secret: 'diagnostic-wrong-secret', to: 'nobody@invalid' })
+      // "nobody@invalid" fails the relay's address check, so nothing is sent.
+      body: JSON.stringify({ secret, to: 'nobody@invalid', subject: 'diag', text: 'diag' })
     });
+    out.post_wrong_secret = await post('diagnostic-wrong-secret');
+    // INVALID_EMAIL here means the secret matches; FORBIDDEN means it does not.
+    out.post_real_secret = await post(cfg.mailRelaySecret);
+    out.secret_matches = out.post_real_secret.error === 'INVALID_EMAIL';
     return ctx.ok(out);
   },
 
@@ -953,8 +960,7 @@ const handlers = {
     const callsign = cleanText(body.callsign, 80);
     const unitKey = cleanText(body.unit_key, 120);
     const unitName = cleanText(body.unit_name, 120);
-    try {
-      await sendEmail(cfg, {
+    const welcome = sendEmail(cfg, {
         toEmail: email,
         toName: callsign,
         subject: 'Регистрация в «Каптёрка ПРО» подтверждена',
@@ -966,10 +972,9 @@ const handlers = {
           'Ключ подразделения (нужен, чтобы подключить второй телефон):'
         ].filter(Boolean),
         highlight: unitKey || '—'
-      });
-    } catch (error) {
-      console.error('Welcome email error:', error?.message || error);
-    }
+      }).catch((error) => console.error('Welcome email error:', error?.message || error));
+    // The welcome letter goes out in the background: the relay can be slow.
+    await ctx.background(welcome);
     return ctx.ok({ ok: true, verified: true });
   },
 
@@ -1473,7 +1478,7 @@ function licenseResponse(status, licenseKey, expiresAt) {
 const REMOVED_ACTIONS = new Set(['send_telegram']);
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, execCtx) {
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(request) });
     if (request.method !== 'GET' && request.method !== 'POST') {
       return json(request, 405, { ok: false, error: 'METHOD_NOT_ALLOWED' }, { Allow: 'GET, POST, OPTIONS' });
@@ -1503,6 +1508,8 @@ export default {
       env,
       cfg,
       ip,
+      // Background work that must not delay the answer (e.g. a welcome letter).
+      background: (promise) => (execCtx && typeof execCtx.waitUntil === 'function' ? execCtx.waitUntil(promise) : promise),
       query,
       body,
       db: new Firestore(cfg),

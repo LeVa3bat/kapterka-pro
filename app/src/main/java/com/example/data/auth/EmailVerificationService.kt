@@ -56,7 +56,8 @@ class EmailVerificationService {
                 requestMethod = "POST"
                 doOutput = true
                 connectTimeout = 12_000
-                readTimeout = 15_000
+                // The mail relay (Google Apps Script) may need up to ~30 s on a cold start.
+                readTimeout = 40_000
                 setRequestProperty("Content-Type", "application/json; charset=utf-8")
             }
             try {

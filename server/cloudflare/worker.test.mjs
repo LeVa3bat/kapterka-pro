@@ -172,6 +172,7 @@ globalThis.fetch = async (input, init = {}) => {
     if ((init.method || 'GET') === 'GET') return jsonResponse(200, { ok: true, service: 'kapterka-mail-relay' });
     const msg = JSON.parse(body);
     if (msg.secret !== 'relay-secret-0123456789') return jsonResponse(200, { ok: false, error: 'FORBIDDEN' });
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(msg.to)) return jsonResponse(200, { ok: false, error: 'INVALID_EMAIL' });
     state.relayed.push(msg);
     return jsonResponse(200, { ok: true });
   }
@@ -612,7 +613,7 @@ test('e-mail via the owner Gmail relay (Apps Script)', async () => {
   assert.equal(r2.body.reason, 'FORBIDDEN');
   assert.match(m.text, /Код подтверждения почты: \d{6}/);
   const d = await call('mail_diag', {}, { envOverride: relayEnv, ip: '8.8.1.3' });
-  assert.equal(d.body.get.ok, true);
+  assert.equal(d.body.secret_matches, true);
   assert.equal(d.body.post_wrong_secret.error, 'FORBIDDEN');
   assert.equal(state.relayed.filter((x) => x.to === 'nobody@invalid').length, 0);
 });
