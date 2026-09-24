@@ -302,9 +302,15 @@
               </div>
             </div>
 
-            <button class="neo-phone" onclick="openLightbox('screens/36-2-dashboard.jpg','Каптёрка PRO 3.6 — главный экран')" aria-label="Открыть скриншот">
-              <img src="screens/36-2-dashboard.jpg" alt="Каптёрка PRO 3.6 — главный экран" loading="lazy" decoding="async">
-            </button>
+            <div class="s36-live" aria-label="Каптёрка PRO в работе">
+              <div class="s36-live-phone" onclick="openGallerySlide(window.s36LiveIndex||0)" role="button" tabindex="0" aria-label="Открыть скриншот">
+                <img class="on" src="screens/36-2-dashboard.jpg" alt="Главный экран: склады и остатки" decoding="async" fetchpriority="high" width="1080" height="2340">
+                <img src="screens/36-4-requests.jpg" alt="Заявки по этапам" loading="lazy" decoding="async" width="1080" height="2340">
+                <img src="screens/36-6-unit-qr.jpg" alt="Подключение второго телефона по QR" loading="lazy" decoding="async" width="1080" height="2340">
+                <img src="screens/36-8-form8.jpg" alt="Форма 8 в Excel" loading="lazy" decoding="async" width="1080" height="2340">
+              </div>
+              <div class="s36-live-caption"><span class="s36-live-dot"></span><b id="s36LiveText">Остатки по складам — в одной таблице</b></div>
+            </div>
           </div>
         </div>
       </section>
@@ -333,6 +339,58 @@
             <div class="neo-feature neo-green"><b>📱</b><div><strong>Второй телефон по QR</strong><small>Общий учёт подразделения: навёл камеру — и данные одни на всех.</small></div></div>
             <div class="neo-feature neo-cyan"><b>📶</b><div><strong>Работает офлайн</strong><small>База на телефоне; синхронизация — когда появится связь.</small></div></div>
             <div class="neo-feature neo-gold"><b>🔐</b><div><strong>Лицензия на сервере</strong><small>Не пропадёт при переустановке, ключ приходит на почту.</small></div></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="s36-persona" aria-labelledby="personaTitle">
+        <div class="container">
+          <div class="neo-section-title">
+            <span>ДЛЯ ВАС</span>
+            <h2 id="personaTitle">Кто вы? Покажем, чем поможет</h2>
+          </div>
+          <div class="s36-persona-tabs" role="tablist">
+            <button role="tab" class="on" data-persona="0">🎖 Старшина</button>
+            <button role="tab" data-persona="1">🏬 Склад</button>
+            <button role="tab" data-persona="2">🤝 Волонтёры</button>
+            <button role="tab" data-persona="3">🛠 Мастерская</button>
+          </div>
+          <div class="s36-persona-card">
+            <img id="personaImg" src="screens/36-8-form8.jpg" alt="" loading="lazy" decoding="async" width="1080" height="2340">
+            <div>
+              <h3 id="personaHead">Имущество роты под контролем</h3>
+              <ul id="personaList">
+                <li>Выдача по взводам и бойцам с распиской в форме 8</li>
+                <li>Книга учёта по форме 18 — сама, из операций</li>
+                <li>Заявки от взводов: видно, что собрано и что выдано</li>
+              </ul>
+              <a class="neo-btn neo-primary" href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('persona')">Попробовать 3 дня бесплатно</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="s36-compare" aria-labelledby="compareTitle">
+        <div class="container">
+          <div class="neo-section-title">
+            <span>БЫЛО → СТАЛО</span>
+            <h2 id="compareTitle">Тетрадь и Excel против Каптёрки</h2>
+          </div>
+          <div class="s36-compare-grid">
+            <div class="s36-before">
+              <strong>Тетрадь / Excel</strong>
+              <p>✕ Остаток считаете вручную</p>
+              <p>✕ Кто что взял — ищете по страницам</p>
+              <p>✕ Форму 8 переписываете заново</p>
+              <p>✕ У каждого своя версия файла</p>
+            </div>
+            <div class="s36-after">
+              <strong>Каптёрка ПРО</strong>
+              <p>✓ Остаток меняется сам после операции</p>
+              <p>✓ Журнал по дням и поиск за секунду</p>
+              <p>✓ Форма 8 и 18 — в Excel одной кнопкой</p>
+              <p>✓ Одни данные на всех телефонах по QR</p>
+            </div>
           </div>
         </div>
       </section>
@@ -548,6 +606,9 @@
               <button class="neo-btn neo-dark" onclick="switchMainTab('tabPayment')">PRO — 490 ₽ / 30 дней</button>
             </div>
           </div>
+          <a class="s36-tg" href="https://t.me/kapterka_pro" target="_blank" rel="noopener noreferrer">
+            <span>✈</span><div><strong>Канал в Telegram</strong><small>Новые версии, советы по учёту и ответы на вопросы — подпишитесь, чтобы не потерять</small></div><b>Подписаться</b>
+          </a>
         </div>
       </section>
 
@@ -1160,6 +1221,7 @@
   </nav>
 
   <script src="app.js?v=3.6.0.1"></script>
+  <script src="site36.js?v=1" defer></script>
   <script src="auth-config.js?v=3.4.9.31a"></script>
   <script src="auth-v2.js?v=3.4.9.31i"></script>
 </body>
