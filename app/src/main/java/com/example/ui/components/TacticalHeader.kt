@@ -71,52 +71,62 @@ fun TacticalHeader(
     val workspaceName = profile?.unitName?.takeIf { it.isNotBlank() } ?: "Основной склад"
     val userName = profile?.callsign?.takeIf { it.isNotBlank() } ?: "Пользователь"
 
+    val isPro = profile?.isProActive == true
+    val licenseText = if (isPro) "PRO • ${profile?.proDaysLeft ?: 0} дн." else "Демо"
+
     Column(
         modifier = modifier
             .fillMaxWidth()
             .background(TacticalBg)
-            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 6.dp)
     ) {
+        // Row 1: unit (what I'm working with) + profile/licence pill.
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = workspaceName,
+                    color = TacticalTextPrimary,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = (-0.3).sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "Каптёрка",
-                        color = TacticalTextPrimary,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = (-0.4).sp
+                        text = "Каптёрка ПРО",
+                        color = TacticalTextMuted,
+                        fontSize = 11.5.sp
                     )
-                    Spacer(modifier = Modifier.width(5.dp))
-                    Text(
-                        text = "ПРО",
-                        color = SageGreenPrimary,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(7.dp))
-                            .background(SageGreenDark)
-                            .padding(horizontal = 7.dp, vertical = 3.dp)
-                    )
+                    if (unitKey.isNotBlank()) {
+                        Text(
+                            text = "  •  $unitKey",
+                            color = TacticalTextSecondary,
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable {
+                                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                    clipboard.setPrimaryClip(ClipData.newPlainText("workspace_code", unitKey))
+                                    Toast.makeText(context, "Ключ подразделения скопирован", Toast.LENGTH_SHORT).show()
+                                }
+                        )
+                    }
                 }
-                Text(
-                    text = "Учёт склада и имущества",
-                    color = TacticalTextMuted,
-                    fontSize = 12.sp
-                )
             }
 
             Row(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(18.dp))
+                    .clip(RoundedCornerShape(20.dp))
                     .background(TacticalSurface)
-                    .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(18.dp))
-                    .clickable { onProfileClick() }
-                    .padding(start = 10.dp, end = 7.dp, top = 6.dp, bottom = 6.dp),
+                    .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(20.dp))
+                    .clickable { if (isPro) onProfileClick() else onBannerClick() }
+                    .padding(start = 10.dp, end = 5.dp, top = 5.dp, bottom = 5.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(horizontalAlignment = Alignment.End) {
@@ -129,16 +139,17 @@ fun TacticalHeader(
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = if (profile?.isProActive == true) "PRO активно" else "Профиль",
-                        color = if (profile?.isProActive == true) SageGreenPrimary else TacticalTextMuted,
+                        text = licenseText,
+                        color = if (isPro) SageGreenPrimary else TacticalGold,
                         fontSize = 9.5.sp,
+                        fontWeight = FontWeight.SemiBold,
                         maxLines = 1
                     )
                 }
-                Spacer(modifier = Modifier.width(7.dp))
+                Spacer(modifier = Modifier.width(6.dp))
                 Box(
                     modifier = Modifier
-                        .size(34.dp)
+                        .size(30.dp)
                         .clip(CircleShape)
                         .background(SageGreenDark),
                     contentAlignment = Alignment.Center
@@ -147,130 +158,42 @@ fun TacticalHeader(
                         imageVector = Icons.Default.Person,
                         contentDescription = "Профиль",
                         tint = SageGreenPrimary,
-                        modifier = Modifier.size(19.dp)
+                        modifier = Modifier.size(17.dp)
                     )
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(18.dp),
-            colors = CardDefaults.cardColors(containerColor = TacticalSurface),
-            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(13.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = workspaceName,
-                            color = TacticalTextPrimary,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Text(
-                            text = "Текущая группа учёта",
-                            color = TacticalTextMuted,
-                            fontSize = 10.5.sp
-                        )
-                    }
-
-                    if (unitKey.isNotBlank()) {
-                        Row(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(TacticalSurfaceLight)
-                                .clickable {
-                                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                    clipboard.setPrimaryClip(ClipData.newPlainText("workspace_code", unitKey))
-                                    Toast.makeText(context, "Код группы скопирован", Toast.LENGTH_SHORT).show()
-                                }
-                                .padding(horizontal = 9.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = unitKey,
-                                color = TacticalTextSecondary,
-                                fontSize = 10.5.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                maxLines = 1
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(11.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    ModernHeaderAction(
-                        label = "Синхр.",
-                        icon = Icons.Default.Sync,
-                        onClick = onSyncClick,
-                        modifier = Modifier.weight(1f).testTag("header_sync_button")
-                    )
-                    ModernHeaderAction(
-                        label = "Подключить",
-                        icon = Icons.Default.QrCode,
-                        onClick = onSecondPhoneClick,
-                        modifier = Modifier.weight(1f)
-                    )
-                    ModernHeaderAction(
-                        label = "Отчёты",
-                        icon = Icons.Default.FileDownload,
-                        onClick = onExportClick,
-                        modifier = Modifier.weight(1f).testTag("header_export_button")
-                    )
-                    ModernHeaderAction(
-                        label = "Помощь",
-                        icon = Icons.Default.HelpOutline,
-                        onClick = onHelpClick,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
+        // Row 2: service actions.
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.CenterVertically
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text(
-                text = if (profile?.isProActive == true) "Лицензия PRO" else "Проверить лицензию",
-                color = if (profile?.isProActive == true) SageGreenPrimary else TacticalGold,
-                fontSize = 10.5.sp,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(10.dp))
-                    .clickable { onBannerClick() }
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
+            ModernHeaderAction(
+                label = "Синхр.",
+                icon = Icons.Default.Sync,
+                onClick = onSyncClick,
+                modifier = Modifier.weight(1f).testTag("header_sync_button")
             )
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(
-                text = if (isDarkTheme) "Светлая тема" else "Тёмная тема",
-                color = TacticalTextMuted,
-                fontSize = 10.5.sp,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(10.dp))
-                    .clickable { onToggleTheme() }
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
+            ModernHeaderAction(
+                label = "Подключить",
+                icon = Icons.Default.QrCode,
+                onClick = onSecondPhoneClick,
+                modifier = Modifier.weight(1f)
+            )
+            ModernHeaderAction(
+                label = "Отчёты",
+                icon = Icons.Default.FileDownload,
+                onClick = onExportClick,
+                modifier = Modifier.weight(1f).testTag("header_export_button")
+            )
+            ModernHeaderAction(
+                label = "Помощь",
+                icon = Icons.Default.HelpOutline,
+                onClick = onHelpClick,
+                modifier = Modifier.weight(1f)
             )
         }
     }

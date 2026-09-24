@@ -33,6 +33,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.UnfoldLess
+import androidx.compose.material.icons.filled.UnfoldMore
 import androidx.compose.material.icons.filled.FlightTakeoff
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.LocalShipping
@@ -376,78 +378,42 @@ fun MainDashboardScreen(
             }
         }
 
-        // PRIMARY ACTIONS — optimized for phone screens
+        // PRIMARY ACTIONS — one row, thumb-friendly
         item {
-            Column(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 4.dp)
+                    .padding(horizontal = 14.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(
-                    text = "БЫСТРЫЕ ОПЕРАЦИИ",
-                    color = TacticalTextMuted,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.8.sp,
-                    modifier = Modifier.padding(start = 2.dp, bottom = 6.dp)
+                SleekOperationTile(
+                    title = "Приход",
+                    icon = Icons.Default.LocalShipping,
+                    accentColor = SageGreenBright,
+                    onClick = onIncomeClick,
+                    modifier = Modifier.weight(1f).testTag("op_income_button")
                 )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    SleekOperationTile(
-                        title = "Приход",
-                        subtitle = "Поступление на склад",
-                        icon = Icons.Default.LocalShipping,
-                        accentColor = SageGreenBright,
-                        onClick = onIncomeClick,
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("op_income_button")
-                    )
-
-                    SleekOperationTile(
-                        title = "Перемещение",
-                        subtitle = "Между складами",
-                        icon = Icons.AutoMirrored.Filled.Send,
-                        accentColor = TacticalTealText,
-                        onClick = onTransferClick,
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("op_transfer_button")
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    SleekOperationTile(
-                        title = "Выдача",
-                        subtitle = "Передача получателю",
-                        icon = Icons.Default.FlightTakeoff,
-                        accentColor = TacticalGoldText,
-                        onClick = onIssueClick,
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("op_issue_button")
-                    )
-
-                    SleekOperationTile(
-                        title = "Списание",
-                        subtitle = "Расход имущества",
-                        icon = Icons.Default.NorthEast,
-                        accentColor = TacticalRedText,
-                        isHighlighted = true,
-                        onClick = onExpenditureClick,
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("op_expenditure_button")
-                    )
-                }
+                SleekOperationTile(
+                    title = "Выдача",
+                    icon = Icons.Default.FlightTakeoff,
+                    accentColor = TacticalGoldText,
+                    onClick = onIssueClick,
+                    modifier = Modifier.weight(1f).testTag("op_issue_button")
+                )
+                SleekOperationTile(
+                    title = "Перемещ.",
+                    icon = Icons.AutoMirrored.Filled.Send,
+                    accentColor = TacticalTealText,
+                    onClick = onTransferClick,
+                    modifier = Modifier.weight(1f).testTag("op_transfer_button")
+                )
+                SleekOperationTile(
+                    title = "Списание",
+                    icon = Icons.Default.NorthEast,
+                    accentColor = TacticalRedText,
+                    onClick = onExpenditureClick,
+                    modifier = Modifier.weight(1f).testTag("op_expenditure_button")
+                )
             }
         }
 
@@ -522,167 +488,64 @@ fun MainDashboardScreen(
             }
         }
 
-        // WAREHOUSE / POINT FILTER TABS & ADD POINT ACTION
+        // POINTS SECTION HEADER: title + compact actions
         item {
-            Column(
+            val allExpanded = points.isNotEmpty() && points.all { expandedPointIds[it.id] == true }
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 6.dp)
+                    .padding(start = 18.dp, end = 14.dp, top = 10.dp, bottom = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Warehouse,
-                            contentDescription = null,
-                            tint = SageGreenPrimary,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "СКЛАДЫ И ТОЧКИ УЧЁТА",
-                            color = TacticalTextPrimary,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.5.sp
-                        )
-                    }
-
-                    // Add Point button
-                    Row(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(SageGreenDark)
-                            .border(1.dp, SageGreenPrimary, RoundedCornerShape(12.dp))
-                            .clickable { onAddPointClick() }
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Добавить склад",
-                            tint = SageGreenBright,
-                            modifier = Modifier.size(13.dp)
-                        )
-                        Spacer(modifier = Modifier.width(3.dp))
-                        Text(
-                            text = "Добавить",
-                            color = SageGreenBright,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                Text(
+                    text = "Склады и точки",
+                    color = TacticalTextPrimary,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = points.size.toString(),
+                    color = TacticalTextMuted,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                if (points.size > 1) {
+                    SectionIconButton(
+                        icon = Icons.Default.SwapVert,
+                        description = "Порядок складов",
+                        onClick = { showReorderPointsDialog = true }
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
                 }
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                // Point Filter Chips
+                SectionIconButton(
+                    icon = if (allExpanded) Icons.Default.UnfoldLess else Icons.Default.UnfoldMore,
+                    description = if (allExpanded) "Свернуть все" else "Развернуть все",
+                    onClick = { points.forEach { pt -> expandedPointIds[pt.id] = !allExpanded } }
+                )
+                Spacer(modifier = Modifier.width(6.dp))
                 Row(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(SageGreenDark)
+                        .clickable { onAddPointClick() }
+                        .padding(horizontal = 10.dp, vertical = 7.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // All Points Chip
-                    val isAllSelected = selectedPointFilterId == null
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(if (isAllSelected) SageGreenDark else TacticalSurface)
-                            .border(
-                                1.dp,
-                                if (isAllSelected) SageGreenPrimary else TacticalBorder,
-                                RoundedCornerShape(12.dp)
-                            )
-                            .clickable { selectedPointFilterId = null }
-                            .padding(horizontal = 9.dp, vertical = 5.dp)
-                    ) {
-                        Text(
-                            text = "Все склады (${points.size})",
-                            color = if (isAllSelected) SageGreenBright else TacticalTextSecondary,
-                            fontSize = 11.sp,
-                            fontWeight = if (isAllSelected) FontWeight.Bold else FontWeight.Normal
-                        )
-                    }
-
-                    points.forEach { pt ->
-                        val isPtSelected = selectedPointFilterId == pt.id
-                        val pointItemCount = (stockMap[pt.id] ?: emptyList()).filter { it.quantity > 0 }.size
-
-                        Row(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(if (isPtSelected) SageGreenDark else TacticalSurface)
-                                .border(
-                                    1.dp,
-                                    if (isPtSelected) SageGreenPrimary else TacticalBorder,
-                                    RoundedCornerShape(12.dp)
-                                )
-                                .clickable { selectedPointFilterId = pt.id }
-                                .padding(horizontal = 8.dp, vertical = 5.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = pt.name,
-                                color = if (isPtSelected) SageGreenBright else TacticalTextSecondary,
-                                fontSize = 11.sp,
-                                fontWeight = if (isPtSelected) FontWeight.Bold else FontWeight.Normal
-                            )
-                            if (pt.isBase) {
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = "★",
-                                    color = TacticalGold,
-                                    fontSize = 10.sp
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "($pointItemCount)",
-                                color = if (isPtSelected) SageGreenBright else TacticalTextMuted,
-                                fontSize = 10.sp,
-                                fontFamily = FontFamily.Monospace
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = "Редактировать",
-                                tint = TacticalTextMuted,
-                                modifier = Modifier
-                                    .size(12.dp)
-                                    .clickable { onEditPointClick(pt) }
-                            )
-                        }
-                    }
-
-                    // Quick Reorder Button Chip
-                    if (points.size > 1) {
-                        Row(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(TacticalSurface)
-                                .border(1.dp, TacticalBorder, RoundedCornerShape(12.dp))
-                                .clickable { showReorderPointsDialog = true }
-                                .padding(horizontal = 8.dp, vertical = 5.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.SwapVert,
-                                contentDescription = "Порядок точек",
-                                tint = SageGreenBright,
-                                modifier = Modifier.size(13.dp)
-                            )
-                            Spacer(modifier = Modifier.width(3.dp))
-                            Text(
-                                text = "Порядок",
-                                color = TacticalTextSecondary,
-                                fontSize = 11.sp
-                            )
-                        }
-                    }
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Добавить склад",
+                        tint = SageGreenBright,
+                        modifier = Modifier.size(15.dp)
+                    )
+                    Spacer(modifier = Modifier.width(3.dp))
+                    Text(
+                        text = "Склад",
+                        color = SageGreenBright,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }
@@ -827,85 +690,6 @@ fun MainDashboardScreen(
                     }
                 }
             } else {
-                // Quick Expand/Collapse all warehouses bar
-                item {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Склады и точки (${points.size})",
-                            color = TacticalTextMuted,
-                            fontSize = 10.5.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.5.sp
-                        )
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            if (points.size > 1) {
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(10.dp))
-                                        .background(TacticalGoldDark.copy(alpha = 0.25f))
-                                        .border(1.dp, TacticalGold.copy(alpha = 0.45f), RoundedCornerShape(10.dp))
-                                        .clickable {
-                                            showReorderPointsDialog = true
-                                        }
-                                        .padding(horizontal = 7.dp, vertical = 3.dp)
-                                ) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(
-                                            imageVector = Icons.Default.SwapVert,
-                                            contentDescription = "Порядок",
-                                            tint = TacticalGoldText,
-                                            modifier = Modifier.size(12.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(3.dp))
-                                        Text(
-                                            text = "Порядок",
-                                            color = TacticalGoldText,
-                                            fontSize = 10.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
-                                }
-                            }
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(TacticalSurfaceLight)
-                                    .clickable {
-                                        points.forEach { pt -> expandedPointIds[pt.id] = false }
-                                    }
-                                    .padding(horizontal = 7.dp, vertical = 3.dp)
-                            ) {
-                                Text(
-                                    text = "Свернуть все",
-                                    color = TacticalTextSecondary,
-                                    fontSize = 10.sp
-                                )
-                            }
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(TacticalSurfaceLight)
-                                    .clickable {
-                                        points.forEach { pt -> expandedPointIds[pt.id] = true }
-                                    }
-                                    .padding(horizontal = 7.dp, vertical = 3.dp)
-                            ) {
-                                Text(
-                                    text = "Развернуть все",
-                                    color = SageGreenBright,
-                                    fontSize = 10.sp
-                                )
-                            }
-                        }
-                    }
-                }
-
                 // Collapsible Point Lists to avoid information overload - hidden by default upon entrance
                 itemsIndexed(points, key = { _, pt -> pt.id }) { _, point ->
                     val pointRows = getItemsForPoint(point.id)
@@ -983,6 +767,17 @@ fun MainDashboardScreen(
                                 }
 
                                 Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.Edit,
+                                        contentDescription = "Изменить склад",
+                                        tint = TacticalTextMuted,
+                                        modifier = Modifier
+                                            .size(30.dp)
+                                            .clip(CircleShape)
+                                            .clickable { onEditPointClick(point) }
+                                            .padding(7.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(2.dp))
                                     Box(
                                         modifier = Modifier
                                             .clip(RoundedCornerShape(12.dp))
@@ -1263,7 +1058,7 @@ private fun CompactStockRow(
             }
         }
         Text(
-            text = if (isHeader) income else "+$income",
+            text = if (isHeader) income else if (income == "0") "0" else "+$income",
             color = if (isHeader) labelColor else SageGreenBright,
             fontSize = numberSize,
             fontWeight = weight,
@@ -1272,7 +1067,7 @@ private fun CompactStockRow(
             modifier = Modifier.width(58.dp)
         )
         Text(
-            text = if (isHeader) expense else "−$expense",
+            text = if (isHeader) expense else if (expense == "0") "0" else "−$expense",
             color = when {
                 isHeader -> labelColor
                 expense != "0" -> TacticalRedText
@@ -1369,68 +1164,68 @@ private fun DashboardSummaryMetric(
 }
 
 @Composable
+private fun SectionIconButton(
+    icon: ImageVector,
+    description: String,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .size(34.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(TacticalSurface)
+            .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(12.dp))
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = description,
+            tint = TacticalTextSecondary,
+            modifier = Modifier.size(18.dp)
+        )
+    }
+}
+
+@Composable
 private fun SleekOperationTile(
     title: String,
-    subtitle: String,
     icon: ImageVector,
     accentColor: Color,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    isHighlighted: Boolean = false
+    modifier: Modifier = Modifier
 ) {
-    Card(
+    Column(
         modifier = modifier
-            .clip(RoundedCornerShape(10.dp))
-            .clickable { onClick() },
-        shape = RoundedCornerShape(10.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isHighlighted) TacticalRedDark.copy(alpha = 0.4f) else TacticalSurface
-        ),
-        border = androidx.compose.foundation.BorderStroke(
-            1.dp,
-            if (isHighlighted) TacticalRed.copy(alpha = 0.5f) else TacticalBorder
-        )
+            .clip(RoundedCornerShape(16.dp))
+            .background(TacticalSurface)
+            .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(16.dp))
+            .clickable { onClick() }
+            .padding(vertical = 10.dp, horizontal = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Column(
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 10.dp, horizontal = 8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(accentColor.copy(alpha = 0.14f)),
+            contentAlignment = Alignment.Center
         ) {
-            Box(
-                modifier = Modifier
-                    .size(34.dp)
-                    .clip(CircleShape)
-                    .background(accentColor.copy(alpha = 0.12f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = title,
-                    tint = accentColor,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(5.dp))
-
-            Text(
-                text = title,
-                color = TacticalTextPrimary,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                maxLines = 1
-            )
-
-            Text(
-                text = subtitle,
-                color = TacticalTextMuted,
-                fontSize = 10.sp,
-                textAlign = TextAlign.Center,
-                maxLines = 1
+            Icon(
+                imageVector = icon,
+                contentDescription = title,
+                tint = accentColor,
+                modifier = Modifier.size(19.dp)
             )
         }
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = title,
+            color = TacticalTextPrimary,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+            textAlign = TextAlign.Center,
+            maxLines = 1
+        )
     }
 }

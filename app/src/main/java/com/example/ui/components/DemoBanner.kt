@@ -46,6 +46,10 @@ fun DemoBanner(
 ) {
     val isPro = profile?.isProActive == true
 
+    // Licence status lives in the header pill; the banner is shown only when
+    // the user needs to act (demo, expired, or PRO about to run out).
+    if (isPro && (profile?.proDaysLeft ?: 0) > 5) return
+
     if (isPro) {
         // PRO ACTIVE BANNER
         Row(
