@@ -2,6 +2,9 @@ name: Firestore rules — show deployed (read-only)
 
 on:
   workflow_dispatch:
+  push:
+    branches: ['claude/**']
+    paths: ['.github/workflows/firestore-rules-inspect.yml']
 
 permissions:
   contents: read
