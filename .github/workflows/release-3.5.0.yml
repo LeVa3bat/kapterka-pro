@@ -1,0 +1,285 @@
+name: Kapterka PRO 3.5.0 release
+
+# Сборка 3.5.0 (build 32) с проверкой, что APK обновится поверх опубликованной 3.4.9.
+#
+# push в fix/payment-backend-3.5.0  -> проверка ключа, сборка, проверка APK, артефакт.
+# Run workflow (publish = true)     -> то же самое + публикация на сайт (слияние в main).
+#
+# Ничего не собирается и не публикуется, если отпечаток ключа не совпал с опубликованной 3.4.9.
+
+on:
+  push:
+    branches: [fix/payment-backend-3.5.0]
+    paths:
+      - 'app/**'
+      - 'gradle/**'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
+      - '.github/workflows/release-3.5.0.yml'
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Опубликовать APK на сайте (только после проверки установки поверх 3.4.9 на телефоне)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-3.5.0
+  cancel-in-progress: false
+
+env:
+  EXPECTED_SIGNER_SHA256: 843a7e883914f3a7a5a7665ff07b2e8c43da87a24ee4dc35e1600758aee73cb9
+  EXPECTED_PACKAGE: com.aistudio.kapterka.jmwqve
+  EXPECTED_VERSION_CODE: '32'
+  EXPECTED_VERSION_NAME: '3.5.0'
+  # Ключ подписи 3.4.9 хранится в секрете KAPTERKA_RELEASE_KEYSTORE_B64 (keystore в base64).
+  KEYSTORE_PATH: /tmp/kapterka-release.keystore
+  KEY_ALIAS: androiddebugkey
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    outputs:
+      apk_size: ${{ steps.verify.outputs.apk_size }}
+      apk_sha256: ${{ steps.verify.outputs.apk_sha256 }}
+    steps:
+      - name: Require release branch
+        shell: bash
+        run: |
+          test "$GITHUB_REF" = "refs/heads/fix/payment-backend-3.5.0" || {
+            echo "Release 3.5.0 may only be built from fix/payment-backend-3.5.0"
+            exit 1
+          }
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Restore release keystore from secret
+        env:
+          KEYSTORE_B64: ${{ secrets.KAPTERKA_RELEASE_KEYSTORE_B64 }}
+        shell: bash
+        run: |
+          test -n "$KEYSTORE_B64" || { echo "::error::Secret KAPTERKA_RELEASE_KEYSTORE_B64 is not set"; exit 1; }
+          printf '%s' "$KEYSTORE_B64" | tr -d ' \r\n' | base64 -d > "$KEYSTORE_PATH"
+          chmod 600 "$KEYSTORE_PATH"
+          ls -l "$KEYSTORE_PATH"
+
+      # Быстрая проверка до сборки: если ключ не тот, сборка бессмысленна.
+      - name: Verify keystore signer identity (before build)
+        env:
+          STORE_PASSWORD: android
+        shell: bash
+        run: |
+          keytool -list -v -keystore "$KEYSTORE_PATH" \
+            -storepass "$STORE_PASSWORD" -alias "$KEY_ALIAS" > /tmp/keytool.txt
+          grep -E 'Owner:|SHA256:' /tmp/keytool.txt | head -n 2
+          ACTUAL="$(grep -m1 'SHA256:' /tmp/keytool.txt | sed 's/.*SHA256:[[:space:]]*//' | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+          echo "Expected (published 3.4.9): $EXPECTED_SIGNER_SHA256"
+          echo "Recovered keystore:         $ACTUAL"
+          if [ "$ACTUAL" != "$EXPECTED_SIGNER_SHA256" ]; then
+            echo "::error::SIGNER MISMATCH — keystore is NOT the key of published 3.4.9. An APK signed with it cannot update 3.4.9. Nothing was built or published."
+            exit 1
+          fi
+          echo "Keystore matches the published signer."
+
+      - name: Configure Android SDK
+        shell: bash
+        run: |
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -path '*/bin/sdkmanager' 2>/dev/null | sort -V | tail -n 1)"
+          test -x "$SDKMANAGER"
+          echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "ANDROID_HOME=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "SDKMANAGER=$SDKMANAGER" >> "$GITHUB_ENV"
+          echo "$SDK_ROOT/build-tools/36.0.0" >> "$GITHUB_PATH"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
+
+      - name: Install Android SDK
+        shell: bash
+        run: |
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "build-tools;36.0.0" "platforms;android-36"
+          "$SDKMANAGER" "platforms;android-36.1"
+
+      - name: Build signed release APK
+        env:
+          STORE_PASSWORD: android
+          KEY_PASSWORD: android
+        run: gradle :app:assembleRelease --no-daemon --stacktrace
+
+      - name: Verify APK version and signer identity
+        id: verify
+        shell: bash
+        run: |
+          APK="$(find app/build/outputs/apk/release -type f -name '*.apk' | head -n 1)"
+          test -n "$APK" || { echo "Release APK not found"; exit 1; }
+          echo "APK: $APK"
+
+          aapt dump badging "$APK" > /tmp/badging.txt
+          head -n 1 /tmp/badging.txt
+          grep -F "package: name='$EXPECTED_PACKAGE' versionCode='$EXPECTED_VERSION_CODE' versionName='$EXPECTED_VERSION_NAME'" /tmp/badging.txt || {
+            echo "::error::Package/version mismatch"
+            exit 1
+          }
+
+          apksigner verify --print-certs "$APK" | tee /tmp/signature.txt
+          ACTUAL="$(grep -iE 'certificate SHA-256 digest' /tmp/signature.txt | head -n 1 | awk '{print $NF}' | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+          echo "Expected: $EXPECTED_SIGNER_SHA256"
+          echo "APK:      $ACTUAL"
+          if [ "$ACTUAL" != "$EXPECTED_SIGNER_SHA256" ]; then
+            echo "::error::SIGNER MISMATCH — APK cannot be installed over published 3.4.9"
+            exit 1
+          fi
+
+          # Старый боевой ключ ЮKassa не должен попасть в новую сборку.
+          if unzip -p "$APK" 'classes*.dex' | grep -a -q 'oBs99BEUyDFyi5Hp'; then
+            echo "::error::Old YooKassa secret found inside APK"
+            exit 1
+          fi
+
+          cp "$APK" kapterka-pro-3.5.0.apk
+          SIZE="$(stat -c %s kapterka-pro-3.5.0.apk)"
+          SHA="$(sha256sum kapterka-pro-3.5.0.apk | awk '{print $1}')"
+          echo "apk_size=$SIZE" >> "$GITHUB_OUTPUT"
+          echo "apk_sha256=$SHA" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Kapterka PRO 3.5.0 (32)"
+            echo "- signer: \`$ACTUAL\` — совпадает с 3.4.9"
+            echo "- size: $SIZE"
+            echo "- sha256: \`$SHA\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kapterka-pro-3.5.0
+          path: kapterka-pro-3.5.0.apk
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    needs: build
+    if: github.event_name == 'workflow_dispatch' && inputs.publish == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout main (full history)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      # main получает код 3.5.0, иначе аудит сравнит APK 32 с Gradle 31.
+      - name: Merge release branch into main
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch --no-tags origin fix/payment-backend-3.5.0
+          git merge --no-edit FETCH_HEAD -m "Слияние fix/payment-backend-3.5.0 в main (релиз 3.5.0)"
+          grep -q 'versionCode = 32' app/build.gradle.kts
+
+      - name: Download verified APK
+        uses: actions/download-artifact@v4
+        with:
+          name: kapterka-pro-3.5.0
+
+      - name: Re-check APK hash
+        env:
+          APK_SHA256: ${{ needs.build.outputs.apk_sha256 }}
+        shell: bash
+        run: echo "$APK_SHA256  kapterka-pro-3.5.0.apk" | sha256sum -c -
+
+      - name: Update APK and site metadata
+        env:
+          APK_SIZE: ${{ needs.build.outputs.apk_size }}
+          APK_SHA256: ${{ needs.build.outputs.apk_sha256 }}
+        shell: bash
+        run: |
+          mv kapterka-pro-3.5.0.apk docs/kapterka-pro.apk
+          node .github/scripts/update-release-350.mjs "$APK_SIZE" "$APK_SHA256" "$EXPECTED_SIGNER_SHA256" "$(date -u +%F)"
+          node <<'NODE'
+          const fs = require('fs');
+          const size = Number(process.env.APK_SIZE);
+          const sha = process.env.APK_SHA256;
+          const oldSha = '39ffa4cf13a50398235078a49b7dfaa420fdd095d3258bab8336edb79c410250';
+          const sizeText = size.toLocaleString('ru-RU').replace(/\s/g, ' ');
+          const edit = (p, fn) => {
+            const before = fs.readFileSync(p, 'utf8');
+            const after = fn(before);
+            if (after === before) throw new Error('nothing changed in ' + p);
+            fs.writeFileSync(p, after);
+          };
+          edit('docs/index.html', s => s
+            .replace('"softwareVersion": "3.4.9"', '"softwareVersion": "3.5.0"')
+            .replace(/<strong>Версия:<\/strong>\s*3\.4\.9 • build 31 • [\d\s]+ байт/,
+                     `<strong>Версия:</strong> 3.5.0 • build 32 • ${sizeText} байт`)
+            .replace(oldSha, sha)
+            .replace('Что изменилось в 3.4.9', 'Что изменилось в 3.5.0'));
+          edit('.github/scripts/site-smoke.mjs', s => s
+            .replace("index.includes('v3.4.9') && !index.includes('3.4.9')) fail('site version 3.4.9",
+                     "index.includes('v3.5.0') && !index.includes('3.5.0')) fail('site version 3.5.0")
+            .replace("!index.includes('сборка 31') && !index.includes('Сборка 31') && !index.includes('data-release-code>31</span>')) fail('site build 31",
+                     "!index.includes('сборка 32') && !index.includes('Сборка 32') && !index.includes('data-release-code>32</span>')) fail('site build 32")
+            .replace("releaseManifest.versionName !== '3.4.9' || Number(releaseManifest.versionCode) !== 31",
+                     "releaseManifest.versionName !== '3.5.0' || Number(releaseManifest.versionCode) !== 32")
+            .replace(`releaseManifest.apkSha256 !== '${oldSha}'`, `releaseManifest.apkSha256 !== '${sha}'`));
+          // Статичные метки версии на остальных страницах (help, security, статьи).
+          for (const f of fs.readdirSync('docs').filter(n => n.endsWith('.html'))) {
+            const p = 'docs/' + f;
+            const s = fs.readFileSync(p, 'utf8');
+            const t = s
+              .split('data-release-version>3.4.9<').join('data-release-version>3.5.0<')
+              .split('data-release-code>31<').join('data-release-code>32<')
+              .split('Официальная версия 3.4.9').join('Официальная версия 3.5.0');
+            if (t !== s) fs.writeFileSync(p, t);
+          }
+          const idx = fs.readFileSync('docs/index.html', 'utf8');
+          if (!idx.includes(sha)) throw new Error('SHA-256 marker not updated');
+          if (!idx.includes('3.5.0 • build 32')) throw new Error('integrity line not updated');
+          console.log('site metadata updated');
+          NODE
+
+      - name: Install APK inspection tools
+        shell: bash
+        run: |
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -path '*/bin/sdkmanager' 2>/dev/null | sort -V | tail -n 1)"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "build-tools;36.0.0"
+          echo "$SDK_ROOT/build-tools/36.0.0" >> "$GITHUB_PATH"
+
+      # Те же проверки, что запускаются на main. Если хоть одна падает — push не делается.
+      - name: Run release and site audits before push
+        shell: bash
+        run: |
+          apksigner verify --verbose --print-certs docs/kapterka-pro.apk > /tmp/apk-signature.txt
+          aapt dump badging docs/kapterka-pro.apk > /tmp/apk-badging.txt
+          node .github/scripts/release-artifact-audit.mjs /tmp/apk-badging.txt /tmp/apk-signature.txt
+          node .github/scripts/site-smoke.mjs
+          node .github/scripts/android-invariants.mjs
+
+      - name: Commit and push to main
+        shell: bash
+        run: |
+          git add -A docs .github/scripts
+          git status --short
+          git commit -m "Релиз 3.5.0 (32): оплата через сервер, APK подписан ключом 3.4.9"
+          git push origin HEAD:main

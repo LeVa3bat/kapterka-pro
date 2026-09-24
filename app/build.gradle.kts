@@ -17,15 +17,15 @@ android {
     applicationId = "com.aistudio.kapterka.jmwqve"
     minSdk = 24
     targetSdk = 34
-    // Stable defaults remain identical to production 3.4.9/build 31.
-    // A release-candidate workflow may override them only in CI after all gates pass.
-    versionCode = System.getenv("NEXT_SAFE_VERSION_CODE")?.toIntOrNull() ?: 31
-    versionName = System.getenv("NEXT_SAFE_VERSION_NAME")?.takeIf { it.isNotBlank() } ?: "3.4.9"
+    // Stable defaults: 3.6.0 / build 33. CI may override only for side-by-side test builds.
+    versionCode = System.getenv("NEXT_SAFE_VERSION_CODE")?.toIntOrNull() ?: 33
+    versionName = System.getenv("NEXT_SAFE_VERSION_NAME")?.takeIf { it.isNotBlank() } ?: "3.6.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-    // Future payment client talks only to our backend; YooKassa secret never enters the APK.
-    val paymentApiUrl = System.getenv("PAYMENT_API_URL") ?: ""
+    // Payment/license client talks only to our backend; no secret ever enters the APK.
+    val paymentApiUrl = System.getenv("PAYMENT_API_URL")?.takeIf { it.isNotBlank() }
+      ?: "https://kapterka-api.alex-666-881.workers.dev"
     buildConfigField("String", "PAYMENT_API_URL", "\"$paymentApiUrl\"")
     buildConfigField("String", "PAYMENT_CALLBACK_SCHEME", "\"kapterka\"")
     buildConfigField("boolean", "IS_NEXT_SAFE_TEST", "false")
@@ -153,7 +153,7 @@ dependencies {
   // Sign-In via Credential Manager:
   // implementation(libs.firebase.auth)
   // implementation(libs.androidx.credentials)
-  // implementation(libs.androidx.credentials.play.services)
+  // implementation(libs.androidx.credentials.play.services.auth)
   // implementation(libs.googleid)
   implementation(libs.firebase.appcheck.recaptcha)
   debugImplementation(libs.firebase.appcheck.debug)

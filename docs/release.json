@@ -2,24 +2,22 @@
   "product": "Каптёрка PRO",
   "status": "stable",
   "statusLabel": "Стабильный релиз",
-  "versionName": "3.4.9",
-  "versionCode": 31,
+  "versionName": "3.5.0",
+  "versionCode": 32,
   "packageName": "com.aistudio.kapterka.jmwqve",
   "minSdk": 24,
   "minAndroid": "7.0+",
   "apkFile": "kapterka-pro.apk",
-  "apkSize": 18837402,
-  "apkSha256": "39ffa4cf13a50398235078a49b7dfaa420fdd095d3258bab8336edb79c410250",
+  "apkSize": 18834602,
+  "apkSha256": "49e8dfb2566545258f51207e1bf7de85fdbed3fb4fedbd3713d00021bfa11a1f",
   "signerSha256": "843a7e883914f3a7a5a7665ff07b2e8c43da87a24ee4dc35e1600758aee73cb9",
-  "releaseDate": "2026-09-21",
+  "releaseDate": "2026-09-23",
   "rustoreUrl": "https://apps.rustore.ru/app/com.aistudio.kapterka.jmwqve",
   "highlights": [
-    "улучшено лицензирование и восстановление действующей лицензии",
-    "исправлена привязка данных при работе с ключом подразделения",
-    "исправлен счётчик активных устройств и регулярное обновление presence",
-    "усилена защита диагностических и опасных действий",
-    "улучшена мобильная версия сайта и просмотр скриншотов"
+    "оплата переведена на защищённый сервер — исправлена ошибка «ошибка шлюза»",
+    "секретные ключи ЮKassa удалены из приложения",
+    "лицензия активируется автоматически после подтверждения оплаты сервером"
   ],
-  "releaseType": "стабилизационное обновление",
+  "releaseType": "обновление безопасности оплаты",
   "roomDatabaseVersion": 2
 }
