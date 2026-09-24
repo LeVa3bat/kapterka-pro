@@ -169,6 +169,7 @@ globalThis.fetch = async (input, init = {}) => {
   }
 
   if (url.hostname === 'script.google.com') {
+    if ((init.method || 'GET') === 'GET') return jsonResponse(200, { ok: true, service: 'kapterka-mail-relay' });
     const msg = JSON.parse(body);
     if (msg.secret !== 'relay-secret-0123456789') return jsonResponse(200, { ok: false, error: 'FORBIDDEN' });
     state.relayed.push(msg);
@@ -595,6 +596,12 @@ test('e-mail via the owner Gmail relay (Apps Script)', async () => {
   assert.equal((await call('health', {}, { method: 'GET', envOverride: badUrl })).body.emailConfigured, false);
   const r2 = await call('email_code_send', { email: 'relay2@x.ru', fighter_id: 'БОЕЦ-R2' }, { envOverride: { ...relayEnv, MAIL_RELAY_SECRET: 'wrong-secret-0000000' }, ip: '8.8.1.2' });
   assert.equal(r2.status, 503);
+  assert.equal(r2.body.reason, 'FORBIDDEN');
+  assert.match(m.text, /Код подтверждения почты: \d{6}/);
+  const d = await call('mail_diag', {}, { envOverride: relayEnv, ip: '8.8.1.3' });
+  assert.equal(d.body.get.ok, true);
+  assert.equal(d.body.post_wrong_secret.error, 'FORBIDDEN');
+  assert.equal(state.relayed.filter((x) => x.to === 'nobody@invalid').length, 0);
 });
 
 // ------------------------------------------------------------------ run

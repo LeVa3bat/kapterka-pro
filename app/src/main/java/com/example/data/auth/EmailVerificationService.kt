@@ -86,7 +86,11 @@ class EmailVerificationService {
             "EMAIL_CODE_TOO_SOON" -> EmailCodeResult(false, "Код уже отправлен. Повторно — через $retry с.", retryAfterSeconds = retry)
             "EMAIL_CODE_HOURLY_LIMIT" -> EmailCodeResult(false, "Слишком много писем за час. Попробуйте позже.", retryAfterSeconds = retry)
             "RATE_LIMITED" -> EmailCodeResult(false, "Слишком часто. Подождите минуту.", retryAfterSeconds = retry)
-            "EMAIL_PROVIDER_UNAVAILABLE" -> EmailCodeResult(false, "Отправка писем временно недоступна. Можно продолжить без подтверждения.", canSkip = true)
+            "EMAIL_PROVIDER_UNAVAILABLE" -> EmailCodeResult(
+                false,
+                "Письмо не удалось отправить (${json.optString("reason", "SEND_FAILED")}). Попробуйте ещё раз или продолжите без подтверждения.",
+                canSkip = true
+            )
             "WRONG_CODE" -> EmailCodeResult(false, "Неверный код. Осталось попыток: ${json.optInt("attempts_left")}")
             "CODE_EXPIRED" -> EmailCodeResult(false, "Код устарел. Отправьте новый.")
             "TOO_MANY_ATTEMPTS" -> EmailCodeResult(false, "Слишком много неверных попыток. Отправьте новый код.")

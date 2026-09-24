@@ -513,8 +513,15 @@ async function sendEmail(cfg, { toEmail, toName, subject, title, lines, highligh
       }),
       redirect: 'follow'
     });
-    const parsed = await r.json().catch(() => ({}));
-    if (!r.ok || parsed.ok !== true) throw new Error(`Mail relay failed: HTTP ${r.status} ${parsed.error || ''}`);
+    const raw = await r.text().catch(() => '');
+    let parsed = {};
+    try { parsed = JSON.parse(raw); } catch (_) { /* HTML login page etc. */ }
+    if (!r.ok || parsed.ok !== true) {
+      const reason = parsed.error || (/<html/i.test(raw) ? 'RELAY_NOT_PUBLIC' : `HTTP_${r.status}`);
+      const err = new Error(`Mail relay failed: HTTP ${r.status} ${reason}`);
+      err.reason = reason;
+      throw err;
+    }
     return true;
   }
   const r = await fetchWithTimeout('https://api.brevo.com/v3/smtp/email', {
@@ -530,6 +537,11 @@ async function sendEmail(cfg, { toEmail, toName, subject, title, lines, highligh
   });
   if (!r.ok) throw new Error(`Brevo HTTP ${r.status}`);
   return true;
+}
+
+function mailReason(error) {
+  const r = String(error?.reason || '');
+  return /^[A-Z0-9_]{2,40}$/.test(r) ? r : 'SEND_FAILED';
 }
 
 async function sendLicenseEmail(cfg, { toEmail, callsign, licenseKey, days }) {
@@ -739,6 +751,38 @@ const handlers = {
     });
   },
 
+  // Read-only check of the mail relay: never sends a letter. GET hits doGet,
+  // POST with a wrong secret must come back as FORBIDDEN JSON.
+  async mail_diag(ctx) {
+    const { cfg, ip } = ctx;
+    if (!(await bindingAllows(ctx.env.AUTH_LIMITER, 'diag:' + ip))) return ctx.fail(429, 'RATE_LIMITED');
+    const out = {
+      ok: true,
+      relay_url_valid: Boolean(cfg.mailRelayUrl),
+      relay_secret_len_ok: cfg.mailRelaySecret.length >= 16,
+      brevo: Boolean(cfg.brevoKey && cfg.senderEmail)
+    };
+    if (!cfg.mailRelayUrl) return ctx.ok(out);
+    const probe = async (init) => {
+      try {
+        const r = await fetchWithTimeout(cfg.mailRelayUrl, { redirect: 'follow', ...init });
+        const raw = await r.text();
+        let j = null;
+        try { j = JSON.parse(raw); } catch (_) {}
+        return { status: r.status, json: Boolean(j), ok: j?.ok ?? null, error: j?.error ?? null, html: /<html/i.test(raw) };
+      } catch (e) {
+        return { status: 0, failed: String(e?.name || 'Error') };
+      }
+    };
+    out.get = await probe({ method: 'GET' });
+    out.post_wrong_secret = await probe({
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ secret: 'diagnostic-wrong-secret', to: 'nobody@invalid' })
+    });
+    return ctx.ok(out);
+  },
+
   async fighter_upsert(ctx) {
     const { body, db } = ctx;
     const fighterId = cleanText(body.fighter_id, 100);
@@ -859,13 +903,18 @@ const handlers = {
       await sendEmail(cfg, {
         toEmail: email,
         subject: `Код подтверждения «Каптёрка ПРО»: ${code}`,
-        title: 'Подтверждение почты',
-        lines: ['Введите этот код в приложении, чтобы завершить регистрацию. Код действует 10 минут.'],
+        title: `Ваш код: ${code}`,
+        lines: [
+          `Код подтверждения почты: ${code}`,
+          'Введите эти 6 цифр в приложении «Каптёрка ПРО», чтобы завершить регистрацию. Код действует 10 минут.'
+        ],
         highlight: code
       });
     } catch (error) {
       console.error('Code email error:', error?.message || error);
-      return ctx.fail(503, 'EMAIL_PROVIDER_UNAVAILABLE');
+      // The code was not delivered: let the user ask again right away.
+      await db.patch(EMAIL_CODES, id, { sentAt: 0 }).catch(() => {});
+      return ctx.fail(503, 'EMAIL_PROVIDER_UNAVAILABLE', { reason: mailReason(error) });
     }
     return ctx.ok({ ok: true, expires_in_seconds: EMAIL_CODE_TTL_MS / 1000 });
   },
