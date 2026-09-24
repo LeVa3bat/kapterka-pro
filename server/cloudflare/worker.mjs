@@ -29,6 +29,8 @@ const UPSTREAM_TIMEOUT_MS = 12000;
 // `licenses` / `fighters` collections directly, so nothing there is trusted.
 const LICENSES = 'srv_licenses';
 const FIGHTERS = 'srv_fighters';
+// Read-only: only used to tell an upgrade from a new registration in Telegram.
+const LEGACY_FIGHTERS = 'fighters';
 const LICENSE_KEY_RE = /^KAPT-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/;
 const ALLOWED_ORIGINS = new Set(['https://kapterka-pro.ru', 'https://www.kapterka-pro.ru']);
 
@@ -114,6 +116,20 @@ export function cleanEmail(value) {
 
 function escapeHtml(value) {
   return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function maskUnitKey(value) {
+  const clean = String(value || '').trim();
+  if (!clean) return 'Не указан';
+  if (clean.length <= 5) return '***';
+  return clean.slice(0, 5) + '***' + clean.slice(-2);
+}
+
+function moscowTime(ms) {
+  // UTC+3 without relying on Intl time-zone data.
+  const d = new Date(ms + 3 * 60 * 60 * 1000);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${pad(d.getUTCDate())}.${pad(d.getUTCMonth() + 1)}.${d.getUTCFullYear()} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
 }
 
 function maskKey(key) {
@@ -695,11 +711,24 @@ const handlers = {
       expiresAt: active?.expiresAt || 0,
       isProActive: isActive(active, now)
     });
+    // Users coming from ≤3.5.0 already exist in the legacy registry: report
+    // them as an upgrade, not as a brand-new registration.
+    let upgraded = false;
+    try {
+      upgraded = Boolean(await db.get(LEGACY_FIGHTERS, fighterId));
+    } catch (_) {
+      upgraded = false;
+    }
     await sendTelegram(ctx.cfg,
-      '🎖 <b>Новая регистрация «Каптёрка ПРО»</b>\n' +
-      'Позывной: <b>' + escapeHtml(callsign) + '</b>\n' +
-      'Подразделение: ' + escapeHtml(unitName) + '\n' +
-      'Email: <code>' + escapeHtml(email || 'не указан') + '</code>'
+      (upgraded
+        ? '🔄 <b>Пользователь перешёл на новую версию «Каптёрки»</b>\n\n'
+        : '🎖 <b>Новая регистрация в приложении «Каптёрка»!</b>\n\n') +
+      '👤 <b>Позывной:</b> ' + escapeHtml(callsign) + '\n' +
+      '🏢 <b>Подразделение:</b> ' + escapeHtml(unitName) + '\n' +
+      '🔑 <b>Ключ канала:</b> <code>' + escapeHtml(maskUnitKey(unitKey)) + '</code>\n' +
+      '📧 <b>Email:</b> ' + escapeHtml(email || 'Не указан') + '\n' +
+      '📅 <b>Время:</b> ' + escapeHtml(moscowTime(now)) + ' (МСК)\n' +
+      '📱 <b>Платформа:</b> Android App (' + escapeHtml(deviceModel) + ')'
     );
     return ctx.ok({ ok: true, existing: false });
   },

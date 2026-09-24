@@ -465,6 +465,28 @@ test('forged records in legacy client-writable collections are ignored', async (
   assert.ok((r.body.expires_at - Date.now()) / 86400000 < 31, 'legacy fighter expiry must not be trusted');
 });
 
+
+test('registration sends the Telegram notification like before', async () => {
+  const before = state.telegram.length;
+  await call('fighter_upsert', { fighter_id: 'БОЕЦ-TGNEW', callsign: 'Гром', unit_name: '1 взвод', unit_key: 'kapt_0123456789abcdef0123', email: 'grom@x.ru', device_model: 'Samsung A52' });
+  const msg = state.telegram.at(-1);
+  assert.equal(state.telegram.length, before + 1);
+  assert.ok(msg.includes('Новая регистрация'));
+  assert.ok(msg.includes('Гром') && msg.includes('1 взвод') && msg.includes('grom@x.ru') && msg.includes('Samsung A52'));
+  assert.ok(msg.includes('kapt_***23'), 'unit key must be masked');
+  assert.ok(!msg.includes('0123456789abcdef'), 'full unit key must not reach Telegram');
+  // Repeated start of the same user is silent.
+  await call('fighter_upsert', { fighter_id: 'БОЕЦ-TGNEW', email: 'grom@x.ru' });
+  assert.equal(state.telegram.length, before + 1);
+});
+
+test('user upgrading from 3.5.0 is reported as an upgrade', async () => {
+  state.docs.set('fighters/БОЕЦ-OLD', { fighterId: 'БОЕЦ-OLD', callsign: 'Ветеран' });
+  await call('fighter_upsert', { fighter_id: 'БОЕЦ-OLD', callsign: 'Ветеран', email: 'old@x.ru' });
+  assert.ok(state.telegram.at(-1).includes('перешёл на новую версию'));
+  assert.ok(state.docs.has('fighters/БОЕЦ-OLD'), 'legacy record is left untouched');
+});
+
 // ------------------------------------------------------------------ run
 
 let failed = 0;
