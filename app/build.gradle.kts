@@ -149,9 +149,9 @@ dependencies {
   // Firestore database for online sync:
   implementation(libs.firebase.firestore)
 
-  // Uncomment ALL FOUR of the following dependencies together to use Firebase Auth and Google
-  // Sign-In via Credential Manager:
-  // implementation(libs.firebase.auth)
+  // Anonymous Firebase Auth: every device gets its own identity for unit membership.
+  implementation(libs.firebase.auth)
+  // Google Sign-In via Credential Manager (not used):
   // implementation(libs.androidx.credentials)
   // implementation(libs.androidx.credentials.play.services.auth)
   // implementation(libs.googleid)

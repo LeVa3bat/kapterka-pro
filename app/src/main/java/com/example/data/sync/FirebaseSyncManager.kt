@@ -17,6 +17,7 @@ import com.example.data.model.WarehousePoint
 import com.google.firebase.firestore.DocumentChange
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.CoroutineScope
@@ -70,12 +71,17 @@ class FirebaseSyncManager(
     }
 
     private var activeUnitKey: String = ""
+    private var connectJob: Job? = null
+    private var accessRetryJob: Job? = null
+    private var lastCallsign: String = ""
+    private val unitAccess: UnitAccessService by lazy { UnitAccessService() }
     private var listeners = mutableListOf<ListenerRegistration>()
     private var presenceHeartbeatJob: Job? = null
 
     private companion object {
         const val ACTIVE_DEVICE_WINDOW_MS = 15 * 60 * 1000L
         const val PRESENCE_HEARTBEAT_MS = 5 * 60 * 1000L
+        const val ACCESS_RETRY_MS = 60 * 1000L
         const val TOMBSTONE_POINT = "warehouse_point"
         const val TOMBSTONE_ITEM = "inventory_item"
         const val TOMBSTONE_STOCK = "stock_record"
@@ -322,19 +328,67 @@ class FirebaseSyncManager(
         activeUnitKey = cleanKey
         _syncState.value = _syncState.value.copy(
             isSyncing = true,
-            syncMessage = "Подключение к каналу подразделения [$cleanKey]..."
+            syncMessage = "Подключение к подразделению..."
         )
 
-        
+        lastCallsign = callsign
+        connectJob = scope.launch {
+            // Register this device as a unit member first. Firestore rules (strict
+            // phase) admit only members; during the transition phase an
+            // unreachable server does not block legacy sync.
+            val access = unitAccess.ensureMembership(cleanKey, fighterId(), callsign, deviceId)
+            if (activeUnitKey != cleanKey) return@launch
+            if (access is UnitAccessResult.Denied) {
+                _syncState.value = _syncState.value.copy(
+                    isSyncing = false,
+                    isOnline = false,
+                    syncMessage = access.reason
+                )
+            }
             registerUnitListeners(cleanKey)
-        sendPresencePing(cleanKey, callsign, unitName)
-        startPresenceHeartbeat(cleanKey, callsign, unitName)
+            sendPresencePing(cleanKey, callsign, unitName)
+            startPresenceHeartbeat(cleanKey, callsign, unitName)
+            if (access !is UnitAccessResult.Denied) {
+                _syncState.value = _syncState.value.copy(
+                    isSyncing = false,
+                    isOnline = true,
+                    syncMessage = "Подключено к подразделению"
+                )
+            }
+        }
+    }
 
+    private fun fighterId(): String =
+        context.getSharedPreferences("kapterka_fighter_license_prefs", Context.MODE_PRIVATE)
+            .getString("fighter_personal_id", null).orEmpty()
+
+    /** Firestore refused access: the device is not (yet) a member of this unit. */
+    private fun onAccessDenied(unitKey: String) {
+        if (activeUnitKey != unitKey) return
         _syncState.value = _syncState.value.copy(
             isSyncing = false,
-            isOnline = true,
-            syncMessage = "Подключено к подразделению"
+            isOnline = false,
+            syncMessage = "Нет доступа к подразделению. Проверьте ключ и интернет — повторим автоматически."
         )
+        if (accessRetryJob?.isActive == true) return
+        accessRetryJob = scope.launch {
+            // Denied listeners are dead: re-join, then re-attach them.
+            while (isActive && activeUnitKey == unitKey) {
+                delay(ACCESS_RETRY_MS)
+                val access = unitAccess.ensureMembership(unitKey, fighterId(), lastCallsign, deviceId)
+                if (access is UnitAccessResult.Member && activeUnitKey == unitKey) {
+                    for (l in listeners) runCatching { l.remove() }
+                    listeners.clear()
+                    registerUnitListeners(unitKey)
+                    _syncState.value = _syncState.value.copy(
+                        isSyncing = false,
+                        isOnline = true,
+                        syncMessage = "Подключено к подразделению"
+                    )
+                    break
+                }
+            }
+        }
     }
 
     private fun registerUnitListeners(unitKey: String) {
@@ -342,6 +396,9 @@ class FirebaseSyncManager(
         val unitRef = db.collection("units").document(unitKey)
 
         val tombstoneReg = unitRef.collection("sync_tombstones").addSnapshotListener { snap, e ->
+            if (e is FirebaseFirestoreException && e.code == FirebaseFirestoreException.Code.PERMISSION_DENIED) {
+                onAccessDenied(unitKey)
+            }
             if (e != null || snap == null) return@addSnapshotListener
             scope.launch(Dispatchers.IO) {
                 for (dc in snap.documentChanges) {
@@ -1171,6 +1228,10 @@ class FirebaseSyncManager(
     }
 
     fun stopSync() {
+        connectJob?.cancel()
+        connectJob = null
+        accessRetryJob?.cancel()
+        accessRetryJob = null
         presenceHeartbeatJob?.cancel()
         presenceHeartbeatJob = null
         for (l in listeners) {
