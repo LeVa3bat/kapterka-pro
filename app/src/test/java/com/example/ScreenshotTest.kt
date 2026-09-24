@@ -170,6 +170,111 @@ class ScreenshotTest {
         compose.onRoot().captureRoboImage("screenshots/splash_dark.png")
     }
 
+    private val ops = listOf(
+        com.example.data.model.OperationRecord("op1", com.example.data.model.OperationType.INCOME, "Служба РАВ / Тыл", "Базовый склад (КЗ)", "№ 12", "Лева", "Накладная 45", 1_727_160_000_000L, "Патрон 5,45х39 ПС — 2000 шт., Граната РГД-5 — 30 шт."),
+        com.example.data.model.OperationRecord("op2", com.example.data.model.OperationType.ISSUE, "Базовый склад (КЗ)", "Сокол", "", "Лева", "", 1_727_170_000_000L, "Бронежилет 6Б45 — 2 компл."),
+        com.example.data.model.OperationRecord("op3", com.example.data.model.OperationType.TRANSFER, "Базовый склад (КЗ)", "1 взвод", "", "Лева", "", 1_727_180_000_000L, "Радиостанция Р-187П1 — 4 шт.")
+    )
+
+    @Test
+    fun history_dark() {
+        compose.setContent {
+            MyApplicationTheme(darkTheme = true) {
+                com.example.ui.screens.HistoryScreen(
+                    operations = ops,
+                    filterType = null,
+                    searchQuery = "",
+                    catalogItems = items,
+                    availableCategories = items.map { it.serviceCategory }.distinct(),
+                    onFilterChange = {},
+                    onSearchChange = {},
+                    parseItems = { emptyList() }
+                )
+            }
+        }
+        compose.onRoot().captureRoboImage("screenshots/history_dark.png")
+    }
+
+    @Test
+    fun requests_dark() {
+        compose.setContent {
+            MyApplicationTheme(darkTheme = true) {
+                com.example.ui.screens.RequestsScreen(
+                    profile = profile,
+                    points = points,
+                    catalogItems = items,
+                    stockRecords = stocks,
+                    requisitions = listOf(
+                        com.example.data.model.RequisitionRequest("r1", "1 взвод", "Сокол", comment = "Срочно", timestamp = 1_727_160_000_000L, itemsSummary = "Аптечка АИ-4 — 10 шт."),
+                        com.example.data.model.RequisitionRequest("r2", "Склад ГСМ", "Кедр", status = com.example.data.model.RequestStatus.COLLECTED, timestamp = 1_727_150_000_000L, itemsSummary = "Дизельное топливо — 200 л.")
+                    ),
+                    onCreateRequisition = { _, _, _, _ -> },
+                    onUpdateStatus = { _, _ -> },
+                    onDeleteRequisition = {},
+                    parseItems = { emptyList() }
+                )
+            }
+        }
+        compose.onRoot().captureRoboImage("screenshots/requests_dark.png")
+    }
+
+    @Test
+    fun inventory_dark() {
+        compose.setContent {
+            MyApplicationTheme(darkTheme = true) {
+                com.example.ui.screens.InventoryCatalogScreen(
+                    items = items,
+                    availableCategories = items.map { it.serviceCategory }.distinct(),
+                    onAddNewItemClick = {}
+                )
+            }
+        }
+        compose.onRoot().captureRoboImage("screenshots/inventory_dark.png")
+    }
+
+    @Test
+    fun more_dark() {
+        compose.setContent {
+            MyApplicationTheme(darkTheme = true) {
+                com.example.ui.screens.MoreSettingsScreen(
+                    profile = profile,
+                    availableCategories = items.map { it.serviceCategory }.distinct(),
+                    onDeleteCategory = {},
+                    onAddCategory = {},
+                    onResetCategories = {},
+                    onSyncClick = {},
+                    onOpenConnectCodeDialog = {},
+                    onOpenPaymentPro = {},
+                    onExportForm8Click = {},
+                    onExportForm18Click = {},
+                    onLogoutClick = {},
+                    onResetDataClick = {},
+                    isDarkTheme = true
+                )
+            }
+        }
+        compose.onRoot().captureRoboImage("screenshots/more_dark.png")
+    }
+
+    @Test
+    fun income_dialog_dark() {
+        compose.setContent {
+            MyApplicationTheme(darkTheme = true) {
+                com.example.ui.components.IncomeOperationDialog(
+                    profile = profile,
+                    points = points,
+                    catalogItems = items,
+                    stockRecords = stocks,
+                    initialPointId = "base_sklad",
+                    onDismiss = {},
+                    onConfirm = { _, _, _, _, _ -> }
+                )
+            }
+        }
+        compose.waitForIdle()
+        com.github.takahirom.roborazzi.captureScreenRoboImage("screenshots/income_dialog_dark.png")
+    }
+
     @Test
     fun dashboard_light() {
         dashboard(dark = false)

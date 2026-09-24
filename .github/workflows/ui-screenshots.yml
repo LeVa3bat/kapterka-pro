@@ -8,6 +8,7 @@ on:
     branches: ['claude/**']
     paths:
       - 'app/src/main/java/com/example/ui/**'
+      - 'app/src/main/java/com/example/MainActivity.kt'
       - 'app/src/test/java/com/example/ScreenshotTest.kt'
       - '.github/workflows/ui-screenshots.yml'
   workflow_dispatch:
