@@ -740,28 +740,22 @@ fun MainDashboardScreen(
                                     Spacer(modifier = Modifier.width(10.dp))
 
                                     Column {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Text(
-                                                text = point.name,
-                                                color = TacticalTextPrimary,
-                                                fontSize = 13.5.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                            if (point.isBase) {
-                                                Spacer(modifier = Modifier.width(6.dp))
-                                                Text(
-                                                    text = "★ Базовый",
-                                                    color = TacticalGoldText,
-                                                    fontSize = 10.sp,
-                                                    fontWeight = FontWeight.Bold
-                                                )
-                                            }
-                                        }
                                         Text(
-                                            text = "${pointRows.size} наим. • приход +${pointRows.sumOf { it.incomeTotal }}" +
-                                                " • расход −${pointRows.sumOf { it.expenseTotal }}",
-                                            color = TacticalTextMuted,
-                                            fontSize = 11.sp
+                                            text = point.name,
+                                            color = TacticalTextPrimary,
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Text(
+                                            text = (if (point.isBase) "Базовый • " else "") +
+                                                "${pointRows.size} наим. • +${pointRows.sumOf { it.incomeTotal }}" +
+                                                " / −${pointRows.sumOf { it.expenseTotal }}",
+                                            color = if (point.isBase) TacticalGoldText else TacticalTextMuted,
+                                            fontSize = 11.sp,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
                                         )
                                     }
                                 }
@@ -838,40 +832,6 @@ fun MainDashboardScreen(
                     }
                 }
 
-                // Overall Battalion Summary Bar
-                item {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 6.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = TacticalSurface),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorderSubtle),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 8.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "$overallPositionsCount активных позиций",
-                                color = TacticalTextSecondary,
-                                fontSize = 10.5.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "$overallStockSum ед. на учёте",
-                                color = SageGreenBright,
-                                fontSize = 11.5.sp,
-                                fontWeight = FontWeight.Black,
-                                fontFamily = FontFamily.Monospace
-                            )
-                        }
-                    }
-                }
             }
         }
 
