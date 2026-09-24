@@ -1,0 +1,40 @@
+name: Firestore rules — show deployed (read-only)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Print the ruleset currently live in Firebase
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          [ -n "$SA" ] || { echo "FIREBASE_SERVICE_ACCOUNT missing"; exit 1; }
+          cat > inspect.mjs <<'JS'
+          import crypto from 'node:crypto';
+          const sa = JSON.parse(process.env.SA);
+          const b64 = (o) => Buffer.from(typeof o === 'string' ? o : JSON.stringify(o)).toString('base64url');
+          const now = Math.floor(Date.now() / 1000);
+          const unsigned = b64({ alg: 'RS256', typ: 'JWT' }) + '.' + b64({
+            iss: sa.client_email, scope: 'https://www.googleapis.com/auth/firebase.readonly',
+            aud: 'https://oauth2.googleapis.com/token', iat: now, exp: now + 600 });
+          const sig = crypto.createSign('RSA-SHA256').update(unsigned).sign(sa.private_key).toString('base64url');
+          const tok = await (await fetch('https://oauth2.googleapis.com/token', { method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer', assertion: `${unsigned}.${sig}` }) })).json();
+          const h = { Authorization: 'Bearer ' + tok.access_token };
+          const rel = await (await fetch(`https://firebaserules.googleapis.com/v1/projects/${sa.project_id}/releases/cloud.firestore`, { headers: h })).json();
+          console.log('Release:', rel.name, 'updated', rel.updateTime);
+          const rs = await (await fetch(`https://firebaserules.googleapis.com/v1/${rel.rulesetName}`, { headers: h })).json();
+          for (const f of rs.source?.files || []) { console.log('----- ' + f.name + ' -----'); console.log(f.content); }
+          JS
+          node inspect.mjs
