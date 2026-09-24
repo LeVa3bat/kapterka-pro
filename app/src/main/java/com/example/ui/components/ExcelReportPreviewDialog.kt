@@ -708,9 +708,7 @@ private fun buildForm8OfficialReport(
         repeat(materialKeys.size) { add(TextAlign.Center) }
         add(TextAlign.Center); add(TextAlign.Center)
     }
-    // Official column numbering row: 1, 2, 3 …
-    val numbering = headers.indices.map { (it + 1).toString() }
-    val rows = mutableListOf(numbering)
+    val rows = mutableListOf<List<String>>()
     lines.forEachIndexed { i, line ->
         rows.add(
             buildList {
@@ -816,7 +814,7 @@ private fun buildForm18OfficialReport(
         TextAlign.Center, TextAlign.Center, TextAlign.Start, TextAlign.Start,
         TextAlign.End, TextAlign.End, TextAlign.End, TextAlign.Center
     )
-    val rows = mutableListOf(headers.indices.map { (it + 1).toString() })
+    val rows = mutableListOf<List<String>>()
     var totalIn = 0
     var totalOut = 0
     for ((_, moves) in byItem) {
@@ -838,7 +836,7 @@ private fun buildForm18OfficialReport(
                 listOf(
                     (i + 1).toString(),
                     dateFormat.format(Date(op.timestamp)),
-                    "${op.type.titleRu}${if (op.docNumber.isNotBlank()) " № ${op.docNumber.removePrefix("№").trim()}" else ""}",
+                    "${documentName(op.type)}${if (op.docNumber.isNotBlank()) " № ${op.docNumber.removePrefix("№").trim()}" else ""}",
                     party,
                     if (incoming > 0) incoming.toString() else "",
                     if (outgoing > 0) outgoing.toString() else "",
@@ -869,6 +867,14 @@ private fun buildForm18OfficialReport(
     rows.forEach { r -> csv.append(r.joinToString("\t") { it.replace("\n", " ") } + "\n") }
     csv.append(totalRow.joinToString("\t") + "\n")
     return Pair(blocks, csv.toString())
+}
+
+/** Primary document that backs each kind of movement in the book. */
+private fun documentName(type: OperationType): String = when (type) {
+    OperationType.INCOME -> "Накладная"
+    OperationType.ISSUE -> "Раздаточная ведомость"
+    OperationType.EXPENDITURE -> "Акт списания"
+    OperationType.TRANSFER -> "Накладная (перемещение)"
 }
 
 /**
