@@ -540,7 +540,7 @@ private fun OperationAccordionCard(
                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                         ) {
                             Text(
-                                text = "Акт № ${operation.docNumber}",
+                                text = "Акт № " + operation.docNumber.trim().removePrefix("№").trim(),
                                 color = TacticalTextPrimary,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,

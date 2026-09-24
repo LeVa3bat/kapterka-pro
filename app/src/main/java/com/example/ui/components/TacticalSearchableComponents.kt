@@ -499,41 +499,18 @@ fun TacticalSearchablePointDropdown(
                     if (pointStocks.isEmpty()) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = "📦 На точке «${selectedPoint.name}»: нет имущества на остатке (0 ед.)",
+                                text = "На складе пока пусто",
                                 color = TacticalTextMuted,
                                 fontSize = 11.sp
                             )
                         }
                     } else {
-                        Column {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "📦 Наличие на «${selectedPoint.name}» (${pointStocks.size} поз., всего: $totalPointUnits ед.):",
-                                    color = SageGreenBright,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(2.dp))
-                            val previewList = pointStocks.take(5).map { st ->
-                                val itm = itemsMap[st.itemId]
-                                val name = itm?.name ?: "Имущество"
-                                val unit = itm?.unit ?: "ед."
-                                "$name: ${st.quantity} $unit"
-                            }.joinToString(" • ")
-                            val extraCount = pointStocks.size - 5
-                            val fullPreview = if (extraCount > 0) "$previewList • ...еще $extraCount поз." else previewList
-                            Text(
-                                text = fullPreview,
-                                color = TacticalTextSecondary,
-                                fontSize = 10.5.sp,
-                                lineHeight = 14.sp
-                            )
-                        }
+                        Text(
+                            text = "На складе: ${pointStocks.size} поз. • $totalPointUnits ед.",
+                            color = SageGreenBright,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
                 }
             }

@@ -1,5 +1,13 @@
 package com.example.ui.components
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.AssignmentInd
+import androidx.compose.material.icons.filled.LocalShipping
+import androidx.compose.material.icons.filled.MoveToInbox
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -123,7 +131,35 @@ fun IncomeOperationDialog(
         title = "Приход",
         titleColor = SageGreenBright,
         badgeColor = SageGreenDark,
-        onDismiss = onDismiss
+        onDismiss = onDismiss,
+        footer = {
+            TacticalFitButton(
+                text = "Сохранить приход",
+                icon = Icons.Default.Add,
+                containerColor = SageGreenPrimary,
+                contentColor = Color.White,
+                onClick = {
+                    val validItems = draftItems.mapNotNull { draft ->
+                        val item = draft.selectedItem ?: return@mapNotNull null
+                        val qty = draft.quantityString.toIntOrNull() ?: 1
+                        OperationItemEntry(
+                            itemId = item.id,
+                            itemName = item.name,
+                            unit = item.unit,
+                            quantity = qty,
+                            categoryClass = item.categoryClass
+                        )
+                    }
+                    if (validItems.isNotEmpty()) {
+                        onConfirm(selectedPoint.id, selectedPoint.name, supplier, validItems, comment)
+                        onDismiss()
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("submit_income_button")
+            )
+        }
     ) {
         // Destination point searchable selector with live stock summary
         TacticalSearchablePointDropdown(
@@ -163,36 +199,6 @@ fun IncomeOperationDialog(
             value = comment,
             onValueChange = { comment = it },
             placeholder = "Накладная №..., рейс, позывной"
-        )
-
-        Spacer(modifier = Modifier.height(18.dp))
-
-        // Save Button with guaranteed fit
-        TacticalFitButton(
-            text = "Сохранить приход",
-            icon = Icons.Default.Add,
-            containerColor = SageGreenPrimary,
-            contentColor = Color.White,
-            onClick = {
-                val validItems = draftItems.mapNotNull { draft ->
-                    val item = draft.selectedItem ?: return@mapNotNull null
-                    val qty = draft.quantityString.toIntOrNull() ?: 1
-                    OperationItemEntry(
-                        itemId = item.id,
-                        itemName = item.name,
-                        unit = item.unit,
-                        quantity = qty,
-                        categoryClass = item.categoryClass
-                    )
-                }
-                if (validItems.isNotEmpty()) {
-                    onConfirm(selectedPoint.id, selectedPoint.name, supplier, validItems, comment)
-                    onDismiss()
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("submit_income_button")
         )
     }
 }
@@ -271,7 +277,46 @@ fun TransferOperationDialog(
         title = "Перемещение",
         titleColor = TacticalTealText,
         badgeColor = TacticalTealDark,
-        onDismiss = onDismiss
+        onDismiss = onDismiss,
+        footer = {
+            TacticalFitButton(
+                text = "Выполнить перемещение",
+                icon = Icons.Default.ArrowDropDown,
+                containerColor = TacticalTeal,
+                contentColor = Color.White,
+                onClick = {
+                    val validItems = draftItems.mapNotNull { draft ->
+                        val item = draft.selectedItem ?: return@mapNotNull null
+                        val qty = draft.quantityString.toIntOrNull() ?: 1
+                        OperationItemEntry(
+                            itemId = item.id,
+                            itemName = item.name,
+                            unit = item.unit,
+                            quantity = qty,
+                            categoryClass = item.categoryClass
+                        )
+                    }
+                    if (validItems.isNotEmpty()) {
+                        // Check for insufficient items
+                        val insufficient = validItems.mapNotNull { entry ->
+                            val available = stocksMapForFromPoint[entry.itemId] ?: 0
+                            if (entry.quantity > available) {
+                                "${entry.itemName}: в наличии $available ${entry.unit}, указано: ${entry.quantity} ${entry.unit} (нехватка ${entry.quantity - available} ${entry.unit})"
+                            } else null
+                        }
+                        if (insufficient.isNotEmpty()) {
+                            pendingInsufficientItems = insufficient
+                        } else {
+                            onConfirm(fromPoint.id, fromPoint.name, toPoint.id, toPoint.name, validItems, comment)
+                            onDismiss()
+                        }
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("submit_transfer_button")
+            )
+        }
     ) {
         // From Point
         TacticalSearchablePointDropdown(
@@ -340,46 +385,6 @@ fun TransferOperationDialog(
             onValueChange = { comment = it },
             suggestions = driverSuggestions,
             placeholder = "Позывной водителя, время перемещения"
-        )
-
-        Spacer(modifier = Modifier.height(18.dp))
-
-        TacticalFitButton(
-            text = "Выполнить перемещение",
-            icon = Icons.Default.ArrowDropDown,
-            containerColor = TacticalTeal,
-            contentColor = Color.White,
-            onClick = {
-                val validItems = draftItems.mapNotNull { draft ->
-                    val item = draft.selectedItem ?: return@mapNotNull null
-                    val qty = draft.quantityString.toIntOrNull() ?: 1
-                    OperationItemEntry(
-                        itemId = item.id,
-                        itemName = item.name,
-                        unit = item.unit,
-                        quantity = qty,
-                        categoryClass = item.categoryClass
-                    )
-                }
-                if (validItems.isNotEmpty()) {
-                    // Check for insufficient items
-                    val insufficient = validItems.mapNotNull { entry ->
-                        val available = stocksMapForFromPoint[entry.itemId] ?: 0
-                        if (entry.quantity > available) {
-                            "${entry.itemName}: в наличии $available ${entry.unit}, указано: ${entry.quantity} ${entry.unit} (нехватка ${entry.quantity - available} ${entry.unit})"
-                        } else null
-                    }
-                    if (insufficient.isNotEmpty()) {
-                        pendingInsufficientItems = insufficient
-                    } else {
-                        onConfirm(fromPoint.id, fromPoint.name, toPoint.id, toPoint.name, validItems, comment)
-                        onDismiss()
-                    }
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("submit_transfer_button")
         )
     }
 }
@@ -451,7 +456,44 @@ fun IssueOperationDialog(
         title = "Выдача",
         titleColor = TacticalGoldText,
         badgeColor = TacticalGoldDark,
-        onDismiss = onDismiss
+        onDismiss = onDismiss,
+        footer = {
+            TacticalFitButton(
+                text = "Сохранить выдачу",
+                containerColor = TacticalGold,
+                contentColor = Color.White,
+                onClick = {
+                    val validItems = draftItems.mapNotNull { draft ->
+                        val item = draft.selectedItem ?: return@mapNotNull null
+                        val qty = draft.quantityString.toIntOrNull() ?: 1
+                        OperationItemEntry(
+                            itemId = item.id,
+                            itemName = item.name,
+                            unit = item.unit,
+                            quantity = qty,
+                            categoryClass = item.categoryClass
+                        )
+                    }
+                    if (validItems.isNotEmpty()) {
+                        val insufficient = validItems.mapNotNull { entry ->
+                            val available = stocksMapForFromPoint[entry.itemId] ?: 0
+                            if (entry.quantity > available) {
+                                "${entry.itemName}: в наличии $available ${entry.unit}, указано: ${entry.quantity} ${entry.unit} (нехватка ${entry.quantity - available} ${entry.unit})"
+                            } else null
+                        }
+                        if (insufficient.isNotEmpty()) {
+                            pendingInsufficientItems = insufficient
+                        } else {
+                            onConfirm(fromPoint.id, fromPoint.name, targetPoint.id, targetPoint.name, validItems, comment)
+                            onDismiss()
+                        }
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("submit_issue_button")
+            )
+        }
     ) {
         TacticalSearchablePointDropdown(
             label = "Откуда выдано (Точка списания)",
@@ -515,44 +557,6 @@ fun IssueOperationDialog(
             value = comment,
             onValueChange = { comment = it },
             placeholder = "Введите название (примечание)"
-        )
-
-        Spacer(modifier = Modifier.height(18.dp))
-
-        TacticalFitButton(
-            text = "Сохранить выдачу",
-            containerColor = TacticalGold,
-            contentColor = Color.White,
-            onClick = {
-                val validItems = draftItems.mapNotNull { draft ->
-                    val item = draft.selectedItem ?: return@mapNotNull null
-                    val qty = draft.quantityString.toIntOrNull() ?: 1
-                    OperationItemEntry(
-                        itemId = item.id,
-                        itemName = item.name,
-                        unit = item.unit,
-                        quantity = qty,
-                        categoryClass = item.categoryClass
-                    )
-                }
-                if (validItems.isNotEmpty()) {
-                    val insufficient = validItems.mapNotNull { entry ->
-                        val available = stocksMapForFromPoint[entry.itemId] ?: 0
-                        if (entry.quantity > available) {
-                            "${entry.itemName}: в наличии $available ${entry.unit}, указано: ${entry.quantity} ${entry.unit} (нехватка ${entry.quantity - available} ${entry.unit})"
-                        } else null
-                    }
-                    if (insufficient.isNotEmpty()) {
-                        pendingInsufficientItems = insufficient
-                    } else {
-                        onConfirm(fromPoint.id, fromPoint.name, targetPoint.id, targetPoint.name, validItems, comment)
-                        onDismiss()
-                    }
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("submit_issue_button")
         )
     }
 }
@@ -633,7 +637,45 @@ fun ExpenditureOperationDialog(
         title = "Списание",
         titleColor = TacticalRedText,
         badgeColor = TacticalRedDark,
-        onDismiss = onDismiss
+        onDismiss = onDismiss,
+        footer = {
+            TacticalFitButton(
+                text = "Сохранить списание",
+                containerColor = TacticalRed,
+                contentColor = Color.White,
+                onClick = {
+                    val validItems = draftItems.mapNotNull { draft ->
+                        val item = draft.selectedItem ?: return@mapNotNull null
+                        val qty = draft.quantityString.toIntOrNull() ?: 1
+                        OperationItemEntry(
+                            itemId = item.id,
+                            itemName = item.name,
+                            unit = item.unit,
+                            quantity = qty,
+                            categoryClass = item.categoryClass,
+                            reason = draft.reasonString
+                        )
+                    }
+                    if (validItems.isNotEmpty()) {
+                        val insufficient = validItems.mapNotNull { entry ->
+                            val available = stocksMapForFromPoint[entry.itemId] ?: 0
+                            if (entry.quantity > available) {
+                                "${entry.itemName}: в наличии $available ${entry.unit}, указано: ${entry.quantity} ${entry.unit} (нехватка ${entry.quantity - available} ${entry.unit})"
+                            } else null
+                        }
+                        if (insufficient.isNotEmpty()) {
+                            pendingInsufficientItems = insufficient
+                        } else {
+                            onConfirm(fromPoint.id, fromPoint.name, docNumber, responsiblePerson, validItems, comment)
+                            onDismiss()
+                        }
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("submit_expenditure_button")
+            )
+        }
     ) {
         TacticalSearchablePointDropdown(
             label = "Позиция расхода / ОП",
@@ -736,45 +778,6 @@ fun ExpenditureOperationDialog(
             onValueChange = { comment = it },
             placeholder = "Введите название (примечание)"
         )
-
-        Spacer(modifier = Modifier.height(18.dp))
-
-        TacticalFitButton(
-            text = "Сохранить списание",
-            containerColor = TacticalRed,
-            contentColor = Color.White,
-            onClick = {
-                val validItems = draftItems.mapNotNull { draft ->
-                    val item = draft.selectedItem ?: return@mapNotNull null
-                    val qty = draft.quantityString.toIntOrNull() ?: 1
-                    OperationItemEntry(
-                        itemId = item.id,
-                        itemName = item.name,
-                        unit = item.unit,
-                        quantity = qty,
-                        categoryClass = item.categoryClass,
-                        reason = draft.reasonString
-                    )
-                }
-                if (validItems.isNotEmpty()) {
-                    val insufficient = validItems.mapNotNull { entry ->
-                        val available = stocksMapForFromPoint[entry.itemId] ?: 0
-                        if (entry.quantity > available) {
-                            "${entry.itemName}: в наличии $available ${entry.unit}, указано: ${entry.quantity} ${entry.unit} (нехватка ${entry.quantity - available} ${entry.unit})"
-                        } else null
-                    }
-                    if (insufficient.isNotEmpty()) {
-                        pendingInsufficientItems = insufficient
-                    } else {
-                        onConfirm(fromPoint.id, fromPoint.name, docNumber, responsiblePerson, validItems, comment)
-                        onDismiss()
-                    }
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("submit_expenditure_button")
-        )
     }
 }
 
@@ -876,79 +879,84 @@ private fun TacticalOperationModalLayout(
     titleColor: Color,
     badgeColor: Color,
     onDismiss: () -> Unit,
+    footer: @Composable () -> Unit = {},
     content: @Composable () -> Unit
 ) {
+    val (icon, subtitle) = when (title) {
+        "Приход" -> Icons.Default.MoveToInbox to "Поступление имущества на склад"
+        "Перемещение" -> Icons.Default.LocalShipping to "Между складами и точками"
+        "Выдача" -> Icons.Default.AssignmentInd to "Передача получателю"
+        "Списание" -> Icons.Default.DeleteSweep to "Расход по Форме № 8"
+        else -> Icons.Default.Inventory2 to ""
+    }
+    val maxHeight = (LocalConfiguration.current.screenHeightDp * 0.9f).dp
+
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
-        Card(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 16.dp),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = TacticalSurface),
-            border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorderSubtle),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                .padding(horizontal = 10.dp, vertical = 12.dp)
+                .heightIn(max = maxHeight)
+                .clip(RoundedCornerShape(26.dp))
+                .background(TacticalSurface)
+                .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(26.dp))
         ) {
-            Column(
+            // Header: coloured operation icon, title, subtitle, close.
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(18.dp)
+                    .background(badgeColor.copy(alpha = 0.35f))
+                    .padding(start = 18.dp, end = 12.dp, top = 16.dp, bottom = 14.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(9.dp)
-                                .clip(RoundedCornerShape(100.dp))
-                                .background(titleColor)
-                        )
-                        Spacer(modifier = Modifier.width(9.dp))
-                        Text(
-                            text = title,
-                            color = TacticalTextPrimary,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.ExtraBold
-                        )
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .size(34.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(TacticalSurfaceLight),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        IconButton(
-                            onClick = onDismiss,
-                            modifier = Modifier.size(34.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Закрыть",
-                                tint = TacticalTextMuted,
-                                modifier = Modifier.size(19.dp)
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                LazyColumn(
+                Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 520.dp)
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(titleColor.copy(alpha = 0.18f)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    item {
-                        content()
+                    Icon(icon, contentDescription = null, tint = titleColor, modifier = Modifier.size(24.dp))
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(title, color = TacticalTextPrimary, fontSize = 21.sp, fontWeight = FontWeight.ExtraBold)
+                    if (subtitle.isNotBlank()) {
+                        Text(subtitle, color = TacticalTextMuted, fontSize = 12.sp)
                     }
                 }
+                IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(TacticalSurfaceLight)
+                ) {
+                    Icon(Icons.Default.Close, contentDescription = "Закрыть", tint = TacticalTextMuted, modifier = Modifier.size(20.dp))
+                }
+            }
+
+            // Scrollable form.
+            Column(
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 18.dp, vertical = 14.dp)
+            ) {
+                content()
+            }
+
+            // Sticky action button — always visible.
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(TacticalSurface)
+                    .padding(start = 18.dp, end = 18.dp, top = 6.dp, bottom = 16.dp)
+            ) {
+                footer()
             }
         }
     }
@@ -1166,30 +1174,11 @@ private fun ItemsDraftListSection(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        OutlinedTextField(
+                        QuantityStepper(
                             value = draft.quantityString,
                             onValueChange = { draft.quantityString = it },
-                            label = { Text("Кол-во", color = TacticalTextSecondary, fontSize = 11.sp) },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            singleLine = true,
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = TacticalSurfaceLight,
-                                unfocusedContainerColor = TacticalSurfaceLight,
-                                focusedBorderColor = SageGreenPrimary,
-                                unfocusedBorderColor = TacticalBorder,
-                                focusedTextColor = TacticalTextPrimary,
-                                unfocusedTextColor = TacticalTextPrimary
-                            )
-                        )
-
-                        Text(
-                            text = draft.selectedItem?.unit ?: "ед.",
-                            color = SageGreenBright,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(top = 4.dp)
+                            unit = draft.selectedItem?.unit ?: "ед.",
+                            modifier = Modifier.weight(if (showReasonField) 1.4f else 1f)
                         )
 
                         if (showReasonField) {
@@ -1199,7 +1188,7 @@ private fun ItemsDraftListSection(
                                 onValueChange = { draft.reasonString = it },
                                 suggestions = reasonPresets,
                                 placeholder = "Причина списания",
-                                modifier = Modifier.weight(2f)
+                                modifier = Modifier.weight(1.6f)
                             )
                         }
                     }
@@ -1237,5 +1226,68 @@ private fun ItemsDraftListSection(
                 }
             }
         }
+    }
+}
+
+
+/** Big −/+ buttons around an editable number: fast on a phone, works with gloves. */
+@Composable
+private fun QuantityStepper(
+    value: String,
+    onValueChange: (String) -> Unit,
+    unit: String,
+    modifier: Modifier = Modifier
+) {
+    val current = value.toIntOrNull() ?: 0
+    Column(modifier = modifier) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(TacticalSurfaceLight)
+                .border(1.dp, TacticalBorder, RoundedCornerShape(14.dp)),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            StepperButton("−", enabled = current > 1) { onValueChange((current - 1).coerceAtLeast(1).toString()) }
+            androidx.compose.foundation.text.BasicTextField(
+                value = value,
+                onValueChange = { v -> onValueChange(v.filter { it.isDigit() }.take(7)) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                textStyle = androidx.compose.ui.text.TextStyle(
+                    color = TacticalTextPrimary,
+                    fontSize = 19.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                ),
+                cursorBrush = androidx.compose.ui.graphics.SolidColor(SageGreenBright),
+                modifier = Modifier.weight(1f)
+            )
+            StepperButton("+", enabled = true) { onValueChange((current + 1).toString()) }
+        }
+        Text(
+            text = unit,
+            color = TacticalTextMuted,
+            fontSize = 10.5.sp,
+            modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 2.dp)
+        )
+    }
+}
+
+@Composable
+private fun StepperButton(label: String, enabled: Boolean, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(50.dp)
+            .clickable(enabled = enabled) { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = label,
+            color = if (enabled) SageGreenBright else TacticalTextDim,
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold
+        )
     }
 }

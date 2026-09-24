@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -122,6 +124,8 @@ fun RequestsScreen(
         mutableStateOf(profile?.callsign ?: "")
     }
     var comment by remember { mutableStateOf("") }
+    // The form is folded away once there are requests, so the list is visible first.
+    var formExpanded by remember { mutableStateOf(requisitions.isEmpty()) }
     val draftItems = remember {
         mutableStateListOf(RequisitionDraftItem(selectedItem = null, quantityString = "1"))
     }
@@ -282,6 +286,9 @@ fun RequestsScreen(
                         .padding(14.dp)
                 ) {
                     Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { formExpanded = !formExpanded },
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
@@ -303,10 +310,22 @@ fun RequestsScreen(
                             text = "Новая заявка",
                             color = TacticalTextPrimary,
                             fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.weight(1f)
+                        )
+                        val formChevron by androidx.compose.animation.core.animateFloatAsState(
+                            if (formExpanded) 180f else 0f, label = "formChevron"
+                        )
+                        Icon(
+                            imageVector = Icons.Default.ExpandMore,
+                            contentDescription = if (formExpanded) "Свернуть" else "Развернуть",
+                            tint = SageGreenPrimary,
+                            modifier = Modifier.graphicsLayer { rotationZ = formChevron }
                         )
                     }
 
+                    androidx.compose.animation.AnimatedVisibility(visible = formExpanded) {
+                    Column {
                     Spacer(modifier = Modifier.height(14.dp))
 
                     // Destination point searchable with stock summary
@@ -541,6 +560,8 @@ fun RequestsScreen(
                             .fillMaxWidth()
                             .testTag("submit_requisition_button")
                     )
+                    }
+                    }
                 }
             }
 
