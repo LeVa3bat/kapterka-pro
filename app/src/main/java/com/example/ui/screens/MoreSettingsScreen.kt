@@ -465,6 +465,11 @@ fun MoreSettingsScreen(
             }
         }
 
+        // Official website, Telegram channel and support bot.
+        item {
+            com.example.ui.components.CommunityLinksCard(modifier = Modifier.padding(bottom = 10.dp))
+        }
+
         // 0. THEME SWITCH CARD (Светлая / Тёмная)
         item {
             Card(
