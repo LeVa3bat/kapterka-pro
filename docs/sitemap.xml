@@ -162,4 +162,16 @@
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
+  <url>
+    <loc>https://kapterka-pro.ru/forma-8-razdatochnaya-vedomost.html</loc>
+    <lastmod>2026-09-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://kapterka-pro.ru/programma-dlya-starshiny-roty.html</loc>
+    <lastmod>2026-09-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
 </urlset>
