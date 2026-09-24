@@ -81,8 +81,8 @@ fun ExcelReportPreviewDialog(
     points.forEach { pt ->
         tabTitles.add("Точка: ${pt.name}")
     }
-    tabTitles.add("Форма № 8 (Акт списания)")
-    tabTitles.add("Форма № 18 (Книга учета)")
+    tabTitles.add("Форма № 8 (Раздаточная ведомость)")
+    tabTitles.add("Форма № 18 (Книга учёта)")
     tabTitles.add("Заявки (Реестр)")
 
     var selectedTab by remember {
@@ -240,14 +240,14 @@ fun ExcelReportPreviewDialog(
                     val baseFileName = when {
                         selectedTab == 0 -> "Сводная_ведомость_${unitName.replace(" ", "_")}"
                         selectedTab in 1..points.size -> "Ведомость_точки_${points[selectedTab - 1].name.replace(" ", "_")}"
-                        selectedTab == points.size + 1 -> "Форма_8_Акт_списания_${unitName.replace(" ", "_")}"
+                        selectedTab == points.size + 1 -> "Форма_8_Раздаточная_ведомость_${unitName.replace(" ", "_")}"
                         selectedTab == points.size + 2 -> "Форма_18_Книга_учета_${unitName.replace(" ", "_")}"
                         else -> "Реестр_заявок_${unitName.replace(" ", "_")}"
                     }
                     val sheetName = when {
                         selectedTab == 0 -> "Сводная МТО"
                         selectedTab in 1..points.size -> points[selectedTab - 1].name.take(28)
-                        selectedTab == points.size + 1 -> "Форма 8 (Акт)"
+                        selectedTab == points.size + 1 -> "Форма 8 (Ведомость)"
                         selectedTab == points.size + 2 -> "Форма 18 (Книга)"
                         else -> "Заявки"
                     }
@@ -642,148 +642,131 @@ private fun MilitarySignaturesView(sigs: MilitaryReportBlock.Signatures) {
 // -------------------------------------------------------------
 
 /**
- * ФОРМА № 8 (по ОКУД 6002203 / Приказ МО РФ № 139):
- * «Акт списания (расхода) материальных ценностей»
+ * ФОРМА № 8 по ОКУД 6002203 (приказ МО РФ от 28.03.2008 № 139):
+ * «Раздаточная (сдаточная) ведомость материальных ценностей».
+ * Строки — получатели, графы — наименования; по каждому получателю дата
+ * получения и место для расписки. Внизу «Итого» по каждому наименованию и
+ * подписи «Выдал», «Принял», «Правильность выдачи проверил», «Бухгалтер».
  */
 private fun buildForm8OfficialReport(
     operations: List<OperationRecord>,
     unitName: String,
     parseItems: (String) -> List<OperationItemEntry>
 ): Pair<List<MilitaryReportBlock>, String> {
-    val expOps = operations.filter { it.type == OperationType.EXPENDITURE }
+    val issues = operations.filter { it.type == OperationType.ISSUE }.sortedBy { it.timestamp }
     val dateFormat = SimpleDateFormat("dd.MM.yyyy", Locale("ru"))
     val todayStr = dateFormat.format(Date())
+    val periodFrom = issues.firstOrNull()?.let { dateFormat.format(Date(it.timestamp)) } ?: todayStr
+    val periodTo = issues.lastOrNull()?.let { dateFormat.format(Date(it.timestamp)) } ?: todayStr
+
+    // Materials become columns (in order of first issue), recipients become rows.
+    data class Line(val recipient: String, val date: String, val qty: Map<String, Int>)
+    val materials = linkedMapOf<String, OperationItemEntry>()
+    val lines = mutableListOf<Line>()
+    for (op in issues) {
+        val items = parseItems(op.itemsJson)
+        items.forEach { materials.putIfAbsent(it.itemId.ifBlank { it.itemName }, it) }
+        val qty = items.groupBy { it.itemId.ifBlank { it.itemName } }.mapValues { (_, v) -> v.sumOf { it.quantity } }
+        lines.add(Line(op.toPointName.ifBlank { "—" }, dateFormat.format(Date(op.timestamp)), qty))
+    }
+    val materialKeys = materials.keys.toList()
 
     val blocks = mutableListOf<MilitaryReportBlock>()
-    val csv = StringBuilder()
-
-    val header = MilitaryReportBlock.Header(
-        docFormTitle = "Форма № 8 по ОКУД 6002203\nПриказ МО РФ № 139",
-        approvalUnit = unitName,
-        docMainTitle = "АКТ СПИСАНИЯ (РАСХОДА) МАТЕРИАЛЬНЫХ ЦЕННОСТЕЙ",
-        subTitle = "Акт № 8/${expOps.firstOrNull()?.docNumber ?: "1"} от $todayStr г.",
-        details = listOf(
-            "Подразделение:" to unitName,
-            "Основание составления:" to "Расход боеприпасов и материальных средств при выполнении боевых задач",
-            "Служба снабжения:" to "Служба РАВ / Служба МТО",
-            "Комиссия:" to "Председатель комиссии и члены комиссии подразделения"
-        )
-    )
-    blocks.add(header)
-
-    // Table columns according to Form 8
-    val tableHeaders = listOf(
-        "№\nп/п",
-        "Наименование материальных\nценностей (номенклатура)",
-        "Код / Кат.\nкачества",
-        "Ед.\nизм.",
-        "Кол-во\n(фактически\nизрасходовано)",
-        "Цель расхода\n(боевая задача, приказ,\nобстоятельства)",
-        "Дата расхода\nи точка (СП/ВОП)",
-        "Первичный\nдокумент"
-    )
-    val colWidths = listOf(34.dp, 160.dp, 55.dp, 40.dp, 65.dp, 140.dp, 85.dp, 75.dp)
-    val alignments = listOf(
-        TextAlign.Center,
-        TextAlign.Start,
-        TextAlign.Center,
-        TextAlign.Center,
-        TextAlign.End,
-        TextAlign.Start,
-        TextAlign.Center,
-        TextAlign.Center
-    )
-
-    val rows = mutableListOf<List<String>>()
-    var totalQty = 0
-    var itemIndex = 1
-
-    for (op in expOps) {
-        val opDate = dateFormat.format(Date(op.timestamp))
-        val items = parseItems(op.itemsJson)
-        if (items.isNotEmpty()) {
-            for (item in items) {
-                val reason = if (item.reason.isNotBlank()) item.reason else (if (op.comment.isNotBlank()) op.comment else "Выполнение боевой задачи")
-                rows.add(
-                    listOf(
-                        itemIndex.toString(),
-                        item.itemName,
-                        item.categoryClass.ifEmpty { "Кат. 1" },
-                        item.unit,
-                        item.quantity.toString(),
-                        reason,
-                        "$opDate\n(${op.fromPointName})",
-                        op.docNumber
-                    )
-                )
-                totalQty += item.quantity
-                itemIndex++
-            }
-        } else {
-            rows.add(
-                listOf(
-                    itemIndex.toString(),
-                    op.itemsSummary.ifEmpty { "Имущество подразделения" },
-                    "Кат. 1",
-                    "шт.",
-                    "-",
-                    op.comment.ifEmpty { "Боевой расход" },
-                    "$opDate\n(${op.fromPointName})",
-                    op.docNumber
-                )
-            )
-            itemIndex++
-        }
-    }
-
-    val totalRow = listOf(
-        "ИТОГО",
-        "Всего списано наименований: ${rows.size}",
-        "-",
-        "-",
-        totalQty.toString(),
-        "Расход подтвержден",
-        "-",
-        "-"
-    )
-
     blocks.add(
-        MilitaryReportBlock.Table(
-            headers = tableHeaders,
-            columnWidths = colWidths,
-            alignments = alignments,
-            rows = rows,
-            totalRow = totalRow
+        MilitaryReportBlock.Header(
+            docFormTitle = "Форма № 8 по ОКУД 6002203\nКоды: дата ${todayStr}, по ОКПО ________",
+            approvalUnit = unitName,
+            docMainTitle = "РАЗДАТОЧНАЯ (СДАТОЧНАЯ) ВЕДОМОСТЬ № ___ МАТЕРИАЛЬНЫХ ЦЕННОСТЕЙ",
+            subTitle = "за период с $periodFrom по $periodTo",
+            details = listOf(
+                "Воинская часть:" to "________________ (условное наименование)",
+                "Структурное подразделение:" to unitName,
+                "Материально ответственное лицо:" to "________________________",
+                "Ведомость действительна по:" to "«__» ____________ 20__ г."
+            )
         )
     )
 
-    // Statutory signers for Form 8
+    val headers = buildList {
+        add("№\nп/п")
+        add("Получатель\n(сдатчик)")
+        add("Код\nполучателя")
+        materialKeys.forEach { key ->
+            val m = materials.getValue(key)
+            add("${m.itemName}\nкод: ${m.itemId.take(10)}\n${m.unit} • ${m.categoryClass.ifBlank { "Кат. 1" }}")
+        }
+        add("Дата\nполучения\n(сдачи)")
+        add("Расписка\nполучателя\n(сдатчика)")
+    }
+    val widths = buildList {
+        add(34.dp); add(130.dp); add(60.dp)
+        repeat(materialKeys.size) { add(96.dp) }
+        add(78.dp); add(90.dp)
+    }
+    val aligns = buildList {
+        add(TextAlign.Center); add(TextAlign.Start); add(TextAlign.Center)
+        repeat(materialKeys.size) { add(TextAlign.Center) }
+        add(TextAlign.Center); add(TextAlign.Center)
+    }
+    // Official column numbering row: 1, 2, 3 …
+    val numbering = headers.indices.map { (it + 1).toString() }
+    val rows = mutableListOf(numbering)
+    lines.forEachIndexed { i, line ->
+        rows.add(
+            buildList {
+                add((i + 1).toString())
+                add(line.recipient)
+                add("")
+                materialKeys.forEach { key -> add(line.qty[key]?.toString() ?: "") }
+                add(line.date)
+                add("")
+            }
+        )
+    }
+    if (lines.isEmpty()) {
+        rows.add(List(headers.size) { if (it == 1) "Выдач за период нет" else "" })
+    }
+    val totalRow = buildList {
+        add("")
+        add("Итого")
+        add("")
+        materialKeys.forEach { key -> add(lines.sumOf { it.qty[key] ?: 0 }.toString()) }
+        add("")
+        add("")
+    }
+    blocks.add(MilitaryReportBlock.Table(headers, widths, aligns, rows, totalRow))
     blocks.add(
         MilitaryReportBlock.Signatures(
-            title = "Материальные ценности списаны по прямому назначению, остатки соответствуют учету:",
+            title = "Цена за единицу и сумма (руб. коп.) заполняются бухгалтерией.",
             signers = listOf(
-                Triple("Председатель комиссии:", "____________________", "Командир подразделения"),
-                Triple("Член комиссии (нач. склада):", "____________________", "Старшина подразделения"),
-                Triple("Член комиссии (техник/стрелок):", "____________________", "Ответственное лицо")
+                Triple("Выдал:", "____________________", "(должность, воинское звание, подпись, инициал имени, фамилия)"),
+                Triple("Принял:", "____________________", "(должность, воинское звание, подпись, инициал имени, фамилия)"),
+                Triple("Правильность выдачи (приема) проверил:", "____________________", "«__» ________ 20__ г."),
+                Triple("Бухгалтер:", "____________________", "(подпись, инициал имени, фамилия) «__» ________ 20__ г.")
             )
         )
     )
 
-    // Build standard CSV
-    csv.append("ФОРМА № 8 ПО ОКУД 6002203\tПРИКАЗ МО РФ № 139\n")
-    csv.append("АКТ СПИСАНИЯ (РАСХОДА) МАТЕРИАЛЬНЫХ ЦЕННОСТЕЙ\n")
-    csv.append("Подразделение:\t$unitName\n")
-    csv.append("Дата:\t$todayStr\n\n")
-    csv.append(tableHeaders.joinToString("\t") { it.replace("\n", " ") } + "\n")
+    val csv = StringBuilder()
+    csv.append("\t\t\tУТВЕРЖДАЮ\n\t\t\t________________________\n\t\t\t«__» __________ 20__ г.\n")
+    csv.append("РАЗДАТОЧНАЯ (СДАТОЧНАЯ) ВЕДОМОСТЬ № ___ МАТЕРИАЛЬНЫХ ЦЕННОСТЕЙ\tФорма № 8 по ОКУД 6002203\n")
+    csv.append("за период с $periodFrom по $periodTo\n")
+    csv.append("Структурное подразделение:\t$unitName\n")
+    csv.append("Материально ответственное лицо:\t\n\n")
+    csv.append(headers.joinToString("\t") { it.replace("\n", " ") } + "\n")
     rows.forEach { r -> csv.append(r.joinToString("\t") { it.replace("\n", " ") } + "\n") }
-    csv.append(totalRow.joinToString("\t") + "\n")
-
+    csv.append(totalRow.joinToString("\t") + "\n\n")
+    csv.append("Выдал:\t____________\tПринял:\t____________\n")
+    csv.append("Правильность выдачи (приема) проверил:\t____________\tБухгалтер:\t____________\n")
     return Pair(blocks, csv.toString())
 }
 
 /**
- * ФОРМА № 18 (по ОКУД 6002106 / Приказ МО РФ № 139 / Приказ МО РФ № 300):
- * «Книга учета наличия и движения материальных средств»
+ * Книга учёта наличия и движения материальных ценностей подразделения
+ * («форма 18» в приложении). Как в бумажной книге: на каждое наименование
+ * отдельный раздел, по нему строки движения с графами «дата», «документ»,
+ * «от кого получено / кому отпущено», «приход», «расход», «состоит».
+ * Остаток считается отдельно по каждому наименованию.
  */
 private fun buildForm18OfficialReport(
     operations: List<OperationRecord>,
@@ -792,131 +775,99 @@ private fun buildForm18OfficialReport(
 ): Pair<List<MilitaryReportBlock>, String> {
     val dateFormat = SimpleDateFormat("dd.MM.yyyy", Locale("ru"))
     val todayStr = dateFormat.format(Date())
+    val ordered = operations.sortedBy { it.timestamp }
+    val periodFrom = ordered.firstOrNull()?.let { dateFormat.format(Date(it.timestamp)) } ?: todayStr
 
-    val blocks = mutableListOf<MilitaryReportBlock>()
-    val csv = StringBuilder()
-
-    val header = MilitaryReportBlock.Header(
-        docFormTitle = "Форма № 18 по ОКУД 6002106\nПриказ МО РФ № 139, № 300",
-        approvalUnit = unitName,
-        docMainTitle = "КНИГА УЧЕТА НАЛИЧИЯ И ДВИЖЕНИЯ МАТЕРИАЛЬНЫХ СРЕДСТВ",
-        subTitle = "Лицевой счет материальных средств подразделения за 2026 г.",
-        details = listOf(
-            "Подразделение:" to unitName,
-            "Вид учета:" to "Количественный оперативный учет материальных средств",
-            "Период ведения:" to "01.01.2026 — $todayStr"
-        )
-    )
-    blocks.add(header)
-
-    val tableHeaders = listOf(
-        "Дата\nзаписи",
-        "Наименование\nдокумента и номер",
-        "От кого получено\nили кому выдано",
-        "Наименование\nимущества",
-        "Приход\n(получено)",
-        "Расход\n(списано)",
-        "Остаток\nналицо",
-        "Подпись\nпроводящего"
-    )
-    val colWidths = listOf(65.dp, 95.dp, 120.dp, 150.dp, 60.dp, 60.dp, 60.dp, 65.dp)
-    val alignments = listOf(
-        TextAlign.Center,
-        TextAlign.Start,
-        TextAlign.Start,
-        TextAlign.Start,
-        TextAlign.End,
-        TextAlign.End,
-        TextAlign.End,
-        TextAlign.Center
-    )
-
-    val rows = mutableListOf<List<String>>()
-    var rollingStock = 0
-    var totalPrihod = 0
-    var totalRashod = 0
-
-    for (op in operations) {
-        val opDate = dateFormat.format(Date(op.timestamp))
-        val items = parseItems(op.itemsJson)
-        val sumQty = items.sumOf { it.quantity }
-        val itemsText = if (items.isNotEmpty()) {
-            items.joinToString(", ") { "${it.itemName} (${it.quantity} ${it.unit})" }
-        } else {
-            op.itemsSummary.ifEmpty { "Имущество" }
+    data class Move(val op: OperationRecord, val entry: OperationItemEntry)
+    val byItem = linkedMapOf<String, MutableList<Move>>()
+    for (op in ordered) {
+        for (entry in parseItems(op.itemsJson)) {
+            byItem.getOrPut(entry.itemId.ifBlank { entry.itemName }) { mutableListOf() }.add(Move(op, entry))
         }
-
-        val docStr = "${op.type.titleRu}\n№ ${op.docNumber}"
-        val parties = when (op.type) {
-            OperationType.INCOME -> "Служба снабжения ➔ ${op.toPointName}"
-            OperationType.TRANSFER -> "${op.fromPointName} ➔ ${op.toPointName}"
-            OperationType.ISSUE -> "${op.fromPointName} ➔ ${op.toPointName} (Выдача)"
-            OperationType.EXPENDITURE -> "${op.fromPointName} ➔ Расход (ф.8)"
-        }
-
-        val prihodStr = if (op.type == OperationType.INCOME) sumQty.toString() else "-"
-        val rashodStr = if (op.type == OperationType.EXPENDITURE || op.type == OperationType.ISSUE) sumQty.toString() else "-"
-
-        if (op.type == OperationType.INCOME) {
-            rollingStock += sumQty
-            totalPrihod += sumQty
-        } else if (op.type == OperationType.EXPENDITURE || op.type == OperationType.ISSUE) {
-            rollingStock = (rollingStock - sumQty).coerceAtLeast(0)
-            totalRashod += sumQty
-        }
-
-        rows.add(
-            listOf(
-                opDate,
-                docStr,
-                parties,
-                itemsText,
-                prihodStr,
-                rashodStr,
-                rollingStock.toString(),
-                "Проведено"
-            )
-        )
     }
 
-    val totalRow = listOf(
-        "ИТОГО",
-        "Обороты за период",
-        "-",
-        "-",
-        totalPrihod.toString(),
-        totalRashod.toString(),
-        rollingStock.toString(),
-        "-"
-    )
-
+    val blocks = mutableListOf<MilitaryReportBlock>()
     blocks.add(
-        MilitaryReportBlock.Table(
-            headers = tableHeaders,
-            columnWidths = colWidths,
-            alignments = alignments,
-            rows = rows,
-            totalRow = totalRow
-        )
-    )
-
-    blocks.add(
-        MilitaryReportBlock.Signatures(
-            title = "Правильность записей в книге учета подтверждаю:",
-            signers = listOf(
-                Triple("Лицо, ведущее учет (каптёр/старшина):", "____________________", "Ответственный за учет"),
-                Triple("Проверил командир подразделения:", "____________________", unitName)
+        MilitaryReportBlock.Header(
+            docFormTitle = "Книга учёта (ф. 18)\nведётся бессрочно",
+            approvalUnit = unitName,
+            docMainTitle = "КНИГА УЧЁТА НАЛИЧИЯ И ДВИЖЕНИЯ МАТЕРИАЛЬНЫХ ЦЕННОСТЕЙ",
+            subTitle = "период с $periodFrom по $todayStr",
+            details = listOf(
+                "Подразделение:" to unitName,
+                "Материально ответственное лицо:" to "________________________",
+                "Разделов (наименований):" to byItem.size.toString()
             )
         )
     )
 
-    csv.append("ФОРМА № 18 ПО ОКУД 6002106\tПРИКАЗ МО РФ № 139 / № 300\n")
-    csv.append("КНИГА УЧЕТА НАЛИЧИЯ И ДВИЖЕНИЯ МАТЕРИАЛЬНЫХ СРЕДСТВ\n")
-    csv.append("Подразделение:\t$unitName\n\n")
-    csv.append(tableHeaders.joinToString("\t") { it.replace("\n", " ") } + "\n")
+    val headers = listOf(
+        "№\nзаписи",
+        "Дата",
+        "Наименование и\n№ документа",
+        "От кого получено /\nкому отпущено",
+        "Приход",
+        "Расход",
+        "Состоит\n(остаток)",
+        "Подпись"
+    )
+    val widths = listOf(44.dp, 70.dp, 110.dp, 150.dp, 60.dp, 60.dp, 70.dp, 70.dp)
+    val aligns = listOf(
+        TextAlign.Center, TextAlign.Center, TextAlign.Start, TextAlign.Start,
+        TextAlign.End, TextAlign.End, TextAlign.End, TextAlign.Center
+    )
+    val rows = mutableListOf(headers.indices.map { (it + 1).toString() })
+    var totalIn = 0
+    var totalOut = 0
+    for ((_, moves) in byItem) {
+        val first = moves.first().entry
+        rows.add(listOf("", "", "▌ ${first.itemName}", "ед. изм.: ${first.unit} • ${first.categoryClass.ifBlank { "Кат. 1" }}", "", "", "", ""))
+        var balance = 0
+        moves.forEachIndexed { i, (op, entry) ->
+            val qty = entry.quantity
+            val (incoming, outgoing, party) = when (op.type) {
+                OperationType.INCOME -> Triple(qty, 0, "Получено: ${op.fromPointName.ifBlank { "служба снабжения" }} → ${op.toPointName}")
+                OperationType.ISSUE -> Triple(0, qty, "Выдано: ${op.toPointName}")
+                OperationType.EXPENDITURE -> Triple(0, qty, "Списано (${entry.reason.ifBlank { op.comment.ifBlank { "расход" } }})")
+                OperationType.TRANSFER -> Triple(0, 0, "Перемещено: ${op.fromPointName} → ${op.toPointName}")
+            }
+            balance = (balance + incoming - outgoing).coerceAtLeast(0)
+            totalIn += incoming
+            totalOut += outgoing
+            rows.add(
+                listOf(
+                    (i + 1).toString(),
+                    dateFormat.format(Date(op.timestamp)),
+                    "${op.type.titleRu}${if (op.docNumber.isNotBlank()) " № ${op.docNumber.removePrefix("№").trim()}" else ""}",
+                    party,
+                    if (incoming > 0) incoming.toString() else "",
+                    if (outgoing > 0) outgoing.toString() else "",
+                    balance.toString(),
+                    ""
+                )
+            )
+        }
+    }
+    if (byItem.isEmpty()) rows.add(listOf("", "", "Записей нет", "", "", "", "", ""))
+    val totalRow = listOf("", "", "Итого оборотов", "", totalIn.toString(), totalOut.toString(), "", "")
+    blocks.add(MilitaryReportBlock.Table(headers, widths, aligns, rows, totalRow))
+    blocks.add(
+        MilitaryReportBlock.Signatures(
+            title = "Сверено с данными учёта службы воинской части:",
+            signers = listOf(
+                Triple("Материально ответственное лицо:", "____________________", "(подпись, инициал имени, фамилия)"),
+                Triple("Командир подразделения:", "____________________", "(подпись, инициал имени, фамилия)"),
+                Triple("Начальник службы:", "____________________", "«__» ________ 20__ г.")
+            )
+        )
+    )
+
+    val csv = StringBuilder()
+    csv.append("КНИГА УЧЁТА НАЛИЧИЯ И ДВИЖЕНИЯ МАТЕРИАЛЬНЫХ ЦЕННОСТЕЙ\n")
+    csv.append("Подразделение:\t$unitName\nПериод:\tс $periodFrom по $todayStr\n\n")
+    csv.append(headers.joinToString("\t") { it.replace("\n", " ") } + "\n")
     rows.forEach { r -> csv.append(r.joinToString("\t") { it.replace("\n", " ") } + "\n") }
     csv.append(totalRow.joinToString("\t") + "\n")
-
     return Pair(blocks, csv.toString())
 }
 

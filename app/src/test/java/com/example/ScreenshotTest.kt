@@ -275,6 +275,63 @@ class ScreenshotTest {
         com.github.takahirom.roborazzi.captureScreenRoboImage("screenshots/income_dialog_dark.png")
     }
 
+    private val reportOps = listOf(
+        com.example.data.model.OperationRecord("r1", com.example.data.model.OperationType.INCOME, "Служба РАВ", "Базовый склад (КЗ)", "12", "Лева", "", 1_727_160_000_000L, "", "in1"),
+        com.example.data.model.OperationRecord("r2", com.example.data.model.OperationType.ISSUE, "Базовый склад (КЗ)", "Сокол", "3", "Лева", "", 1_727_170_000_000L, "", "is1"),
+        com.example.data.model.OperationRecord("r3", com.example.data.model.OperationType.ISSUE, "Базовый склад (КЗ)", "Кедр", "4", "Лева", "", 1_727_180_000_000L, "", "is2"),
+        com.example.data.model.OperationRecord("r4", com.example.data.model.OperationType.EXPENDITURE, "Базовый склад (КЗ)", "", "5", "Лева", "", 1_727_190_000_000L, "", "ex1")
+    )
+
+    private fun reportItems(json: String): List<com.example.data.model.OperationItemEntry> = when (json) {
+        "in1" -> listOf(
+            com.example.data.model.OperationItemEntry("vesh_01", "Бронежилет 6Б45", "компл.", 10),
+            com.example.data.model.OperationItemEntry("med_01", "Аптечка АИ-4", "шт.", 30)
+        )
+        "is1" -> listOf(
+            com.example.data.model.OperationItemEntry("vesh_01", "Бронежилет 6Б45", "компл.", 2),
+            com.example.data.model.OperationItemEntry("med_01", "Аптечка АИ-4", "шт.", 5)
+        )
+        "is2" -> listOf(com.example.data.model.OperationItemEntry("med_01", "Аптечка АИ-4", "шт.", 3))
+        "ex1" -> listOf(com.example.data.model.OperationItemEntry("med_01", "Аптечка АИ-4", "шт.", 1, reason = "Применена"))
+        else -> emptyList()
+    }
+
+    private fun report(tab: Int, name: String) {
+        compose.setContent {
+            MyApplicationTheme(darkTheme = true) {
+                com.example.ui.components.ExcelReportPreviewDialog(
+                    operations = reportOps,
+                    stockRecords = stocks,
+                    points = emptyList(),
+                    catalogItems = items,
+                    unitName = "МинБат",
+                    initialFormIndex = tab,
+                    parseItems = { reportItems(it) },
+                    onDismiss = {}
+                )
+            }
+        }
+        compose.waitForIdle()
+        com.github.takahirom.roborazzi.captureScreenRoboImage("screenshots/$name.png")
+    }
+
+    @Test
+    fun form8_dark() = report(1, "form8")
+
+    @Test
+    fun form18_dark() = report(2, "form18")
+
+    @Test
+    fun manual_dark() {
+        compose.setContent {
+            MyApplicationTheme(darkTheme = true) {
+                com.example.ui.components.UserManualDialog(onDismiss = {})
+            }
+        }
+        compose.waitForIdle()
+        com.github.takahirom.roborazzi.captureScreenRoboImage("screenshots/manual.png")
+    }
+
     @Test
     fun dashboard_light() {
         dashboard(dark = false)
