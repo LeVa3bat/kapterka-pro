@@ -1,0 +1,19 @@
+name: Kapterka PRO 3.6.0 release build
+
+# Сборка-кандидат 3.6.0 (build 33): подпись ключом опубликованных 3.4.9/3.5.0,
+# проверка пакета/версии/подписи, APK как артефакт. НИЧЕГО не публикует —
+# публикация на сайт добавляется отдельно, только после команды владельца.
+
+on:
+  push:
+    branches: [claude/secure-3.6]
+    paths:
+      - 'app/**'
+      - 'gradle/**'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
+      - '.github/workflows/release-3.6.0.yml'
+  workflow_dispatch:
+    inputs:
+    
