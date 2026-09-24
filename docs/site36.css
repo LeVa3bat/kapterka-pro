@@ -50,3 +50,33 @@
 /* Compact trust row: three links under the hero. */
 .s36-trust .neo-trust-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
 @media (max-width:560px){.s36-trust .neo-trust-grid{grid-template-columns:1fr 1fr 1fr!important;gap:6px!important}.s36-trust .neo-trust-item small{display:none}.s36-trust .neo-trust-item strong{font-size:.72rem!important}}
+
+/* ---------- Phone: shorter page (about 3 screens) ---------- */
+@media (max-width:560px){
+  /* Features: 2×3 compact tiles, title only. */
+  .s36-features .neo-feature-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important}
+  .s36-features .neo-feature{flex-direction:column!important;gap:6px!important;padding:12px!important;border-left-width:0!important}
+  .s36-features .neo-feature small{display:none!important}
+  .s36-features .neo-feature strong{font-size:.86rem!important;line-height:1.25}
+  .s36-lead{font-size:.84rem!important;margin-bottom:10px!important}
+  /* Steps: one tight card. */
+  .neo-start-grid{gap:6px!important}
+  .neo-start-grid>div{padding:10px 12px!important}
+  /* Plans: side by side, essentials only. */
+  .neo-plan-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important}
+  .neo-plan-card{padding:12px!important}
+  .neo-plan-card p,.neo-plan-points{display:none!important}
+  .neo-plan-head strong{font-size:1.3rem!important}
+  .neo-plan-action{width:100%;text-align:center;margin-top:8px!important}
+  /* FAQ: first four questions; the rest are in the manual. */
+  .neo-faq-list details:nth-child(n+5){display:none}
+  /* Guides and resources: links only (full cards stay for desktop). */
+  .neo-guides-grid small,.neo-resource-strip{display:none!important}
+  .neo-guides-grid a{padding:10px 12px!important}
+  .neo-home>section{padding-top:10px!important;padding-bottom:10px!important}
+}
+@media (max-width:560px){
+  .neo-home .s36-trust .neo-trust-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px!important}
+  .neo-home .s36-trust .neo-trust-item{padding:8px!important;gap:6px!important}
+  .neo-home .s36-trust .neo-trust-mark{display:none!important}
+}
