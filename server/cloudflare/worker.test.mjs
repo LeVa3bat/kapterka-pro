@@ -103,6 +103,16 @@ globalThis.fetch = async (input, init = {}) => {
     if (path === ':runQuery') {
       const q = JSON.parse(body).structuredQuery;
       const coll = q.from[0].collectionId;
+      if (q.from[0].allDescendants) {
+        const rows = [];
+        for (const [key, doc] of state.docs) {
+          const parts = key.split('/');
+          if (parts.length >= 2 && parts[parts.length - 2] === coll) {
+            rows.push({ document: { name: `${prefix}/${key}`, updateTime: new Date().toISOString(), fields: toFields(doc) } });
+          }
+        }
+        return jsonResponse(200, rows);
+      }
       const field = q.where.fieldFilter.field.fieldPath;
       const value = q.where.fieldFilter.value.stringValue;
       const rows = [];
@@ -499,6 +509,29 @@ test('admin: single ADMIN_PASSWORD secret is enough', async () => {
   assert.equal((await call('admin_list_fighters', { admin_token: ok.body.admin_token }, { envOverride: pwEnv })).status, 200);
   const shortEnv = { ...pwEnv, ADMIN_PASSWORD: 'short' };
   assert.equal((await call('health', {}, { method: 'GET', envOverride: shortEnv })).body.adminAuthConfigured, false);
+});
+
+
+test('admin_stats: owner dashboard numbers', async () => {
+  const pwEnv = { ...env };
+  const auth = await call('admin_auth', { secret: SECRETS.admin }, { ip: '4.4.4.4' });
+  const now = Date.now();
+  state.docs.set('units/kapt_stats/devices/dev_a', { deviceId: 'dev_a', callsign: 'Сокол', unitName: 'Рота', deviceModel: 'Pixel', timestampMillis: now - 60_000 });
+  state.docs.set('units/kapt_stats/devices/dev_b', { deviceId: 'dev_b', callsign: 'Старый', timestampMillis: now - 3 * 86400000 });
+  state.docs.set('fighters/БОЕЦ-LEG', { fighterId: 'БОЕЦ-LEG', registeredAt: now - 1000, expiresAt: now + 86400000 });
+  const r = await call('admin_stats', { admin_token: auth.body.admin_token }, { envOverride: pwEnv });
+  assert.equal(r.status, 200);
+  assert.ok(r.body.online.devices_now >= 1);
+  assert.ok(r.body.online_list.some((d) => d.callsign === 'Сокол'));
+  assert.ok(!r.body.online_list.some((d) => d.callsign === 'Старый'));
+  assert.ok(r.body.users.total >= 1);
+  assert.equal(r.body.registrations_14d.length, 14);
+  assert.ok(r.body.licenses.active_verified >= 1);
+  assert.ok(r.body.licenses.active_legacy >= 1);
+  assert.equal((await call('admin_stats', { admin_token: 'x.y.z' })).status, 403);
+  const raw = JSON.stringify(r.body);
+  assert.ok(!raw.includes('@'), 'no e-mails in stats');
+  assert.ok(!raw.includes('kapt_stats'), 'no unit keys in stats');
 });
 
 // ------------------------------------------------------------------ run

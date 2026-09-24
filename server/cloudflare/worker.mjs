@@ -435,6 +435,19 @@ class Firestore {
       }));
   }
 
+  // Every document of a collection id anywhere in the database (no filter, no index needed).
+  async collectionGroup(collectionId, limit = 5000) {
+    const r = await this.request('POST', ':runQuery', {
+      structuredQuery: { from: [{ collectionId, allDescendants: true }], limit }
+    });
+    if (!r.ok) throw new Error(`Firestore group query failed: HTTP ${r.status}`);
+    const rows = await r.json();
+    return (rows || []).filter((row) => row.document).map((row) => {
+      const parts = String(row.document.name || '').split('/documents/')[1]?.split('/') || [];
+      return { path: parts, updateTime: Date.parse(row.document.updateTime) || 0, ...fromFirestoreFields(row.document.fields) };
+    });
+  }
+
   async list(collection, pageSize = 300) {
     const out = [];
     let pageToken = '';
@@ -923,6 +936,99 @@ const handlers = {
         email: f.email,
         device_model: f.deviceModel
       }))
+    });
+  },
+
+  // Owner dashboard ("Командный центр"): live usage, licences, revenue.
+  async admin_stats(ctx) {
+    const { db, cfg } = ctx;
+    if (!(await verifyAdminToken(cfg, ctx.body.admin_token))) return ctx.fail(403, 'ADMIN_SESSION_INVALID');
+    const now = Date.now();
+    const ONLINE_MS = 15 * 60 * 1000;
+    const dayStart = (ms) => {
+      const d = new Date(ms + 3 * 3600 * 1000); // Moscow day boundaries
+      return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) - 3 * 3600 * 1000;
+    };
+    const todayStart = dayStart(now);
+    const monthStart = (() => {
+      const d = new Date(now + 3 * 3600 * 1000);
+      return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1) - 3 * 3600 * 1000;
+    })();
+
+    const [devices, srvFighters, legacyFighters, srvLicenses] = await Promise.all([
+      db.collectionGroup('devices'),
+      db.list(FIGHTERS),
+      db.list(LEGACY_FIGHTERS).catch(() => []),
+      db.list(LICENSES)
+    ]);
+
+    // Devices: presence pings per unit.
+    const seen = (d) => Number(d.timestampMillis || 0) || d.updateTime || 0;
+    const online = devices.filter((d) => now - seen(d) < ONLINE_MS);
+    const unitOf = (d) => d.path[1] || '';
+    const onlineList = online
+      .sort((a, b) => seen(b) - seen(a))
+      .slice(0, 40)
+      .map((d) => ({
+        callsign: cleanText(d.callsign || 'Без позывного', 40),
+        unit_name: cleanText(d.unitName || '', 60),
+        device_model: cleanText(d.deviceModel || '', 40),
+        last_seen: seen(d)
+      }));
+
+    // Users: 3.6 registry is authoritative, legacy registry fills the gaps.
+    const users = new Map();
+    for (const f of legacyFighters) {
+      const id = String(f.fighterId || f.id || '');
+      if (id) users.set(id, { registeredAt: Number(f.registeredAt || 0), lastSeenAt: Number(f.lastSeenAt || 0), expiresAt: Number(f.expiresAt || 0), v36: false });
+    }
+    for (const f of srvFighters) {
+      const id = String(f.fighterId || f.id || '');
+      if (!id) continue;
+      const prev = users.get(id) || { registeredAt: 0, lastSeenAt: 0, expiresAt: 0 };
+      users.set(id, {
+        registeredAt: prev.registeredAt || Number(f.registeredAt || 0),
+        lastSeenAt: Math.max(prev.lastSeenAt, Number(f.lastSeenAt || 0)),
+        expiresAt: Math.max(prev.expiresAt, Number(f.expiresAt || 0)),
+        v36: true
+      });
+    }
+    const userList = [...users.values()];
+    const registrations14 = Array.from({ length: 14 }, (_, i) => {
+      const start = todayStart - (13 - i) * DAY_MS;
+      return userList.filter((u) => u.registeredAt >= start && u.registeredAt < start + DAY_MS).length;
+    });
+
+    // Licences: verified (server registry) + those only known from old app versions.
+    const verified = srvLicenses.map(normalizeLicense).filter((l) => isActive(l, now));
+    const paidThisMonth = srvLicenses.filter((x) => x.paymentId && Number(x.activatedAt || 0) >= monthStart);
+    const legacyActive = userList.filter((u) => !u.v36 && u.expiresAt > now).length;
+
+    return ctx.ok({
+      ok: true,
+      generated_at: now,
+      online: {
+        devices_now: online.length,
+        units_now: new Set(online.map(unitOf)).size,
+        devices_today: devices.filter((d) => seen(d) >= todayStart).length,
+        devices_week: devices.filter((d) => now - seen(d) < 7 * DAY_MS).length
+      },
+      online_list: onlineList,
+      users: {
+        total: userList.length,
+        on_36: userList.filter((u) => u.v36).length,
+        new_today: userList.filter((u) => u.registeredAt >= todayStart).length,
+        new_week: userList.filter((u) => now - u.registeredAt < 7 * DAY_MS).length
+      },
+      units_total: new Set(devices.map(unitOf).filter(Boolean)).size,
+      licenses: {
+        active_verified: verified.length,
+        active_legacy: legacyActive,
+        expiring_7d: verified.filter((l) => l.expiresAt - now < 7 * DAY_MS).length,
+        paid_month: paidThisMonth.length,
+        revenue_month_rub: paidThisMonth.length * cfg.amountRub
+      },
+      registrations_14d: registrations14
     });
   },
 

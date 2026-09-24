@@ -165,7 +165,7 @@ if (!backendSource.includes("const LICENSES = 'srv_licenses'") ||
     /'licenses'/.test(backendSource) ||
     (backendSource.match(/'fighters'/g) || []).length !== 1 ||
     !backendSource.includes("const LEGACY_FIGHTERS = 'fighters'") ||
-    legacyUses !== 2 || /patch\(LEGACY_FIGHTERS|remove\(LEGACY_FIGHTERS/.test(backendSource)) {
+    legacyUses < 2 || /patch\(LEGACY_FIGHTERS|remove\(LEGACY_FIGHTERS/.test(backendSource)) {
   fail('backend must use only server-only registry collections');
 } else {
   ok('backend trusts only server-only registry collections');
