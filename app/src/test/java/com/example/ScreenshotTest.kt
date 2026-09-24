@@ -166,7 +166,7 @@ class ScreenshotTest {
                 com.example.ui.screens.SplashScreen(onInitializationComplete = {})
             }
         }
-        compose.mainClock.advanceTimeBy(1_600)
+        compose.mainClock.advanceTimeBy(3_900)
         compose.onRoot().captureRoboImage("screenshots/splash_dark.png")
     }
 

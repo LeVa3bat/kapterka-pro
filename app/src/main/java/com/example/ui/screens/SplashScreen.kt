@@ -12,6 +12,17 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.material.icons.rounded.Description
+import androidx.compose.material.icons.rounded.SwapHoriz
+import androidx.compose.material.icons.rounded.Sync
+import androidx.compose.material.icons.rounded.Warehouse
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -63,9 +74,10 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 /**
- * Short, modern launch screen (~1.9 s): logo pops in with a spring, a glowing
- * ring orbits it, the title appears letter by letter over a softly moving
- * gradient, and a thin progress line fills at the bottom.
+ * Launch screen (~4.5 s, tap to skip): logo pops in with a spring, a glowing
+ * ring orbits it, the title appears letter by letter, then four cards slide in
+ * one by one and explain what the app does. A thin progress line fills at the
+ * bottom.
  */
 @Composable
 fun SplashScreen(
@@ -78,6 +90,22 @@ fun SplashScreen(
     val badgeAlpha = remember { Animatable(0f) }
     val subtitleAlpha = remember { Animatable(0f) }
     val progress = remember { Animatable(0f) }
+    val features = remember {
+        listOf(
+            SplashFeature(Icons.Rounded.Warehouse, "Остатки по складам", "сколько чего и где — в одной таблице"),
+            SplashFeature(Icons.Rounded.SwapHoriz, "Приход, выдача, списание", "каждая операция попадает в журнал"),
+            SplashFeature(Icons.Rounded.Sync, "Общие данные подразделения", "телефоны с одним ключом видят одно и то же"),
+            SplashFeature(Icons.Rounded.Description, "Отчёты Ф-8 и Ф-18", "книга учёта и ведомость в Excel за минуту")
+        )
+    }
+    val featureAnims = remember { List(4) { Animatable(0f) } }
+    var finished by remember { mutableStateOf(false) }
+    val finish = {
+        if (!finished) {
+            finished = true
+            onInitializationComplete()
+        }
+    }
 
     val ambient = rememberInfiniteTransition(label = "ambient")
     val ringAngle by ambient.animateFloat(
@@ -100,20 +128,23 @@ fun SplashScreen(
     )
 
     LaunchedEffect(Unit) {
-        launch { progress.animateTo(1f, tween(1750, easing = FastOutSlowInEasing)) }
-        launch { logoAlpha.animateTo(1f, tween(350)) }
+        launch { progress.animateTo(1f, tween(4300, easing = LinearEasing)) }
+        launch { logoAlpha.animateTo(1f, tween(450)) }
         logoScale.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = Spring.StiffnessLow))
         letters.mapIndexed { i, anim ->
             async {
-                delay(i * 45L)
-                anim.animateTo(1f, tween(260, easing = FastOutSlowInEasing))
+                delay(i * 55L)
+                anim.animateTo(1f, tween(300, easing = FastOutSlowInEasing))
             }
         }.awaitAll()
-        launch { badgeAlpha.animateTo(1f, tween(220)) }
-        subtitleAlpha.animateTo(1f, tween(260))
-        progress.animateTo(1f, tween(120))
-        delay(180)
-        onInitializationComplete()
+        launch { badgeAlpha.animateTo(1f, tween(260)) }
+        subtitleAlpha.animateTo(1f, tween(320))
+        featureAnims.forEach { anim ->
+            delay(260)
+            launch { anim.animateTo(1f, spring(dampingRatio = 0.7f, stiffness = Spring.StiffnessLow)) }
+        }
+        delay(1_350)
+        finish()
     }
 
     val primary = SageGreenPrimary
@@ -125,6 +156,10 @@ fun SplashScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(TacticalBg)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) { if (progress.value > 0.25f) finish() }
             .testTag("splash_screen"),
         contentAlignment = Alignment.Center
     ) {
@@ -147,7 +182,7 @@ fun SplashScreen(
             // Logo: rounded tile with an orbiting glow ring.
             Box(
                 modifier = Modifier
-                    .size(150.dp)
+                    .size(128.dp)
                     .graphicsLayer {
                         scaleX = logoScale.value
                         scaleY = logoScale.value
@@ -182,8 +217,8 @@ fun SplashScreen(
                 }
                 Box(
                     modifier = Modifier
-                        .size(88.dp)
-                        .clip(RoundedCornerShape(28.dp))
+                        .size(76.dp)
+                        .clip(RoundedCornerShape(24.dp))
                         .background(Brush.linearGradient(listOf(primary, teal))),
                     contentAlignment = Alignment.Center
                 ) {
@@ -191,7 +226,7 @@ fun SplashScreen(
                         imageVector = Icons.Default.Inventory2,
                         contentDescription = null,
                         tint = Color.White,
-                        modifier = Modifier.size(46.dp)
+                        modifier = Modifier.size(40.dp)
                     )
                 }
             }
@@ -234,6 +269,43 @@ fun SplashScreen(
                 fontSize = 14.sp,
                 modifier = Modifier.graphicsLayer { alpha = subtitleAlpha.value }
             )
+            Spacer(modifier = Modifier.height(26.dp))
+            Column(
+                modifier = Modifier.padding(horizontal = 28.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                features.forEachIndexed { i, f ->
+                    val a = featureAnims[i].value
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .graphicsLayer {
+                                alpha = a.coerceIn(0f, 1f)
+                                translationX = (1f - a) * 60.dp.toPx() * (if (i % 2 == 0) -1 else 1)
+                            }
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(TacticalSurfaceLight.copy(alpha = 0.72f))
+                            .border(1.dp, bright.copy(alpha = 0.18f), RoundedCornerShape(16.dp))
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(RoundedCornerShape(11.dp))
+                                .background(Brush.linearGradient(listOf(primary, teal))),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(f.icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(f.title, color = TacticalTextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                            Text(f.subtitle, color = TacticalTextSecondary, fontSize = 11.5.sp)
+                        }
+                    }
+                }
+            }
         }
 
         // Bottom: thin progress line + version.
@@ -260,10 +332,12 @@ fun SplashScreen(
             }
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = "Версия ${BuildConfig.VERSION_NAME}",
+                text = "Версия ${BuildConfig.VERSION_NAME} • коснитесь, чтобы пропустить",
                 color = TacticalTextMuted,
                 fontSize = 11.sp
             )
         }
     }
 }
+
+private data class SplashFeature(val icon: ImageVector, val title: String, val subtitle: String)

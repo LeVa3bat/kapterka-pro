@@ -314,11 +314,14 @@ fun MainDashboardScreen(
     }
 
     // Total overall statistics across all active points
-    val allStockRows = remember(points, catalogItems, stockRecords, searchQuery, selectedCategory, operations) {
-        points.flatMap { getItemsForPoint(it.id) }
+    // Computed once per data change, not on every frame: recomputing this
+    // inside list items made scrolling and expanding stutter.
+    val rowsByPoint = remember(points, catalogItems, stockRecords, searchQuery, selectedCategory, operations) {
+        points.associate { it.id to getItemsForPoint(it.id) }
     }
-    val overallStockSum = stockRecords.sumOf { it.quantity }
-    val overallPositionsCount = stockRecords.filter { it.quantity > 0 }.map { it.itemId }.distinct().size
+    val allStockRows = remember(rowsByPoint) { points.flatMap { rowsByPoint[it.id].orEmpty() } }
+    val overallStockSum = remember(stockRecords) { stockRecords.sumOf { it.quantity } }
+    val overallPositionsCount = remember(stockRecords) { stockRecords.filter { it.quantity > 0 }.map { it.itemId }.distinct().size }
 
     LazyColumn(
         modifier = Modifier
@@ -561,7 +564,7 @@ fun MainDashboardScreen(
         if (selectedPointFilterId != null) {
             val currentPoint = points.firstOrNull { it.id == selectedPointFilterId }
             if (currentPoint != null) {
-                val pointRows = getItemsForPoint(currentPoint.id)
+                val pointRows = rowsByPoint[currentPoint.id].orEmpty()
                 val pointStockSum = pointRows.sumOf { it.quantity }
 
                 item {
@@ -697,7 +700,7 @@ fun MainDashboardScreen(
             } else {
                 // Collapsible Point Lists to avoid information overload - hidden by default upon entrance
                 itemsIndexed(points, key = { _, pt -> pt.id }) { _, point ->
-                    val pointRows = getItemsForPoint(point.id)
+                    val pointRows = rowsByPoint[point.id].orEmpty()
                     val pointStockSum = pointRows.sumOf { it.quantity }
                     // Default to collapsed (false) so that on entrance all lists are hidden
                     val isExpanded = expandedPointIds[point.id] ?: false

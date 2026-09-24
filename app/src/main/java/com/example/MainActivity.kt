@@ -16,6 +16,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -34,6 +36,18 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Widgets
+import androidx.compose.material.icons.outlined.AssignmentTurnedIn
+import androidx.compose.material.icons.outlined.Inventory2
+import androidx.compose.material.icons.outlined.ReceiptLong
+import androidx.compose.material.icons.outlined.SpaceDashboard
+import androidx.compose.material.icons.rounded.Widgets
+import androidx.compose.material.icons.rounded.AssignmentTurnedIn
+import androidx.compose.material.icons.rounded.Inventory2
+import androidx.compose.material.icons.rounded.ReceiptLong
+import androidx.compose.material.icons.rounded.SpaceDashboard
+import com.example.ui.components.BottomTab
+import com.example.ui.components.ModernBottomBar
 import androidx.compose.material.icons.filled.Assignment
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
@@ -119,12 +133,17 @@ import com.example.ui.viewmodel.KapterkaViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 
-enum class AppDestination(val title: String, val icon: ImageVector, val tag: String) {
-    HOME("Главная", Icons.Default.SpaceDashboard, "nav_home"),
-    HISTORY("Операции", Icons.Default.ReceiptLong, "nav_history"),
-    REQUESTS("Заявки", Icons.Default.RuleFolder, "nav_requests"),
-    CATALOG("Имущество", Icons.Default.Inventory2, "nav_catalog"),
-    MORE("Ещё", Icons.Default.Tune, "nav_more")
+enum class AppDestination(
+    val title: String,
+    val icon: ImageVector,
+    val selectedIcon: ImageVector,
+    val tag: String
+) {
+    HOME("Главная", Icons.Outlined.SpaceDashboard, Icons.Rounded.SpaceDashboard, "nav_home"),
+    HISTORY("Операции", Icons.Outlined.ReceiptLong, Icons.Rounded.ReceiptLong, "nav_history"),
+    REQUESTS("Заявки", Icons.Outlined.AssignmentTurnedIn, Icons.Rounded.AssignmentTurnedIn, "nav_requests"),
+    CATALOG("Имущество", Icons.Outlined.Inventory2, Icons.Rounded.Inventory2, "nav_catalog"),
+    MORE("Ещё", Icons.Outlined.Widgets, Icons.Rounded.Widgets, "nav_more")
 }
 
 class MainActivity : ComponentActivity() {
@@ -294,10 +313,13 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
         modifier = Modifier.fillMaxSize(),
         containerColor = TacticalBg,
         bottomBar = {
-            TacticalBottomNavigationBar(
-                currentDestination = currentDestination,
-                onNavigate = { currentDestination = it },
-                pendingRequestsCount = requisitions.count { it.status == com.example.data.model.RequestStatus.PENDING }
+            val pending = requisitions.count { it.status == com.example.data.model.RequestStatus.PENDING }
+            ModernBottomBar(
+                tabs = AppDestination.values().map {
+                    BottomTab(it.title, it.icon, it.selectedIcon, it.tag, if (it == AppDestination.REQUESTS) pending else 0)
+                },
+                selectedIndex = currentDestination.ordinal,
+                onSelect = { currentDestination = AppDestination.values()[it] }
             )
         }
     ) { innerPadding ->
@@ -398,9 +420,16 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                 }
             }
 
+            // Fixed-size crossfade with a small directional slide. No SizeTransform:
+            // animating the container size is what made screens twitch.
             AnimatedContent(
                 targetState = currentDestination,
-                transitionSpec = { fadeIn() togetherWith fadeOut() },
+                transitionSpec = {
+                    val dir = if (targetState.ordinal > initialState.ordinal) 1 else -1
+                    (fadeIn(tween(220, delayMillis = 60)) + slideInHorizontally(tween(260)) { it / 12 * dir }) togetherWith
+                        fadeOut(tween(120)) using null
+                },
+                modifier = Modifier.fillMaxSize(),
                 label = "ScreenTransition"
             ) { targetScreen ->
                 when (targetScreen) {
@@ -767,86 +796,5 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
         UserManualDialog(
             onDismiss = { showUserManualDialog = false }
         )
-    }
-}
-
-@Composable
-private fun TacticalBottomNavigationBar(
-    currentDestination: AppDestination,
-    onNavigate: (AppDestination) -> Unit,
-    pendingRequestsCount: Int
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(TacticalBg)
-            .navigationBarsPadding()
-            .padding(horizontal = 12.dp, vertical = 7.dp)
-    ) {
-        NavigationBar(
-            containerColor = TacticalSurface,
-            contentColor = SageGreenPrimary,
-            tonalElevation = 0.dp,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(64.dp)
-                .clip(RoundedCornerShape(22.dp))
-                .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(22.dp))
-        ) {
-            AppDestination.values().forEach { destination ->
-                val isSelected = currentDestination == destination
-
-                NavigationBarItem(
-                    selected = isSelected,
-                    onClick = { onNavigate(destination) },
-                    icon = {
-                        if (destination == AppDestination.REQUESTS && pendingRequestsCount > 0) {
-                            BadgedBox(
-                                badge = {
-                                    Badge(
-                                        containerColor = TacticalGold,
-                                        contentColor = Color.White
-                                    ) {
-                                        Text(
-                                            "$pendingRequestsCount",
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 9.sp
-                                        )
-                                    }
-                                }
-                            ) {
-                                Icon(
-                                    imageVector = destination.icon,
-                                    contentDescription = destination.title,
-                                    modifier = Modifier.size(21.dp)
-                                )
-                            }
-                        } else {
-                            Icon(
-                                imageVector = destination.icon,
-                                contentDescription = destination.title,
-                                modifier = Modifier.size(21.dp)
-                            )
-                        }
-                    },
-                    label = {
-                        Text(
-                            text = destination.title,
-                            fontSize = 10.sp,
-                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
-                            maxLines = 1
-                        )
-                    },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = SageGreenPrimary,
-                        selectedTextColor = SageGreenPrimary,
-                        unselectedIconColor = TacticalTextMuted,
-                        unselectedTextColor = TacticalTextMuted,
-                        indicatorColor = SageGreenDark
-                    ),
-                    modifier = Modifier.testTag(destination.tag)
-                )
-            }
-        }
     }
 }
