@@ -130,7 +130,7 @@
   <meta name="twitter:description" content="Учёт имущества и остатков на телефоне: приход, выдача, перемещения, заявки и Excel. Работает офлайн.">
   <meta name="twitter:image" content="https://kapterka-pro.ru/app_icon_512.png">
 
-  <link rel="preload" as="image" href="screen_main_349.jpg" fetchpriority="high" media="(min-width: 561px)">
+  <link rel="preload" as="image" href="screens/36-2-dashboard.jpg" fetchpriority="high" media="(min-width: 561px)">
   <link rel="stylesheet" href="style.css?v=3.4.9.43">
   <link rel="stylesheet" href="tabs_and_cabinet.css?v=3.4.9.35">
 
@@ -269,7 +269,7 @@
             <div class="neo-copy">
               <div class="neo-kicker"><span></span> Каптёрка PRO • Android • <span data-release-version>3.5.0</span></div>
               <h1>Складской учёт и имущество<br><em>в одном телефоне</em></h1>
-              <p>Приход, выдача, перемещения и остатки на Android. Основной учёт работает без постоянного интернета, а синхронизация — когда связь появится.</p>
+              <p>Приход, выдача, перемещения, заявки и остатки на Android. Основной учёт работает без постоянного интернета, второй телефон подключается по QR-коду, а формы 8 и 18 собираются в Excel за минуту.</p>
 
               <div class="neo-actions">
                 <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('neo_hero')" class="neo-btn neo-primary">Скачать APK</a>
@@ -283,8 +283,8 @@
               </div>
             </div>
 
-            <button class="neo-phone" onclick="openLightbox('screen_main_349.jpg','Каптёрка PRO 3.4.9 — главный экран')" aria-label="Открыть скриншот">
-              <img src="screen_main_349.jpg" alt="Каптёрка PRO 3.4.9 — главный экран" loading="lazy" decoding="async">
+            <button class="neo-phone" onclick="openLightbox('screens/36-2-dashboard.jpg','Каптёрка PRO 3.6 — главный экран')" aria-label="Открыть скриншот">
+              <img src="screens/36-2-dashboard.jpg" alt="Каптёрка PRO 3.6 — главный экран" loading="lazy" decoding="async">
             </button>
           </div>
         </div>
@@ -311,13 +311,22 @@
 
           <div class="neo-feature-grid">
             <button class="neo-feature neo-green" onclick="openModal('modalFeatures')">
-              <b>01</b><div><strong>Учёт остатков</strong><small>Приход, выдача и перемещения сразу меняют склад.</small></div>
+              <b>01</b><div><strong>Учёт остатков</strong><small>Приход, выдача, перемещение и списание сразу меняют склад.</small></div>
             </button>
             <button class="neo-feature neo-cyan" onclick="switchMainTab('tabSync')">
-              <b>02</b><div><strong>Синхронизация</strong><small>Работа локально и обмен данными при появлении связи.</small></div>
+              <b>02</b><div><strong>Общий учёт по QR</strong><small>Второй телефон подключается сканированием QR-кода подразделения.</small></div>
             </button>
             <button class="neo-feature neo-gold" onclick="openModal('modalFeatures')">
-              <b>03</b><div><strong>Excel и формы</strong><small>Отчёты и ведомости из уже введённых данных.</small></div>
+              <b>03</b><div><strong>Формы 8 и 18</strong><small>Раздаточная ведомость и книга учёта в Excel из введённых данных.</small></div>
+            </button>
+            <button class="neo-feature neo-green" onclick="openModal('modalFeatures')">
+              <b>04</b><div><strong>Заявки по этапам</strong><small>Новая → сборка → собрана → выдана, выдача проводится со склада.</small></div>
+            </button>
+            <button class="neo-feature neo-cyan" onclick="openModal('modalFeatures')">
+              <b>05</b><div><strong>Журнал по дням</strong><small>Сегодня, 7 и 30 дней, поиск по документу и складу.</small></div>
+            </button>
+            <button class="neo-feature neo-gold" onclick="switchMainTab('tabPayment')">
+              <b>06</b><div><strong>Защищённая лицензия</strong><small>Проверка на сервере, ключ приходит на почту.</small></div>
             </button>
           </div>
         </div>
@@ -414,7 +423,7 @@
             <div class="neo-preview-actions">
               <div class="neo-gallery-nav" aria-label="Переключение скриншотов">
                 <button type="button" id="previewGalleryPrev" onclick="movePreviewGallery(-1)" aria-label="Предыдущий скриншот">‹</button>
-                <span id="previewGalleryCount" aria-live="polite">1 / 2</span>
+                <span id="previewGalleryCount" aria-live="polite">1 / 7</span>
                 <button type="button" id="previewGalleryNext" onclick="movePreviewGallery(1)" aria-label="Следующий скриншот">›</button>
               </div>
               <button type="button" onclick="switchMainTab('tabDownload')">Как установить →</button>
@@ -424,17 +433,42 @@
           <div class="neo-preview-meta"><span>Версия <b data-release-version>3.5.0</b></span><span>Свайп на телефоне</span><span>Нажмите для увеличения</span></div>
           <div class="neo-shot-row" id="previewGalleryTrack" aria-label="Скриншоты Каптёрка PRO">
             <button class="neo-shot active" data-gallery-index="0" onclick="openGallerySlide(0)">
-              <img src="screen_main_349.jpg" alt="Главная Каптёрка PRO — склады и операции" loading="lazy" decoding="async" fetchpriority="low">
-              <span><strong>Главная</strong><small>Склады и быстрые операции</small></span>
+              <img src="screens/36-2-dashboard.jpg" alt="Каптёрка PRO 3.6 — Главная" loading="lazy" decoding="async" fetchpriority="low">
+              <span><strong>Главная</strong><small>Склады, остатки и быстрые операции</small></span>
             </button>
             <button class="neo-shot" data-gallery-index="1" onclick="openGallerySlide(1)">
-              <img src="screen_catalog_349.jpg" alt="Каталог Каптёрка PRO — номенклатура и категории" loading="lazy" decoding="async" fetchpriority="low">
-              <span><strong>Каталог</strong><small>Поиск, категории и номенклатура</small></span>
+              <img src="screens/36-3-stock-table.jpg" alt="Каптёрка PRO 3.6 — Остатки" loading="lazy" decoding="async" fetchpriority="low">
+              <span><strong>Остатки</strong><small>Приход, расход и остаток по складу</small></span>
+            </button>
+            <button class="neo-shot" data-gallery-index="2" onclick="openGallerySlide(2)">
+              <img src="screens/36-4-requests.jpg" alt="Каптёрка PRO 3.6 — Заявки" loading="lazy" decoding="async" fetchpriority="low">
+              <span><strong>Заявки</strong><small>Новая → Сборка → Собрана → Выдана</small></span>
+            </button>
+            <button class="neo-shot" data-gallery-index="3" onclick="openGallerySlide(3)">
+              <img src="screens/36-5-journal.jpg" alt="Каптёрка PRO 3.6 — Журнал" loading="lazy" decoding="async" fetchpriority="low">
+              <span><strong>Журнал</strong><small>Операции по дням и за период</small></span>
+            </button>
+            <button class="neo-shot" data-gallery-index="4" onclick="openGallerySlide(4)">
+              <img src="screens/36-6-unit-qr.jpg" alt="Каптёрка PRO 3.6 — Подключение по QR" loading="lazy" decoding="async" fetchpriority="low">
+              <span><strong>Подключение по QR</strong><small>Второй телефон за секунды</small></span>
+            </button>
+            <button class="neo-shot" data-gallery-index="5" onclick="openGallerySlide(5)">
+              <img src="screens/36-8-form8.jpg" alt="Каптёрка PRO 3.6 — Форма № 8" loading="lazy" decoding="async" fetchpriority="low">
+              <span><strong>Форма № 8</strong><small>Раздаточная ведомость в Excel</small></span>
+            </button>
+            <button class="neo-shot" data-gallery-index="6" onclick="openGallerySlide(6)">
+              <img src="screens/36-7-pro.jpg" alt="Каптёрка PRO 3.6 — PRO" loading="lazy" decoding="async" fetchpriority="low">
+              <span><strong>PRO</strong><small>Понятная оплата и ключ на почту</small></span>
             </button>
           </div>
           <div class="neo-gallery-dots" id="previewGalleryDots" aria-label="Выбор скриншота">
             <button type="button" class="active" aria-label="Скриншот 1" aria-current="true" onclick="movePreviewGalleryTo(0)"></button>
             <button type="button" aria-label="Скриншот 2" onclick="movePreviewGalleryTo(1)"></button>
+            <button type="button" aria-label="Скриншот 3" onclick="movePreviewGalleryTo(2)"></button>
+            <button type="button" aria-label="Скриншот 4" onclick="movePreviewGalleryTo(3)"></button>
+            <button type="button" aria-label="Скриншот 5" onclick="movePreviewGalleryTo(4)"></button>
+            <button type="button" aria-label="Скриншот 6" onclick="movePreviewGalleryTo(5)"></button>
+            <button type="button" aria-label="Скриншот 7" onclick="movePreviewGalleryTo(6)"></button>
           </div>
         </div>
       </section>
@@ -962,6 +996,7 @@
           <a href="uchet-ostatkov-na-telefone.html">Учёт остатков</a>
           <a href="security.html">Безопасность</a>
           <a href="updates.html">Обновления</a>
+          <a href="rukovodstvo-polzovatelya.html">Руководство</a>
           <a href="kak-nachat-rabotu-kapterka-pro.html">Как начать</a>
           <a href="rezervnaya-kopiya-kapterka-pro.html">Резервная копия</a>
           <a href="help.html">Помощь</a>
@@ -1170,7 +1205,7 @@
     </button>
   </nav>
 
-  <script src="app.js?v=3.4.9.37a"></script>
+  <script src="app.js?v=3.6.0.1"></script>
   <script src="auth-config.js?v=3.4.9.31a"></script>
   <script src="auth-v2.js?v=3.4.9.31i"></script>
 </body>

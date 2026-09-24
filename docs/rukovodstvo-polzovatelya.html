@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Руководство пользователя Каптёрка PRO 3.6 — учёт имущества на Android</title>
+<meta name="description" content="Полное руководство Каптёрка PRO 3.6: регистрация с подтверждением почты, склады и остатки, приход, выдача, перемещение и списание, заявки, синхронизация по ключу и QR-коду, формы 8 и 18, лицензия PRO.">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<link rel="canonical" href="https://kapterka-pro.ru/rukovodstvo-polzovatelya.html">
+<meta name="theme-color" content="#080d0a">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://kapterka-pro.ru/rukovodstvo-polzovatelya.html">
+<meta property="og:title" content="Руководство пользователя Каптёрка PRO 3.6">
+<meta property="og:description" content="Как работать в Каптёрка PRO 3.6: склады, операции, заявки, синхронизация по QR-коду, отчёты по формам 8 и 18.">
+<meta property="og:image" content="https://kapterka-pro.ru/screens/36-2-dashboard.jpg">
+<meta property="og:site_name" content="Каптёрка PRO">
+<meta property="og:locale" content="ru_RU">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="app_icon_512.png">
+<link rel="stylesheet" href="guide.css?v=3.4.9.3">
+<style>
+.shot{display:block;margin:14px auto 22px;max-width:300px;width:100%;border-radius:22px;border:1px solid rgba(255,255,255,.12);box-shadow:0 18px 40px rgba(0,0,0,.35)}
+.toc{display:grid;gap:6px;margin:10px 0 24px;padding:14px 16px;border-radius:16px;background:rgba(255,255,255,.04)}
+.toc a{text-decoration:none}
+.step{display:inline-block;min-width:26px;height:26px;line-height:26px;text-align:center;border-radius:50%;background:rgba(76,201,150,.18);color:#6ee7b7;font-weight:700;margin-right:6px}
+</style>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Article","headline":"Руководство пользователя Каптёрка PRO 3.6","description":"Полное руководство Каптёрка PRO 3.6: склады, операции, заявки, синхронизация по QR-коду, отчёты по формам 8 и 18, лицензия PRO.","datePublished":"2026-09-24","dateModified":"2026-09-24","inLanguage":"ru-RU","mainEntityOfPage":{"@type":"WebPage","@id":"https://kapterka-pro.ru/rukovodstvo-polzovatelya.html"},"image":"https://kapterka-pro.ru/screens/36-2-dashboard.jpg","author":{"@type":"Organization","name":"Каптёрка PRO","url":"https://kapterka-pro.ru/"},"publisher":{"@type":"Organization","name":"Каптёрка PRO","url":"https://kapterka-pro.ru/","logo":{"@type":"ImageObject","url":"https://kapterka-pro.ru/app_icon_512.png"}}}
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Каптёрка PRO","item":"https://kapterka-pro.ru/"},{"@type":"ListItem","position":2,"name":"Помощь","item":"https://kapterka-pro.ru/help.html"},{"@type":"ListItem","position":3,"name":"Руководство пользователя","item":"https://kapterka-pro.ru/rukovodstvo-polzovatelya.html"}]}
+</script>
+<script src="guide-analytics.js?v=1" defer></script>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Перейти к содержимому</a>
+<header class="top"><div class="wrap"><a class="brand" href="/"><i>📦</i><span>Каптёрка PRO</span></a><a class="back" href="help.html">Центр помощи →</a></div></header>
+<main id="main-content"><div class="wrap">
+<nav class="crumbs"><a href="/">Главная</a> / <a href="help.html">Помощь</a> / Руководство пользователя</nav>
+<section class="hero">
+<div class="eyebrow">Версия 3.6</div>
+<h1>Руководство пользователя Каптёрка PRO</h1>
+<p class="lead">Всё, что нужно для ежедневной работы: склады и остатки, приход и выдача, заявки, общий учёт на нескольких телефонах и готовые формы 8 и 18.</p>
+<div class="chips"><span>Склады</span><span>Операции</span><span>Заявки</span><span>QR-подключение</span><span>Формы 8 и 18</span><span>PRO</span></div>
+<div class="cta"><a class="btn primary" href="/#tabDownload">Скачать Каптёрка PRO</a><a class="btn secondary" href="https://t.me/kapterka_pro">Канал в Telegram</a></div>
+</section>
+<article class="article">
+<nav class="toc" aria-label="Содержание">
+<a href="#start">1. Первый запуск и регистрация</a>
+<a href="#stock">2. Главный экран: склады и остатки</a>
+<a href="#ops">3. Операции: приход, выдача, перемещение, списание</a>
+<a href="#journal">4. Журнал операций</a>
+<a href="#requests">5. Заявки</a>
+<a href="#sync">6. Второй телефон: ключ и QR-код</a>
+<a href="#reports">7. Отчёты: формы 8 и 18</a>
+<a href="#pro">8. Демо и лицензия PRO</a>
+<a href="#faq">9. Частые вопросы</a>
+</nav>
+
+<h2 id="start">1. Первый запуск и регистрация</h2>
+<img class="shot" src="screens/36-1-splash.jpg" alt="Заставка Каптёрка PRO 3.6" loading="lazy" decoding="async" width="1080" height="2340">
+<p><span class="step">1</span>Введите позывной или ФИО, название подразделения и почту.</p>
+<p><span class="step">2</span>На почту придёт письмо «Код подтверждения» — 6 цифр есть и в теме письма, и в тексте. Введите их в шесть клеточек. Письма нет пару минут — проверьте «Спам» и «Промоакции» или нажмите «Отправить код снова».</p>
+<p><span class="step">3</span>После подтверждения придёт письмо с ключом подразделения вида <b>kapt_…</b>. Этот ключ нужен, чтобы подключить второй телефон.</p>
+<div class="note">Если связи нет, можно продолжить без подтверждения — учёт работает сразу, почту подтвердите позже.</div>
+
+<h2 id="stock">2. Главный экран: склады и остатки</h2>
+<img class="shot" src="screens/36-2-dashboard.jpg" alt="Главный экран: склады, сводка и быстрые операции" loading="lazy" decoding="async" width="1080" height="2340">
+<ul>
+<li><b>Сводка</b> сверху: сколько всего единиц, наименований и складов.</li>
+<li><b>Кнопки операций</b>: Приход, Выдача, Перемещение, Списание — одно касание.</li>
+<li><b>Поиск и фильтр по службам</b> (РАВ, медицинская, вещевая и т.д.).</li>
+<li><b>Склады списком</b>: нажмите на склад — раскроется таблица «приход / расход / остаток».</li>
+<li><b>Удерживайте карточку склада</b> — откроется меню: выше, ниже, изменить, удалить. Удаление требует второго нажатия, базовый склад удалить нельзя.</li>
+</ul>
+<img class="shot" src="screens/36-3-stock-table.jpg" alt="Раскрытая таблица остатков склада" loading="lazy" decoding="async" width="1080" height="2340">
+
+<h2 id="ops">3. Операции</h2>
+<ol>
+<li><b>Приход</b> — принять имущество на склад: склад, от кого, позиции, количество кнопками − / +.</li>
+<li><b>Выдача</b> — выдать на другой склад, во взвод или человеку. Больше, чем есть на складе, выдать нельзя.</li>
+<li><b>Перемещение</b> — со склада на склад, общий остаток не меняется.</li>
+<li><b>Списание</b> — израсходовано или утрачено, с причиной.</li>
+</ol>
+<p>После сохранения появляется анимированная галочка и короткая вибрация — операция записана и уйдёт на другие телефоны подразделения.</p>
+
+<h2 id="journal">4. Журнал операций</h2>
+<img class="shot" src="screens/36-5-journal.jpg" alt="Журнал операций по дням" loading="lazy" decoding="async" width="1080" height="2340">
+<ul>
+<li>Кнопки <b>Сегодня / 7 дней / 30 дней / Всё время</b> — быстро сужают список.</li>
+<li>Операции сгруппированы <b>по дням</b>; нажмите на заголовок дня, чтобы свернуть его.</li>
+<li>Поиск по названию, складу, номеру документа; фильтр по типу операции.</li>
+<li>Длинный журнал подгружается частями — кнопка «Показать ещё»; кнопка «Наверх» возвращает к началу.</li>
+</ul>
+
+<h2 id="requests">5. Заявки</h2>
+<img class="shot" src="screens/36-4-requests.jpg" alt="Доска заявок по этапам" loading="lazy" decoding="async" width="1080" height="2340">
+<p>Заявки идут по четырём этапам: <b>Новая → Собирается → Собрана → Выдана</b>. Вкладки сверху показывают, сколько заявок на каждом этапе.</p>
+<ol>
+<li>Нажмите «<b>Новая заявка</b>»: выберите склад, кому, добавьте позиции — приложение сразу покажет, хватает ли их на складе. Можно отметить «Срочно» — такая заявка будет первой.</li>
+<li>«<b>Начать сборку</b>» → «<b>Собрана</b>» → «<b>Выдать</b>».</li>
+<li>«Выдать» проводит настоящую выдачу: остаток на складе уменьшается, запись появляется в журнале и в форме 8.</li>
+</ol>
+
+<h2 id="sync">6. Второй телефон: ключ и QR-код</h2>
+<img class="shot" src="screens/36-6-unit-qr.jpg" alt="Окно подразделения с QR-кодом ключа" loading="lazy" decoding="async" width="1080" height="2340">
+<ol>
+<li>На первом телефоне нажмите «<b>Подключить</b>» вверху главного экрана — откроется QR-код и ключ подразделения.</li>
+<li>На втором телефоне при входе выберите «Подключиться», нажмите значок <b>QR</b> в поле ключа и наведите камеру на код. Или введите ключ вручную.</li>
+<li>Если данные на телефонах разошлись: на телефоне с правильными данными — «<b>Этот телефон — эталон</b>», на остальных — «<b>Загрузить всё из облака</b>».</li>
+</ol>
+<div class="note">Камера нужна только для сканирования QR-кода. Приложение не снимает фото и видео и ничего не передаёт с камеры.</div>
+
+<h2 id="reports">7. Отчёты: формы 8 и 18</h2>
+<img class="shot" src="screens/36-8-form8.jpg" alt="Форма 8 — раздаточная ведомость" loading="lazy" decoding="async" width="1080" height="2340">
+<ul>
+<li><b>Форма № 8</b> (ОКУД 6002203) — раздаточная (сдаточная) ведомость: получатели по строкам, имущество по графам, подписи «Выдал / Принял / Проверил / Бухгалтер».</li>
+<li><b>Форма № 18</b> — книга учёта: раздел на каждое наименование с графами «дата, документ, от кого / кому, приход, расход, остаток».</li>
+<li>Кнопка «<b>Скачать Excel</b>» сохраняет файл, «Текст/CSV» — отправляет в мессенджер или на почту.</li>
+</ul>
+
+<h2 id="pro">8. Демо и лицензия PRO</h2>
+<img class="shot" src="screens/36-7-pro.jpg" alt="Окно лицензии PRO" loading="lazy" decoding="async" width="1080" height="2340">
+<ul>
+<li>После установки — <b>3 дня</b> полного доступа бесплатно.</li>
+<li>PRO на 30 дней: «Оплатить» → оплата через ЮKassa (СБП, карта МИР, SberPay) → вернуться и нажать «<b>Я оплатил — проверить</b>».</li>
+<li>Ключ и чек приходят на почту. Лицензия хранится на сервере и не пропадёт при переустановке.</li>
+<li>Сменили телефон — «Сменили телефон или потеряли ключ» → «Найти оплату по почте».</li>
+</ul>
+
+<h2 id="faq">9. Частые вопросы</h2>
+<p><b>Не приходит код на почту.</b> Проверьте «Спам» и «Промоакции», подождите минуту и нажмите «Отправить код снова». Можно продолжить без подтверждения.</p>
+<p><b>Разные данные на телефонах.</b> Проверьте, что ключ подразделения одинаковый, затем «Эталон» на правильном телефоне и «Загрузить из облака» на остальных.</p>
+<p><b>Синхронизация работает только с VPN.</b> Значит, оператор связи ограничивает доступ к облачным серверам. Учёт на телефоне продолжает работать, данные отправятся, когда связь появится.</p>
+<p><b>Пропадут ли данные при обновлении?</b> Нет. Новая версия ставится поверх старой, склад, журнал и лицензия сохраняются.</p>
+<div class="note">Вопросы и предложения — в Telegram-боте <a href="https://t.me/kapterka_help_bot">@kapterka_help_bot</a>, новости — в канале <a href="https://t.me/kapterka_pro">@kapterka_pro</a>.</div>
+</article>
+<div class="page-links">
+<a href="kak-nachat-rabotu-kapterka-pro.html"><strong>Быстрый старт</strong><small>Минимальная схема учёта для первого дня.</small></a>
+<a href="bezopasnoe-obnovlenie-kapterka-pro.html"><strong>Безопасное обновление</strong><small>Как ставить новую версию поверх рабочей.</small></a>
+<a href="perenos-kapterka-pro-na-novyy-telefon.html"><strong>Перенос на новый телефон</strong><small>Ключ подразделения, QR и лицензия.</small></a>
+</div>
+</div></main>
+<footer class="footer"><div class="wrap"><span>© 2026 Каптёрка PRO</span><span><a href="/">Главная</a> · <a href="help.html">Помощь</a> · <a href="security.html">Безопасность</a></span></div></footer>
+</body>
+</html>

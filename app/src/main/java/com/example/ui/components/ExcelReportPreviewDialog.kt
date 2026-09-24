@@ -276,9 +276,10 @@ fun ExcelReportPreviewDialog(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "СКАЧАТЬ EXCEL (.XLSX)",
+                            text = "Скачать Excel",
                             fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp
+                            fontSize = 13.sp,
+                            maxLines = 1
                         )
                     }
 

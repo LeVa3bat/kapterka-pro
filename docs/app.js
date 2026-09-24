@@ -1447,8 +1447,13 @@ window.addEventListener('popstate', restoreTabFromLocation);
 // SCREENSHOT LIGHTBOX
 // Lightbox modal opener
 const SCREENSHOT_GALLERY = [
-  { src: 'screen_main_349.jpg', title: 'Главная — склады и быстрые операции', alt: 'Главная Каптёрка PRO' },
-  { src: 'screen_catalog_349.jpg', title: 'Каталог — номенклатура и категории', alt: 'Каталог Каптёрка PRO' }
+  { src: 'screens/36-2-dashboard.jpg', title: 'Главная — Склады, остатки и быстрые операции', alt: 'Каптёрка PRO 3.6 — Главная' },
+  { src: 'screens/36-3-stock-table.jpg', title: 'Остатки — Приход, расход и остаток по складу', alt: 'Каптёрка PRO 3.6 — Остатки' },
+  { src: 'screens/36-4-requests.jpg', title: 'Заявки — Новая → Сборка → Собрана → Выдана', alt: 'Каптёрка PRO 3.6 — Заявки' },
+  { src: 'screens/36-5-journal.jpg', title: 'Журнал — Операции по дням и за период', alt: 'Каптёрка PRO 3.6 — Журнал' },
+  { src: 'screens/36-6-unit-qr.jpg', title: 'Подключение по QR — Второй телефон за секунды', alt: 'Каптёрка PRO 3.6 — Подключение по QR' },
+  { src: 'screens/36-8-form8.jpg', title: 'Форма № 8 — Раздаточная ведомость в Excel', alt: 'Каптёрка PRO 3.6 — Форма № 8' },
+  { src: 'screens/36-7-pro.jpg', title: 'PRO — Понятная оплата и ключ на почту', alt: 'Каптёрка PRO 3.6 — PRO' }
 ];
 let screenshotGalleryIndex = 0;
 let previewGalleryIndex = 0;

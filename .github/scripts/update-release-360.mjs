@@ -11,13 +11,15 @@ if (!size || !sha || !signer || !date) {
 const OLD = { name: '3.5.0', code: 32, web: '3.5.0-web.52', sha: '49e8dfb2566545258f51207e1bf7de85fdbed3fb4fedbd3713d00021bfa11a1f' };
 const NEW = { name: '3.6.0', code: 33, web: '3.6.0-web.53' };
 const HIGHLIGHTS = [
-  'новый современный интерфейс: компактный главный экран, таблица остатков по складу, быстрые операции в одно касание',
-  'регистрация с подтверждением почты и письмом с ключом подразделения',
-  'защищённая синхронизация: доступ к данным подразделения только у его участников',
-  'лицензии проверяются сервером; ключ приходит на почту после оплаты',
-  'кнопки «Этот телефон — эталон» и «Загрузить из облака» для выравнивания данных'
+  'новый современный интерфейс: плавающая нижняя панель, компактный главный экран, анимации и вибрация при сохранении',
+  'подключение второго телефона по QR-коду подразделения',
+  'заявки по этапам «новая → сборка → собрана → выдана»; выдача по заявке проводится со склада',
+  'журнал операций по дням с фильтром «сегодня / 7 / 30 дней»',
+  'форма № 8 — раздаточная ведомость по приказу МО РФ № 139, форма № 18 — книга учёта по наименованиям',
+  'регистрация с кодом на почту, письмо с ключом подразделения',
+  'защищённая синхронизация и лицензии, проверяемые сервером; новое окно оплаты PRO'
 ];
-const SHORT = 'Новый интерфейс • подтверждение почты • защищённая синхронизация • лицензии через сервер';
+const SHORT = 'Новый интерфейс • QR-подключение • заявки по этапам • формы 8 и 18 • защищённая синхронизация';
 
 const sizeText = Number(size).toLocaleString('ru-RU').replace(/\s/g, ' ');
 const must = (p, before, after) => {
@@ -35,7 +37,7 @@ Object.assign(rj, {
   apkSha256: sha,
   signerSha256: signer,
   releaseDate: date,
-  releaseType: 'новый интерфейс и защищённая синхронизация',
+  releaseType: 'новый интерфейс, QR-подключение и заявки',
   highlights: HIGHLIGHTS,
   roomDatabaseVersion: 3
 });
@@ -88,7 +90,7 @@ for (const f of readdirSync('docs').filter((n) => n.endsWith('.html'))) {
         </ul>
       </article>`;
   const current = `<article class="release">
-        <div class="release-head"><div><strong>Каптёрка PRO <span data-release-version>${NEW.name}</span></strong><small>build <span data-release-code>${NEW.code}</span> • <span data-release-type>новый интерфейс и защищённая синхронизация</span></small></div><span class="release-badge">Текущая версия</span></div>
+        <div class="release-head"><div><strong>Каптёрка PRO <span data-release-version>${NEW.name}</span></strong><small>build <span data-release-code>${NEW.code}</span> • <span data-release-type>новый интерфейс, QR-подключение и заявки</span></small></div><span class="release-badge">Текущая версия</span></div>
         <ul data-release-highlights>
 ${HIGHLIGHTS.map((h, i) => `          <li>${h}${i === HIGHLIGHTS.length - 1 ? '.' : ';'}</li>`).join('\n')}
         </ul>
