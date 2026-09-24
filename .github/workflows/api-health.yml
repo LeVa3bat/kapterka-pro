@@ -16,4 +16,6 @@ jobs:
     steps:
       - run: curl -fsS --max-time 20 "https://kapterka-api.alex-666-881.workers.dev/?action=health"; echo
       # Mail relay check: never sends a letter, prints only statuses.
-      - run: curl -sS --max-time 40 -X POST -H 'Content-Type: application/json' -d '{}' "https://kapterka-api.alex-666-881.workers.dev/?action=mail_diag"; echo
+      - run: |
+          curl -sS --max-time 40 -X POST -H 'Content-Type: application/json' -d '{}' "https://kapterka-api.alex-666-881.workers.dev/?action=mail_diag"
+          echo
