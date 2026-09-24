@@ -18,6 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.QrCodeScanner
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Key
@@ -276,10 +277,24 @@ fun AuthScreen(
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    // Unit Key Field with regenerate icon if registering
+                    // Unit key: typed, or filled by scanning the unit's QR code.
+                    val scanQr = com.example.ui.components.rememberQrScanLauncher { invite ->
+                        unitKey = invite.unitKey
+                        selectedTab = 1
+                        if (unitName.isBlank() && invite.unitName.isNotBlank()) unitName = invite.unitName
+                    }
                     OutlinedTextField(
                         value = unitKey,
                         onValueChange = { unitKey = it },
+                        trailingIcon = {
+                            IconButton(onClick = { scanQr() }) {
+                                Icon(
+                                    imageVector = Icons.Rounded.QrCodeScanner,
+                                    contentDescription = "Сканировать QR-код подразделения",
+                                    tint = SageGreenBright
+                                )
+                            }
+                        },
                         label = { Text("Код группы учёта", color = TacticalTextSecondary, fontSize = 12.sp) },
                         placeholder = { Text(if (selectedTab == 0) "Пусто = создать новый код" else "Введите код существующей группы", color = TacticalTextDim, fontSize = 12.sp) },
                         singleLine = true,
@@ -315,7 +330,7 @@ fun AuthScreen(
                             text = if (selectedTab == 0)
                                 "Оставьте поле пустым — приложение безопасно создаст новый код. Для других телефонов используйте этот же код."
                             else
-                                "Введите код, который вам передал владелец или администратор группы.",
+                                "Введите код или нажмите значок QR справа и отсканируйте код с телефона владельца.",
                             color = TacticalTextMuted,
                             fontSize = 11.sp,
                             lineHeight = 14.sp

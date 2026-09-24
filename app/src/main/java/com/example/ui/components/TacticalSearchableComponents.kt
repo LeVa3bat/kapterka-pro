@@ -338,28 +338,17 @@ fun TacticalSearchableItemDropdown(
                                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                                                 )
                                                 Spacer(modifier = Modifier.height(2.dp))
-                                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                                    Text(
-                                                        text = item.serviceCategory,
-                                                        color = TacticalTextMuted,
-                                                        fontSize = 10.sp
-                                                    )
-                                                    Text(
-                                                        text = " • ${item.subType}",
-                                                        color = SageGreenPrimary.copy(alpha = 0.8f),
-                                                        fontSize = 10.sp
-                                                    )
-                                                    if (stock != null) {
-                                                        Text(
-                                                            text = " • В наличии: $stock ${item.unit}",
-                                                            color = if (stock > 0) SageGreenBright else TacticalRedText,
-                                                            fontSize = 10.sp,
-                                                            fontWeight = FontWeight.Bold
-                                                        )
-                                                    }
-                                                }
+                                                // One short line; the stock goes into the chip on the right.
+                                                Text(
+                                                    text = "${item.serviceCategory} • ${item.subType}",
+                                                    color = TacticalTextMuted,
+                                                    fontSize = 10.sp,
+                                                    maxLines = 1,
+                                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                                )
                                             }
 
+                                            Spacer(modifier = Modifier.width(8.dp))
                                             Box(
                                                 modifier = Modifier
                                                     .clip(RoundedCornerShape(12.dp))
@@ -368,8 +357,8 @@ fun TacticalSearchableItemDropdown(
                                                     .padding(horizontal = 6.dp, vertical = 2.dp)
                                             ) {
                                                 Text(
-                                                    text = item.unit,
-                                                    color = SageGreenBright,
+                                                    text = if (stock != null) "$stock ${item.unit}" else item.unit,
+                                                    color = if (stock == null || stock > 0) SageGreenBright else TacticalRedText,
                                                     fontSize = 10.sp,
                                                     fontFamily = FontFamily.Monospace,
                                                     fontWeight = FontWeight.Bold

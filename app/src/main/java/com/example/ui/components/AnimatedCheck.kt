@@ -19,8 +19,6 @@ import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -40,13 +38,13 @@ fun AnimatedCheck(
     val pop = remember { Animatable(0.4f) }
     val ring = remember { Animatable(0f) }
     val tick = remember { Animatable(0f) }
-    val haptics = LocalHapticFeedback.current
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     LaunchedEffect(key) {
         pop.snapTo(0.4f)
         ring.snapTo(0f)
         tick.snapTo(0f)
-        runCatching { haptics.performHapticFeedback(HapticFeedbackType.LongPress) }
+        com.example.util.Haptics.success(context)
         launch { pop.animateTo(1f, spring(dampingRatio = 0.45f, stiffness = Spring.StiffnessMedium)) }
         ring.animateTo(1f, tween(380, easing = FastOutSlowInEasing))
         tick.animateTo(1f, tween(300, easing = FastOutSlowInEasing))

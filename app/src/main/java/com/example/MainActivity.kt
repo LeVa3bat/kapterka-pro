@@ -364,6 +364,7 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             if (isProblem) {
+                                LaunchedEffect(msg) { com.example.util.Haptics.warning(context) }
                                 Icon(
                                     imageVector = Icons.Rounded.WarningAmber,
                                     contentDescription = null,

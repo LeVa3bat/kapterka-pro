@@ -135,6 +135,9 @@ dependencies {
   // implementation(libs.androidx.camera.core)
   // implementation(libs.androidx.camera.lifecycle)
   // implementation(libs.androidx.camera.view)
+  // QR: code generation (zxing core) and the camera scanner screen.
+  implementation("com.journeyapps:zxing-android-embedded:4.3.0")
+  implementation("com.google.zxing:core:3.5.3")
   implementation(libs.androidx.compose.material.icons.core)
   implementation(libs.androidx.compose.material.icons.extended)
   implementation(libs.androidx.compose.material3)
