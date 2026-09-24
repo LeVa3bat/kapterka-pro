@@ -1,0 +1,17 @@
+name: kapterka-api live health (read-only)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['claude/**']
+    paths: ['.github/workflows/api-health.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - run: curl -fsS --max-time 20 "https://kapterka-api.alex-666-881.workers.dev/?action=health"; echo
