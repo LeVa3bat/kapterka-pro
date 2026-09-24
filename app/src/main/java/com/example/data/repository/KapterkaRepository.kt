@@ -394,25 +394,51 @@ class KapterkaRepository(
         return newRecord
     }
 
-    suspend fun setStockAbsoluteQuantity(pointId: String, itemId: String, absoluteQuantity: Int): StockRecord {
+    /**
+     * Corrects the balance of an item at a point to an absolute value (e.g. after
+     * a physical recount). Unlike a raw overwrite, this computes the delta against
+     * the current balance and routes it through the same accounting path as every
+     * other operation, so Приход/Расход totals stay correct and the correction
+     * shows up in the operations history.
+     */
+    suspend fun setStockAbsoluteQuantity(
+        pointId: String,
+        pointName: String,
+        itemId: String,
+        itemName: String,
+        absoluteQuantity: Int,
+        actor: String,
+        comment: String = "Корректировка остатка (пересчёт)"
+    ): StockRecord? {
         val current = dao.getStockItem(pointId, itemId)
-        val newRecord = if (current != null) {
-            current.copy(
-                quantity = absoluteQuantity,
-                lastUpdated = System.currentTimeMillis()
-            )
-        } else {
-            StockRecord(
-                pointId = pointId,
-                itemId = itemId,
-                quantity = absoluteQuantity,
-                incomeTotal = absoluteQuantity,
-                expenseTotal = 0,
-                lastUpdated = System.currentTimeMillis()
-            )
-        }
-        dao.insertOrUpdateStock(newRecord)
-        syncManager?.pushStockRecordAsync(getCurrentUnitKey(), newRecord)
+        val currentQuantity = current?.quantity ?: 0
+        val delta = absoluteQuantity - currentQuantity
+        if (delta == 0) return current
+
+        val item = dao.getItemById(itemId)
+        val unit = item?.unit ?: "шт."
+        val isIncome = delta > 0
+        val entry = OperationItemEntry(itemId, itemName, unit, kotlin.math.abs(delta))
+        val itemsJson = serializeOperationItems(listOf(entry))
+        val summary = "$itemName - ${kotlin.math.abs(delta)} $unit"
+        val op = OperationRecord(
+            id = java.util.UUID.randomUUID().toString(),
+            type = if (isIncome) OperationType.INCOME else OperationType.EXPENDITURE,
+            fromPointName = if (isIncome) "Корректировка остатка" else pointName,
+            toPointName = if (isIncome) pointName else "Корректировка остатка",
+            docNumber = "",
+            responsiblePerson = actor,
+            comment = comment,
+            timestamp = System.currentTimeMillis(),
+            itemsSummary = summary,
+            itemsJson = itemsJson
+        )
+
+        val stagedStocks = linkedMapOf<String, StockRecord>()
+        val newRecord = stageAdjustedStock(stagedStocks, pointId, itemId, delta, isIncome = isIncome)
+        val updatedStocks = stagedStocks.values.toList()
+        dao.commitOperationAndStocks(op, updatedStocks)
+        syncManager?.pushOperationAsync(getCurrentUnitKey(), op, updatedStocks)
         return newRecord
     }
 

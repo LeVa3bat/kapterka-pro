@@ -508,8 +508,13 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
 
     fun adjustPointStock(pointId: String, pointName: String, itemId: String, itemName: String, newQuantity: Int) {
         viewModelScope.launch {
-            repository.setStockAbsoluteQuantity(pointId, itemId, newQuantity)
-            _toastEvent.emit("Остаток «$itemName» на «$pointName» установлен: $newQuantity")
+            val actor = userProfile.value?.callsign ?: "Ответственный"
+            val result = repository.setStockAbsoluteQuantity(pointId, pointName, itemId, itemName, newQuantity, actor)
+            if (result != null) {
+                _toastEvent.emit("Остаток «$itemName» на «$pointName» установлен: $newQuantity")
+            } else {
+                _toastEvent.emit("Остаток «$itemName» уже равен $newQuantity")
+            }
         }
     }
 
