@@ -1,0 +1,61 @@
+name: UI screenshots
+
+# Renders key screens (Robolectric + Roborazzi) and publishes the PNGs to the
+# `ui-screenshots` branch, so UI changes can be reviewed without a device.
+
+on:
+  push:
+    branches: ['claude/**']
+    paths:
+      - 'app/src/main/java/com/example/ui/**'
+      - 'app/src/test/java/com/example/ScreenshotTest.kt'
+      - '.github/workflows/ui-screenshots.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ui-screenshots
+  cancel-in-progress: true
+
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Configure Android SDK
+        shell: bash
+        run: |
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -path '*/bin/sdkmanager' 2>/dev/null | sort -V | tail -n 1)"
+          echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "ANDROID_HOME=$SDK_ROOT" >> "$GITHUB_ENV"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "build-tools;36.0.0" "platforms;android-36" "platforms;android-36.1"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
+      - name: Render screens
+        run: gradle :app:recordRoborazziDebug --tests 'com.example.ScreenshotTest' --no-daemon --stacktrace
+      - name: Publish to ui-screenshots branch
+        shell: bash
+        run: |
+          set -e
+          SRC="$(pwd)"
+          find app -name '*.png' -path '*screenshots*' | head -50
+          mkdir -p /tmp/shots && find app -name '*.png' -path '*screenshots*' -exec cp {} /tmp/shots/ \;
+          ls -la /tmp/shots
+          cd /tmp && rm -rf pub && mkdir pub && cd pub
+          git init -q -b ui-screenshots
+          cp /tmp/shots/*.png .
+          echo "Source commit: $GITHUB_SHA" > README.md
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A && git commit -qm "UI screenshots for $GITHUB_SHA"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" ui-screenshots
