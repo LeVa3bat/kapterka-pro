@@ -20,6 +20,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.SetOptions
+import com.google.firebase.firestore.Source
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -74,6 +76,8 @@ class FirebaseSyncManager(
     private var connectJob: Job? = null
     private var accessRetryJob: Job? = null
     private var lastCallsign: String = ""
+    /** Last failed server round-trip; keeps the status honest until the next success. */
+    @Volatile private var lastCloudError: String? = null
     private val unitAccess: UnitAccessService by lazy { UnitAccessService() }
     private var listeners = mutableListOf<ListenerRegistration>()
     private var presenceHeartbeatJob: Job? = null
@@ -279,7 +283,7 @@ class FirebaseSyncManager(
             }
         }
 
-        val cloud = unitRef.collection("sync_tombstones").get().await()
+        val cloud = unitRef.collection("sync_tombstones").get(Source.SERVER).await()
         for (doc in cloud.documents) {
             val type = doc.getString("entityType").orEmpty()
             val entityId = doc.getString("entityId").orEmpty()
@@ -353,12 +357,26 @@ class FirebaseSyncManager(
             sendPresencePing(cleanKey, callsign, unitName)
             startPresenceHeartbeat(cleanKey, callsign, unitName)
             if (access !is UnitAccessResult.Denied) {
+                val cloudError = lastCloudError
                 _syncState.value = _syncState.value.copy(
                     isSyncing = false,
-                    isOnline = true,
-                    syncMessage = "Подключено к подразделению"
+                    isOnline = cloudError == null,
+                    syncMessage = cloudError ?: "Подключено к подразделению"
                 )
             }
+        }
+    }
+
+    /** Human-readable reason for a failed cloud call. */
+    private fun cloudErrorText(e: Exception): String {
+        val code = (e as? FirebaseFirestoreException)?.code
+        return when (code) {
+            FirebaseFirestoreException.Code.UNAVAILABLE, FirebaseFirestoreException.Code.DEADLINE_EXCEEDED ->
+                "Нет связи с облаком (сервер Google Firebase недоступен с этого телефона). " +
+                    "Проверьте интернет, режим полёта, VPN или блокировщик рекламы."
+            FirebaseFirestoreException.Code.PERMISSION_DENIED ->
+                "Облако отказало в доступе к подразделению."
+            else -> "Ошибка облака: ${e.javaClass.simpleName}${code?.let { " ($it)" } ?: ""}"
         }
     }
 
@@ -665,12 +683,12 @@ class FirebaseSyncManager(
             }
 
             // 1. Fetch Cloud Stock Records first to know which points have inventory
-            val cloudStocksSnap = unitRef.collection("stock_records").get().await()
+            val cloudStocksSnap = unitRef.collection("stock_records").get(Source.SERVER).await()
             val stockPointIds = cloudStocksSnap.documents.mapNotNull { it.getString("pointId") }.filter { it.isNotBlank() }.toSet()
 
             // 2. Reconcile Warehouse Points
             val defaultPointsMap = com.example.data.local.InitialData.getDefaultPoints().associateBy { it.id }
-            val cloudPointsSnap = unitRef.collection("warehouse_points").get().await()
+            val cloudPointsSnap = unitRef.collection("warehouse_points").get(Source.SERVER).await()
             val existingPointsMap = mutableMapOf<String, WarehousePoint>()
 
             for (doc in cloudPointsSnap.documents) {
@@ -760,7 +778,7 @@ class FirebaseSyncManager(
             }
 
             // 4. Reconcile Operation Records
-            val cloudOpsSnap = unitRef.collection("operation_records").get().await()
+            val cloudOpsSnap = unitRef.collection("operation_records").get(Source.SERVER).await()
             // Merge cloud history locally. Do not delete local history by absence alone.
             for (doc in cloudOpsSnap.documents) {
                 val opTypeStr = doc.getString("type") ?: "INCOME"
@@ -784,7 +802,7 @@ class FirebaseSyncManager(
             }
 
             // 5. Reconcile Requisitions
-            val cloudReqSnap = unitRef.collection("requisitions").get().await()
+            val cloudReqSnap = unitRef.collection("requisitions").get(Source.SERVER).await()
             // Merge cloud requisitions locally. Do not delete local data by absence alone.
             for (doc in cloudReqSnap.documents) {
                 val statusStr = doc.getString("status") ?: "PENDING"
@@ -805,7 +823,7 @@ class FirebaseSyncManager(
             }
 
             // 6. Reconcile Custom Items
-            val cloudItemsSnap = unitRef.collection("inventory_items").get().await()
+            val cloudItemsSnap = unitRef.collection("inventory_items").get(Source.SERVER).await()
             for (doc in cloudItemsSnap.documents) {
                 val item = InventoryItem(
                     id = doc.id,
@@ -822,6 +840,7 @@ class FirebaseSyncManager(
                 }
             }
 
+            lastCloudError = null
             // 7. Connect and register realtime snapshot listeners
             startSyncForUnit(cleanKey, callsign, unitName)
 
@@ -834,14 +853,16 @@ class FirebaseSyncManager(
             Pair(true, "База синхронизирована с каналом [$cleanKey]")
         } catch (e: Exception) {
             Log.e(TAG, "Error in syncAndReconcileAll", e)
+            lastCloudError = cloudErrorText(e)
             _syncState.value = _syncState.value.copy(
                 isSyncing = false,
-                syncMessage = "Ошибка синхронизации: ${e.javaClass.simpleName}: ${e.message}"
+                isOnline = false,
+                syncMessage = cloudErrorText(e)
             )
             // A failed full reconcile must not leave the device offline: realtime
             // listeners still deliver every change from other devices.
             startSyncForUnit(cleanKey, callsign, unitName)
-            Pair(false, "Сбой связи: ${e.localizedMessage}")
+            Pair(false, cloudErrorText(e))
         }
     }
 
@@ -870,14 +891,14 @@ class FirebaseSyncManager(
             val localItemIds = dao.getAllItems().first().map { it.id }.toSet()
 
             var removed = 0
-            for (doc in unitRef.collection("warehouse_points").get().await().documents) {
+            for (doc in unitRef.collection("warehouse_points").get(Source.SERVER).await().documents) {
                 if (doc.id != "base_sklad" && doc.id !in localPointIds) {
                     prepareDeletionTombstone(cleanKey, TOMBSTONE_POINT, doc.id)
                     doc.reference.delete().await()
                     removed++
                 }
             }
-            for (doc in unitRef.collection("stock_records").get().await().documents) {
+            for (doc in unitRef.collection("stock_records").get(Source.SERVER).await().documents) {
                 if (doc.id !in localStockIds) {
                     val pointId = doc.getString("pointId") ?: doc.id.substringBefore("___")
                     val itemId = doc.getString("itemId") ?: doc.id.substringAfter("___")
@@ -886,21 +907,21 @@ class FirebaseSyncManager(
                     removed++
                 }
             }
-            for (doc in unitRef.collection("operation_records").get().await().documents) {
+            for (doc in unitRef.collection("operation_records").get(Source.SERVER).await().documents) {
                 if (doc.id !in localOpIds) {
                     prepareDeletionTombstone(cleanKey, TOMBSTONE_OPERATION, doc.id)
                     doc.reference.delete().await()
                     removed++
                 }
             }
-            for (doc in unitRef.collection("requisitions").get().await().documents) {
+            for (doc in unitRef.collection("requisitions").get(Source.SERVER).await().documents) {
                 if (doc.id !in localReqIds) {
                     prepareDeletionTombstone(cleanKey, TOMBSTONE_REQUISITION, doc.id)
                     doc.reference.delete().await()
                     removed++
                 }
             }
-            for (doc in unitRef.collection("inventory_items").get().await().documents) {
+            for (doc in unitRef.collection("inventory_items").get(Source.SERVER).await().documents) {
                 if (doc.id !in localItemIds && (doc.getBoolean("isCustom") ?: false)) {
                     prepareDeletionTombstone(cleanKey, TOMBSTONE_ITEM, doc.id)
                     doc.reference.delete().await()
@@ -914,6 +935,15 @@ class FirebaseSyncManager(
             operations.forEach { pushOperationAsync(cleanKey, it, emptyList()) }
             requisitions.forEach { pushRequisitionAsync(cleanKey, it) }
 
+            // Confirm the server really received everything before reporting success.
+            val delivered = withTimeoutOrNull(60_000) { firestore.waitForPendingWrites().await(); true } ?: false
+            if (!delivered) {
+                return@withContext Pair(
+                    false,
+                    "Данные поставлены в очередь, но сервер пока не подтвердил приём. " +
+                        "Не закрывайте приложение и повторите через минуту при хорошем интернете."
+                )
+            }
             _syncState.value = _syncState.value.copy(
                 lastSyncTime = System.currentTimeMillis(),
                 syncMessage = "Облако обновлено по этому телефону"
@@ -925,7 +955,7 @@ class FirebaseSyncManager(
             )
         } catch (e: Exception) {
             Log.e(TAG, "publishLocalAsReference failed", e)
-            Pair(false, "Не удалось обновить облако: ${e.javaClass.simpleName}. Проверьте интернет и повторите.")
+            Pair(false, "Облако НЕ обновлено. " + cloudErrorText(e))
         }
     }
 
@@ -942,11 +972,11 @@ class FirebaseSyncManager(
             val unitRef = firestore.collection("units").document(cleanKey)
             // Read everything first: nothing local is touched unless the whole
             // cloud snapshot arrived.
-            val cloudPoints = unitRef.collection("warehouse_points").get().await().documents
-            val cloudStocks = unitRef.collection("stock_records").get().await().documents
-            val cloudOps = unitRef.collection("operation_records").get().await().documents
-            val cloudReqs = unitRef.collection("requisitions").get().await().documents
-            val cloudItems = unitRef.collection("inventory_items").get().await().documents
+            val cloudPoints = unitRef.collection("warehouse_points").get(Source.SERVER).await().documents
+            val cloudStocks = unitRef.collection("stock_records").get(Source.SERVER).await().documents
+            val cloudOps = unitRef.collection("operation_records").get(Source.SERVER).await().documents
+            val cloudReqs = unitRef.collection("requisitions").get(Source.SERVER).await().documents
+            val cloudItems = unitRef.collection("inventory_items").get(Source.SERVER).await().documents
 
             val points = cloudPoints.mapNotNull { doc ->
                 val name = doc.getString("name").orEmpty()
@@ -1056,7 +1086,7 @@ class FirebaseSyncManager(
             )
         } catch (e: Exception) {
             Log.e(TAG, "replaceLocalWithCloud failed", e)
-            Pair(false, "Не удалось загрузить из облака: ${e.javaClass.simpleName}. Данные на телефоне не изменены.")
+            Pair(false, "Данные на телефоне не изменены. " + cloudErrorText(e))
         }
     }
 
