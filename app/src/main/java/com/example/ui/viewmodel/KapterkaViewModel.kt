@@ -1063,6 +1063,24 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    private val _commandCenter = MutableStateFlow<com.example.data.admin.CommandCenterStats?>(null)
+    val commandCenter: StateFlow<com.example.data.admin.CommandCenterStats?> = _commandCenter.asStateFlow()
+    private val _commandCenterError = MutableStateFlow("")
+    val commandCenterError: StateFlow<String> = _commandCenterError.asStateFlow()
+
+    fun refreshCommandCenter() {
+        viewModelScope.launch {
+            val result = adminBackendService.commandCenterStats(adminSessionToken)
+            if (result.success) {
+                _commandCenter.value = result.stats
+                _commandCenterError.value = ""
+            } else {
+                if (result.errorMessage.contains("сессия", ignoreCase = true)) adminSessionToken = ""
+                _commandCenterError.value = result.errorMessage
+            }
+        }
+    }
+
     fun refreshFightersRegistry() {
         viewModelScope.launch {
             val result = adminBackendService.listFighters(adminSessionToken)

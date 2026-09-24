@@ -120,6 +120,45 @@ class ScreenshotTest {
     }
 
     @Test
+    fun command_center_dark() {
+        val now = System.currentTimeMillis()
+        compose.setContent {
+            MyApplicationTheme(darkTheme = true) {
+                com.example.ui.components.CommandCenterContent(
+                    stats = com.example.data.admin.CommandCenterStats(
+                        generatedAt = now,
+                        devicesOnline = 7,
+                        unitsOnline = 4,
+                        devicesToday = 23,
+                        devicesWeek = 61,
+                        usersTotal = 148,
+                        usersOn36 = 37,
+                        usersNewToday = 3,
+                        usersNewWeek = 19,
+                        unitsTotal = 52,
+                        licensesVerified = 12,
+                        licensesLegacy = 9,
+                        licensesExpiring7d = 4,
+                        paidThisMonth = 8,
+                        revenueMonthRub = 3920,
+                        registrations14d = listOf(2, 4, 1, 0, 3, 5, 2, 6, 1, 3, 4, 2, 5, 3),
+                        onlineList = listOf(
+                            com.example.data.admin.OnlineDevice("Лева", "МинБат", "Samsung A52", now - 60_000),
+                            com.example.data.admin.OnlineDevice("Сокол", "2 рота", "Xiaomi Redmi 12", now - 5 * 60_000),
+                            com.example.data.admin.OnlineDevice("Кедр", "Взвод связи", "Pixel 7", now - 11 * 60_000)
+                        )
+                    ),
+                    errorMessage = "",
+                    onRefresh = {},
+                    onOpenRegistry = {},
+                    onDismiss = {}
+                )
+            }
+        }
+        compose.onRoot().captureRoboImage("screenshots/command_center_dark.png")
+    }
+
+    @Test
     fun dashboard_light() {
         dashboard(dark = false)
         compose.onRoot().captureRoboImage("screenshots/dashboard_light.png")

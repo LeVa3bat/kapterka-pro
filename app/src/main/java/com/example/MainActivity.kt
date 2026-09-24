@@ -75,6 +75,7 @@ import com.example.data.model.WarehousePoint
 import com.example.ui.components.AddCustomItemDialog
 import com.example.ui.components.AddPointDialog
 import com.example.ui.components.DeveloperAccessPromptDialog
+import com.example.ui.components.CommandCenterDialog
 import com.example.ui.components.DeveloperAdminDialog
 import com.example.ui.components.DeveloperDiagnosticsSnapshot
 import com.example.ui.components.EditPointDialog
@@ -248,6 +249,9 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
     var showPaymentProDialog by remember { mutableStateOf(false) }
     var showDevAuthPrompt by remember { mutableStateOf(false) }
     var showDevAdminDialog by remember { mutableStateOf(false) }
+    var showCommandCenter by remember { mutableStateOf(false) }
+    val commandCenterStats by viewModel.commandCenter.collectAsState()
+    val commandCenterError by viewModel.commandCenterError.collectAsState()
     var excelReportInitialTab by remember { mutableIntStateOf(0) }
     var showExcelReportDialog by remember { mutableStateOf(false) }
     var showUserManualDialog by remember { mutableStateOf(false) }
@@ -672,9 +676,22 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
             onAuthenticate = { secret -> viewModel.authenticateDeveloper(secret) },
             onSuccessAuth = {
                 showDevAuthPrompt = false
-                showDevAdminDialog = true
+                showCommandCenter = true
             },
             onDismiss = { showDevAuthPrompt = false }
+        )
+    }
+
+    if (showCommandCenter) {
+        CommandCenterDialog(
+            stats = commandCenterStats,
+            errorMessage = commandCenterError,
+            onRefresh = { viewModel.refreshCommandCenter() },
+            onOpenRegistry = {
+                showCommandCenter = false
+                showDevAdminDialog = true
+            },
+            onDismiss = { showCommandCenter = false }
         )
     }
 

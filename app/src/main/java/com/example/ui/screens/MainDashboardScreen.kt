@@ -28,6 +28,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.AssignmentInd
+import androidx.compose.material.icons.filled.MoveToInbox
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
@@ -388,28 +393,28 @@ fun MainDashboardScreen(
             ) {
                 SleekOperationTile(
                     title = "Приход",
-                    icon = Icons.Default.LocalShipping,
+                    icon = Icons.Default.MoveToInbox,
                     accentColor = SageGreenBright,
                     onClick = onIncomeClick,
                     modifier = Modifier.weight(1f).testTag("op_income_button")
                 )
                 SleekOperationTile(
                     title = "Выдача",
-                    icon = Icons.Default.FlightTakeoff,
+                    icon = Icons.Default.AssignmentInd,
                     accentColor = TacticalGoldText,
                     onClick = onIssueClick,
                     modifier = Modifier.weight(1f).testTag("op_issue_button")
                 )
                 SleekOperationTile(
                     title = "Перемещ.",
-                    icon = Icons.AutoMirrored.Filled.Send,
+                    icon = Icons.Default.LocalShipping,
                     accentColor = TacticalTealText,
                     onClick = onTransferClick,
                     modifier = Modifier.weight(1f).testTag("op_transfer_button")
                 )
                 SleekOperationTile(
                     title = "Списание",
-                    icon = Icons.Default.NorthEast,
+                    icon = Icons.Default.DeleteSweep,
                     accentColor = TacticalRedText,
                     onClick = onExpenditureClick,
                     modifier = Modifier.weight(1f).testTag("op_expenditure_button")
@@ -730,7 +735,7 @@ fun MainDashboardScreen(
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Icon(
-                                            imageVector = Icons.Default.Warehouse,
+                                            imageVector = if (point.isBase) Icons.Default.Warehouse else Icons.Default.Inventory2,
                                             contentDescription = null,
                                             tint = if (point.isBase) TacticalGoldText else SageGreenBright,
                                             modifier = Modifier.size(18.dp)
@@ -790,11 +795,17 @@ fun MainDashboardScreen(
 
                                     Spacer(modifier = Modifier.width(6.dp))
 
+                                    val chevronRotation by androidx.compose.animation.core.animateFloatAsState(
+                                        targetValue = if (isExpanded) 180f else 0f,
+                                        label = "chevron"
+                                    )
                                     Icon(
-                                        imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                        imageVector = Icons.Default.ExpandMore,
                                         contentDescription = if (isExpanded) "Свернуть" else "Развернуть",
                                         tint = SageGreenPrimary,
-                                        modifier = Modifier.size(22.dp)
+                                        modifier = Modifier
+                                            .size(22.dp)
+                                            .graphicsLayer { rotationZ = chevronRotation }
                                     )
                                 }
                             }
@@ -1101,12 +1112,19 @@ private fun DashboardSummaryMetric(
     label: String,
     modifier: Modifier = Modifier
 ) {
+    // Numbers count up smoothly when they change.
+    val numeric = value.toIntOrNull()
+    val animated by androidx.compose.animation.core.animateIntAsState(
+        targetValue = numeric ?: 0,
+        animationSpec = androidx.compose.animation.core.tween(700),
+        label = "metric"
+    )
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = value,
+            text = if (numeric != null) animated.toString() else value,
             color = TacticalTextPrimary,
             fontSize = 20.sp,
             fontWeight = FontWeight.Black,
@@ -1155,12 +1173,16 @@ private fun SleekOperationTile(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by androidx.compose.animation.core.animateFloatAsState(if (pressed) 0.94f else 1f, label = "press")
     Column(
         modifier = modifier
+            .graphicsLayer { scaleX = scale; scaleY = scale }
             .clip(RoundedCornerShape(16.dp))
             .background(TacticalSurface)
             .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(16.dp))
-            .clickable { onClick() }
+            .clickable(interactionSource = interaction, indication = androidx.compose.material3.ripple()) { onClick() }
             .padding(vertical = 10.dp, horizontal = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {

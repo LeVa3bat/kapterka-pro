@@ -34,6 +34,40 @@ data class AdminFightersResult(
     val errorMessage: String = ""
 )
 
+data class OnlineDevice(
+    val callsign: String,
+    val unitName: String,
+    val deviceModel: String,
+    val lastSeen: Long
+)
+
+/** Numbers for the owner's "Командный центр". */
+data class CommandCenterStats(
+    val generatedAt: Long = 0L,
+    val devicesOnline: Int = 0,
+    val unitsOnline: Int = 0,
+    val devicesToday: Int = 0,
+    val devicesWeek: Int = 0,
+    val usersTotal: Int = 0,
+    val usersOn36: Int = 0,
+    val usersNewToday: Int = 0,
+    val usersNewWeek: Int = 0,
+    val unitsTotal: Int = 0,
+    val licensesVerified: Int = 0,
+    val licensesLegacy: Int = 0,
+    val licensesExpiring7d: Int = 0,
+    val paidThisMonth: Int = 0,
+    val revenueMonthRub: Int = 0,
+    val registrations14d: List<Int> = List(14) { 0 },
+    val onlineList: List<OnlineDevice> = emptyList()
+)
+
+data class CommandCenterResult(
+    val success: Boolean,
+    val stats: CommandCenterStats? = null,
+    val errorMessage: String = ""
+)
+
 class AdminBackendService {
     private val tag = "AdminBackendService"
 
@@ -177,6 +211,49 @@ class AdminBackendService {
                 AdminActionResult(false, errorMessage = "Не удалось удалить запись через сервер.")
             }
         }
+
+    suspend fun commandCenterStats(token: String): CommandCenterResult = withContext(Dispatchers.IO) {
+        if (token.isBlank()) return@withContext CommandCenterResult(false, errorMessage = "Служебная сессия истекла. Войдите заново.")
+        try {
+            val r = request("admin_stats", JSONObject().apply { put("admin_token", token) })
+            if (!r.optBoolean("ok", false)) return@withContext CommandCenterResult(false, errorMessage = errorText(r))
+            val online = r.optJSONObject("online") ?: JSONObject()
+            val users = r.optJSONObject("users") ?: JSONObject()
+            val lic = r.optJSONObject("licenses") ?: JSONObject()
+            val regs = r.optJSONArray("registrations_14d")
+            val list = r.optJSONArray("online_list")
+            CommandCenterResult(
+                true,
+                CommandCenterStats(
+                    generatedAt = r.optLong("generated_at"),
+                    devicesOnline = online.optInt("devices_now"),
+                    unitsOnline = online.optInt("units_now"),
+                    devicesToday = online.optInt("devices_today"),
+                    devicesWeek = online.optInt("devices_week"),
+                    usersTotal = users.optInt("total"),
+                    usersOn36 = users.optInt("on_36"),
+                    usersNewToday = users.optInt("new_today"),
+                    usersNewWeek = users.optInt("new_week"),
+                    unitsTotal = r.optInt("units_total"),
+                    licensesVerified = lic.optInt("active_verified"),
+                    licensesLegacy = lic.optInt("active_legacy"),
+                    licensesExpiring7d = lic.optInt("expiring_7d"),
+                    paidThisMonth = lic.optInt("paid_month"),
+                    revenueMonthRub = lic.optInt("revenue_month_rub"),
+                    registrations14d = List(14) { i -> regs?.optInt(i) ?: 0 },
+                    onlineList = buildList {
+                        for (i in 0 until (list?.length() ?: 0)) {
+                            val o = list!!.optJSONObject(i) ?: continue
+                            add(OnlineDevice(o.optString("callsign"), o.optString("unit_name"), o.optString("device_model"), o.optLong("last_seen")))
+                        }
+                    }
+                )
+            )
+        } catch (e: Exception) {
+            Log.e(tag, "Command center stats failed", e)
+            CommandCenterResult(false, errorMessage = "Нет связи с сервером. Проверьте интернет.")
+        }
+    }
 
     private fun request(action: String, payload: JSONObject): JSONObject {
         val endpoint = URL(backendBaseUrl() + "?action=" + Uri.encode(action))
