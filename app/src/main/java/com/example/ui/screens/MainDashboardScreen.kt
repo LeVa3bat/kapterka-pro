@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+
 package com.example.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
@@ -8,6 +10,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -155,12 +158,16 @@ fun MainDashboardScreen(
     onHelpClick: () -> Unit = {},
     isDarkTheme: Boolean = false,
     onToggleTheme: () -> Unit = {},
-    onReorderPoints: (List<WarehousePoint>) -> Unit = {}
+    onReorderPoints: (List<WarehousePoint>) -> Unit = {},
+    onDeletePoint: (String) -> Unit = {}
 ) {
     var selectedPointFilterId by remember { mutableStateOf<String?>(null) } // null = Все склады
     var adjustingStock by remember { mutableStateOf<PendingAdjustStock?>(null) }
     var showReorderPointsDialog by remember { mutableStateOf(false) }
     val expandedPointIds = remember { mutableStateMapOf<String, Boolean>() }
+    // Point whose long-press action sheet is open.
+    var pointMenuFor by remember { mutableStateOf<WarehousePoint?>(null) }
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     val categories = remember(availableCategories) {
         if (availableCategories.isNotEmpty()) {
@@ -705,13 +712,29 @@ fun MainDashboardScreen(
                     // Default to collapsed (false) so that on entrance all lists are hidden
                     val isExpanded = expandedPointIds[point.id] ?: false
 
+                    val lifted = pointMenuFor?.id == point.id
+                    val lift by androidx.compose.animation.core.animateFloatAsState(
+                        targetValue = if (lifted) 1f else 0f,
+                        animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.55f, stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow),
+                        label = "lift"
+                    )
                     Card(
                         modifier = Modifier
+                            .animateItem()
                             .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 4.dp),
+                            .padding(horizontal = 14.dp, vertical = 4.dp)
+                            .graphicsLayer {
+                                scaleX = 1f + 0.035f * lift
+                                scaleY = 1f + 0.035f * lift
+                                shadowElevation = 22f * lift
+                                shape = RoundedCornerShape(18.dp)
+                            },
                         shape = RoundedCornerShape(18.dp),
                         colors = CardDefaults.cardColors(containerColor = TacticalSurface),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorderSubtle),
+                        border = androidx.compose.foundation.BorderStroke(
+                            if (lifted) 1.5.dp else 1.dp,
+                            if (lifted) SageGreenBright else TacticalBorderSubtle
+                        ),
                         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                     ) {
                         Column(modifier = Modifier.fillMaxWidth()) {
@@ -719,9 +742,13 @@ fun MainDashboardScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clickable {
-                                        expandedPointIds[point.id] = !isExpanded
-                                    }
+                                    .combinedClickable(
+                                        onClick = { expandedPointIds[point.id] = !isExpanded },
+                                        onLongClick = {
+                                            com.example.util.Haptics.tick(context)
+                                            pointMenuFor = point
+                                        }
+                                    )
                                     .padding(horizontal = 12.dp, vertical = 10.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
@@ -757,9 +784,7 @@ fun MainDashboardScreen(
                                             overflow = TextOverflow.Ellipsis
                                         )
                                         Text(
-                                            text = (if (point.isBase) "Базовый • " else "") +
-                                                "${pointRows.size} наим. • +${pointRows.sumOf { it.incomeTotal }}" +
-                                                " / −${pointRows.sumOf { it.expenseTotal }}",
+                                            text = (if (point.isBase) "Базовый • " else "") + "${pointRows.size} наим.",
                                             color = if (point.isBase) TacticalGoldText else TacticalTextMuted,
                                             fontSize = 11.sp,
                                             maxLines = 1,
@@ -769,17 +794,6 @@ fun MainDashboardScreen(
                                 }
 
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = Icons.Default.Edit,
-                                        contentDescription = "Изменить склад",
-                                        tint = TacticalTextMuted,
-                                        modifier = Modifier
-                                            .size(30.dp)
-                                            .clip(CircleShape)
-                                            .clickable { onEditPointClick(point) }
-                                            .padding(7.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(2.dp))
                                     Box(
                                         modifier = Modifier
                                             .clip(RoundedCornerShape(12.dp))
@@ -868,6 +882,30 @@ fun MainDashboardScreen(
                 onAdjustStock(pId, pName, iId, iName, newQty)
                 adjustingStock = null
             }
+        )
+    }
+
+    // LONG-PRESS ACTIONS FOR A POINT
+    pointMenuFor?.let { menuPoint ->
+        val index = points.indexOfFirst { it.id == menuPoint.id }
+        PointActionsSheet(
+            point = menuPoint,
+            stockUnits = rowsByPoint[menuPoint.id].orEmpty().sumOf { it.quantity },
+            canMoveUp = index > 0,
+            canMoveDown = index in 0 until points.lastIndex,
+            onMove = { delta ->
+                val list = points.toMutableList()
+                val from = list.indexOfFirst { it.id == menuPoint.id }
+                val to = from + delta
+                if (from >= 0 && to in list.indices) {
+                    java.util.Collections.swap(list, from, to)
+                    com.example.util.Haptics.tick(context)
+                    onReorderPoints(list)
+                }
+            },
+            onEdit = { pointMenuFor = null; onEditPointClick(menuPoint) },
+            onDelete = { pointMenuFor = null; onDeletePoint(menuPoint.id) },
+            onDismiss = { pointMenuFor = null }
         )
     }
 
@@ -1018,8 +1056,9 @@ private fun CompactStockRow(
                 color = if (isHeader) labelColor else TacticalTextPrimary,
                 fontSize = if (isHeader) 10.sp else 12.5.sp,
                 fontWeight = if (isHeader || isTotal) FontWeight.SemiBold else FontWeight.Medium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                lineHeight = 15.sp
             )
             if (subtitle.isNotBlank()) {
                 Text(

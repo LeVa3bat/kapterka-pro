@@ -480,7 +480,8 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                             onHelpClick = { showUserManualDialog = true },
                             isDarkTheme = isDarkTheme,
                             onToggleTheme = { viewModel.toggleTheme() },
-                            onReorderPoints = { viewModel.reorderWarehousePoints(it) }
+                            onReorderPoints = { viewModel.reorderWarehousePoints(it) },
+                            onDeletePoint = { viewModel.deleteWarehousePoint(it) }
                         )
                     }
 
