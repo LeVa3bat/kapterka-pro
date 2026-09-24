@@ -91,7 +91,8 @@ class UnitAccessService(
                         UnitAccessResult.Member
                     }
                     code == 429 -> UnitAccessResult.Denied("Слишком много попыток подключения. Подождите минуту.")
-                    code == 400 -> UnitAccessResult.Denied("Неверный формат ключа подразделения.")
+                    code == 400 && json.optString("error") == "INVALID_UNIT_KEY" ->
+                        UnitAccessResult.Denied("Неверный формат ключа подразделения.")
                     code == 404 -> UnitAccessResult.Denied("Подразделение с таким ключом не найдено.")
                     else -> UnitAccessResult.Unavailable("HTTP $code ${json.optString("error")}")
                 }
