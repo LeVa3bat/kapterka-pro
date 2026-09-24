@@ -39,14 +39,17 @@ jobs:
           const t = (ms) => ms ? new Date(ms).toISOString().replace('T', ' ').slice(0, 16) + 'Z' : '-';
           const q = async (parent, body) => (await (await fetch(`${parent}:runQuery`, { method: 'POST', headers: H, body: JSON.stringify(body) })).json());
           // Newest device presence pings across all units.
-          const rows = await q(base, { structuredQuery: { from: [{ collectionId: 'devices', allDescendants: true }],
-            orderBy: [{ field: { fieldPath: 'timestampMillis' }, direction: 'DESCENDING' }], limit: 12 } });
+          const all = await q(base, { structuredQuery: { from: [{ collectionId: 'devices', allDescendants: true }], limit: 1000 } });
+          if (!Array.isArray(all) || all.some((x) => x.error)) console.log('query error:', JSON.stringify(all).slice(0, 400));
+          const rows = (Array.isArray(all) ? all : []).filter((x) => x.document)
+            .sort((a, b) => Date.parse(b.document.updateTime) - Date.parse(a.document.updateTime)).slice(0, 12);
+          console.log('device docs total:', (Array.isArray(all) ? all : []).filter((x) => x.document).length);
           const units = new Map();
           for (const r of rows) {
             if (!r.document) continue;
             const parts = r.document.name.split('/documents/')[1].split('/');
             const unit = parts[1];
-            const ms = Number(r.document.fields?.timestampMillis?.integerValue || 0);
+            const ms = Date.parse(r.document.updateTime) || 0;
             if (!units.has(unit)) units.set(unit, []);
             units.get(unit).push(ms);
           }
@@ -61,3 +64,4 @@ jobs:
           }
           JS
           node d.mjs
+# rerun
