@@ -1,0 +1,89 @@
+name: kapterka-api (Cloudflare Worker)
+
+on:
+  push:
+    paths:
+      - 'server/cloudflare/**'
+      - '.github/workflows/kapterka-api.yml'
+  pull_request:
+    paths:
+      - 'server/cloudflare/**'
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: 'Выложить сервер на Cloudflare (true) или только проверить (false)'
+        required: true
+        default: 'false'
+        type: choice
+        options: ['false', 'true']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kapterka-api-deploy
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Backend self-test
+        run: node server/cloudflare/worker.test.mjs
+      - name: No secrets in worker source
+        run: |
+          if grep -E -n 'live_[A-Za-z0-9_-]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY-----[A-Za-z0-9+/=]{20}|[0-9]{8,10}:AA[A-Za-z0-9_-]{30,}' server/cloudflare/worker.mjs server/cloudflare/wrangler.toml; then
+            echo "Secret-like material found in worker source"; exit 1
+          fi
+      - name: Bundle check (dry run)
+        working-directory: server/cloudflare
+        run: npx --yes wrangler@4 deploy --dry-run --outdir /tmp/worker-dist
+
+  deploy:
+    needs: test
+    if: github.event_name == 'workflow_dispatch' && inputs.deploy == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Require Cloudflare credentials
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          [ -n "$CLOUDFLARE_API_TOKEN" ] || { echo "GitHub secret CLOUDFLARE_API_TOKEN is missing"; exit 1; }
+          [ -n "$CLOUDFLARE_ACCOUNT_ID" ] || { echo "GitHub secret CLOUDFLARE_ACCOUNT_ID is missing"; exit 1; }
+      - name: Deploy (secrets in Cloudflare are kept as they are)
+        working-directory: server/cloudflare
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler@4 deploy --keep-vars
+      - name: Live smoke check
+        run: |
+          set -e
+          BASE=https://kapterka-api.alex-666-881.workers.dev
+          sleep 5
+          curl -fsS --max-time 20 "$BASE/?action=health" -o health.json
+          cat health.json; echo
+          node -e "
+            const h=require('./health.json');
+            if(h.service!=='kapterka-payment-api'||h.apiVersion!==2) throw new Error('new worker not live');
+            if(!h.secretConfigured) throw new Error('YOOKASSA_SECRET_KEY missing on worker');
+            const miss=['licenseRegistryConfigured','adminAuthConfigured','adminSessionConfigured','emailConfigured'].filter(k=>!h[k]);
+            if(miss.length) console.log('::warning::Not configured yet: '+miss.join(', '));
+          "
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/?action=send_telegram" -H 'Content-Type: application/json' -d '{"text":"probe"}')
+          [ "$code" = "410" ] || { echo "send_telegram must be closed, got $code"; exit 1; }
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/?action=admin_list_fighters" -H 'Content-Type: application/json' -d '{"admin_token":"x.y.z"}')
+          [ "$code" = "403" ] || { echo "admin must reject forged token, got $code"; exit 1; }
+          echo "Live checks passed"

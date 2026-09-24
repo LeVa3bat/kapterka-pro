@@ -1,0 +1,1035 @@
+// KAPTERKA PRO — server-authoritative payment / license / registry backend.
+// Cloudflare Worker port of server/yandex-cloud-function.js.
+//
+// Trust boundary: every privileged credential lives only in Worker secrets.
+// The Android app and the site never hold YooKassa, Firebase service-account,
+// Telegram, Brevo or admin secrets.
+//
+// Worker secrets / vars:
+//   YOOKASSA_SHOP_ID, YOOKASSA_SECRET_KEY, PAYMENT_AMOUNT_RUB
+//   FIREBASE_PROJECT_ID, FIREBASE_SERVICE_ACCOUNT_B64 | FIREBASE_SERVICE_ACCOUNT_JSON
+//   ADMIN_API_SECRET_SHA256, ADMIN_SESSION_SECRET
+//   BREVO_API_KEY, EMAIL_SENDER_EMAIL, EMAIL_SENDER_NAME (optional)
+//   TG_BOT_TOKEN, TG_ADMIN_CHAT_ID (optional, server-side notifications only)
+// Optional bindings (wrangler.toml): AUTH_LIMITER, API_LIMITER (Workers rate limiting).
+
+export const SERVICE_NAME = 'kapterka-payment-api';
+export const API_VERSION = 2;
+
+const CHECKSUM_CHARS = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+const DAY_MS = 24 * 60 * 60 * 1000;
+const LICENSE_DURATION_MS = 30 * DAY_MS;
+const ADMIN_TOKEN_TTL_MS = 15 * 60 * 1000;
+const ADMIN_AUTH_WINDOW_MS = 5 * 60 * 1000;
+const ADMIN_AUTH_MAX_FAILURES = 5;
+const LICENSE_EMAIL_RATE_LIMIT_MS = 60 * 1000;
+const MAX_REQUEST_BODY_BYTES = 64 * 1024;
+const UPSTREAM_TIMEOUT_MS = 12000;
+const LICENSE_KEY_RE = /^KAPT-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/;
+const ALLOWED_ORIGINS = new Set(['https://kapterka-pro.ru', 'https://www.kapterka-pro.ru']);
+
+// Per-isolate state. Cloudflare may run several isolates, so the in-memory
+// limits are a second line of defence behind the optional rate-limit bindings.
+let cachedGoogleToken = { value: '', expiresAt: 0, account: '' };
+const adminAuthFailures = new Map();
+const licenseEmailLastSentAt = new Map();
+
+// ---------------------------------------------------------------- config
+
+export function getConfig(env = {}) {
+  const amount = Number(env.PAYMENT_AMOUNT_RUB || 490);
+  return {
+    shopId: String(env.YOOKASSA_SHOP_ID || '1450722'),
+    secretKey: String(env.YOOKASSA_SECRET_KEY || ''),
+    amountRub: Number.isFinite(amount) && amount > 0 ? amount : 490,
+    projectId: String(env.FIREBASE_PROJECT_ID || 'kapterka-pro'),
+    serviceAccount: readServiceAccount(env),
+    adminSecretSha256: String(env.ADMIN_API_SECRET_SHA256 || '').trim().toLowerCase(),
+    adminSessionSecret: String(env.ADMIN_SESSION_SECRET || ''),
+    brevoKey: String(env.BREVO_API_KEY || ''),
+    senderEmail: String(env.EMAIL_SENDER_EMAIL || ''),
+    senderName: String(env.EMAIL_SENDER_NAME || 'Каптёрка ПРО'),
+    tgBot: String(env.TG_BOT_TOKEN || ''),
+    tgChat: String(env.TG_ADMIN_CHAT_ID || '')
+  };
+}
+
+function readServiceAccount(env) {
+  let raw = String(env.FIREBASE_SERVICE_ACCOUNT_JSON || '');
+  if (!raw && env.FIREBASE_SERVICE_ACCOUNT_B64) {
+    try {
+      raw = new TextDecoder().decode(base64ToBytes(String(env.FIREBASE_SERVICE_ACCOUNT_B64)));
+    } catch (_) {
+      raw = '';
+    }
+  }
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed.client_email && parsed.private_key ? parsed : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------- helpers
+
+function corsHeaders(request) {
+  const origin = request.headers.get('Origin') || '';
+  const headers = {
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    Vary: 'Origin'
+  };
+  if (ALLOWED_ORIGINS.has(origin)) headers['Access-Control-Allow-Origin'] = origin;
+  return headers;
+}
+
+function json(request, status, body, extra = {}) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': 'no-store',
+      'X-Content-Type-Options': 'nosniff',
+      'Referrer-Policy': 'no-referrer',
+      ...corsHeaders(request),
+      ...extra
+    }
+  });
+}
+
+export function cleanText(value, max = 160) {
+  return String(value ?? '').replace(/[\u0000-\u001F\u007F]/g, ' ').trim().slice(0, max);
+}
+
+export function cleanEmail(value) {
+  const email = cleanText(value, 160).toLowerCase();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : '';
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function maskKey(key) {
+  const parts = String(key || '').split('-');
+  return parts.length === 4 ? `${parts[0]}-****-****-${parts[3]}` : '****';
+}
+
+function bytesToHex(bytes) {
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+function base64ToBytes(b64) {
+  const bin = atob(b64.replace(/\s+/g, ''));
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+function base64url(input) {
+  const bytes = typeof input === 'string' ? new TextEncoder().encode(input) : input;
+  let bin = '';
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
+}
+
+async function sha256Hex(text) {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(text)));
+  return bytesToHex(new Uint8Array(digest));
+}
+
+async function hmacHex(secret, text) {
+  const key = await crypto.subtle.importKey(
+    'raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+  );
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(text));
+  return bytesToHex(new Uint8Array(sig));
+}
+
+function constantTimeEqual(a, b) {
+  const x = String(a);
+  const y = String(b);
+  let diff = x.length ^ y.length;
+  const len = Math.max(x.length, y.length);
+  for (let i = 0; i < len; i++) diff |= (x.charCodeAt(i) | 0) ^ (y.charCodeAt(i) | 0);
+  return diff === 0;
+}
+
+function randomHex(bytes) {
+  const buf = new Uint8Array(bytes);
+  crypto.getRandomValues(buf);
+  return bytesToHex(buf);
+}
+
+async function fetchWithTimeout(url, init = {}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT_MS);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// ---------------------------------------------------------------- license keys
+
+export function computeKeyChecksum(p1, p2) {
+  const s = `KAPT-${p1}-${p2}-KAPT3RKA_881_MILITARY`;
+  let h1 = 0x811c9dc5 >>> 0;
+  let h2 = 0x5a2d1e39 >>> 0;
+  for (let i = 0; i < s.length; i++) {
+    const code = s.charCodeAt(i);
+    h1 = Math.imul(h1 ^ code, 0x01000193) >>> 0;
+    h2 = (Math.imul(h2 + code, 31) + 0x45) >>> 0;
+  }
+  return (
+    CHECKSUM_CHARS[(h1 >>> 24) & 0x1f] +
+    CHECKSUM_CHARS[(h1 >>> 16) & 0x1f] +
+    CHECKSUM_CHARS[(h2 >>> 24) & 0x1f] +
+    CHECKSUM_CHARS[(h2 >>> 16) & 0x1f]
+  );
+}
+
+// Deterministic: the same succeeded payment always maps to the same key.
+// Must stay identical to the key issued by the 3.5.0 backend.
+export async function keyForPayment(paymentId) {
+  const normalized = String(paymentId || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const seed = (await sha256Hex(normalized)).toUpperCase();
+  const p1 = seed.slice(0, 4);
+  const p2 = seed.slice(4, 8);
+  return `KAPT-${p1}-${p2}-${computeKeyChecksum(p1, p2)}`;
+}
+
+function generateAdminLicenseKey() {
+  const buf = new Uint8Array(8);
+  crypto.getRandomValues(buf);
+  const pick = (i) => CHECKSUM_CHARS[buf[i] & 0x1f];
+  const p1 = pick(0) + pick(1) + pick(2) + pick(3);
+  const p2 = pick(4) + pick(5) + pick(6) + pick(7);
+  return `KAPT-${p1}-${p2}-${computeKeyChecksum(p1, p2)}`;
+}
+
+// ---------------------------------------------------------------- upstreams
+
+async function sendTelegram(cfg, text) {
+  if (!cfg.tgBot || !cfg.tgChat) return false;
+  try {
+    const r = await fetchWithTimeout(`https://api.telegram.org/bot${cfg.tgBot}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: cfg.tgChat, text, parse_mode: 'HTML' })
+    });
+    return r.ok;
+  } catch (_) {
+    return false;
+  }
+}
+
+async function requestYooKassa(cfg, method, apiPath, data = null, idempotenceKey = null) {
+  if (!cfg.secretKey) throw new Error('YooKassa is not configured');
+  const headers = {
+    Authorization: 'Basic ' + btoa(`${cfg.shopId}:${cfg.secretKey}`),
+    'Idempotence-Key': idempotenceKey || crypto.randomUUID()
+  };
+  if (data) headers['Content-Type'] = 'application/json';
+  const r = await fetchWithTimeout('https://api.yookassa.ru' + apiPath, {
+    method,
+    headers,
+    body: data ? JSON.stringify(data) : undefined
+  });
+  const parsed = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    const error = new Error(`YooKassa HTTP ${r.status}`);
+    error.status = r.status;
+    throw error;
+  }
+  return parsed;
+}
+
+async function importPrivateKey(pem) {
+  const body = String(pem)
+    .replace(/-----BEGIN PRIVATE KEY-----/, '')
+    .replace(/-----END PRIVATE KEY-----/, '')
+    .replace(/\s+/g, '');
+  return crypto.subtle.importKey(
+    'pkcs8', base64ToBytes(body), { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['sign']
+  );
+}
+
+async function googleAccessToken(cfg) {
+  const now = Date.now();
+  const account = cfg.serviceAccount;
+  if (!account) throw new Error('Firebase service account is not configured');
+  if (
+    cachedGoogleToken.value &&
+    cachedGoogleToken.account === account.client_email &&
+    cachedGoogleToken.expiresAt > now + 60000
+  ) {
+    return cachedGoogleToken.value;
+  }
+  const iat = Math.floor(now / 1000);
+  const unsigned =
+    base64url(JSON.stringify({ alg: 'RS256', typ: 'JWT' })) + '.' +
+    base64url(JSON.stringify({
+      iss: account.client_email,
+      scope: 'https://www.googleapis.com/auth/datastore',
+      aud: 'https://oauth2.googleapis.com/token',
+      iat,
+      exp: iat + 3600
+    }));
+  const key = await importPrivateKey(account.private_key);
+  const sig = new Uint8Array(await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, new TextEncoder().encode(unsigned)));
+  const r = await fetchWithTimeout('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion: `${unsigned}.${base64url(sig)}`
+    }).toString()
+  });
+  const parsed = await r.json().catch(() => ({}));
+  if (!r.ok || !parsed.access_token) throw new Error('Google OAuth token request failed');
+  cachedGoogleToken = {
+    value: parsed.access_token,
+    account: account.client_email,
+    expiresAt: now + Math.max(300, Number(parsed.expires_in || 3600) - 60) * 1000
+  };
+  return cachedGoogleToken.value;
+}
+
+function toFirestoreValue(value) {
+  if (typeof value === 'number') return { integerValue: String(Math.trunc(value)) };
+  if (typeof value === 'boolean') return { booleanValue: value };
+  return { stringValue: String(value ?? '') };
+}
+
+function fromFirestoreFields(fields = {}) {
+  const out = {};
+  for (const [name, field] of Object.entries(fields)) {
+    if ('stringValue' in field) out[name] = field.stringValue;
+    else if ('integerValue' in field) out[name] = Number(field.integerValue);
+    else if ('doubleValue' in field) out[name] = Number(field.doubleValue);
+    else if ('booleanValue' in field) out[name] = Boolean(field.booleanValue);
+    else if ('timestampValue' in field) out[name] = Date.parse(field.timestampValue) || 0;
+  }
+  return out;
+}
+
+class Firestore {
+  constructor(cfg) {
+    this.cfg = cfg;
+    this.base =
+      `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(cfg.projectId)}` +
+      '/databases/(default)/documents';
+  }
+
+  async request(method, path, body) {
+    const token = await googleAccessToken(this.cfg);
+    const headers = { Authorization: `Bearer ${token}` };
+    if (body) headers['Content-Type'] = 'application/json';
+    return fetchWithTimeout(this.base + path, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined
+    });
+  }
+
+  docPath(collection, id) {
+    return `/${encodeURIComponent(collection)}/${encodeURIComponent(id)}`;
+  }
+
+  async get(collection, id) {
+    const r = await this.request('GET', this.docPath(collection, id));
+    if (r.status === 404) return null;
+    if (!r.ok) throw new Error(`Firestore read failed: HTTP ${r.status}`);
+    const doc = await r.json();
+    return { id, ...fromFirestoreFields(doc.fields) };
+  }
+
+  // Merge-patch the given fields. `mustExist`: true → update only, false → create only.
+  async patch(collection, id, data, { mustExist } = {}) {
+    const fields = {};
+    const params = [];
+    for (const [key, value] of Object.entries(data)) {
+      fields[key] = toFirestoreValue(value);
+      params.push('updateMask.fieldPaths=' + encodeURIComponent(key));
+    }
+    if (mustExist === true) params.push('currentDocument.exists=true');
+    if (mustExist === false) params.push('currentDocument.exists=false');
+    const r = await this.request('PATCH', `${this.docPath(collection, id)}?${params.join('&')}`, { fields });
+    if (mustExist === false && !r.ok) {
+      const detail = await r.json().catch(() => ({}));
+      const reason = String(detail?.error?.status || '');
+      if (r.status === 409 || reason === 'ALREADY_EXISTS' || reason === 'FAILED_PRECONDITION') {
+        const err = new Error('ALREADY_EXISTS');
+        err.code = 'ALREADY_EXISTS';
+        throw err;
+      }
+    }
+    if (!r.ok) throw new Error(`Firestore write failed: HTTP ${r.status}`);
+    return true;
+  }
+
+  async remove(collection, id) {
+    const r = await this.request('DELETE', this.docPath(collection, id));
+    if (!r.ok && r.status !== 404) throw new Error(`Firestore delete failed: HTTP ${r.status}`);
+    return true;
+  }
+
+  async queryEqual(collection, field, value, limit = 20) {
+    const r = await this.request('POST', ':runQuery', {
+      structuredQuery: {
+        from: [{ collectionId: collection }],
+        where: { fieldFilter: { field: { fieldPath: field }, op: 'EQUAL', value: { stringValue: value } } },
+        limit
+      }
+    });
+    if (!r.ok) throw new Error(`Firestore query failed: HTTP ${r.status}`);
+    const rows = await r.json();
+    return (rows || [])
+      .map((row) => row.document)
+      .filter(Boolean)
+      .map((doc) => ({
+        id: decodeURIComponent(String(doc.name || '').split('/').pop() || ''),
+        ...fromFirestoreFields(doc.fields)
+      }));
+  }
+
+  async list(collection, pageSize = 300) {
+    const out = [];
+    let pageToken = '';
+    for (let page = 0; page < 20; page++) {
+      const qs = `?pageSize=${pageSize}` + (pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : '');
+      const r = await this.request('GET', `/${encodeURIComponent(collection)}${qs}`);
+      if (!r.ok) throw new Error(`Firestore list failed: HTTP ${r.status}`);
+      const parsed = await r.json();
+      for (const doc of parsed.documents || []) {
+        out.push({
+          id: decodeURIComponent(String(doc.name || '').split('/').pop() || ''),
+          ...fromFirestoreFields(doc.fields)
+        });
+      }
+      pageToken = parsed.nextPageToken || '';
+      if (!pageToken) break;
+    }
+    return out;
+  }
+}
+
+async function sendLicenseEmail(cfg, { toEmail, callsign, licenseKey, days }) {
+  if (!cfg.brevoKey || !cfg.senderEmail) throw new Error('Email provider is not configured');
+  const text = [
+    `Здравствуйте, ${callsign || 'пользователь'}!`,
+    '',
+    'Ваш лицензионный ключ «Каптёрка ПРО»:',
+    licenseKey,
+    '',
+    `Срок действия: ${days} суток.`,
+    'Официальный сайт: https://kapterka-pro.ru/'
+  ].join('\n');
+  const r = await fetchWithTimeout('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'api-key': cfg.brevoKey },
+    body: JSON.stringify({
+      sender: { name: cfg.senderName, email: cfg.senderEmail },
+      to: [{ email: toEmail, name: callsign || 'Пользователь' }],
+      subject: `Ваш лицензионный ключ «Каптёрка ПРО» (${days} дней)`,
+      textContent: text
+    })
+  });
+  if (!r.ok) throw new Error(`Brevo HTTP ${r.status}`);
+  return true;
+}
+
+// ---------------------------------------------------------------- domain
+
+function normalizeLicense(doc) {
+  if (!doc) return null;
+  return {
+    licenseKey: String(doc.licenseKey || doc.id || ''),
+    fighterId: String(doc.fighterId || ''),
+    callsign: String(doc.callsign || ''),
+    email: String(doc.email || ''),
+    paymentId: String(doc.paymentId || ''),
+    expiresAt: Number(doc.expiresAt || 0),
+    status: String(doc.status || '')
+  };
+}
+
+function normalizeFighter(doc) {
+  if (!doc) return null;
+  return {
+    id: String(doc.fighterId || doc.id || ''),
+    callsign: String(doc.callsign || ''),
+    role: String(doc.role || 'Старшина подразделения'),
+    unitName: String(doc.unitName || ''),
+    unitKey: String(doc.unitKey || ''),
+    licenseKey: String(doc.licenseKey || ''),
+    expiresAt: Number(doc.expiresAt || 0),
+    registeredAt: Number(doc.registeredAt || 0),
+    lastSeenAt: Number(doc.lastSeenAt || 0),
+    email: String(doc.email || ''),
+    deviceModel: String(doc.deviceModel || '')
+  };
+}
+
+function isActive(license, now = Date.now()) {
+  return Boolean(license && license.status === 'ACTIVE' && license.expiresAt > now);
+}
+
+async function activeLicenseByEmail(db, email, fighterId = '') {
+  const rows = (await db.queryEqual('licenses', 'email', email, 20)).map(normalizeLicense);
+  return rows
+    .filter((l) => isActive(l) && (!fighterId || l.fighterId === fighterId))
+    .sort((a, b) => b.expiresAt - a.expiresAt)[0] || null;
+}
+
+export function amountMatchesTariff(payment, amountRub) {
+  const currency = String(payment?.amount?.currency || '').toUpperCase();
+  const value = Number(payment?.amount?.value || 0);
+  return currency === 'RUB' && Math.abs(value - amountRub) < 0.001;
+}
+
+function paymentTimestampMillis(payment) {
+  const parsed = Date.parse(payment?.captured_at || payment?.created_at || '');
+  return Number.isFinite(parsed) ? parsed : Date.now();
+}
+
+// ---------------------------------------------------------------- admin session
+
+async function adminSecretMatches(cfg, secret) {
+  if (!/^[a-f0-9]{64}$/.test(cfg.adminSecretSha256)) return false;
+  return constantTimeEqual(await sha256Hex(String(secret || '')), cfg.adminSecretSha256);
+}
+
+async function issueAdminToken(cfg) {
+  if (!cfg.adminSessionSecret) return '';
+  const payload = `${Date.now() + ADMIN_TOKEN_TTL_MS}.${randomHex(12)}`;
+  return `${payload}.${await hmacHex(cfg.adminSessionSecret, payload)}`;
+}
+
+export async function verifyAdminToken(cfg, token) {
+  if (!cfg.adminSessionSecret) return false;
+  const parts = String(token || '').split('.');
+  if (parts.length !== 3) return false;
+  const [exp, nonce, signature] = parts;
+  const expiresAt = Number(exp);
+  if (!Number.isFinite(expiresAt) || expiresAt <= Date.now() || nonce.length < 12 || !/^[a-f0-9]{64}$/i.test(signature)) {
+    return false;
+  }
+  return constantTimeEqual(await hmacHex(cfg.adminSessionSecret, `${exp}.${nonce}`), signature.toLowerCase());
+}
+
+function clientIp(request) {
+  return cleanText(request.headers.get('CF-Connecting-IP') || 'unknown', 64);
+}
+
+function adminAuthBlocked(ip, now = Date.now()) {
+  for (const [key, entry] of adminAuthFailures) {
+    if (now - entry.windowStartedAt >= ADMIN_AUTH_WINDOW_MS) adminAuthFailures.delete(key);
+  }
+  const entry = adminAuthFailures.get(ip);
+  return Boolean(entry && entry.failures >= ADMIN_AUTH_MAX_FAILURES);
+}
+
+function recordAdminAuthFailure(ip, now = Date.now()) {
+  const entry = adminAuthFailures.get(ip);
+  if (!entry || now - entry.windowStartedAt >= ADMIN_AUTH_WINDOW_MS) {
+    adminAuthFailures.set(ip, { failures: 1, windowStartedAt: now });
+  } else {
+    entry.failures += 1;
+  }
+}
+
+async function bindingAllows(binding, key) {
+  if (!binding || typeof binding.limit !== 'function') return true;
+  try {
+    const { success } = await binding.limit({ key });
+    return success !== false;
+  } catch (_) {
+    return true;
+  }
+}
+
+// ---------------------------------------------------------------- handlers
+
+const handlers = {
+  async health(ctx) {
+    const { cfg } = ctx;
+    return ctx.ok({
+      ok: true,
+      service: SERVICE_NAME,
+      apiVersion: API_VERSION,
+      secretConfigured: Boolean(cfg.secretKey),
+      licenseRegistryConfigured: Boolean(cfg.serviceAccount),
+      adminAuthConfigured: /^[a-f0-9]{64}$/.test(cfg.adminSecretSha256),
+      adminSessionConfigured: Boolean(cfg.adminSessionSecret),
+      emailConfigured: Boolean(cfg.brevoKey && cfg.senderEmail),
+      telegramConfigured: Boolean(cfg.tgBot && cfg.tgChat)
+    });
+  },
+
+  async fighter_upsert(ctx) {
+    const { body, db } = ctx;
+    const fighterId = cleanText(body.fighter_id, 100);
+    const callsign = cleanText(body.callsign || 'Боец', 80);
+    const unitName = cleanText(body.unit_name || 'Подразделение', 120);
+    const unitKey = cleanText(body.unit_key, 120);
+    const email = cleanEmail(body.email);
+    const deviceModel = cleanText(body.device_model || 'Android', 120);
+    if (!fighterId) return ctx.fail(400, 'MISSING_FIGHTER_ID');
+
+    const now = Date.now();
+    const existing = normalizeFighter(await db.get('fighters', fighterId));
+    if (existing) {
+      const storedEmail = cleanEmail(existing.email);
+      if (storedEmail && email && storedEmail === email) {
+        // Profile metadata only. License fields are never accepted from a client.
+        await db.patch('fighters', fighterId, { callsign, unitName, unitKey, lastSeenAt: now, deviceModel });
+        return ctx.ok({ ok: true, existing: true, profile_updated: true });
+      }
+      await db.patch('fighters', fighterId, { lastSeenAt: now, deviceModel });
+      return ctx.ok({ ok: true, existing: true, profile_updated: false });
+    }
+
+    let active = null;
+    if (email) {
+      try {
+        active = await activeLicenseByEmail(db, email, fighterId);
+      } catch (_) {
+        active = null;
+      }
+    }
+    await db.patch('fighters', fighterId, {
+      fighterId,
+      callsign,
+      role: 'Старшина подразделения',
+      unitName,
+      unitKey,
+      email,
+      deviceModel,
+      registeredAt: now,
+      lastSeenAt: now,
+      licenseKey: active?.licenseKey || '',
+      expiresAt: active?.expiresAt || 0,
+      isProActive: isActive(active, now)
+    });
+    await sendTelegram(ctx.cfg,
+      '🎖 <b>Новая регистрация «Каптёрка ПРО»</b>\n' +
+      'Позывной: <b>' + escapeHtml(callsign) + '</b>\n' +
+      'Подразделение: ' + escapeHtml(unitName) + '\n' +
+      'Email: <code>' + escapeHtml(email || 'не указан') + '</code>'
+    );
+    return ctx.ok({ ok: true, existing: false });
+  },
+
+  async fighter_lookup(ctx) {
+    const { body, db } = ctx;
+    const fighterId = cleanText(body.fighter_id, 100);
+    const email = cleanEmail(body.email);
+    if (!fighterId) return ctx.fail(400, 'MISSING_FIGHTER_ID');
+    if (!email) return ctx.fail(400, 'INVALID_EMAIL');
+    if (!(await ctx.limit('lookup:' + ctx.ip))) return ctx.fail(429, 'RATE_LIMITED');
+
+    const fighter = normalizeFighter(await db.get('fighters', fighterId));
+    if (!fighter || fighter.id !== fighterId) return ctx.fail(404, 'FIGHTER_NOT_FOUND');
+    const storedEmail = cleanEmail(fighter.email);
+    if (!storedEmail || storedEmail !== email) return ctx.fail(403, 'FIGHTER_IDENTITY_MISMATCH');
+    return ctx.ok({ ok: true, fighter: { id: fighter.id, unit_name: fighter.unitName, unit_key: fighter.unitKey } });
+  },
+
+  async license_verify(ctx) {
+    const { body, db } = ctx;
+    const licenseKey = cleanText(body.license_key, 40).toUpperCase();
+    const fighterId = cleanText(body.fighter_id, 100);
+    if (!LICENSE_KEY_RE.test(licenseKey)) return ctx.fail(400, 'INVALID_LICENSE_KEY');
+    if (!(await ctx.limit('verify:' + ctx.ip))) return ctx.fail(429, 'RATE_LIMITED');
+
+    const license = normalizeLicense(await db.get('licenses', licenseKey));
+    if (!isActive(license)) return ctx.fail(404, 'LICENSE_NOT_ACTIVE');
+    if (license.fighterId && license.fighterId !== fighterId) return ctx.fail(403, 'FIGHTER_MISMATCH');
+
+    // A license bought by a 3.5.0 client has no fighter yet: the first verified
+    // 3.6+ installation claims it, so the same key cannot be spread further.
+    if (!license.fighterId && fighterId) {
+      await db.patch('licenses', licenseKey, { fighterId, boundAt: Date.now() }, { mustExist: true });
+      license.fighterId = fighterId;
+    }
+    return ctx.ok({
+      ok: true,
+      license_key: license.licenseKey,
+      expires_at: license.expiresAt,
+      fighter_id: license.fighterId
+    });
+  },
+
+  async license_restore(ctx) {
+    const { body, db } = ctx;
+    const email = cleanEmail(body.email);
+    const fighterId = cleanText(body.fighter_id, 100);
+    if (!email) return ctx.fail(400, 'INVALID_EMAIL');
+    if (!fighterId) return ctx.fail(400, 'MISSING_FIGHTER_ID');
+    if (!(await ctx.limit('restore:' + ctx.ip))) return ctx.fail(429, 'RATE_LIMITED');
+
+    const license = await activeLicenseByEmail(db, email, fighterId);
+    if (!license) {
+      const other = await activeLicenseByEmail(db, email);
+      // Email alone never discloses a reusable key bound to another fighter.
+      if (other) return ctx.fail(403, 'LICENSE_RESTORE_IDENTITY_MISMATCH');
+      return ctx.fail(404, 'LICENSE_NOT_FOUND');
+    }
+    return ctx.ok({ ok: true, license_key: license.licenseKey, expires_at: license.expiresAt, fighter_id: license.fighterId });
+  },
+
+  async send_license_email(ctx) {
+    const { body, db, cfg } = ctx;
+    const licenseKey = cleanText(body.license_key, 40).toUpperCase();
+    const email = cleanEmail(body.email);
+    if (!LICENSE_KEY_RE.test(licenseKey) || !email) return ctx.fail(400, 'INVALID_LICENSE_EMAIL_REQUEST');
+
+    const license = normalizeLicense(await db.get('licenses', licenseKey));
+    if (!isActive(license)) return ctx.fail(404, 'LICENSE_NOT_ACTIVE');
+    if (!license.email || license.email.toLowerCase() !== email) return ctx.fail(403, 'LICENSE_EMAIL_MISMATCH');
+
+    const rateKey = await sha256Hex(licenseKey + '|' + email);
+    const now = Date.now();
+    const previous = licenseEmailLastSentAt.get(rateKey) || 0;
+    if (now - previous < LICENSE_EMAIL_RATE_LIMIT_MS || !(await ctx.limit('email:' + rateKey))) {
+      return ctx.fail(429, 'LICENSE_EMAIL_RATE_LIMITED', {
+        retry_after_seconds: Math.max(1, Math.ceil((LICENSE_EMAIL_RATE_LIMIT_MS - (now - previous)) / 1000))
+      });
+    }
+    licenseEmailLastSentAt.set(rateKey, now);
+    if (licenseEmailLastSentAt.size > 5000) licenseEmailLastSentAt.clear();
+
+    try {
+      await sendLicenseEmail(cfg, {
+        toEmail: license.email,
+        callsign: license.callsign,
+        licenseKey,
+        days: Math.max(1, Math.ceil((license.expiresAt - now) / DAY_MS))
+      });
+    } catch (error) {
+      licenseEmailLastSentAt.delete(rateKey);
+      console.error('License email error:', error?.message || error);
+      return ctx.fail(503, 'EMAIL_PROVIDER_UNAVAILABLE');
+    }
+    await sendTelegram(cfg,
+      '✉️ <b>Лицензионное письмо отправлено</b>\n' +
+      'Email: <code>' + escapeHtml(license.email) + '</code>\n' +
+      'Ключ: <code>' + escapeHtml(maskKey(licenseKey)) + '</code>'
+    );
+    return ctx.ok({ ok: true });
+  },
+
+  async admin_auth(ctx) {
+    const { body, cfg, ip } = ctx;
+    if (adminAuthBlocked(ip) || !(await bindingAllows(ctx.env.AUTH_LIMITER, 'admin:' + ip))) {
+      return ctx.fail(429, 'ADMIN_AUTH_RATE_LIMITED', { retry_after_seconds: ADMIN_AUTH_WINDOW_MS / 1000 });
+    }
+    if (!(await adminSecretMatches(cfg, cleanText(body.secret, 256)))) {
+      recordAdminAuthFailure(ip);
+      return ctx.fail(403, 'ADMIN_AUTH_FAILED');
+    }
+    adminAuthFailures.delete(ip);
+    const token = await issueAdminToken(cfg);
+    if (!token) return ctx.fail(503, 'ADMIN_SESSION_NOT_CONFIGURED');
+    return ctx.ok({ ok: true, admin_token: token, expires_in_seconds: ADMIN_TOKEN_TTL_MS / 1000 });
+  },
+
+  async admin_list_fighters(ctx) {
+    if (!(await verifyAdminToken(ctx.cfg, ctx.body.admin_token))) return ctx.fail(403, 'ADMIN_SESSION_INVALID');
+    const fighters = (await ctx.db.list('fighters')).map(normalizeFighter);
+    return ctx.ok({
+      ok: true,
+      fighters: fighters.map((f) => ({
+        id: f.id,
+        callsign: f.callsign,
+        role: f.role,
+        unit_name: f.unitName,
+        unit_key: f.unitKey,
+        license_key: f.licenseKey,
+        expires_at: f.expiresAt,
+        registered_at: f.registeredAt,
+        last_seen_at: f.lastSeenAt,
+        email: f.email,
+        device_model: f.deviceModel
+      }))
+    });
+  },
+
+  async admin_grant_license(ctx) {
+    const { body, db, cfg } = ctx;
+    if (!(await verifyAdminToken(cfg, body.admin_token))) return ctx.fail(403, 'ADMIN_SESSION_INVALID');
+    const fighterId = cleanText(body.fighter_id, 100);
+    const days = Math.min(365, Math.max(1, Number.parseInt(body.days, 10) || 30));
+    if (!fighterId) return ctx.fail(400, 'MISSING_FIGHTER_ID');
+
+    const fighter = normalizeFighter(await db.get('fighters', fighterId));
+    if (!fighter) return ctx.fail(404, 'FIGHTER_NOT_FOUND');
+
+    const now = Date.now();
+    let licenseKey = cleanText(fighter.licenseKey, 40).toUpperCase();
+    const existing = LICENSE_KEY_RE.test(licenseKey) ? normalizeLicense(await db.get('licenses', licenseKey)) : null;
+    let expiresAt;
+    if (isActive(existing, now) && existing.fighterId === fighterId) {
+      // "+N days" extends the current license and keeps the same key.
+      expiresAt = existing.expiresAt + days * DAY_MS;
+      await db.patch('licenses', licenseKey, { expiresAt, status: 'ACTIVE' }, { mustExist: true });
+    } else {
+      licenseKey = generateAdminLicenseKey();
+      expiresAt = now + days * DAY_MS;
+      await db.patch('licenses', licenseKey, {
+        licenseKey,
+        fighterId,
+        callsign: cleanText(fighter.callsign, 80),
+        email: cleanEmail(fighter.email),
+        paymentId: '',
+        amount: 0,
+        activatedAt: now,
+        expiresAt,
+        durationDays: days,
+        status: 'ACTIVE',
+        source: 'Admin server grant'
+      }, { mustExist: false });
+    }
+    await db.patch('fighters', fighterId, { licenseKey, expiresAt, isProActive: true });
+    return ctx.ok({ ok: true, license_key: licenseKey, expires_at: expiresAt, days });
+  },
+
+  async admin_delete_fighter(ctx) {
+    if (!(await verifyAdminToken(ctx.cfg, ctx.body.admin_token))) return ctx.fail(403, 'ADMIN_SESSION_INVALID');
+    const fighterId = cleanText(ctx.body.fighter_id, 100);
+    if (!fighterId) return ctx.fail(400, 'MISSING_FIGHTER_ID');
+    // Registry entry only. Licenses and unit data are intentionally preserved.
+    await ctx.db.remove('fighters', fighterId);
+    return ctx.ok({ ok: true });
+  },
+
+  async create(ctx) {
+    const { body, query, cfg } = ctx;
+    const email = cleanEmail(body.email || query.email);
+    const callsign = cleanText(body.callsign || query.callsign || 'Пользователь', 80);
+    const fighterId = cleanText(body.fighter_id || query.fighter_id, 100);
+    if (!email) return ctx.fail(400, 'INVALID_EMAIL');
+    if (!(await ctx.limit('create:' + ctx.ip))) return ctx.fail(429, 'RATE_LIMITED');
+
+    const returnUrlRaw = cleanText(body.return_url || query.return_url, 300);
+    const returnUrl =
+      returnUrlRaw.startsWith('kapterka://payment_success') ||
+      returnUrlRaw.startsWith('kapterka-nextsafe://payment_success') ||
+      returnUrlRaw.startsWith('https://kapterka-pro.ru/')
+        ? returnUrlRaw
+        : 'https://kapterka-pro.ru/?payment=check#tabPayment';
+    const idempotenceKey = cleanText(body.idempotence_key || query.idempotence_key || crypto.randomUUID(), 64);
+
+    const metadata = { callsign, email, duration_days: '30', product: 'kapterka_pro_30d' };
+    if (fighterId) metadata.fighter_id = fighterId;
+
+    // Price comes only from server configuration, never from the client.
+    const payment = await requestYooKassa(cfg, 'POST', '/v3/payments', {
+      amount: { value: cfg.amountRub.toFixed(2), currency: 'RUB' },
+      confirmation: { type: 'redirect', return_url: returnUrl },
+      capture: true,
+      description: 'Каптёрка ПРО — 30 дней',
+      metadata
+    }, idempotenceKey);
+
+    await sendTelegram(cfg,
+      '💳 <b>Новый платёж «Каптёрка ПРО»</b>\n' +
+      'Позывной: <b>' + escapeHtml(callsign) + '</b>\n' +
+      'Email: <code>' + escapeHtml(email) + '</code>\n' +
+      'Сумма: <b>' + cfg.amountRub + ' ₽</b>\n' +
+      'Payment ID: <code>' + escapeHtml(payment.id || '') + '</code>'
+    );
+    return ctx.ok({
+      ok: true,
+      payment_id: payment.id || '',
+      confirmation_url: payment.confirmation?.confirmation_url || ''
+    });
+  },
+
+  async check(ctx) {
+    const { body, query, db, cfg } = ctx;
+    const paymentId = cleanText(body.payment_id || query.payment_id, 100);
+    const requestedFighterId = cleanText(body.fighter_id || query.fighter_id, 100);
+    if (!paymentId || !/^[A-Za-z0-9-]{8,100}$/.test(paymentId)) return ctx.fail(400, 'MISSING_PAYMENT_ID');
+    if (!(await ctx.limit('check:' + ctx.ip))) return ctx.fail(429, 'RATE_LIMITED');
+
+    const payment = await requestYooKassa(cfg, 'GET', `/v3/payments/${encodeURIComponent(paymentId)}`);
+    const status = payment.status || 'unknown';
+    if (!(status === 'succeeded' && payment.paid === true)) return ctx.ok({ ok: true, paid: false, status });
+    if (!amountMatchesTariff(payment, cfg.amountRub)) {
+      return ctx.fail(409, 'PAYMENT_AMOUNT_MISMATCH', { paid: false, status });
+    }
+    if (payment.metadata?.product && payment.metadata.product !== 'kapterka_pro_30d') {
+      return ctx.fail(409, 'PAYMENT_PRODUCT_MISMATCH', { paid: false, status });
+    }
+    const paymentFighterId = cleanText(payment.metadata?.fighter_id, 100);
+    if (paymentFighterId && requestedFighterId !== paymentFighterId) {
+      return ctx.fail(403, 'FIGHTER_MISMATCH', { paid: false, status });
+    }
+
+    const licenseKey = await keyForPayment(paymentId);
+    const activatedAt = paymentTimestampMillis(payment);
+    const email = cleanEmail(payment.metadata?.email);
+    const callsign = cleanText(payment.metadata?.callsign || 'Пользователь', 80);
+
+    let existing;
+    try {
+      existing = normalizeLicense(await db.get('licenses', licenseKey));
+    } catch (error) {
+      console.error('Existing license read error:', error?.message || error);
+      return ctx.fail(503, 'LICENSE_REGISTRY_UNAVAILABLE', { paid: true, status });
+    }
+
+    // One succeeded payment = one license. Re-checks never extend or rebind it.
+    if (existing && existing.expiresAt > 0) {
+      if (existing.fighterId && requestedFighterId && existing.fighterId !== requestedFighterId) {
+        return ctx.fail(403, 'LICENSE_FIGHTER_MISMATCH', { paid: false, status });
+      }
+      return ctx.ok(licenseResponse(status, licenseKey, existing.expiresAt));
+    }
+
+    const fighterId = paymentFighterId || requestedFighterId;
+    let expiresAt = activatedAt + LICENSE_DURATION_MS;
+    try {
+      if (fighterId) {
+        const fighter = normalizeFighter(await db.get('fighters', fighterId));
+        // Renewal keeps unused paid/admin time.
+        if (fighter && fighter.expiresAt > activatedAt) expiresAt = fighter.expiresAt + LICENSE_DURATION_MS;
+      }
+      await db.patch('licenses', licenseKey, {
+        licenseKey,
+        fighterId,
+        callsign,
+        email,
+        paymentId,
+        amount: cfg.amountRub,
+        activatedAt,
+        expiresAt,
+        durationDays: 30,
+        status: 'ACTIVE',
+        source: 'YooKassa server verification'
+      }, { mustExist: false });
+    } catch (error) {
+      if (error?.code === 'ALREADY_EXISTS') {
+        // A concurrent check created it first — return that record unchanged.
+        const winner = normalizeLicense(await db.get('licenses', licenseKey));
+        if (!winner || !(winner.expiresAt > 0)) {
+          return ctx.fail(503, 'LICENSE_REGISTRY_UNAVAILABLE', { paid: true, status });
+        }
+        if (winner.fighterId && requestedFighterId && winner.fighterId !== requestedFighterId) {
+          return ctx.fail(403, 'LICENSE_FIGHTER_MISMATCH', { paid: false, status });
+        }
+        return ctx.ok(licenseResponse(status, licenseKey, winner.expiresAt));
+      }
+      console.error('License registry error:', error?.message || error);
+      return ctx.fail(503, 'LICENSE_REGISTRY_UNAVAILABLE', { paid: true, status });
+    }
+
+    if (fighterId) {
+      try {
+        await db.patch('fighters', fighterId, {
+          licenseKey,
+          expiresAt,
+          isProActive: expiresAt > Date.now(),
+          lastSeenAt: Date.now()
+        });
+      } catch (error) {
+        console.error('Fighter license mirror error:', error?.message || error);
+      }
+    }
+    await sendTelegram(cfg,
+      '✅ <b>Оплата подтверждена</b>\n' +
+      'Позывной: <b>' + escapeHtml(callsign) + '</b>\n' +
+      'Ключ: <code>' + escapeHtml(maskKey(licenseKey)) + '</code>'
+    );
+    return ctx.ok(licenseResponse(status, licenseKey, expiresAt));
+  }
+};
+handlers.pay = handlers.create;
+
+function licenseResponse(status, licenseKey, expiresAt) {
+  return {
+    ok: true,
+    paid: true,
+    status: expiresAt > Date.now() ? status : 'expired',
+    license_key: licenseKey,
+    key: licenseKey, // 3.5.0 client compatibility
+    expires_at: expiresAt
+  };
+}
+
+// Actions that were removed on purpose. `send_telegram` was an open relay into
+// the admin chat; notifications are now emitted only by the server itself.
+const REMOVED_ACTIONS = new Set(['send_telegram']);
+
+export default {
+  async fetch(request, env) {
+    if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(request) });
+    if (request.method !== 'GET' && request.method !== 'POST') {
+      return json(request, 405, { ok: false, error: 'METHOD_NOT_ALLOWED' }, { Allow: 'GET, POST, OPTIONS' });
+    }
+
+    const url = new URL(request.url);
+    const query = Object.fromEntries(url.searchParams.entries());
+    let body = {};
+    if (request.method === 'POST') {
+      const raw = await request.text();
+      if (new TextEncoder().encode(raw).length > MAX_REQUEST_BODY_BYTES) {
+        return json(request, 413, { ok: false, error: 'PAYLOAD_TOO_LARGE' });
+      }
+      try {
+        const parsed = raw ? JSON.parse(raw) : {};
+        body = parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+      } catch (_) {
+        body = {};
+      }
+    }
+
+    const action = cleanText(query.action || body.action, 40).toLowerCase();
+    const cfg = getConfig(env);
+    const ip = clientIp(request);
+    const ctx = {
+      request,
+      env,
+      cfg,
+      ip,
+      query,
+      body,
+      db: new Firestore(cfg),
+      ok: (payload) => json(request, 200, payload),
+      fail: (status, error, extra = {}) => json(request, status, { ok: false, error, ...extra }),
+      limit: (key) => bindingAllows(env.API_LIMITER, key)
+    };
+
+    if (REMOVED_ACTIONS.has(action)) return ctx.fail(410, 'ACTION_REMOVED');
+    const handler = Object.prototype.hasOwnProperty.call(handlers, action) ? handlers[action] : null;
+    if (!handler) return ctx.fail(400, 'INVALID_ACTION');
+    // State-changing and data-returning actions must be POST; GET is kept for
+    // health and for the legacy 3.5.0 create/check calls only.
+    if (request.method === 'GET' && !['health', 'create', 'pay', 'check'].includes(action)) {
+      return ctx.fail(405, 'POST_REQUIRED');
+    }
+
+    try {
+      return await handler(ctx);
+    } catch (error) {
+      // Never forward upstream error text to the caller.
+      console.error(`kapterka-api ${action} error:`, error?.message || error);
+      return ctx.fail(502, 'UPSTREAM_ERROR');
+    }
+  }
+};
+
+// Test hooks (not reachable over HTTP).
+export const __test = {
+  reset() {
+    cachedGoogleToken = { value: '', expiresAt: 0, account: '' };
+    adminAuthFailures.clear();
+    licenseEmailLastSentAt.clear();
+  }
+};
