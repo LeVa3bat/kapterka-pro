@@ -21,3 +21,13 @@ local.properties
 
 # Local developer access credential
 DEV_ACCESS_KEY.txt
+
+# Never commit build outputs, decompiler tools or signing material
+*.apk
+!docs/*.apk
+*.aab
+*.jks
+*.keystore
+__pycache__/
+cfr*.jar
+decomp*.java
