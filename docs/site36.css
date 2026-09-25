@@ -116,17 +116,6 @@
   .s36-persona-card .neo-btn{font-size:.8rem;padding:10px 12px}
 }
 
-/* ---------- Было → Стало ---------- */
-.s36-compare{padding:16px 0}
-.s36-compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.s36-before,.s36-after{padding:16px 18px;border-radius:20px}
-.s36-before{background:#140f0f;border:1px solid rgba(248,113,113,.18)}
-.s36-after{background:linear-gradient(150deg,#123224,#0c1c14);border:1px solid rgba(110,231,183,.3)}
-.s36-before strong,.s36-after strong{display:block;margin-bottom:8px;font-size:1rem;color:#f0f6f2}
-.s36-before p{margin:6px 0;color:#c9a3a3;font-size:.9rem}
-.s36-after p{margin:6px 0;color:#c8f0dc;font-size:.9rem}
-@media (max-width:560px){.s36-before,.s36-after{padding:12px}.s36-before p,.s36-after p{font-size:.76rem}}
-
 /* ---------- Telegram ---------- */
 .s36-tg{display:flex;align-items:center;gap:14px;margin-top:12px;padding:14px 16px;border-radius:18px;background:linear-gradient(135deg,#1e88c7,#2aabee);color:#fff;text-decoration:none}
 .s36-tg>span{font-size:1.6rem}

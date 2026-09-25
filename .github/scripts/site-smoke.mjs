@@ -394,6 +394,16 @@ if (!index.includes("gtag('config', 'G-RYV6TP63D3')") || !index.includes("ym(112
 if (/aria-label="Открыть экран (Главная|Каталог)"/.test(index)) fail('gallery aria-label overrides visible text');
 else ok('analytics is queued and deferred for initial-render performance');
 
+// Слой дизайна главной: шрифты (лежат на своём сайте, лицензия OFL), landing.css и интерактивная демонстрация ведомости.
+const designFiles = ['docs/landing.css', 'docs/fonts/OFL.txt', 'docs/fonts/plex-sans-600-cyrillic.woff2', 'docs/fonts/plex-sans-600-latin.woff2', 'docs/fonts/plex-mono-500-cyrillic.woff2', 'docs/fonts/plex-mono-500-latin.woff2'];
+const missingDesign = designFiles.filter((f) => !fs.existsSync(path.join(root, f)));
+if (missingDesign.length) fail(`design layer files are missing: ${missingDesign.join(', ')}`);
+if (!index.includes('href="landing.css')) fail('landing.css is not linked from index.html');
+if (/fonts\.(googleapis|gstatic)\.com/.test(index) || /fonts\.(googleapis|gstatic)\.com/.test(read('docs/landing.css'))) fail('fonts must be self-hosted, not loaded from Google Fonts');
+if (!index.includes('id="lpLedger"') || !index.includes('id="lpJournal"') || !read('docs/site36.js').includes("getElementById('lpLedger')")) fail('interactive ledger demo is missing or not wired');
+if (/lp-flash|lp-journal li/.test(read('docs/landing.css')) && !read('docs/landing.css').includes('prefers-reduced-motion')) fail('landing.css animations must respect prefers-reduced-motion');
+else ok('landing design layer, self-hosted fonts and ledger demo are present');
+
 const seoGrowthPages = [
   'docs/guides.html',
   'docs/prihod-rashod-sklad-android.html',

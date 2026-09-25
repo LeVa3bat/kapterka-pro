@@ -148,9 +148,11 @@
   <meta name="twitter:image" content="https://kapterka-pro.ru/screens/36-promo-1920x1080.jpg">
 
   <link rel="preload" as="image" href="screens/36-2-dashboard.jpg" fetchpriority="high" media="(min-width: 561px)">
+  <link rel="preload" as="font" type="font/woff2" href="fonts/plex-sans-600-cyrillic.woff2" crossorigin>
   <link rel="stylesheet" href="style.css?v=3.4.9.44">
   <link rel="stylesheet" href="tabs_and_cabinet.css?v=3.4.9.35">
   <link rel="stylesheet" href="site36.css?v=1">
+  <link rel="stylesheet" href="landing.css?v=1">
 
   <!-- Favicon & Mobile Icons (Тактическая светящаяся иконка Каптёрка Про) -->
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
@@ -374,28 +376,31 @@
         </div>
       </section>
 
-      <section class="s36-compare" aria-labelledby="compareTitle">
+      <section class="lp-ledger" id="ledger-demo" aria-labelledby="ledgerTitle">
         <div class="container">
-          <div class="neo-section-title">
-            <span>БЫЛО → СТАЛО</span>
-            <h2 id="compareTitle">Тетрадь и Excel против Каптёрки</h2>
+          <div class="lp-ledger-head">
+            <h2 id="ledgerTitle">Остаток меняется сам</h2>
+            <p>Проведите выдачу и посмотрите, что произойдёт. Это демонстрация на вымышленных данных: ничего не сохраняется и не отправляется.</p>
           </div>
-          <div class="s36-compare-grid">
-            <div class="s36-before">
-              <strong>Тетрадь / Excel</strong>
-              <p>✕ Остаток считаете вручную</p>
-              <p>✕ Кто что взял — ищете по страницам</p>
-              <p>✕ Форму 8 переписываете заново</p>
-              <p>✕ У каждого своя версия файла</p>
+          <div class="lp-ledger-board" id="lpLedger">
+            <div class="lp-sheet">
+              <table>
+                <caption>Склад «Пример»</caption>
+                <thead><tr><th scope="col">Наименование</th><th scope="col">Остаток</th><th scope="col"><span class="lp-sr">Действие</span></th></tr></thead>
+                <tbody>
+                  <tr data-item="Рукавицы утеплённые" data-qty="42"><td class="lp-name">Рукавицы утеплённые<small>пар</small></td><td class="lp-qty">42</td><td class="lp-act"><button type="button" class="lp-issue">Выдать 3</button></td></tr>
+                  <tr data-item="Спальный мешок" data-qty="18"><td class="lp-name">Спальный мешок<small>шт.</small></td><td class="lp-qty">18</td><td class="lp-act"><button type="button" class="lp-issue">Выдать 3</button></td></tr>
+                  <tr data-item="Тушёнка" data-qty="240"><td class="lp-name">Тушёнка<small>банок</small></td><td class="lp-qty">240</td><td class="lp-act"><button type="button" class="lp-issue">Выдать 3</button></td></tr>
+                </tbody>
+              </table>
             </div>
-            <div class="s36-after">
-              <strong>Каптёрка ПРО</strong>
-              <p>✓ Остаток меняется сам после операции</p>
-              <p>✓ Журнал по дням и поиск за секунду</p>
-              <p>✓ Форма 8 и 18 — в Excel одной кнопкой</p>
-              <p>✓ Одни данные на всех телефонах по QR</p>
+            <div class="lp-journal">
+              <h3>Журнал операций</h3>
+              <ol id="lpJournal" aria-live="polite"><li class="lp-empty">Пока пусто. Нажмите «Выдать 3».</li></ol>
+              <button type="button" class="lp-reset" id="lpReset">Сбросить пример</button>
             </div>
           </div>
+          <p class="lp-ledger-foot">В приложении так же, только с вашими данными: форма № 8 и книга учёта (форма 18) собираются из журнала одной кнопкой. <a href="forma-8-razdatochnaya-vedomost.html">Как выглядит форма 8</a></p>
         </div>
       </section>
 
