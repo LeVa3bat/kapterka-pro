@@ -34,8 +34,10 @@
   ['pointerdown','touchstart','keydown','scroll'].forEach(type =>
     window.addEventListener(type, start, { once:true, passive:true, capture:true })
   );
-  if ('requestIdleCallback' in window) requestIdleCallback(start, { timeout: 5000 });
-  else setTimeout(start, 4500);
+  // Считаем и короткие визиты: грузим счётчики вскоре после события load, а не по таймеру в несколько секунд.
+  function startSoon() { setTimeout(start, 1200); }
+  if (document.readyState === 'complete') startSoon();
+  else window.addEventListener('load', startSoon, { once: true });
 
   function destination(link) {
     const href = link.getAttribute('href') || '';

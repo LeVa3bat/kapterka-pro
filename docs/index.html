@@ -164,7 +164,7 @@
   <meta name="apple-mobile-web-app-title" content="Каптёрка PRO">
   <meta name="color-scheme" content="dark">
 
-  <!-- Analytics: queue immediately, load heavy third-party scripts after interaction/idle. -->
+  <!-- Analytics: queue immediately, load heavy third-party scripts right after the page load event (or on first interaction). -->
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){ dataLayer.push(arguments); }
@@ -204,7 +204,11 @@
       ['pointerdown','touchstart','keydown','scroll'].forEach(type =>
         window.addEventListener(type, start, { once:true, passive:true, capture:true })
       );
-      window.setTimeout(start, 8000);
+      // Не ждём действий пользователя: считаем и короткие визиты. Скрипты грузятся после события load,
+      // поэтому на первую отрисовку страницы не влияют.
+      function startSoon() { window.setTimeout(start, 1200); }
+      if (document.readyState === 'complete') startSoon();
+      else window.addEventListener('load', startSoon, { once:true });
     })();
   </script>
   <noscript><div><img src="https://mc.yandex.ru/watch/112482290" style="position:absolute; left:-9999px;" alt="" /></div></noscript>

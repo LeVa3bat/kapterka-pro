@@ -389,7 +389,7 @@ if (!app.includes('installProfessionalReveal')) fail('safe professional reveal i
 else ok('accessibility and release automation guards are present');
 
 if (index.includes('<script async src="https://www.googletagmanager.com/gtag/js')) fail('Google Analytics returned to render-time loading');
-if (!index.includes('scheduleAnalyticsLoad') || !index.includes("setTimeout(start, 8000)")) fail('deferred analytics loader is missing');
+if (!index.includes('scheduleAnalyticsLoad') || !index.includes("setTimeout(start, 1200)") || !index.includes("addEventListener('load', startSoon")) fail('deferred analytics loader is missing');
 if (!index.includes("gtag('config', 'G-RYV6TP63D3')") || !index.includes("ym(112482290, 'init'")) fail('analytics queues/IDs are missing');
 if (/aria-label="Открыть экран (Главная|Каталог)"/.test(index)) fail('gallery aria-label overrides visible text');
 else ok('analytics is queued and deferred for initial-render performance');
