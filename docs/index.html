@@ -147,10 +147,13 @@
   <meta name="twitter:description" content="Учёт имущества и остатков на телефоне: приход, выдача, заявки, формы 8 и 18 в Excel, подключение второго телефона по QR. Работает офлайн. 3 дня бесплатно.">
   <meta name="twitter:image" content="https://kapterka-pro.ru/screens/36-promo-1920x1080.jpg">
 
-  <link rel="preload" as="image" href="screens/36-2-dashboard.jpg" fetchpriority="high" media="(min-width: 561px)">
-  <link rel="stylesheet" href="style.css?v=3.4.9.43">
+  
+  <link rel="preload" as="font" type="font/woff2" href="fonts/plex-sans-600-cyrillic.woff2" crossorigin>
+  <link rel="preload" as="font" type="font/woff2" href="fonts/plex-sans-400-cyrillic.woff2" crossorigin>
+  <link rel="stylesheet" href="style.css?v=3.4.9.44">
   <link rel="stylesheet" href="tabs_and_cabinet.css?v=3.4.9.35">
   <link rel="stylesheet" href="site36.css?v=1">
+  <link rel="stylesheet" href="landing.css?v=1">
 
   <!-- Favicon & Mobile Icons (Тактическая светящаяся иконка Каптёрка Про) -->
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
@@ -285,166 +288,73 @@
   <!-- ========================================================================= -->
   <div id="tabOverview" class="app-view-tab active" role="tabpanel" aria-labelledby="btnTabOverview" aria-hidden="false">
     <main class="neo-home" id="home">
-      <section class="neo-hero">
-        <div class="container">
-          <div class="neo-hero-card">
-            <div class="neo-copy">
-              <div class="neo-kicker"><span></span> Каптёрка PRO • Android • <span data-release-version>3.6.1</span></div>
-              <h1>Складской учёт и учёт имущества<br><em>в одном телефоне</em></h1>
-              <p>Остатки, приход, выдача, заявки и формы 8 и 18 на Android. Работает без интернета, второй телефон подключается по QR-коду.</p>
 
-              <div class="neo-actions">
-                <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('neo_hero')" class="neo-btn neo-primary">Скачать APK</a>
-                <button class="neo-btn neo-rustore" onclick="openModal('modalRuStore')">RuStore</button>
-              </div>
-
-              <div class="neo-meta">
-                <span>3 дня бесплатно</span>
-                <span>Работает офлайн</span>
-                <span>Android 7.0+</span>
-                <span>Без рекламы</span>
-              </div>
+      <!-- 1. Первый экран -->
+      <section class="lp-hero">
+        <div class="lp-wrap lp-hero-grid">
+          <div class="lp-hero-copy">
+            <p class="lp-kicker">Каптёрка PRO · версия <span data-release-version>3.6.1</span></p>
+            <h1><small class="lp-h1-sub">Складской учёт и учёт имущества на Android</small>Записал —<span>остаток уже посчитан.</span></h1>
+            <p class="lp-lead">Приход, выдача, заявки и формы № 8 и № 18 собираются из ваших записей. Работает без интернета, второй телефон подключается по QR-коду.</p>
+            <div class="lp-actions">
+              <a class="lp-btn lp-btn-gold" href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('neo_hero')">Скачать APK</a>
+              <button type="button" class="lp-btn lp-btn-line" onclick="openModal('modalRuStore')">Открыть в RuStore</button>
             </div>
-
-            <div class="s36-live" aria-label="Каптёрка PRO в работе">
-              <div class="s36-live-phone" onclick="openGallerySlide(window.s36LiveIndex||0)" role="button" tabindex="0" aria-label="Открыть скриншот">
-                <img class="on" src="screens/36-2-dashboard.jpg" alt="Главный экран: склады и остатки" decoding="async" fetchpriority="high" width="1080" height="2340">
-                <img src="screens/36-4-requests.jpg" alt="Заявки по этапам" loading="lazy" decoding="async" width="1080" height="2340">
-                <img src="screens/36-6-unit-qr.jpg" alt="Подключение второго телефона по QR" loading="lazy" decoding="async" width="1080" height="2340">
-                <img src="screens/36-8-form8.jpg" alt="Форма 8 в Excel" loading="lazy" decoding="async" width="1080" height="2340">
-              </div>
-              <div class="s36-live-caption"><span class="s36-live-dot"></span><b id="s36LiveText">Остатки по складам — в одной таблице</b></div>
-            </div>
+            <ul class="lp-facts"><li>3 дня бесплатно</li><li>без рекламы</li><li>работает офлайн</li><li>Android 7.0+</li></ul>
+          </div>
+          <div class="lp-paper lp-form8" role="img" aria-label="Пример раздаточной ведомости: выдача записана, остаток пересчитан, поставлен штамп «Выдано»">
+            <div class="lp-form8-head"><span>Форма № 8 · раздаточная ведомость</span><span>склад «Пример»</span></div>
+            <div class="lp-row"><i>1</i><span>Рукавицы утеплённые, пар</span><b><s>42</s>39</b></div>
+            <div class="lp-row"><i>2</i><span>Спальный мешок, шт.</span><b><s>18</s>15</b></div>
+            <div class="lp-row"><i>3</i><span>Тушёнка, банок</span><b><s>240</s>237</b></div>
+            <p class="lp-sign">выдал ______ принял ______</p>
+            <div class="lp-stamp">ВЫДАНО</div>
           </div>
         </div>
       </section>
 
-      <section class="neo-trust s36-trust" aria-label="Доверие и совместимость">
-        <div class="container">
-          <div class="neo-trust-grid">
-            <a class="neo-trust-item" href="updates.html"><span class="neo-trust-mark">✓</span><div><strong>Версия <span data-release-version>3.6.1</span></strong><small>что нового</small></div></a>
-            <a class="neo-trust-item" href="security.html"><span class="neo-trust-mark">◆</span><div><strong>Проверяемый APK</strong><small>подпись и SHA-256</small></div></a>
-            <div class="neo-trust-item"><span class="neo-trust-mark">₽</span><div><strong>Оплата ЮKassa</strong><small>СБП, МИР, SberPay</small></div></div>
-          </div>
-        </div>
-      </section>
-
-      <section class="neo-features s36-features" id="for-whom">
-        <div class="container">
-          <div class="neo-section-title">
-            <span>ВОЗМОЖНОСТИ</span>
-            <h2>Учёт имущества без лишней сложности</h2>
-          </div>
-          <p class="s36-lead">Для складов, кладовых, подразделений, мастерских и волонтёрских штабов — везде, где важно знать, что есть в наличии и кому выдано.</p>
-          <div class="neo-feature-grid">
-            <div class="neo-feature neo-green"><b>📦</b><div><strong>Остатки по складам</strong><small>Приход, выдача, перемещение и списание сразу меняют остаток.</small></div></div>
-            <div class="neo-feature neo-cyan"><b>📋</b><div><strong>Заявки по этапам</strong><small>Новая → сборка → собрана → выдана. Выдача проводится со склада.</small></div></div>
-            <div class="neo-feature neo-gold"><b>📄</b><div><strong>Формы 8 и 18 в Excel</strong><small>Раздаточная ведомость и книга учёта — из уже введённых данных.</small></div></div>
-            <div class="neo-feature neo-green"><b>📱</b><div><strong>Второй телефон по QR</strong><small>Общий учёт подразделения: навёл камеру — и данные одни на всех.</small></div></div>
-            <div class="neo-feature neo-cyan"><b>📶</b><div><strong>Работает офлайн</strong><small>База на телефоне; синхронизация — когда появится связь.</small></div></div>
-            <div class="neo-feature neo-gold"><b>🔐</b><div><strong>Лицензия на сервере</strong><small>Не пропадёт при переустановке, ключ приходит на почту.</small></div></div>
-          </div>
-        </div>
-      </section>
-
-      <section class="s36-persona" aria-labelledby="personaTitle">
-        <div class="container">
-          <div class="neo-section-title">
-            <span>ДЛЯ ВАС</span>
-            <h2 id="personaTitle">Кто вы? Покажем, чем поможет</h2>
-          </div>
-          <div class="s36-persona-tabs" role="tablist">
-            <button role="tab" class="on" data-persona="0">🎖 Старшина</button>
-            <button role="tab" data-persona="1">🏬 Склад</button>
-            <button role="tab" data-persona="2">🤝 Волонтёры</button>
-            <button role="tab" data-persona="3">🛠 Мастерская</button>
-          </div>
-          <div class="s36-persona-card">
-            <img id="personaImg" src="screens/36-8-form8.jpg" alt="" loading="lazy" decoding="async" width="1080" height="2340">
-            <div>
-              <h3 id="personaHead">Имущество роты под контролем</h3>
-              <ul id="personaList">
-                <li>Выдача по взводам и бойцам с распиской в форме 8</li>
-                <li>Книга учёта по форме 18 — сама, из операций</li>
-                <li>Заявки от взводов: видно, что собрано и что выдано</li>
-              </ul>
-              <a class="neo-btn neo-primary" href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('persona')">Попробовать 3 дня бесплатно</a>
+      <!-- 2. Приложение в работе (настоящие экраны) -->
+      <section class="lp-section lp-gallery" aria-labelledby="galTitle">
+        <div class="lp-wrap">
+          <div class="lp-gallery-top">
+            <div><h2 class="lp-h2" id="galTitle">Приложение в работе</h2><p class="lp-sub">Настоящие экраны версии <span data-release-version>3.6.1</span>: склады, заявки, журнал, отчёты.</p></div>
+            <div class="lp-gnav" aria-label="Переключение скриншотов">
+              <button type="button" id="previewGalleryPrev" onclick="movePreviewGallery(-1)" aria-label="Предыдущий скриншот">‹</button>
+              <span id="previewGalleryCount" aria-live="polite">1 / 7</span>
+              <button type="button" id="previewGalleryNext" onclick="movePreviewGallery(1)" aria-label="Следующий скриншот">›</button>
             </div>
           </div>
-        </div>
-      </section>
-
-      <section class="s36-compare" aria-labelledby="compareTitle">
-        <div class="container">
-          <div class="neo-section-title">
-            <span>БЫЛО → СТАЛО</span>
-            <h2 id="compareTitle">Тетрадь и Excel против Каптёрки</h2>
-          </div>
-          <div class="s36-compare-grid">
-            <div class="s36-before">
-              <strong>Тетрадь / Excel</strong>
-              <p>✕ Остаток считаете вручную</p>
-              <p>✕ Кто что взял — ищете по страницам</p>
-              <p>✕ Форму 8 переписываете заново</p>
-              <p>✕ У каждого своя версия файла</p>
-            </div>
-            <div class="s36-after">
-              <strong>Каптёрка ПРО</strong>
-              <p>✓ Остаток меняется сам после операции</p>
-              <p>✓ Журнал по дням и поиск за секунду</p>
-              <p>✓ Форма 8 и 18 — в Excel одной кнопкой</p>
-              <p>✓ Одни данные на всех телефонах по QR</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="neo-preview s36-gallery">
-        <div class="container">
-          <div class="neo-preview-head">
-            <div>
-              <span>ИНТЕРФЕЙС</span>
-              <h2>Понятно с первого экрана</h2>
-            </div>
-            <div class="neo-preview-actions">
-              <div class="neo-gallery-nav" aria-label="Переключение скриншотов">
-                <button type="button" id="previewGalleryPrev" onclick="movePreviewGallery(-1)" aria-label="Предыдущий скриншот">‹</button>
-                <span id="previewGalleryCount" aria-live="polite">1 / 7</span>
-                <button type="button" id="previewGalleryNext" onclick="movePreviewGallery(1)" aria-label="Следующий скриншот">›</button>
-              </div>
-            </div>
-          </div>
-          <div class="neo-shot-row" id="previewGalleryTrack" aria-label="Скриншоты Каптёрка PRO">
-            <button class="neo-shot active" data-gallery-index="0" onclick="openGallerySlide(0)">
+          <div class="lp-shots" id="previewGalleryTrack" aria-label="Скриншоты Каптёрка PRO">
+            <button type="button" class="lp-shot active" data-gallery-index="0" onclick="openGallerySlide(0)">
               <img src="screens/36-2-dashboard.jpg" alt="Каптёрка PRO 3.6 — Главная: склады, остатки и быстрые операции" loading="lazy" decoding="async" width="1080" height="2340">
-              <span><strong>Главная</strong><small>Склады, остатки и быстрые операции</small></span>
+              <strong>Главная</strong><small>Склады, остатки и быстрые операции</small>
             </button>
-            <button class="neo-shot" data-gallery-index="1" onclick="openGallerySlide(1)">
+            <button type="button" class="lp-shot" data-gallery-index="1" onclick="openGallerySlide(1)">
               <img src="screens/36-3-stock-table.jpg" alt="Каптёрка PRO 3.6 — Остатки: приход, расход и остаток по складу" loading="lazy" decoding="async" width="1080" height="2340">
-              <span><strong>Остатки</strong><small>Приход, расход и остаток по складу</small></span>
+              <strong>Остатки</strong><small>Приход, расход и остаток по складу</small>
             </button>
-            <button class="neo-shot" data-gallery-index="2" onclick="openGallerySlide(2)">
+            <button type="button" class="lp-shot" data-gallery-index="2" onclick="openGallerySlide(2)">
               <img src="screens/36-4-requests.jpg" alt="Каптёрка PRO 3.6 — Заявки: новая → сборка → собрана → выдана" loading="lazy" decoding="async" width="1080" height="2340">
-              <span><strong>Заявки</strong><small>Новая → сборка → собрана → выдана</small></span>
+              <strong>Заявки</strong><small>Новая → сборка → собрана → выдана</small>
             </button>
-            <button class="neo-shot" data-gallery-index="3" onclick="openGallerySlide(3)">
+            <button type="button" class="lp-shot" data-gallery-index="3" onclick="openGallerySlide(3)">
               <img src="screens/36-5-journal.jpg" alt="Каптёрка PRO 3.6 — Журнал: операции по дням и за период" loading="lazy" decoding="async" width="1080" height="2340">
-              <span><strong>Журнал</strong><small>Операции по дням и за период</small></span>
+              <strong>Журнал</strong><small>Операции по дням и за период</small>
             </button>
-            <button class="neo-shot" data-gallery-index="4" onclick="openGallerySlide(4)">
+            <button type="button" class="lp-shot" data-gallery-index="4" onclick="openGallerySlide(4)">
               <img src="screens/36-6-unit-qr.jpg" alt="Каптёрка PRO 3.6 — QR-подключение: второй телефон за секунды" loading="lazy" decoding="async" width="1080" height="2340">
-              <span><strong>QR-подключение</strong><small>Второй телефон за секунды</small></span>
+              <strong>QR-подключение</strong><small>Второй телефон за секунды</small>
             </button>
-            <button class="neo-shot" data-gallery-index="5" onclick="openGallerySlide(5)">
+            <button type="button" class="lp-shot" data-gallery-index="5" onclick="openGallerySlide(5)">
               <img src="screens/36-8-form8.jpg" alt="Каптёрка PRO 3.6 — Форма № 8: раздаточная ведомость в excel" loading="lazy" decoding="async" width="1080" height="2340">
-              <span><strong>Форма № 8</strong><small>Раздаточная ведомость в Excel</small></span>
+              <strong>Форма № 8</strong><small>Раздаточная ведомость в Excel</small>
             </button>
-            <button class="neo-shot" data-gallery-index="6" onclick="openGallerySlide(6)">
+            <button type="button" class="lp-shot" data-gallery-index="6" onclick="openGallerySlide(6)">
               <img src="screens/36-7-pro.jpg" alt="Каптёрка PRO 3.6 — PRO: оплата и ключ на почту" loading="lazy" decoding="async" width="1080" height="2340">
-              <span><strong>PRO</strong><small>Оплата и ключ на почту</small></span>
+              <strong>PRO</strong><small>Оплата и ключ на почту</small>
             </button>
           </div>
-          <div class="neo-gallery-dots" id="previewGalleryDots" aria-label="Выбор скриншота">
+          <div class="lp-dots" id="previewGalleryDots" aria-label="Выбор скриншота">
             <button type="button" class="active" aria-label="Скриншот 1" aria-current="true" onclick="movePreviewGalleryTo(0)"></button>
             <button type="button" aria-label="Скриншот 2" onclick="movePreviewGalleryTo(1)"></button>
             <button type="button" aria-label="Скриншот 3" onclick="movePreviewGalleryTo(2)"></button>
@@ -456,69 +366,139 @@
         </div>
       </section>
 
-      <section class="neo-start" id="how-to-start">
-        <div class="container">
-          <div class="neo-section-title">
-            <span>КАК НАЧАТЬ</span>
-            <h2>Три шага — и можно работать</h2>
-          </div>
-          <div class="neo-start-grid">
-            <div><b>1</b><span><strong>Установите</strong><small>Скачайте APK с сайта или установите из RuStore. 3 дня — бесплатно.</small></span></div>
-            <div><b>2</b><span><strong>Добавьте склады</strong><small>Создайте склады и внесите фактические остатки.</small></span></div>
-            <div><b>3</b><span><strong>Ведите учёт</strong><small>Приход, выдача, заявки и отчёты — в одно касание. <a href="rukovodstvo-polzovatelya.html">Руководство →</a></small></span></div>
-          </div>
+      <!-- 3. Возможности -->
+      <section class="lp-section lp-features" id="for-whom" aria-labelledby="featTitle">
+        <div class="lp-wrap">
+          <h2 class="lp-h2" id="featTitle">Всё, что делала бы ваша тетрадь, только без арифметики</h2>
+          <p class="lp-sub">Для складов, кладовых, подразделений, мастерских и волонтёрских штабов: везде, где важно знать, что есть в наличии и кому выдано.</p>
+          <ul class="lp-lines">
+            <li><span class="lp-tick">✓</span><div><strong>Остатки по складам</strong><span class="lp-d">Приход, выдача, перемещение и списание сразу меняют остаток.</span></div></li>
+            <li><span class="lp-tick">✓</span><div><strong>Заявки по этапам</strong><span class="lp-d">Новая, сборка, собрана, выдана. Выдача проводится со склада.</span></div></li>
+            <li><span class="lp-tick">✓</span><div><strong>Формы № 8 и № 18 в Excel</strong><span class="lp-d">Раздаточная ведомость и книга учёта собираются из уже введённых данных.</span></div></li>
+            <li><span class="lp-tick">✓</span><div><strong>Второй телефон по QR-коду</strong><span class="lp-d">Навели камеру, и учёт общий на всё подразделение.</span></div></li>
+            <li><span class="lp-tick">✓</span><div><strong>Работает без интернета</strong><span class="lp-d">База на телефоне; синхронизация уходит, когда появится связь.</span></div></li>
+            <li><span class="lp-tick">✓</span><div><strong>Лицензия хранится на сервере</strong><span class="lp-d">Не пропадает при переустановке, ключ приходит на почту.</span></div></li>
+          </ul>
         </div>
       </section>
 
-      <section class="neo-plan" id="plans">
-        <div class="container">
-          <div class="neo-section-title neo-section-title-split">
+      <!-- 4. Для кого -->
+      <section class="lp-section lp-persona" aria-labelledby="personaTitle">
+        <div class="lp-wrap">
+          <h2 class="lp-h2" id="personaTitle">Выберите свою ситуацию</h2>
+          <p class="lp-sub">Покажем, чем приложение поможет именно вам.</p>
+          <div class="lp-persona-tabs" role="tablist" aria-label="Кто вы">
+            <button type="button" role="tab" class="lp-tab on" aria-selected="true" data-persona="0">Старшина</button>
+            <button type="button" role="tab" class="lp-tab" aria-selected="false" data-persona="1">Склад</button>
+            <button type="button" role="tab" class="lp-tab" aria-selected="false" data-persona="2">Волонтёры</button>
+            <button type="button" role="tab" class="lp-tab" aria-selected="false" data-persona="3">Мастерская</button>
+          </div>
+          <div class="lp-persona-card">
+            <img id="personaImg" src="screens/36-8-form8.jpg" alt="" loading="lazy" decoding="async" width="1080" height="2340">
             <div>
-              <span>ДОСТУП</span>
-              <h2>Сначала попробуйте. Потом решайте.</h2>
+              <h3 id="personaHead">Имущество роты под контролем</h3>
+              <ul id="personaList">
+                <li>Выдача по взводам и бойцам с распиской в форме 8</li>
+                <li>Книга учёта по форме 18 — сама, из операций</li>
+                <li>Заявки от взводов: видно, что собрано и что выдано</li>
+              </ul>
+              <a class="lp-btn lp-btn-gold" href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('persona')">Попробовать 3 дня бесплатно</a>
             </div>
-            <button class="neo-plan-link" onclick="switchMainTab('tabPayment')">Условия PRO →</button>
           </div>
+        </div>
+      </section>
 
-          <div class="neo-plan-grid">
-            <article class="neo-plan-card neo-plan-demo">
-              <div class="neo-plan-head">
-                <div><span>Демо</span><strong>3 дня</strong></div>
-                <b>Бесплатно</b>
-              </div>
+      <!-- 5. Попробуйте сами -->
+      <section class="lp-section lp-ledger" id="ledger-demo" aria-labelledby="ledgerTitle">
+        <div class="lp-wrap">
+          <div class="lp-ledger-head">
+            <h2 class="lp-h2" id="ledgerTitle">Остаток меняется сам</h2>
+            <p>Проведите выдачу и посмотрите, что произойдёт. Это демонстрация на вымышленных данных: ничего не сохраняется и не отправляется.</p>
+          </div>
+          <div class="lp-ledger-board" id="lpLedger">
+            <div class="lp-paper lp-sheet">
+              <table>
+                <caption>Склад «Пример»</caption>
+                <thead><tr><th scope="col">Наименование</th><th scope="col">Остаток</th><th scope="col"><span class="lp-sr">Действие</span></th></tr></thead>
+                <tbody>
+                  <tr data-item="Рукавицы утеплённые" data-qty="42"><td class="lp-name">Рукавицы утеплённые<small>пар</small></td><td class="lp-qty">42</td><td class="lp-act"><button type="button" class="lp-issue">Выдать 3</button></td></tr>
+                  <tr data-item="Спальный мешок" data-qty="18"><td class="lp-name">Спальный мешок<small>шт.</small></td><td class="lp-qty">18</td><td class="lp-act"><button type="button" class="lp-issue">Выдать 3</button></td></tr>
+                  <tr data-item="Тушёнка" data-qty="240"><td class="lp-name">Тушёнка<small>банок</small></td><td class="lp-qty">240</td><td class="lp-act"><button type="button" class="lp-issue">Выдать 3</button></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="lp-journal">
+              <h3>Журнал операций</h3>
+              <ol id="lpJournal" aria-live="polite"><li class="lp-empty">Пока пусто. Нажмите «Выдать 3».</li></ol>
+              <button type="button" class="lp-reset" id="lpReset">Сбросить пример</button>
+            </div>
+          </div>
+          <p class="lp-ledger-foot">В приложении так же, только с вашими данными: форма № 8 и книга учёта (форма 18) собираются из журнала одной кнопкой. <a href="forma-8-razdatochnaya-vedomost.html">Как выглядит форма 8</a></p>
+        </div>
+      </section>
+
+      <!-- 6. Доверие -->
+      <section class="lp-section lp-trust" aria-labelledby="trustTitle">
+        <div class="lp-wrap">
+          <h2 class="lp-h2" id="trustTitle">Скачиваете не из магазина? Проверьте сами</h2>
+          <p class="lp-sub">Файл подписан, контрольную сумму можно сверить. Оплата только через ЮKassa.</p>
+          <div class="lp-seals">
+            <a class="lp-seal" href="security.html"><strong>Проверяемый APK</strong><small>подпись и SHA-256</small></a>
+            <a class="lp-seal" href="updates.html"><strong>Версия <span data-release-version>3.6.1</span></strong><small>что нового</small></a>
+            <div class="lp-seal"><strong>Оплата ЮKassa</strong><small>СБП · МИР · SberPay</small></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 7. Три шага -->
+      <section class="lp-section lp-start" id="how-to-start" aria-labelledby="startTitle">
+        <div class="lp-wrap">
+          <h2 class="lp-h2" id="startTitle">Три шага, и можно записывать</h2>
+          <ol class="lp-steps">
+            <li><div><strong>Установите</strong><span>Скачайте APK с сайта или установите из RuStore. Три дня бесплатно.</span></div></li>
+            <li><div><strong>Добавьте склады</strong><span>Создайте склады и внесите фактические остатки.</span></div></li>
+            <li><div><strong>Ведите учёт</strong><span>Приход, выдача, заявки и отчёты в одно касание. <a href="rukovodstvo-polzovatelya.html">Руководство</a></span></div></li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- 9. Доступ -->
+      <section class="lp-section lp-plans" id="plans" aria-labelledby="plansTitle">
+        <div class="lp-wrap">
+          <h2 class="lp-h2" id="plansTitle">Сначала попробуйте, потом решайте</h2>
+          <p class="lp-sub">Три дня полного доступа после установки. Дальше PRO, если приложение пригодилось.</p>
+          <div class="lp-plans-grid">
+            <article class="lp-plan lp-plan-demo">
+              <div class="lp-plan-head"><span>Демо</span><span class="lp-plan-price">3 дня</span></div>
+              <span class="lp-plan-term">бесплатно</span>
               <p>Полный доступ для нового пользователя после установки приложения.</p>
-              <div class="neo-plan-points">
-                <span>✓ основной учёт офлайн</span>
-                <span>✓ склады, операции и отчёты</span>
-                <span>✓ можно проверить на своих данных</span>
-              </div>
-              <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('plan_demo')" class="neo-plan-action">Скачать APK</a>
+              <ul>
+                <li>основной учёт офлайн</li>
+                <li>склады, операции и отчёты</li>
+                <li>можно проверить на своих данных</li>
+              </ul>
+              <a class="lp-btn lp-btn-gold" href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('plan_demo')">Скачать APK</a>
             </article>
-
-            <article class="neo-plan-card neo-plan-pro">
-              <div class="neo-plan-head">
-                <div><span>PRO</span><strong>490 ₽</strong></div>
-                <b>30 дней</b>
-              </div>
+            <article class="lp-plan lp-plan-pro">
+              <div class="lp-plan-head"><span>PRO</span><span class="lp-plan-price">490 ₽</span></div>
+              <span class="lp-plan-term">30 дней</span>
               <p>Продолжение полного доступа после демо. Оплата проводится через ЮKassa.</p>
-              <div class="neo-plan-points">
-                <span>✓ лицензионный ключ KAPT-…</span>
-                <span>✓ срок отображается в кабинете</span>
-                <span>✓ чек и платёж через ЮKassa</span>
-              </div>
-              <button class="neo-plan-action neo-plan-action-gold" onclick="switchMainTab('tabPayment')">Открыть PRO</button>
+              <ul>
+                <li>лицензионный ключ KAPT-…</li>
+                <li>срок отображается в кабинете</li>
+                <li>чек и платёж через ЮKassa</li>
+              </ul>
+              <button type="button" class="lp-btn lp-btn-line" onclick="switchMainTab('tabPayment')">Открыть PRO</button>
             </article>
           </div>
         </div>
       </section>
 
-      <section class="neo-faq">
-        <div class="container">
-          <div class="neo-section-title">
-            <span>ВОПРОСЫ</span>
-            <h2>Частые вопросы</h2>
-          </div>
-          <div class="neo-faq-list">
+      <!-- 10. Вопросы -->
+      <section class="lp-section lp-faq" aria-labelledby="faqTitle">
+        <div class="lp-wrap">
+          <h2 class="lp-h2" id="faqTitle">Частые вопросы</h2>
+          <div class="lp-faq-list">
             <details>
               <summary>Нужен ли постоянный интернет?</summary>
               <p>Нет. Основной учёт работает на телефоне без сети. Интернет нужен для синхронизации между телефонами, оплаты и проверки лицензии.</p>
@@ -547,39 +527,17 @@
         </div>
       </section>
 
-      <section class="neo-guides" id="guides" aria-labelledby="guides-title">
-        <div class="container">
-          <div class="neo-section-title neo-section-title-split">
-            <div>
-              <span>ПОЛЕЗНЫЕ МАТЕРИАЛЫ</span>
-              <h2 id="guides-title">Практика складского учёта на Android</h2>
-            </div>
-            <a href="guides.html">Все материалы →</a>
-          </div>
-          <div class="neo-guides-grid">
-            <article class="neo-guide-card">
-              <a href="skladskoy-uchet-android.html">
-                <span class="neo-guide-icon">📦</span>
-                <div><strong>Складской учёт на Android</strong><small>Как вести приход, выдачу, перемещения и остатки прямо на телефоне.</small></div>
-                <b>→</b>
-              </a>
-            </article>
-            <article class="neo-guide-card">
-              <a href="prihod-rashod-sklad-android.html">
-                <span class="neo-guide-icon">↕</span>
-                <div><strong>Приход и расход на складе</strong><small>Как разделять поступление, выдачу, списание и перемещение без путаницы.</small></div>
-                <b>→</b>
-              </a>
-            </article>
-            <article class="neo-guide-card">
-              <a href="inventarizaciya-na-android.html">
-                <span class="neo-guide-icon">✓</span>
-                <div><strong>Инвентаризация на телефоне</strong><small>Проверяем фактическое наличие и сверяем его с учётными остатками.</small></div>
-                <b>→</b>
-              </a>
-            </article>
-          </div>
-          <div class="neo-guides-more" aria-label="Материалы по задачам">
+      <!-- 11. Материалы -->
+      <section class="lp-section lp-guides" id="guides" aria-labelledby="guides-title">
+        <div class="lp-wrap">
+          <h2 class="lp-h2" id="guides-title">Практика складского учёта на Android</h2>
+          <p class="lp-sub">Короткие разборы: как вести приход, выдачу, инвентаризацию и отчёты.</p>
+          <ul class="lp-guide-list">
+            <li><a href="skladskoy-uchet-android.html"><span><strong>Складской учёт на Android</strong><small>Как вести приход, выдачу, перемещения и остатки прямо на телефоне.</small></span><b>→</b></a></li>
+            <li><a href="prihod-rashod-sklad-android.html"><span><strong>Приход и расход на складе</strong><small>Как разделять поступление, выдачу, списание и перемещение без путаницы.</small></span><b>→</b></a></li>
+            <li><a href="inventarizaciya-na-android.html"><span><strong>Инвентаризация на телефоне</strong><small>Проверяем фактическое наличие и сверяем его с учётными остатками.</small></span><b>→</b></a></li>
+          </ul>
+          <div class="lp-more" aria-label="Материалы по задачам">
             <span>По задачам:</span>
             <a href="programma-dlya-starshiny-roty.html">Для старшины</a>
             <a href="forma-8-razdatochnaya-vedomost.html">Форма 8</a>
@@ -587,41 +545,30 @@
             <a href="uchet-instrumenta-android.html">Инструмент</a>
             <a href="uchet-oborudovaniya-android.html">Оборудование</a>
             <a href="skladskoy-uchet-dlya-nebolshogo-sklada.html">Небольшой склад</a>
+            <a href="guides.html">Все материалы</a>
+          </div>
+          <div class="lp-resources" aria-label="Информация о продукте">
+            <a href="rukovodstvo-polzovatelya.html"><span><strong>Руководство</strong><small>Все функции по шагам</small></span><b>→</b></a>
+            <a href="security.html"><span><strong>Безопасность</strong><small>Данные, APK и оплата</small></span><b>→</b></a>
+            <a href="help.html"><span><strong>Помощь</strong><small>Установка, лицензия, синхронизация</small></span><b>→</b></a>
           </div>
         </div>
       </section>
 
-      <section class="neo-resource-strip" aria-label="Информация о продукте">
-        <div class="container">
-          <a class="neo-resource-card" href="rukovodstvo-polzovatelya.html"><span>📖</span><div><strong>Руководство</strong><small>Все функции по шагам</small></div><b>→</b></a>
-          <a class="neo-resource-card" href="security.html"><span>◆</span><div><strong>Безопасность</strong><small>Данные, APK и оплата</small></div><b>→</b></a>
-          <a class="neo-resource-card" href="help.html"><span>?</span><div><strong>Помощь</strong><small>Установка, лицензия, синхронизация</small></div><b>→</b></a>
-        </div>
-      </section>
-
-      <section class="neo-final">
-        <div class="container">
-          <div class="neo-final-card">
-            <div>
-              <span>ГОТОВЫ ПОПРОБОВАТЬ?</span>
-              <h2>3 дня полного доступа бесплатно</h2>
-              <p>Установите приложение и проверьте его на своих данных.</p>
-            </div>
-            <div class="neo-final-actions">
-              <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('neo_bottom')" class="neo-btn neo-primary">Скачать APK</a>
-              <button class="neo-btn neo-dark" onclick="switchMainTab('tabPayment')">PRO — 490 ₽ / 30 дней</button>
-            </div>
+      <!-- 12. Финал -->
+      <section class="lp-section lp-final" aria-labelledby="finalTitle">
+        <div class="lp-wrap">
+          <h2 id="finalTitle">Три дня полного доступа бесплатно</h2>
+          <p>Установите приложение и проверьте его на своих данных.</p>
+          <div class="lp-actions">
+            <a class="lp-btn lp-btn-gold" href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('neo_bottom')">Скачать APK</a>
+            <button type="button" class="lp-btn lp-btn-line" onclick="switchMainTab('tabPayment')">PRO — 490 ₽ / 30 дней</button>
           </div>
-          <a class="s36-tg" href="https://t.me/kapterka_pro" target="_blank" rel="noopener noreferrer">
-            <span>✈</span><div><strong>Канал в Telegram</strong><small>Новые версии, советы по учёту и ответы на вопросы — подпишитесь, чтобы не потерять</small></div><b>Подписаться</b>
+          <a class="lp-tg" href="https://t.me/kapterka_pro" target="_blank" rel="noopener noreferrer">
+            <span><strong>Канал в Telegram</strong><small>Новые версии, советы по учёту и ответы на вопросы.</small></span><b>Подписаться</b>
           </a>
         </div>
       </section>
-
-      <div class="neo-mobile-bar">
-        <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('neo_mobile')">Скачать APK</a>
-        <button onclick="openModal('modalRuStore')">RuStore</button>
-      </div>
     </main>
   </div>
 
@@ -1247,11 +1194,11 @@
     </button>
     <button type="button" class="mobile-bottom-tab-btn gold" id="mobileTabPayment" role="tab" aria-controls="tabPayment" aria-selected="false" onclick="switchMainTab('tabPayment')">
       <span class="tab-icon">💳</span>
-      <span>Лицензия</span>
+      <span>PRO</span>
     </button>
-    <button type="button" class="mobile-bottom-tab-btn" id="mobileTabSync" role="tab" aria-controls="tabSync" aria-selected="false" onclick="switchMainTab('tabSync')">
+    <button type="button" class="mobile-bottom-tab-btn" id="mobileTabSync" role="tab" aria-controls="tabSync" aria-selected="false" aria-label="Синхронизация телефонов" onclick="switchMainTab('tabSync')">
       <span class="tab-icon">🔗</span>
-      <span>Синхр.</span>
+      <span>Телефоны</span>
     </button>
     <button type="button" class="mobile-bottom-tab-btn" id="mobileTabDownload" role="tab" aria-controls="tabDownload" aria-selected="false" onclick="switchMainTab('tabDownload')">
       <span class="tab-icon">📥</span>
