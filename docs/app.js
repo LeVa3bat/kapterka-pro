@@ -1671,7 +1671,7 @@ function installSiteFunnelTracking() {
     }
   }, { passive: true });
 
-  document.querySelectorAll('.neo-faq-list details').forEach((details, index) => {
+  document.querySelectorAll('.lp-faq-list details').forEach((details, index) => {
     details.addEventListener('toggle', () => {
       if (details.open) trackSiteAction('faq_open', { faq_index: index + 1 });
     });

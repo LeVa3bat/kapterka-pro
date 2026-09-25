@@ -1,36 +1,5 @@
-/* Каптёрка PRO 3.6: live phone in the hero and the "Кто вы?" switcher. */
+/* Каптёрка PRO: переключатель «Для кого» и демонстрация «Остаток меняется сам». */
 (function () {
-  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  // Hero phone: crossfade between real screens with a caption.
-  var phone = document.querySelector('.s36-live-phone');
-  var caption = document.getElementById('s36LiveText');
-  if (phone && caption) {
-    var shots = phone.querySelectorAll('img');
-    var texts = [
-      'Остатки по складам — в одной таблице',
-      'Заявки: новая → сборка → собрана → выдана',
-      'Второй телефон подключается по QR-коду',
-      'Форма 8 и 18 — в Excel одной кнопкой'
-    ];
-    var galleryIndex = [0, 2, 4, 5];
-    var i = 0;
-    window.s36LiveIndex = 0;
-    var show = function (n) {
-      shots[i].classList.remove('on');
-      i = n % shots.length;
-      shots[i].classList.add('on');
-      caption.textContent = texts[i];
-      window.s36LiveIndex = galleryIndex[i];
-    };
-    if (!reduce) {
-      var timer = setInterval(function () { show(i + 1); }, 3200);
-      document.addEventListener('visibilitychange', function () {
-        if (document.hidden) { clearInterval(timer); } else { timer = setInterval(function () { show(i + 1); }, 3200); }
-      });
-    }
-  }
-
   // "Кто вы?": one card, content per audience.
   var personas = [
     { img: 'screens/36-8-form8.jpg', head: 'Имущество роты под контролем',
@@ -42,7 +11,7 @@
     { img: 'screens/36-5-journal.jpg', head: 'Инструмент всегда на счету',
       list: ['Кто взял инструмент и когда — в журнале по дням', 'Возврат и списание с причиной', 'Работает в цеху без интернета'] }
   ];
-  var tabs = document.querySelectorAll('.s36-persona-tabs button');
+  var tabs = document.querySelectorAll('.lp-persona-tabs button');
   var img = document.getElementById('personaImg');
   var head = document.getElementById('personaHead');
   var list = document.getElementById('personaList');

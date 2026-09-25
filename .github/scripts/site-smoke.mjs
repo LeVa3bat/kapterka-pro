@@ -317,7 +317,7 @@ const missingSitemapUrls = requiredSitemapUrls.filter(url => !sitemap.includes('
 if (missingSitemapUrls.length) fail('sitemap is missing URLs: ' + missingSitemapUrls.join(', '));
 else ok('sitemap contains all public indexable pages');
 
-if (!index.includes('class="neo-trust') || !index.includes('class="neo-resource-strip"') || !index.includes('href="security.html"') || !index.includes('href="updates.html"')) {
+if (!index.includes('lp-trust') || !index.includes('lp-resources') || !index.includes('href="security.html"') || !index.includes('href="updates.html"')) {
   fail('professional trust/security/update surfaces are missing from homepage');
 }
 const securityPage = read('docs/security.html');
@@ -328,7 +328,7 @@ if (!securityPage.includes('39ffa4cf13a50398235078a49b7dfaa420fdd095d3258bab8336
 if (!securityPage.includes('843a7e883914f3a7a5a7665ff07b2e8c43da87a24ee4dc35e1600758aee73cb9')) fail('security page signer fingerprint is missing');
 else ok('professional trust/security/update surfaces are present');
 
-if (!index.includes('id="plans"') || !index.includes('neo-plan-demo') || !index.includes('neo-plan-pro')) fail('professional Demo/PRO comparison section is missing');
+if (!index.includes('id="plans"') || !index.includes('lp-plan-demo') || !index.includes('lp-plan-pro')) fail('professional Demo/PRO comparison section is missing');
 if (!index.includes('3 дня') || !index.includes('490 ₽') || !index.includes('30 дней')) fail('Demo/PRO terms are missing from homepage');
 else ok('professional demo/PRO section is present');
 
@@ -447,7 +447,7 @@ for (const file of seoGrowthPages) {
 }
 if (!guideAnalyticsMissing) ok('guide pages use privacy-safe analytics');
 
-if (!index.includes('class="neo-guides"') ||
+if (!index.includes('lp-guides') ||
     !index.includes('href="guides.html"') ||
     !index.includes('href="prihod-rashod-sklad-android.html"') ||
     !index.includes('href="inventarizaciya-na-android.html"')) {
