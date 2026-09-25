@@ -47,7 +47,7 @@
 
 /* ---------- 1. Первый экран ---------- */
 /* Шапка сайта фиксирована (около 58 px): первый блок начинается ниже неё */
-#tabOverview .lp-hero{padding:88px 0 clamp(32px,6vw,84px)}
+#tabOverview .lp-hero{padding:76px 0 clamp(32px,6vw,84px)}
 #tabOverview .lp-section,#previewGalleryTrack{scroll-margin-top:76px}
 .lp-hero-grid{display:grid;gap:var(--s6);align-items:center}
 .lp-kicker{margin:0 0 var(--s4);font:500 .8rem/1.3 var(--mono);color:var(--muted)}
@@ -224,6 +224,15 @@ a.lp-seal:hover{background:rgba(141,170,89,.08)}
 @media (max-width:720px){
   /* «Для кого» повторяет возможности: на телефоне страница короче без него */
   .lp-persona{display:none}
+  /* Первый экран: лист ведомости со штампом виден без прокрутки */
+  .lp-kicker{display:none}
+  .lp-h1-sub{font-size:.78rem;margin-bottom:var(--s2)}
+  .lp-facts{gap:2px var(--s4);font-size:.74rem}
+  #tabOverview .lp-hero{padding-top:70px}
+  .lp-hero-grid{gap:var(--s5)}
+  .lp-lead{margin-bottom:var(--s4)}
+  .lp-actions{flex-wrap:nowrap;margin-bottom:var(--s3)}
+  .lp-actions .lp-btn{flex:1 1 0;min-height:48px;padding:0 var(--s3);font-size:.95rem}
   .lp-plan>p{display:none}
   .lp-resources small{display:none}
   .lp-resources a{padding:var(--s3) var(--s4)}
