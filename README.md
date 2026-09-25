@@ -4,11 +4,11 @@ Android-приложение и официальный сайт проекта.
 
 ## Текущий релиз
 
-- Версия: **3.4.9**
-- Build / versionCode: **31**
+- Версия: **3.6.1**
+- Build / versionCode: **34**
 - Package: `com.aistudio.kapterka.jmwqve`
 - Сайт: папка `docs`
-- Room DB: версия 2
+- Room DB: версия 3
 
 ## Важно при обновлении
 
