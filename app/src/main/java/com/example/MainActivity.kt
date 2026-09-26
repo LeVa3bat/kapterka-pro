@@ -697,6 +697,12 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
         )
     }
 
+    com.example.ui.components.TrialReminderDialog(
+        licenseStatus = licenseStatus,
+        isProActive = profile?.isProActive == true,
+        onOpenPayment = { showPaymentProDialog = true }
+    )
+
     if (showPaymentProDialog) {
         PersonalLicenseDialog(
             profile = profile,
