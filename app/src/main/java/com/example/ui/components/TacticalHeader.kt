@@ -10,7 +10,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -23,6 +25,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.HelpOutline
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.Sync
@@ -174,35 +177,38 @@ fun TacticalHeader(
 
         // Row 2: service actions. Sync shows its own state under the label.
         val syncBadge = rememberSyncBadge(syncState, unitKey.isNotBlank(), onSyncClick)
+        // IntrinsicSize.Min + fillMaxHeight: all four tiles are as tall as the tallest one.
+        val syncPaused = unitKey.isNotBlank() && syncState.isPaused
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             ModernHeaderAction(
                 label = "Синхр.",
-                icon = Icons.Default.Sync,
+                icon = if (syncPaused) Icons.Default.Pause else Icons.Default.Sync,
                 onClick = onSyncClick,
-                modifier = Modifier.weight(1f).testTag("header_sync_button"),
+                modifier = Modifier.weight(1f).fillMaxHeight().testTag("header_sync_button"),
                 subLabel = syncBadge.text,
-                accent = syncBadge.color
+                accent = syncBadge.color,
+                statusDot = if (unitKey.isNotBlank()) syncBadge.color else null
             )
             ModernHeaderAction(
                 label = "Подключить",
                 icon = Icons.Default.QrCode,
                 onClick = onSecondPhoneClick,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f).fillMaxHeight()
             )
             ModernHeaderAction(
                 label = "Отчёты",
                 icon = Icons.Default.FileDownload,
                 onClick = onExportClick,
-                modifier = Modifier.weight(1f).testTag("header_export_button")
+                modifier = Modifier.weight(1f).fillMaxHeight().testTag("header_export_button")
             )
             ModernHeaderAction(
                 label = "Помощь",
                 icon = Icons.Default.HelpOutline,
                 onClick = onHelpClick,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f).fillMaxHeight()
             )
         }
 
@@ -220,7 +226,7 @@ private fun rememberSyncBadge(syncState: SyncState, hasUnit: Boolean, onRetry: (
     val context = LocalContext.current
     var hasNetwork by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(isNetworkAvailable(context)) }
     val currentRetry by androidx.compose.runtime.rememberUpdatedState(onRetry)
-    val syncEnabled by androidx.compose.runtime.rememberUpdatedState(hasUnit)
+    val syncEnabled by androidx.compose.runtime.rememberUpdatedState(hasUnit && !syncState.isPaused)
     androidx.compose.runtime.DisposableEffect(Unit) {
         val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager
         val callback = object : android.net.ConnectivityManager.NetworkCallback() {
@@ -282,39 +288,56 @@ private fun ModernHeaderAction(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     subLabel: String? = null,
-    accent: Color = SageGreenPrimary
+    accent: Color = SageGreenPrimary,
+    statusDot: Color? = null
 ) {
-    Column(
+    Box(
         modifier = modifier
             .clip(RoundedCornerShape(13.dp))
             .background(TacticalSurfaceLight)
             .clickable { onClick() }
-            .heightIn(min = 58.dp)
-            .padding(vertical = 8.dp, horizontal = 4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .heightIn(min = 62.dp)
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = label,
-            tint = accent,
-            modifier = Modifier.size(18.dp)
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = label,
-            color = TacticalTextSecondary,
-            fontSize = 9.5.sp,
-            fontWeight = FontWeight.Medium,
-            maxLines = 1
-        )
-        if (subLabel != null) {
+        Column(
+            modifier = Modifier
+                .align(Alignment.Center)
+                .fillMaxWidth()
+                .padding(vertical = 8.dp, horizontal = 4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = accent,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = subLabel,
-                color = accent,
-                fontSize = 8.5.sp,
-                fontWeight = FontWeight.Bold,
+                text = label,
+                color = TacticalTextSecondary,
+                fontSize = 9.5.sp,
+                fontWeight = FontWeight.Medium,
                 maxLines = 1
+            )
+            if (subLabel != null) {
+                Text(
+                    text = subLabel,
+                    color = accent,
+                    fontSize = 8.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1
+                )
+            }
+        }
+        if (statusDot != null) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 7.dp, end = 7.dp)
+                    .size(7.dp)
+                    .clip(CircleShape)
+                    .background(statusDot)
             )
         }
     }
