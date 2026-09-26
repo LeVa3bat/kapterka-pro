@@ -37,6 +37,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
 
 
     private val repository: KapterkaRepository
+    private val backupManager: com.example.data.backup.BackupManager
 
     val userProfile: StateFlow<UserProfile?>
     val allPoints: StateFlow<List<WarehousePoint>>
@@ -156,6 +157,8 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         val database = KapterkaDatabase.getDatabase(application, viewModelScope)
         val syncManager = com.example.data.sync.FirebaseSyncManager(application, database.kapterkaDao(), viewModelScope)
         repository = KapterkaRepository(database.kapterkaDao(), syncManager)
+        backupManager = com.example.data.backup.BackupManager(application, database.kapterkaDao())
+        viewModelScope.launch { backupManager.autoBackupIfDue() }
         
         repository.syncEvents?.let { eventsFlow ->
             viewModelScope.launch {
@@ -785,6 +788,26 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             _toastEvent.emit(msg)
         }
     }
+
+    fun backupSuggestedName(): String = backupManager.suggestedFileName()
+
+    fun saveBackupTo(uri: android.net.Uri) {
+        viewModelScope.launch {
+            backupManager.exportTo(uri)
+                .onSuccess { _toastEvent.emit("Копия сохранена (операций: $it)") }
+                .onFailure { _toastEvent.emit("Не удалось сохранить копию: ${it.message}") }
+        }
+    }
+
+    fun restoreBackupFrom(uri: android.net.Uri) {
+        viewModelScope.launch {
+            backupManager.restoreFrom(uri)
+                .onSuccess { _toastEvent.emit("Данные восстановлены из копии (операций: $it)") }
+                .onFailure { _toastEvent.emit("Не удалось восстановить: ${it.message}") }
+        }
+    }
+
+    fun lastAutoBackupAt(): Long = backupManager.lastAutoBackupAt
 
     fun clearAllData() {
         viewModelScope.launch {

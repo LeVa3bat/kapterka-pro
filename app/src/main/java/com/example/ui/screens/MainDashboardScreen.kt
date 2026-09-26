@@ -159,6 +159,7 @@ fun MainDashboardScreen(
     onHelpClick: () -> Unit = {},
     isDarkTheme: Boolean = false,
     onToggleTheme: () -> Unit = {},
+    syncState: com.example.data.sync.SyncState = com.example.data.sync.SyncState(),
     onReorderPoints: (List<WarehousePoint>) -> Unit = {},
     onDeletePoint: (String) -> Unit = {}
 ) {
@@ -347,7 +348,8 @@ fun MainDashboardScreen(
                 onHelpClick = onHelpClick,
                 onBannerClick = onBannerClick,
                 isDarkTheme = isDarkTheme,
-                onToggleTheme = onToggleTheme
+                onToggleTheme = onToggleTheme,
+                syncState = syncState
             )
         }
 

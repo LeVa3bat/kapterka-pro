@@ -124,6 +124,10 @@ fun MoreSettingsScreen(
     onResetDataClick: () -> Unit,
     onOpenManualClick: () -> Unit = {},
     onOpenDeveloperBackdoor: () -> Unit = {},
+    backupFileName: String = "kapterka-kopiya.json",
+    lastAutoBackupAt: Long = 0L,
+    onSaveBackup: (android.net.Uri) -> Unit = {},
+    onRestoreBackup: (android.net.Uri) -> Unit = {},
     isDarkTheme: Boolean = false,
     onToggleTheme: () -> Unit = {}
 ) {
@@ -724,6 +728,16 @@ fun MoreSettingsScreen(
                     }
                 }
             }
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        item {
+            com.example.ui.components.BackupAndDiagnosticsCard(
+                suggestedFileName = backupFileName,
+                lastAutoBackupAt = lastAutoBackupAt,
+                onSaveBackup = onSaveBackup,
+                onRestoreBackup = onRestoreBackup
+            )
             Spacer(modifier = Modifier.height(8.dp))
         }
 

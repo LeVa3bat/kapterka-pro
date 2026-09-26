@@ -139,6 +139,33 @@ interface KapterkaDao {
     @Query("DELETE FROM requisitions")
     suspend fun clearAllRequisitions()
 
+    @Query("DELETE FROM warehouse_points")
+    suspend fun clearAllPoints()
+
+    @Query("DELETE FROM inventory_items")
+    suspend fun clearAllItems()
+
+    /** Restore from a backup file: all data tables are replaced atomically or not at all. */
+    @Transaction
+    suspend fun replaceAllData(
+        items: List<InventoryItem>,
+        points: List<WarehousePoint>,
+        stocks: List<StockRecord>,
+        operations: List<OperationRecord>,
+        requisitions: List<RequisitionRequest>
+    ) {
+        clearAllStockRecords()
+        clearAllOperations()
+        clearAllRequisitions()
+        clearAllPoints()
+        clearAllItems()
+        insertItems(items)
+        insertPoints(points)
+        insertOrUpdateStockList(stocks)
+        operations.forEach { insertOperation(it) }
+        requisitions.forEach { insertRequisition(it) }
+    }
+
     // Explicit sync deletion markers
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertSyncTombstone(tombstone: SyncTombstone)

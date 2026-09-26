@@ -20,6 +20,9 @@ class KapterkaApplication : Application() {
             defaultHandler?.uncaughtException(thread, throwable)
         }
 
+        // Local crash report (no personal data); shown in Settings, sent only by the user.
+        com.example.util.CrashReporter.install(this)
+
         // Safe Firebase initialization.
         // Side-by-side NEXT-SAFE test builds must never connect to production Firebase.
         if (!BuildConfig.IS_NEXT_SAFE_TEST) {

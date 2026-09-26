@@ -444,6 +444,7 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                     AppDestination.HOME -> {
                         MainDashboardScreen(
                             profile = profile,
+                            syncState = syncState,
                             points = points,
                             catalogItems = catalogItems,
                             stockRecords = stockRecords,
@@ -532,6 +533,10 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                             profile = profile,
                             availableCategories = availableCategories,
                             syncState = syncState,
+                            backupFileName = viewModel.backupSuggestedName(),
+                            lastAutoBackupAt = viewModel.lastAutoBackupAt(),
+                            onSaveBackup = { viewModel.saveBackupTo(it) },
+                            onRestoreBackup = { viewModel.restoreBackupFrom(it) },
                             onDeleteCategory = { viewModel.deleteCategory(it) },
                             onAddCategory = { viewModel.addCategory(it) },
                             onResetCategories = { viewModel.resetCategoriesToDefault() },

@@ -41,6 +41,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.UserProfile
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import com.example.data.sync.SyncState
+import com.example.ui.theme.TacticalRed
 import com.example.ui.theme.SageGreenBright
 import com.example.ui.theme.SageGreenDark
 import com.example.ui.theme.SageGreenPrimary
@@ -64,6 +68,7 @@ fun TacticalHeader(
     onBannerClick: () -> Unit = {},
     isDarkTheme: Boolean = false,
     onToggleTheme: () -> Unit = {},
+    syncState: SyncState = SyncState(),
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -196,6 +201,57 @@ fun TacticalHeader(
                 modifier = Modifier.weight(1f)
             )
         }
+
+        if (unitKey.isNotBlank()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            SyncStatusLine(syncState = syncState, onRetry = onSyncClick)
+        }
+    }
+}
+
+/** Понятный статус: можно ли доверять цифрам; по нажатию повторяет синхронизацию. */
+@Composable
+private fun SyncStatusLine(syncState: SyncState, onRetry: () -> Unit) {
+    var now by androidx.compose.runtime.remember { androidx.compose.runtime.mutableLongStateOf(System.currentTimeMillis()) }
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        while (true) {
+            kotlinx.coroutines.delay(30_000)
+            now = System.currentTimeMillis()
+        }
+    }
+    val text: String
+    val color: Color
+    when {
+        syncState.isSyncing -> { text = "Синхронизация…"; color = TacticalGold }
+        !syncState.isOnline -> {
+            text = "Нет связи с подразделением. Данные сохранены на телефоне. Нажмите, чтобы повторить"
+            color = TacticalRed
+        }
+        syncState.lastSyncTime > 0L -> {
+            val minutes = ((now - syncState.lastSyncTime) / 60_000L).coerceAtLeast(0L)
+            text = when {
+                minutes < 1L -> "Синхронизировано только что"
+                minutes < 60L -> "Синхронизировано $minutes мин назад"
+                minutes < 24L * 60L -> "Синхронизировано ${minutes / 60L} ч назад"
+                else -> "Синхронизировано ${minutes / (24L * 60L)} дн. назад. Нажмите, чтобы обновить"
+            }
+            color = SageGreenBright
+        }
+        else -> { text = "Подключено. Нажмите, чтобы синхронизировать"; color = TacticalTextSecondary }
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(TacticalSurfaceLight)
+            .clickable { onRetry() }
+            .padding(horizontal = 10.dp, vertical = 6.dp)
+            .testTag("header_sync_status"),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(color))
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(text = text, color = color, fontSize = 10.5.sp, fontWeight = FontWeight.Medium)
     }
 }
 
