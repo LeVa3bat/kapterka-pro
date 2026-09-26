@@ -1572,7 +1572,18 @@ class FirebaseSyncManager(
                     doc.reference.delete().await()
                 }
             }
-            unitRef.delete().await()
+            // Transition rules allow deleting the unit document. Strict rules do not (only the
+            // server creates/removes it), so fall back to dropping the cloud backup field.
+            try {
+                unitRef.delete().await()
+            } catch (e: FirebaseFirestoreException) {
+                if (e.code != FirebaseFirestoreException.Code.PERMISSION_DENIED) throw e
+                try {
+                    unitRef.update("cloudBackup", FieldValue.delete()).await()
+                } catch (e2: FirebaseFirestoreException) {
+                    if (e2.code != FirebaseFirestoreException.Code.NOT_FOUND) throw e2
+                }
+            }
             Unit
         }
     }
