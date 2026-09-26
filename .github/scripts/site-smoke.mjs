@@ -196,8 +196,8 @@ if (!/Contact:\s*mailto:/i.test(securityTxt) || !/Canonical:\s*https:\/\/kapterk
   ok('security.txt contains contact and canonical');
 }
 
-if (!index.includes('v3.7.0') && !index.includes('3.7.0')) fail('site version 3.7.0 is not visible');
-if (!index.includes('сборка 35') && !index.includes('Сборка 35') && !index.includes('data-release-code>35</span>')) fail('site build 35 marker is missing');
+if (!index.includes('v3.8.0') && !index.includes('3.8.0')) fail('site version 3.8.0 is not visible');
+if (!index.includes('сборка 36') && !index.includes('Сборка 36') && !index.includes('data-release-code>36</span>')) fail('site build 36 marker is missing');
 
 
 const htmlFiles = ['docs/index.html', 'docs/privacy.html', 'docs/terms.html', 'docs/security.html', 'docs/updates.html', 'docs/help.html', 'docs/skladskoy-uchet-android.html', 'docs/uchet-imushchestva-offline.html', 'docs/uchet-ostatkov-na-telefone.html', 'docs/guides.html', 'docs/prihod-rashod-sklad-android.html', 'docs/inventarizaciya-na-android.html', 'docs/uchet-vydachi-imushchestva-android.html', 'docs/peremeshchenie-mezhdu-skladami-android.html', 'docs/uchet-tmc-android.html', 'docs/uchet-instrumenta-android.html', 'docs/uchet-oborudovaniya-android.html', 'docs/uchet-inventarya-android.html', 'docs/skladskoy-uchet-dlya-nebolshogo-sklada.html', 'docs/sklad-bez-1c-na-telefone.html', 'docs/zhurnal-dvizheniya-imushchestva-android.html', 'docs/uchet-neskolkih-skladov-android.html', 'docs/bezopasnoe-obnovlenie-kapterka-pro.html', 'docs/404.html'];
@@ -338,9 +338,9 @@ if (!index.includes('href="help.html"')) fail('homepage does not link to support
 else ok('professional support center is present and linked');
 
 const releaseManifest = JSON.parse(read('docs/release.json'));
-if (releaseManifest.versionName !== '3.7.0' || Number(releaseManifest.versionCode) !== 35) fail('release.json current release metadata is wrong');
+if (releaseManifest.versionName !== '3.8.0' || Number(releaseManifest.versionCode) !== 36) fail('release.json current release metadata is wrong');
 if (releaseManifest.packageName !== 'com.aistudio.kapterka.jmwqve' || Number(releaseManifest.minSdk) !== 24) fail('release.json compatibility metadata is wrong');
-if (releaseManifest.apkSha256 !== 'ec869d894bee7efe59387d8e6d8366a6ded75fa92bd7f4a20bf3a96e7e47786c') fail('release.json APK hash changed unexpectedly');
+if (releaseManifest.apkSha256 !== 'cac43521edc7d8374fd0762af42dd5ed2abb518f0d401a759d0edb599aadc2d4') fail('release.json APK hash changed unexpectedly');
 if (releaseManifest.signerSha256 !== '843a7e883914f3a7a5a7665ff07b2e8c43da87a24ee4dc35e1600758aee73cb9') fail('release.json signer fingerprint changed unexpectedly');
 
 for (const [name, source] of [['index', index], ['security', securityPage], ['updates', updatesPage], ['help', read('docs/help.html')]]) {
