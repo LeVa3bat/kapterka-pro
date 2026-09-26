@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -171,7 +172,8 @@ fun TacticalHeader(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // Row 2: service actions.
+        // Row 2: service actions. Sync shows its own state under the label.
+        val syncBadge = rememberSyncBadge(syncState, unitKey.isNotBlank(), onSyncClick)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -180,7 +182,9 @@ fun TacticalHeader(
                 label = "Синхр.",
                 icon = Icons.Default.Sync,
                 onClick = onSyncClick,
-                modifier = Modifier.weight(1f).testTag("header_sync_button")
+                modifier = Modifier.weight(1f).testTag("header_sync_button"),
+                subLabel = syncBadge.text,
+                accent = syncBadge.color
             )
             ModernHeaderAction(
                 label = "Подключить",
@@ -202,18 +206,17 @@ fun TacticalHeader(
             )
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
-        SyncStatusLine(
-            syncState = syncState,
-            hasUnit = unitKey.isNotBlank(),
-            onRetry = if (unitKey.isNotBlank()) onSyncClick else onSecondPhoneClick
-        )
     }
 }
 
-/** Понятный статус: можно ли доверять цифрам; по нажатию повторяет синхронизацию. */
+private class SyncBadge(val text: String, val color: Color)
+
+/**
+ * Короткий статус для кнопки «Синхр.»: можно ли доверять цифрам. Следит за интернетом
+ * напрямую; когда связь возвращается, сразу запускает синхронизацию.
+ */
 @Composable
-private fun SyncStatusLine(syncState: SyncState, hasUnit: Boolean, onRetry: () -> Unit) {
+private fun rememberSyncBadge(syncState: SyncState, hasUnit: Boolean, onRetry: () -> Unit): SyncBadge {
     val context = LocalContext.current
     var hasNetwork by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(isNetworkAvailable(context)) }
     val currentRetry by androidx.compose.runtime.rememberUpdatedState(onRetry)
@@ -250,47 +253,24 @@ private fun SyncStatusLine(syncState: SyncState, hasUnit: Boolean, onRetry: () -
             now = System.currentTimeMillis()
         }
     }
-    val text: String
-    val color: Color
-    when {
-        !hasNetwork -> {
-            text = "Нет интернета. Данные сохраняются на телефоне и отправятся, когда связь вернётся"
-            color = TacticalRed
-        }
-        !hasUnit -> {
-            text = "Общий учёт не подключён. Нажмите, чтобы подключить"
-            color = TacticalTextSecondary
-        }
-        syncState.isSyncing -> { text = "Синхронизация…"; color = TacticalGold }
-        !syncState.isOnline -> {
-            text = "Нет связи с подразделением. Данные сохранены на телефоне. Нажмите, чтобы повторить"
-            color = TacticalRed
-        }
+    return when {
+        !hasNetwork -> SyncBadge("нет сети", TacticalRed)
+        !hasUnit -> SyncBadge("не подключено", TacticalTextSecondary)
+        syncState.isSyncing -> SyncBadge("идёт…", TacticalGold)
+        !syncState.isOnline -> SyncBadge("нет связи", TacticalRed)
         syncState.lastSyncTime > 0L -> {
             val minutes = ((now - syncState.lastSyncTime) / 60_000L).coerceAtLeast(0L)
-            text = when {
-                minutes < 1L -> "Синхронизировано только что"
-                minutes < 60L -> "Синхронизировано $minutes мин назад"
-                minutes < 24L * 60L -> "Синхронизировано ${minutes / 60L} ч назад"
-                else -> "Синхронизировано ${minutes / (24L * 60L)} дн. назад. Нажмите, чтобы обновить"
-            }
-            color = SageGreenBright
+            SyncBadge(
+                when {
+                    minutes < 1L -> "только что"
+                    minutes < 60L -> "$minutes мин назад"
+                    minutes < 24L * 60L -> "${minutes / 60L} ч назад"
+                    else -> "${minutes / (24L * 60L)} дн. назад"
+                },
+                SageGreenBright
+            )
         }
-        else -> { text = "Подключено. Нажмите, чтобы синхронизировать"; color = TacticalTextSecondary }
-    }
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
-            .background(TacticalSurfaceLight)
-            .clickable { onRetry() }
-            .padding(horizontal = 10.dp, vertical = 6.dp)
-            .testTag("header_sync_status"),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(color))
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(text = text, color = color, fontSize = 10.5.sp, fontWeight = FontWeight.Medium)
+        else -> SyncBadge("подключено", TacticalTextSecondary)
     }
 }
 
@@ -299,20 +279,24 @@ private fun ModernHeaderAction(
     label: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    subLabel: String? = null,
+    accent: Color = SageGreenPrimary
 ) {
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(13.dp))
             .background(TacticalSurfaceLight)
             .clickable { onClick() }
+            .heightIn(min = 58.dp)
             .padding(vertical = 8.dp, horizontal = 4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
         Icon(
             imageVector = icon,
             contentDescription = label,
-            tint = SageGreenPrimary,
+            tint = accent,
             modifier = Modifier.size(18.dp)
         )
         Spacer(modifier = Modifier.height(4.dp))
@@ -323,6 +307,15 @@ private fun ModernHeaderAction(
             fontWeight = FontWeight.Medium,
             maxLines = 1
         )
+        if (subLabel != null) {
+            Text(
+                text = subLabel,
+                color = accent,
+                fontSize = 8.5.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1
+            )
+        }
     }
 }
 

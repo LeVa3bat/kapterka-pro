@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -25,7 +26,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -41,7 +44,20 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-/** «Резервная копия» и «Отчёт о сбое» на экране «Ещё». */
+private fun formatBackupTime(ms: Long): String =
+    SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()).format(Date(ms))
+
+/** Короткая строка для заголовка сворачиваемой карточки. */
+fun backupSubtitle(lastCloudBackupAt: Long, lastAutoBackupAt: Long): String = when {
+    lastCloudBackupAt > 0L -> "В облаке: " + formatBackupTime(lastCloudBackupAt)
+    lastAutoBackupAt > 0L -> "На телефоне: " + formatBackupTime(lastAutoBackupAt)
+    else -> "Сохраните данные в файл или в облако"
+}
+
+/**
+ * Содержимое карточки «Резервная копия»: два блока (файл и облако) и, если было падение,
+ * отчёт о сбое. Рамку и заголовок рисует сворачиваемая карточка на экране «Ещё».
+ */
 @Composable
 fun BackupAndDiagnosticsCard(
     suggestedFileName: String,
@@ -65,103 +81,80 @@ fun BackupAndDiagnosticsCard(
         ActivityResultContracts.OpenDocument()
     ) { uri -> if (uri != null) pendingRestore = uri }
 
-    Surface(
-        color = androidx.compose.ui.graphics.Color(0xFF131C16),
-        shape = RoundedCornerShape(14.dp),
-        border = BorderStroke(1.dp, TacticalBorderSubtle),
-        modifier = modifier.fillMaxWidth()
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text("Резервная копия", color = TacticalTextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(4.dp))
-            Text(
-                "Склады, остатки, операции и заявки сохраняются в файл. Его можно перенести на другой телефон и восстановить.",
-                color = TacticalTextSecondary, fontSize = 11.sp, lineHeight = 15.sp
-            )
-            Spacer(Modifier.height(4.dp))
-            Text(
-                if (lastAutoBackupAt > 0L) {
-                    "Автокопия раз в неделю: " +
-                        SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()).format(Date(lastAutoBackupAt))
-                } else "Автокопия раз в неделю: ещё не создавалась",
-                color = TacticalTextMuted, fontSize = 10.sp
-            )
-            Spacer(Modifier.height(8.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(
-                    onClick = { saveLauncher.launch(suggestedFileName) },
-                    modifier = Modifier.weight(1f).height(38.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = SageGreenBright),
-                    border = BorderStroke(1.dp, SageGreenPrimary.copy(alpha = 0.6f))
-                ) { Text("Сохранить копию", fontSize = 11.sp, fontWeight = FontWeight.Bold) }
-                OutlinedButton(
-                    onClick = { openLauncher.launch(arrayOf("application/json", "application/octet-stream", "text/plain")) },
-                    modifier = Modifier.weight(1f).height(38.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = TacticalGold),
-                    border = BorderStroke(1.dp, TacticalGold.copy(alpha = 0.6f))
-                ) { Text("Восстановить", fontSize = 11.sp, fontWeight = FontWeight.Bold) }
-            }
+    Column(modifier = modifier.fillMaxWidth().padding(12.dp)) {
+        Text(
+            "Склады, остатки, операции и заявки. Копия защищает данные, если телефон потерян или сброшен.",
+            color = TacticalTextSecondary, fontSize = 11.sp, lineHeight = 15.sp
+        )
+        Spacer(Modifier.height(10.dp))
 
-            Spacer(Modifier.height(8.dp))
-            Text(
-                if (lastCloudBackupAt > 0L) {
-                    "Копия в облаке подразделения: " +
-                        SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()).format(Date(lastCloudBackupAt)) +
-                        " (обновляется раз в сутки)"
-                } else "Копия в облаке подразделения: ещё не создавалась",
-                color = TacticalTextMuted, fontSize = 10.sp
-            )
-            Spacer(Modifier.height(6.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(
-                    onClick = onSaveCloud,
-                    modifier = Modifier.weight(1f).height(38.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = SageGreenBright),
-                    border = BorderStroke(1.dp, SageGreenPrimary.copy(alpha = 0.6f))
-                ) { Text("В облако", fontSize = 11.sp, fontWeight = FontWeight.Bold) }
-                OutlinedButton(
-                    onClick = { confirmCloudRestore = true },
-                    modifier = Modifier.weight(1f).height(38.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = TacticalGold),
-                    border = BorderStroke(1.dp, TacticalGold.copy(alpha = 0.6f))
-                ) { Text("Из облака", fontSize = 11.sp, fontWeight = FontWeight.Bold) }
-            }
+        BackupSection(
+            title = "В ФАЙЛ",
+            status = if (lastAutoBackupAt > 0L) {
+                "Автокопия на телефоне раз в неделю. Последняя: " + formatBackupTime(lastAutoBackupAt)
+            } else "Автокопия на телефоне раз в неделю. Пока не создавалась",
+            hint = "Файл можно сохранить на Google Диск или перенести на другой телефон.",
+            primaryLabel = "Сохранить",
+            onPrimary = { saveLauncher.launch(suggestedFileName) },
+            secondaryLabel = "Восстановить",
+            onSecondary = { openLauncher.launch(arrayOf("application/json", "application/octet-stream", "text/plain")) }
+        )
 
-            if (crashText != null) {
-                Spacer(Modifier.height(12.dp))
-                Text("Отчёт о сбое", color = TacticalTextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    "Приложение недавно закрылось с ошибкой. В отчёте только версия, модель телефона и техническая запись, без ваших данных.",
-                    color = TacticalTextSecondary, fontSize = 11.sp, lineHeight = 15.sp
-                )
-                Spacer(Modifier.height(8.dp))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(
-                        onClick = {
-                            val send = Intent(Intent.ACTION_SEND).apply {
-                                type = "text/plain"
-                                putExtra(Intent.EXTRA_SUBJECT, "Отчёт о сбое Каптёрка PRO")
-                                putExtra(Intent.EXTRA_TEXT, crashText)
-                            }
-                            context.startActivity(Intent.createChooser(send, "Отправить отчёт"))
-                        },
-                        modifier = Modifier.weight(1f).height(38.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = SageGreenBright),
-                        border = BorderStroke(1.dp, SageGreenPrimary.copy(alpha = 0.6f))
-                    ) { Text("Отправить", fontSize = 11.sp, fontWeight = FontWeight.Bold) }
-                    OutlinedButton(
-                        onClick = { CrashReporter.clear(context); crashText = null },
-                        modifier = Modifier.weight(1f).height(38.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TacticalTextMuted),
-                        border = BorderStroke(1.dp, TacticalBorderSubtle)
-                    ) { Text("Удалить", fontSize = 11.sp, fontWeight = FontWeight.Bold) }
+        Spacer(Modifier.height(10.dp))
+
+        BackupSection(
+            title = "В ОБЛАКЕ ПОДРАЗДЕЛЕНИЯ",
+            status = if (lastCloudBackupAt > 0L) {
+                "Обновляется раз в сутки. Последняя: " + formatBackupTime(lastCloudBackupAt)
+            } else "Обновляется раз в сутки. Пока не создавалась",
+            hint = "Нужен общий учёт (код подразделения) и интернет.",
+            primaryLabel = "В облако",
+            onPrimary = onSaveCloud,
+            secondaryLabel = "Из облака",
+            onSecondary = { confirmCloudRestore = true }
+        )
+
+        if (crashText != null) {
+            Spacer(Modifier.height(10.dp))
+            Surface(
+                color = Color(0xFF131C16),
+                shape = RoundedCornerShape(14.dp),
+                border = BorderStroke(1.dp, TacticalGold.copy(alpha = 0.35f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(10.dp)) {
+                    Text(
+                        "ОТЧЁТ О СБОЕ", color = TacticalGold, fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "Приложение недавно закрылось с ошибкой. В отчёте только версия, модель телефона и техническая запись, без ваших данных.",
+                        color = TacticalTextSecondary, fontSize = 11.sp, lineHeight = 15.sp
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = {
+                                val send = Intent(Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(Intent.EXTRA_SUBJECT, "Отчёт о сбое Каптёрка PRO")
+                                    putExtra(Intent.EXTRA_TEXT, crashText)
+                                }
+                                context.startActivity(Intent.createChooser(send, "Отправить отчёт"))
+                            },
+                            modifier = Modifier.weight(1f).height(38.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = SageGreenPrimary, contentColor = Color.White)
+                        ) { Text("Отправить", fontSize = 11.sp, fontWeight = FontWeight.Bold) }
+                        OutlinedButton(
+                            onClick = { CrashReporter.clear(context); crashText = null },
+                            modifier = Modifier.weight(1f).height(38.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = TacticalTextMuted),
+                            border = BorderStroke(1.dp, TacticalBorderSubtle)
+                        ) { Text("Удалить", fontSize = 11.sp, fontWeight = FontWeight.Bold) }
+                    }
                 }
             }
         }
@@ -201,5 +194,49 @@ fun BackupAndDiagnosticsCard(
             },
             dismissButton = { TextButton(onClick = { pendingRestore = null }) { Text("Отмена") } }
         )
+    }
+}
+
+@Composable
+private fun BackupSection(
+    title: String,
+    status: String,
+    hint: String,
+    primaryLabel: String,
+    onPrimary: () -> Unit,
+    secondaryLabel: String,
+    onSecondary: () -> Unit
+) {
+    Surface(
+        color = Color(0xFF131C16),
+        shape = RoundedCornerShape(14.dp),
+        border = BorderStroke(1.dp, TacticalBorderSubtle),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(10.dp)) {
+            Text(
+                title, color = TacticalGold, fontSize = 9.sp,
+                fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(status, color = TacticalTextPrimary, fontSize = 11.sp, lineHeight = 15.sp)
+            Text(hint, color = TacticalTextMuted, fontSize = 10.sp, lineHeight = 14.sp)
+            Spacer(Modifier.height(8.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    onClick = onPrimary,
+                    modifier = Modifier.weight(1f).height(38.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = SageGreenPrimary, contentColor = Color.White)
+                ) { Text(primaryLabel, fontSize = 11.sp, fontWeight = FontWeight.Bold) }
+                OutlinedButton(
+                    onClick = onSecondary,
+                    modifier = Modifier.weight(1f).height(38.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = SageGreenBright),
+                    border = BorderStroke(1.dp, SageGreenPrimary.copy(alpha = 0.6f))
+                ) { Text(secondaryLabel, fontSize = 11.sp, fontWeight = FontWeight.Bold) }
+            }
+        }
     }
 }

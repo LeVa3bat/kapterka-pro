@@ -143,6 +143,7 @@ fun MoreSettingsScreen(
     // Accordions state: all collapsed by default to save space as requested
     var expandedProfile by remember { mutableStateOf(false) }
     var expandedConnectCode by remember { mutableStateOf(false) }
+    var expandedBackup by remember { mutableStateOf(false) }
     var expandedProPlan by remember { mutableStateOf(false) }
     var expandedReports by remember { mutableStateOf(false) }
     var expandedCategories by remember { mutableStateOf(false) }
@@ -735,15 +736,24 @@ fun MoreSettingsScreen(
         }
 
         item {
-            com.example.ui.components.BackupAndDiagnosticsCard(
-                suggestedFileName = backupFileName,
-                lastAutoBackupAt = lastAutoBackupAt,
-                onSaveBackup = onSaveBackup,
-                onRestoreBackup = onRestoreBackup,
-                lastCloudBackupAt = lastCloudBackupAt,
-                onSaveCloud = onSaveCloudBackup,
-                onRestoreCloud = onRestoreCloudBackup
-            )
+            CollapsibleCard(
+                title = "Резервная копия",
+                subtitle = com.example.ui.components.backupSubtitle(lastCloudBackupAt, lastAutoBackupAt),
+                icon = Icons.Default.Cloud,
+                iconColor = SageGreenBright,
+                isExpanded = expandedBackup,
+                onToggle = { expandedBackup = !expandedBackup }
+            ) {
+                com.example.ui.components.BackupAndDiagnosticsCard(
+                    suggestedFileName = backupFileName,
+                    lastAutoBackupAt = lastAutoBackupAt,
+                    onSaveBackup = onSaveBackup,
+                    onRestoreBackup = onRestoreBackup,
+                    lastCloudBackupAt = lastCloudBackupAt,
+                    onSaveCloud = onSaveCloudBackup,
+                    onRestoreCloud = onRestoreCloudBackup
+                )
+            }
             Spacer(modifier = Modifier.height(8.dp))
         }
 
