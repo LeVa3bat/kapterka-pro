@@ -22,7 +22,7 @@
       img.src = p.img;
       head.textContent = p.head;
       list.replaceChildren.apply(list, p.list.map(function (text) { var li = document.createElement('li'); li.textContent = text; return li; }));
-      if (typeof ym === 'function') { try { ym(112482290, 'reachGoal', 'persona_' + tab.getAttribute('data-persona')); } catch (e) {} }
+      if (typeof ym === 'function') { try { ym(112255061, 'reachGoal', 'persona_' + tab.getAttribute('data-persona')); } catch (e) {} }
     });
   });
 })();

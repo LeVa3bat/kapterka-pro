@@ -236,9 +236,8 @@ const missingHandlers = [...new Set(inlineCalls.filter((name) => !definedFunctio
 if (missingHandlers.length) fail(`inline handlers reference missing functions: ${missingHandlers.join(', ')}`);
 else ok('inline handlers have matching functions');
 
-if (publicText.includes('112255061')) fail('retired Yandex Metrika counter returned in public web code');
 if (index.includes('webvisor:true')) fail('Webvisor must remain disabled on auth/payment pages');
-if (!index.includes("ym(112482290, 'init'")) fail('current Yandex Metrika counter is missing');
+if (!index.includes("ym(112255061, 'init'")) fail('current Yandex Metrika counter is missing');
 else ok('analytics configuration matches current privacy settings');
 
 const docsFiles = fs.readdirSync(path.join(root, 'docs'));
@@ -390,7 +389,7 @@ else ok('accessibility and release automation guards are present');
 
 if (index.includes('<script async src="https://www.googletagmanager.com/gtag/js')) fail('Google Analytics returned to render-time loading');
 if (!index.includes('scheduleAnalyticsLoad') || !index.includes("setTimeout(start, 1200)") || !index.includes("addEventListener('load', startSoon")) fail('deferred analytics loader is missing');
-if (!index.includes("gtag('config', 'G-RYV6TP63D3')") || !index.includes("ym(112482290, 'init'")) fail('analytics queues/IDs are missing');
+if (!index.includes("gtag('config', 'G-RYV6TP63D3')") || !index.includes("ym(112255061, 'init'")) fail('analytics queues/IDs are missing');
 if (/aria-label="Открыть экран (Главная|Каталог)"/.test(index)) fail('gallery aria-label overrides visible text');
 else ok('analytics is queued and deferred for initial-render performance');
 
