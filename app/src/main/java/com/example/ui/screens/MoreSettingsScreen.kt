@@ -128,6 +128,9 @@ fun MoreSettingsScreen(
     lastAutoBackupAt: Long = 0L,
     onSaveBackup: (android.net.Uri) -> Unit = {},
     onRestoreBackup: (android.net.Uri) -> Unit = {},
+    lastCloudBackupAt: Long = 0L,
+    onSaveCloudBackup: () -> Unit = {},
+    onRestoreCloudBackup: () -> Unit = {},
     isDarkTheme: Boolean = false,
     onToggleTheme: () -> Unit = {}
 ) {
@@ -736,7 +739,10 @@ fun MoreSettingsScreen(
                 suggestedFileName = backupFileName,
                 lastAutoBackupAt = lastAutoBackupAt,
                 onSaveBackup = onSaveBackup,
-                onRestoreBackup = onRestoreBackup
+                onRestoreBackup = onRestoreBackup,
+                lastCloudBackupAt = lastCloudBackupAt,
+                onSaveCloud = onSaveCloudBackup,
+                onRestoreCloud = onRestoreCloudBackup
             )
             Spacer(modifier = Modifier.height(8.dp))
         }

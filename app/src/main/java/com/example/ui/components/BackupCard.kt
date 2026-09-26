@@ -48,10 +48,14 @@ fun BackupAndDiagnosticsCard(
     lastAutoBackupAt: Long,
     onSaveBackup: (Uri) -> Unit,
     onRestoreBackup: (Uri) -> Unit,
+    lastCloudBackupAt: Long = 0L,
+    onSaveCloud: () -> Unit = {},
+    onRestoreCloud: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     var pendingRestore by remember { mutableStateOf<Uri?>(null) }
+    var confirmCloudRestore by remember { mutableStateOf(false) }
     var crashText by remember { mutableStateOf(CrashReporter.read(context)) }
 
     val saveLauncher = rememberLauncherForActivityResult(
@@ -100,6 +104,33 @@ fun BackupAndDiagnosticsCard(
                 ) { Text("Восстановить", fontSize = 11.sp, fontWeight = FontWeight.Bold) }
             }
 
+            Spacer(Modifier.height(8.dp))
+            Text(
+                if (lastCloudBackupAt > 0L) {
+                    "Копия в облаке подразделения: " +
+                        SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()).format(Date(lastCloudBackupAt)) +
+                        " (обновляется раз в сутки)"
+                } else "Копия в облаке подразделения: ещё не создавалась",
+                color = TacticalTextMuted, fontSize = 10.sp
+            )
+            Spacer(Modifier.height(6.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(
+                    onClick = onSaveCloud,
+                    modifier = Modifier.weight(1f).height(38.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = SageGreenBright),
+                    border = BorderStroke(1.dp, SageGreenPrimary.copy(alpha = 0.6f))
+                ) { Text("В облако", fontSize = 11.sp, fontWeight = FontWeight.Bold) }
+                OutlinedButton(
+                    onClick = { confirmCloudRestore = true },
+                    modifier = Modifier.weight(1f).height(38.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = TacticalGold),
+                    border = BorderStroke(1.dp, TacticalGold.copy(alpha = 0.6f))
+                ) { Text("Из облака", fontSize = 11.sp, fontWeight = FontWeight.Bold) }
+            }
+
             if (crashText != null) {
                 Spacer(Modifier.height(12.dp))
                 Text("Отчёт о сбое", color = TacticalTextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
@@ -134,6 +165,23 @@ fun BackupAndDiagnosticsCard(
                 }
             }
         }
+    }
+
+    if (confirmCloudRestore) {
+        AlertDialog(
+            onDismissRequest = { confirmCloudRestore = false },
+            title = { Text("Восстановить из облака?") },
+            text = {
+                Text(
+                    "Текущие данные на этом телефоне будут заменены последней облачной копией подразделения. " +
+                        "Перед заменой приложение сохранит текущие данные в папку приложения."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { confirmCloudRestore = false; onRestoreCloud() }) { Text("Восстановить") }
+            },
+            dismissButton = { TextButton(onClick = { confirmCloudRestore = false }) { Text("Отмена") } }
+        )
     }
 
     pendingRestore?.let { uri ->

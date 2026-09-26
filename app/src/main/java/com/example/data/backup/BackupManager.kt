@@ -54,11 +54,50 @@ class BackupManager(private val context: Context, private val dao: KapterkaDao) 
         runCatching {
             val text = context.contentResolver.openInputStream(uri)?.use { String(it.readBytes(), Charsets.UTF_8) }
                 ?: error("Не удалось прочитать файл")
-            val snapshot = BackupCodec.decode(text)
-            // Страховка: текущие данные остаются в папке приложения на случай ошибочного выбора файла.
-            writeFile("before-restore", buildJson())
-            dao.replaceAllData(snapshot.items, snapshot.points, snapshot.stocks, snapshot.operations, snapshot.requisitions)
-            snapshot.operations.size
+            restoreFromText(text)
+        }
+    }
+
+    private suspend fun restoreFromText(text: String): Int {
+        val snapshot = BackupCodec.decode(text)
+        // Страховка: текущие данные остаются в папке приложения на случай ошибочного выбора копии.
+        writeFile("before-restore", buildJson())
+        dao.replaceAllData(snapshot.items, snapshot.points, snapshot.stocks, snapshot.operations, snapshot.requisitions)
+        return snapshot.operations.size
+    }
+
+    private val cloud = CloudBackupService()
+
+    val lastCloudBackupAt: Long get() = prefs.getLong("last_cloud_backup", 0L)
+
+    private suspend fun unitKey(): String = dao.getUserProfile().first()?.unitKey?.trim().orEmpty()
+
+    /** Отправляет копию в облако подразделения. */
+    suspend fun uploadToCloud(now: Long = System.currentTimeMillis()): Result<Unit> {
+        val key = unitKey()
+        if (key.isEmpty()) return Result.failure(IllegalStateException("Сначала подключите общий учёт (код подразделения)"))
+        return cloud.upload(key, buildJson(now), now).onSuccess {
+            prefs.edit().putLong("last_cloud_backup", now).apply()
+        }
+    }
+
+    /** Возвращает число восстановленных операций и время копии. */
+    suspend fun restoreFromCloud(): Result<Pair<Int, Long>> = runCatching {
+        val key = unitKey()
+        if (key.isEmpty()) error("Сначала подключите общий учёт (код подразделения)")
+        val backup = cloud.download(key).getOrThrow() ?: error("В облаке ещё нет копии этого подразделения")
+        withContext(Dispatchers.IO) { restoreFromText(backup.json) } to backup.createdAt
+    }
+
+    /** Раз в сутки, если подключён общий учёт, обновляет облачную копию. Тихо, без сообщений. */
+    suspend fun cloudBackupIfDue(now: Long = System.currentTimeMillis()) = withContext(Dispatchers.IO) {
+        try {
+            if (now - lastCloudBackupAt < DAY_MS) return@withContext
+            if (unitKey().isEmpty()) return@withContext
+            if (dao.getAllOperations().first().isEmpty() && dao.getAllStockRecords().first().isEmpty()) return@withContext
+            uploadToCloud(now)
+        } catch (e: Exception) {
+            android.util.Log.w("KapterkaBackup", "Cloud backup skipped: ${e.message}")
         }
     }
 
@@ -85,5 +124,6 @@ class BackupManager(private val context: Context, private val dao: KapterkaDao) 
 
     companion object {
         const val WEEK_MS = 7L * 24 * 60 * 60 * 1000
+        const val DAY_MS = 24L * 60 * 60 * 1000
     }
 }

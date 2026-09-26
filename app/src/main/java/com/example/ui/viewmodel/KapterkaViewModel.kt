@@ -158,7 +158,10 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         val syncManager = com.example.data.sync.FirebaseSyncManager(application, database.kapterkaDao(), viewModelScope)
         repository = KapterkaRepository(database.kapterkaDao(), syncManager)
         backupManager = com.example.data.backup.BackupManager(application, database.kapterkaDao())
-        viewModelScope.launch { backupManager.autoBackupIfDue() }
+        viewModelScope.launch {
+            backupManager.autoBackupIfDue()
+            backupManager.cloudBackupIfDue()
+        }
         
         repository.syncEvents?.let { eventsFlow ->
             viewModelScope.launch {
@@ -808,6 +811,29 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun lastAutoBackupAt(): Long = backupManager.lastAutoBackupAt
+
+    fun lastCloudBackupAt(): Long = backupManager.lastCloudBackupAt
+
+    fun saveBackupToCloud() {
+        viewModelScope.launch {
+            _toastEvent.emit("Отправляем копию в облако...")
+            backupManager.uploadToCloud()
+                .onSuccess { _toastEvent.emit("Копия сохранена в облаке подразделения") }
+                .onFailure { _toastEvent.emit("Не удалось сохранить в облаке: ${it.message ?: "проверьте интернет"}") }
+        }
+    }
+
+    fun restoreBackupFromCloud() {
+        viewModelScope.launch {
+            _toastEvent.emit("Загружаем копию из облака...")
+            backupManager.restoreFromCloud()
+                .onSuccess { (ops, at) ->
+                    val date = java.text.SimpleDateFormat("dd.MM.yyyy HH:mm", java.util.Locale.getDefault()).format(java.util.Date(at))
+                    _toastEvent.emit("Восстановлено из облака: копия от $date (операций: $ops)")
+                }
+                .onFailure { _toastEvent.emit("Не удалось восстановить из облака: ${it.message ?: "проверьте интернет"}") }
+        }
+    }
 
     fun clearAllData() {
         viewModelScope.launch {
