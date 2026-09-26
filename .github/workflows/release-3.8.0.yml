@@ -1,0 +1,251 @@
+name: Kapterka PRO 3.8.0 release build
+
+# Сборка-кандидат 3.8.0 (build 36): подпись ключом опубликованных 3.4.9/3.5.0/3.6.0,
+# проверка пакета/версии/подписи, APK как артефакт. НИЧЕГО не публикует —
+# публикация на сайт — только ручной запуск с publish = true после команды владельца.
+
+on:
+  push:
+    branches: [claude/secure-3.8.0]
+    paths:
+      - 'app/**'
+      - 'gradle/**'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
+      - '.github/workflows/release-3.8.0.yml'
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Опубликовать APK 3.8.0 на сайте (только после команды владельца «публикуй»)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-3.8.0
+  cancel-in-progress: false
+
+env:
+  EXPECTED_SIGNER_SHA256: 843a7e883914f3a7a5a7665ff07b2e8c43da87a24ee4dc35e1600758aee73cb9
+  EXPECTED_PACKAGE: com.aistudio.kapterka.jmwqve
+  EXPECTED_VERSION_CODE: '36'
+  EXPECTED_VERSION_NAME: '3.8.0'
+  # Ключ подписи 3.4.9 хранится в секрете KAPTERKA_RELEASE_KEYSTORE_B64 (keystore в base64).
+  KEYSTORE_PATH: /tmp/kapterka-release.keystore
+  KEY_ALIAS: androiddebugkey
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    outputs:
+      apk_size: ${{ steps.verify.outputs.apk_size }}
+      apk_sha256: ${{ steps.verify.outputs.apk_sha256 }}
+    steps:
+      - name: Require release branch
+        shell: bash
+        run: |
+          test "$GITHUB_REF" = "refs/heads/claude/secure-3.8.0" || {
+            echo "Release 3.8.0 may only be built from claude/secure-3.8.0"
+            exit 1
+          }
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Restore release keystore from secret
+        env:
+          KEYSTORE_B64: ${{ secrets.KAPTERKA_RELEASE_KEYSTORE_B64 }}
+        shell: bash
+        run: |
+          test -n "$KEYSTORE_B64" || { echo "::error::Secret KAPTERKA_RELEASE_KEYSTORE_B64 is not set"; exit 1; }
+          printf '%s' "$KEYSTORE_B64" | tr -d ' \r\n' | base64 -d > "$KEYSTORE_PATH"
+          chmod 600 "$KEYSTORE_PATH"
+          ls -l "$KEYSTORE_PATH"
+
+      # Быстрая проверка до сборки: если ключ не тот, сборка бессмысленна.
+      - name: Verify keystore signer identity (before build)
+        env:
+          STORE_PASSWORD: android
+        shell: bash
+        run: |
+          keytool -list -v -keystore "$KEYSTORE_PATH" \
+            -storepass "$STORE_PASSWORD" -alias "$KEY_ALIAS" > /tmp/keytool.txt
+          grep -E 'Owner:|SHA256:' /tmp/keytool.txt | head -n 2
+          ACTUAL="$(grep -m1 'SHA256:' /tmp/keytool.txt | sed 's/.*SHA256:[[:space:]]*//' | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+          echo "Expected (published): $EXPECTED_SIGNER_SHA256"
+          echo "Recovered keystore:   $ACTUAL"
+          if [ "$ACTUAL" != "$EXPECTED_SIGNER_SHA256" ]; then
+            echo "::error::SIGNER MISMATCH — keystore is NOT the key of the published app. An APK signed with it cannot update the installed version. Nothing was built or published."
+            exit 1
+          fi
+          echo "Keystore matches the published signer."
+
+      - name: Configure Android SDK
+        shell: bash
+        run: |
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -path '*/bin/sdkmanager' 2>/dev/null | sort -V | tail -n 1)"
+          test -x "$SDKMANAGER"
+          echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "ANDROID_HOME=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "SDKMANAGER=$SDKMANAGER" >> "$GITHUB_ENV"
+          echo "$SDK_ROOT/build-tools/36.0.0" >> "$GITHUB_PATH"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
+
+      - name: Install Android SDK
+        shell: bash
+        run: |
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "build-tools;36.0.0" "platforms;android-36"
+          "$SDKMANAGER" "platforms;android-36.1"
+
+      - name: Build signed release APK
+        env:
+          STORE_PASSWORD: android
+          KEY_PASSWORD: android
+        run: gradle :app:assembleRelease --no-daemon --stacktrace
+
+      - name: Verify APK version and signer identity
+        id: verify
+        shell: bash
+        run: |
+          APK="$(find app/build/outputs/apk/release -type f -name '*.apk' | head -n 1)"
+          test -n "$APK" || { echo "Release APK not found"; exit 1; }
+          echo "APK: $APK"
+
+          aapt dump badging "$APK" > /tmp/badging.txt
+          head -n 1 /tmp/badging.txt
+          grep -F "package: name='$EXPECTED_PACKAGE' versionCode='$EXPECTED_VERSION_CODE' versionName='$EXPECTED_VERSION_NAME'" /tmp/badging.txt || {
+            echo "::error::Package/version mismatch"
+            exit 1
+          }
+
+          apksigner verify --print-certs "$APK" | tee /tmp/signature.txt
+          ACTUAL="$(grep -iE 'certificate SHA-256 digest' /tmp/signature.txt | head -n 1 | awk '{print $NF}' | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+          echo "Expected: $EXPECTED_SIGNER_SHA256"
+          echo "APK:      $ACTUAL"
+          if [ "$ACTUAL" != "$EXPECTED_SIGNER_SHA256" ]; then
+            echo "::error::SIGNER MISMATCH — APK cannot be installed over the published version"
+            exit 1
+          fi
+
+          # Облачная синхронизация: gRPC ищет транспорт по точному имени класса.
+          # Если R8 его переименовал, Firestore молча не работает — сборку не пропускаем.
+          DEXDUMP="$(ls -d "$ANDROID_SDK_ROOT"/build-tools/*/dexdump | sort -V | tail -1)"
+          rm -rf /tmp/apkx && mkdir /tmp/apkx && unzip -q "$APK" -d /tmp/apkx
+          for d in /tmp/apkx/classes*.dex; do "$DEXDUMP" "$d" | grep "Class descriptor"; done > /tmp/classes.txt
+          for c in 'Lio/grpc/okhttp/OkHttpChannelProvider;' 'Lio/grpc/ManagedChannelProvider;' 'Lcom/google/firebase/firestore/FirebaseFirestore;' 'Lcom/google/firebase/auth/FirebaseAuth;'; do
+            grep -qF "$c" /tmp/classes.txt || { echo "::error::R8 stripped/renamed $c — cloud sync would be broken"; exit 1; }
+          done
+          echo "Cloud transport classes present."
+
+          # Старый боевой ключ ЮKassa не должен попасть в новую сборку.
+          if unzip -p "$APK" 'classes*.dex' | grep -a -q 'oBs99BEUyDFyi5Hp'; then
+            echo "::error::Old YooKassa secret found inside APK"
+            exit 1
+          fi
+
+          cp "$APK" kapterka-pro-3.8.0.apk
+          SIZE="$(stat -c %s kapterka-pro-3.8.0.apk)"
+          SHA="$(sha256sum kapterka-pro-3.8.0.apk | awk '{print $1}')"
+          echo "apk_size=$SIZE" >> "$GITHUB_OUTPUT"
+          echo "apk_sha256=$SHA" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Kapterka PRO 3.8.0 (36)"
+            echo "- signer: \`$ACTUAL\` — совпадает с опубликованной версией"
+            echo "- size: $SIZE"
+            echo "- sha256: \`$SHA\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kapterka-pro-3.8.0
+          path: kapterka-pro-3.8.0.apk
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    needs: build
+    if: github.event_name == 'workflow_dispatch' && inputs.publish == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout main (full history)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      # main получает код 3.8.0, иначе аудит сравнит APK 36 с Gradle 35.
+      - name: Merge release branch into main
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch --no-tags origin claude/secure-3.8.0
+          git merge --no-edit FETCH_HEAD -m "Слияние claude/secure-3.8.0 в main (релиз 3.8.0)"
+          grep -q '?: 36' app/build.gradle.kts
+
+      - name: Download verified APK
+        uses: actions/download-artifact@v4
+        with:
+          name: kapterka-pro-3.8.0
+
+      - name: Re-check APK hash
+        env:
+          APK_SHA256: ${{ needs.build.outputs.apk_sha256 }}
+        shell: bash
+        run: echo "$APK_SHA256  kapterka-pro-3.8.0.apk" | sha256sum -c -
+
+      - name: Update APK and site metadata
+        env:
+          APK_SIZE: ${{ needs.build.outputs.apk_size }}
+          APK_SHA256: ${{ needs.build.outputs.apk_sha256 }}
+        shell: bash
+        run: |
+          mv kapterka-pro-3.8.0.apk docs/kapterka-pro.apk
+          node .github/scripts/update-release-380.mjs "$APK_SIZE" "$APK_SHA256" "$EXPECTED_SIGNER_SHA256" "$(date -u +%F)"
+
+      - name: Install APK inspection tools
+        shell: bash
+        run: |
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -path '*/bin/sdkmanager' 2>/dev/null | sort -V | tail -n 1)"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "build-tools;36.0.0"
+          echo "$SDK_ROOT/build-tools/36.0.0" >> "$GITHUB_PATH"
+
+      # Те же проверки, что запускаются на main. Если хоть одна падает — push не делается.
+      - name: Run release and site audits before push
+        shell: bash
+        run: |
+          apksigner verify --verbose --print-certs docs/kapterka-pro.apk > /tmp/apk-signature.txt
+          aapt dump badging docs/kapterka-pro.apk > /tmp/apk-badging.txt
+          node .github/scripts/release-artifact-audit.mjs /tmp/apk-badging.txt /tmp/apk-signature.txt
+          node .github/scripts/site-smoke.mjs
+          node .github/scripts/android-invariants.mjs
+
+      - name: Commit and push to main
+        shell: bash
+        run: |
+          git add -A docs .github/scripts
+          git status --short
+          git commit -m "Релиз 3.8.0 (36): пауза синхронизации, удаление данных из облака, напоминание о демо-периоде"
+          git push origin HEAD:main
