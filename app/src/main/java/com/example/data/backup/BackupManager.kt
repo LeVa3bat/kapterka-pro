@@ -62,7 +62,13 @@ class BackupManager(private val context: Context, private val dao: KapterkaDao) 
         val snapshot = BackupCodec.decode(text)
         // Страховка: текущие данные остаются в папке приложения на случай ошибочного выбора копии.
         writeFile("before-restore", buildJson())
-        dao.replaceAllData(snapshot.items, snapshot.points, snapshot.stocks, snapshot.operations, snapshot.requisitions)
+        // Восстановленные остатки считаются самыми свежими: иначе синхронизация вернёт более новые
+        // значения из облака или отклонит записи из-за старых меток удаления.
+        val now = System.currentTimeMillis()
+        dao.replaceAllData(
+            snapshot.items, snapshot.points, snapshot.stocks.map { it.copy(lastUpdated = now) },
+            snapshot.operations, snapshot.requisitions
+        )
         return snapshot.operations.size
     }
 

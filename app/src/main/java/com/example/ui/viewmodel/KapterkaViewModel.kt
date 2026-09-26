@@ -805,9 +805,22 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
     fun restoreBackupFrom(uri: android.net.Uri) {
         viewModelScope.launch {
             backupManager.restoreFrom(uri)
-                .onSuccess { _toastEvent.emit("Данные восстановлены из копии (операций: $it)") }
+                .onSuccess {
+                    _toastEvent.emit("Данные восстановлены из копии (операций: $it)")
+                    publishRestoredToCloud()
+                }
                 .onFailure { _toastEvent.emit("Не удалось восстановить: ${it.message}") }
         }
+    }
+
+    /**
+     * После восстановления облако подразделения становится равным этому телефону,
+     * иначе синхронизация вернёт более новые данные и откат «не удержится».
+     */
+    private suspend fun publishRestoredToCloud() {
+        if (userProfile.value?.unitKey.isNullOrBlank()) return
+        val (_, msg) = repository.publishLocalAsCloudReference()
+        _toastEvent.emit(msg)
     }
 
     fun lastAutoBackupAt(): Long = backupManager.lastAutoBackupAt
@@ -830,6 +843,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                 .onSuccess { (ops, at) ->
                     val date = java.text.SimpleDateFormat("dd.MM.yyyy HH:mm", java.util.Locale.getDefault()).format(java.util.Date(at))
                     _toastEvent.emit("Восстановлено из облака: копия от $date (операций: $ops)")
+                    publishRestoredToCloud()
                 }
                 .onFailure { _toastEvent.emit("Не удалось восстановить из облака: ${it.message ?: "проверьте интернет"}") }
         }
