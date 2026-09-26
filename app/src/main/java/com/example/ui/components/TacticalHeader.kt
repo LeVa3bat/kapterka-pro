@@ -202,16 +202,47 @@ fun TacticalHeader(
             )
         }
 
-        if (unitKey.isNotBlank()) {
-            Spacer(modifier = Modifier.height(8.dp))
-            SyncStatusLine(syncState = syncState, onRetry = onSyncClick)
-        }
+        Spacer(modifier = Modifier.height(8.dp))
+        SyncStatusLine(
+            syncState = syncState,
+            hasUnit = unitKey.isNotBlank(),
+            onRetry = if (unitKey.isNotBlank()) onSyncClick else onSecondPhoneClick
+        )
     }
 }
 
 /** Понятный статус: можно ли доверять цифрам; по нажатию повторяет синхронизацию. */
 @Composable
-private fun SyncStatusLine(syncState: SyncState, onRetry: () -> Unit) {
+private fun SyncStatusLine(syncState: SyncState, hasUnit: Boolean, onRetry: () -> Unit) {
+    val context = LocalContext.current
+    var hasNetwork by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(isNetworkAvailable(context)) }
+    val currentRetry by androidx.compose.runtime.rememberUpdatedState(onRetry)
+    val syncEnabled by androidx.compose.runtime.rememberUpdatedState(hasUnit)
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager
+        val callback = object : android.net.ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: android.net.Network) {
+                val wasOffline = !hasNetwork
+                hasNetwork = true
+                // Связь вернулась: сразу отправляем накопленное.
+                if (wasOffline && syncEnabled) currentRetry()
+            }
+
+            override fun onLost(network: android.net.Network) {
+                hasNetwork = isNetworkAvailable(context)
+            }
+        }
+        try {
+            cm?.registerDefaultNetworkCallback(callback)
+        } catch (_: Exception) {
+        }
+        onDispose {
+            try {
+                cm?.unregisterNetworkCallback(callback)
+            } catch (_: Exception) {
+            }
+        }
+    }
     var now by androidx.compose.runtime.remember { androidx.compose.runtime.mutableLongStateOf(System.currentTimeMillis()) }
     androidx.compose.runtime.LaunchedEffect(Unit) {
         while (true) {
@@ -222,6 +253,14 @@ private fun SyncStatusLine(syncState: SyncState, onRetry: () -> Unit) {
     val text: String
     val color: Color
     when {
+        !hasNetwork -> {
+            text = "Нет интернета. Данные сохраняются на телефоне и отправятся, когда связь вернётся"
+            color = TacticalRed
+        }
+        !hasUnit -> {
+            text = "Общий учёт не подключён. Нажмите, чтобы подключить"
+            color = TacticalTextSecondary
+        }
         syncState.isSyncing -> { text = "Синхронизация…"; color = TacticalGold }
         !syncState.isOnline -> {
             text = "Нет связи с подразделением. Данные сохранены на телефоне. Нажмите, чтобы повторить"
@@ -284,5 +323,16 @@ private fun ModernHeaderAction(
             fontWeight = FontWeight.Medium,
             maxLines = 1
         )
+    }
+}
+
+private fun isNetworkAvailable(context: Context): Boolean {
+    return try {
+        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager
+            ?: return true
+        val caps = cm.getNetworkCapabilities(cm.activeNetwork) ?: return false
+        caps.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
+    } catch (_: Exception) {
+        true
     }
 }
