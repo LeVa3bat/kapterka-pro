@@ -7,7 +7,7 @@
 
   gtag('js', new Date());
   gtag('config', 'G-RYV6TP63D3', { send_page_view: true });
-  ym(112482290, 'init', {
+  ym(112255061, 'init', {
     clickmap: true,
     referrer: document.referrer,
     url: location.href,
@@ -58,7 +58,7 @@
       link_text: (link.textContent || '').trim().slice(0, 80)
     };
     try { gtag('event', 'guide_action', params); } catch(_) {}
-    try { ym(112482290, 'reachGoal', 'guide_action', { destination: dest, page_path: location.pathname }); } catch(_) {}
+    try { ym(112255061, 'reachGoal', 'guide_action', { destination: dest, page_path: location.pathname }); } catch(_) {}
     start();
   }, { capture:true });
 })();

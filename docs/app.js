@@ -27,7 +27,7 @@ const FIREBASE_LICENSE_API_KEY = 'AIzaSyAYyoG42TuQJFLxN0KnFIePZx-gAtizw0Q';
 const FIRESTORE_LICENSE_DOC_BASE = 'https://firestore.googleapis.com/v1/projects/kapterka-pro/databases/(default)/documents/licenses/';
 
 // Default initial state for clean empty inputs
-const YM_IDS = [112482290];
+const YM_IDS = [112255061];
 function trackYm(action, ...args) {
   if (typeof window.ym === 'function') {
     YM_IDS.forEach(id => {
