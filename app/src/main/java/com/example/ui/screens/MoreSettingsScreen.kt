@@ -334,7 +334,7 @@ fun MoreSettingsScreen(
                         disabledContentColor = TacticalTextMuted
                     )
                 ) {
-                    Text("УДАЛИТЬ ДАННЫЕ ГРУППЫ", fontWeight = FontWeight.Bold)
+                    Text("ОЧИСТИТЬ УЧЁТ", fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -1075,7 +1075,7 @@ fun MoreSettingsScreen(
         item {
             CollapsibleCard(
                 title = "Опасная зона",
-                subtitle = "Сброс всех операций и остатков базы",
+                subtitle = "Очистка учёта на этом и других телефонах",
                 icon = Icons.Default.Delete,
                 iconColor = TacticalRedText,
                 isExpanded = expandedDangerZone,
@@ -1111,7 +1111,7 @@ fun MoreSettingsScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "ОЧИСТИТЬ ДАННЫЕ ГРУППЫ",
+                            text = "ОЧИСТИТЬ УЧЁТ НА ВСЕХ ТЕЛЕФОНАХ",
                             fontWeight = FontWeight.Bold,
                             fontSize = 12.sp
                         )

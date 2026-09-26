@@ -122,6 +122,7 @@ fun UnitKeySyncDialog(
     confirmAction?.let { action ->
         SyncConfirmDialog(
             action = action,
+            unitKey = unitKey,
             onConfirm = {
                 when (action) {
                     "reference" -> onMakeReference()
@@ -307,7 +308,7 @@ fun UnitKeySyncDialog(
                         onResumeSync()
                     }
                     Spacer(modifier = Modifier.height(6.dp))
-                    FixRow(Icons.Rounded.DeleteForever, "Удалить мои данные из облака", "ключ и данные на телефоне останутся", TacticalRed) {
+                    FixRow(Icons.Rounded.DeleteForever, "Удалить данные из облака (на телефоне останутся)", "ключ и данные на телефоне не тронем", TacticalRed) {
                         confirmAction = "delete_cloud"
                     }
                 } else {
@@ -320,7 +321,7 @@ fun UnitKeySyncDialog(
                         confirmAction = "pause"
                     }
                     Spacer(modifier = Modifier.height(6.dp))
-                    FixRow(Icons.Rounded.DeleteForever, "Удалить мои данные из облака", "и приостановить синхронизацию", TacticalRed) {
+                    FixRow(Icons.Rounded.DeleteForever, "Удалить данные из облака (на телефоне останутся)", "и приостановить синхронизацию", TacticalRed) {
                         confirmAction = "delete_cloud"
                     }
                 }
@@ -458,6 +459,7 @@ private fun FixRow(icon: ImageVector, title: String, subtitle: String, tint: Col
 @Composable
 private fun SyncConfirmDialog(
     action: String,
+    unitKey: String,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -494,11 +496,33 @@ private fun SyncConfirmDialog(
             "Создать"
         )
     }
+    // Irreversible cloud deletion needs the unit key typed in, like the "danger zone" reset.
+    val needsKey = action == "delete_cloud" && unitKey.isNotBlank()
+    var typedKey by remember { mutableStateOf("") }
+    val confirmed = !needsKey || typedKey.trim().equals(unitKey, ignoreCase = true)
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
-        text = { Text(text) },
-        confirmButton = { TextButton(onClick = { onConfirm(); onDismiss() }) { Text(button) } },
+        text = {
+            Column {
+                Text(text)
+                if (needsKey) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text("Для подтверждения введите ключ подразделения:", fontSize = 12.sp)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    OutlinedTextField(
+                        value = typedKey,
+                        onValueChange = { typedKey = it },
+                        placeholder = { Text(unitKey) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(); onDismiss() }, enabled = confirmed) { Text(button) }
+        },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Отмена") } }
     )
 }
