@@ -82,6 +82,7 @@ class BackupManager(private val context: Context, private val dao: KapterkaDao) 
     suspend fun uploadToCloud(now: Long = System.currentTimeMillis()): Result<Unit> {
         val key = unitKey()
         if (key.isEmpty()) return Result.failure(IllegalStateException("Сначала подключите общий учёт (код подразделения)"))
+        if (com.example.data.sync.isSyncPaused(context)) return Result.failure(IllegalStateException(com.example.data.sync.PAUSED_MESSAGE))
         return cloud.upload(key, buildJson(now), now).onSuccess {
             prefs.edit().putLong("last_cloud_backup", now).apply()
         }
@@ -91,6 +92,7 @@ class BackupManager(private val context: Context, private val dao: KapterkaDao) 
     suspend fun restoreFromCloud(): Result<Pair<Int, Long>> = runCatching {
         val key = unitKey()
         if (key.isEmpty()) error("Сначала подключите общий учёт (код подразделения)")
+        if (com.example.data.sync.isSyncPaused(context)) error(com.example.data.sync.PAUSED_MESSAGE)
         val backup = cloud.download(key).getOrThrow() ?: error("В облаке ещё нет копии этого подразделения")
         withContext(Dispatchers.IO) { restoreFromText(backup.json) } to backup.createdAt
     }

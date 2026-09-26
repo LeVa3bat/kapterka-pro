@@ -750,6 +750,35 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    /** Pauses cloud sync: the key and data stay, the phone works locally until resumed. */
+    fun pauseSync() {
+        repository.pauseSync()
+        viewModelScope.launch {
+            _toastEvent.emit("Синхронизация приостановлена. Данные хранятся только на этом телефоне")
+        }
+    }
+
+    fun resumeSync() {
+        viewModelScope.launch {
+            val (_, msg) = repository.resumeSync()
+            _toastEvent.emit(msg)
+        }
+    }
+
+    /** Deletes this unit's data from the cloud and pauses sync (the key is kept). */
+    fun deleteCloudDataAndPauseSync() {
+        viewModelScope.launch {
+            _toastEvent.emit("Удаляю данные из облака...")
+            val result = repository.deleteCloudData()
+            if (result.isSuccess) {
+                repository.pauseSync()
+                _toastEvent.emit("Данные удалены из облака. Синхронизация приостановлена")
+            } else {
+                _toastEvent.emit("Не удалось удалить данные из облака. Проверьте связь и повторите")
+            }
+        }
+    }
+
     fun regenerateUnitKey() {
         val newKey = com.example.data.sync.SyncIdentityGenerator.newUnitKey()
         viewModelScope.launch {

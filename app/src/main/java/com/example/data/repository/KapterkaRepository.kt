@@ -196,6 +196,26 @@ class KapterkaRepository(
         }
     }
 
+    /** Pauses cloud sync. The unit key and all data stay as they are. */
+    fun pauseSync() {
+        syncManager?.setPaused(true)
+    }
+
+    /** Resumes cloud sync with the kept key and reconciles right away. */
+    suspend fun resumeSync(): Pair<Boolean, String> {
+        syncManager?.setPaused(false)
+        return triggerCloudSync()
+    }
+
+    /** Deletes this unit's data from the cloud. Sync is stopped first so nothing is re-uploaded. */
+    suspend fun deleteCloudData(): Result<Unit> {
+        val manager = syncManager ?: return Result.failure(IllegalStateException("Облако недоступно"))
+        val key = getCurrentUnitKey()
+        if (key.isEmpty()) return Result.failure(IllegalStateException("Ключ подразделения не задан"))
+        manager.stopSync()
+        return manager.deleteUnitCloudData(key)
+    }
+
     suspend fun recordIncome(toPointId: String, toPointName: String, supplier: String, items: List<OperationItemEntry>, comment: String, actor: String) {
         val summary = items.joinToString(", ") { "${it.itemName} - ${it.quantity} ${it.unit}" }
         val itemsJson = serializeOperationItems(items)

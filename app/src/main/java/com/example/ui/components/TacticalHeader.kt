@@ -254,6 +254,7 @@ private fun rememberSyncBadge(syncState: SyncState, hasUnit: Boolean, onRetry: (
         }
     }
     return when {
+        hasUnit && syncState.isPaused -> SyncBadge("на паузе", TacticalGold)
         !hasNetwork -> SyncBadge("нет сети", TacticalRed)
         !hasUnit -> SyncBadge("не подключено", TacticalTextSecondary)
         syncState.isSyncing -> SyncBadge("идёт…", TacticalGold)

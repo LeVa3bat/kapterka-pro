@@ -29,8 +29,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.CloudDownload
+import androidx.compose.material.icons.rounded.CloudOff
 import androidx.compose.material.icons.rounded.CloudUpload
 import androidx.compose.material.icons.rounded.ContentCopy
+import androidx.compose.material.icons.rounded.DeleteForever
 import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.Login
 import androidx.compose.material.icons.rounded.QrCodeScanner
@@ -73,6 +75,7 @@ import com.example.ui.theme.SageGreenBright
 import com.example.ui.theme.SageGreenPrimary
 import com.example.ui.theme.TacticalBorderSubtle
 import com.example.ui.theme.TacticalGold
+import com.example.ui.theme.TacticalRed
 import com.example.ui.theme.TacticalSurface
 import com.example.ui.theme.TacticalSurfaceLight
 import com.example.ui.theme.TacticalTealText
@@ -96,6 +99,10 @@ fun UnitKeySyncDialog(
     onForceSync: () -> Unit,
     onMakeReference: () -> Unit = {},
     onLoadFromCloud: () -> Unit = {},
+    isSyncPaused: Boolean = false,
+    onPauseSync: () -> Unit = {},
+    onResumeSync: () -> Unit = {},
+    onDeleteCloudData: () -> Unit = {},
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
@@ -120,6 +127,8 @@ fun UnitKeySyncDialog(
                     "reference" -> onMakeReference()
                     "load" -> onLoadFromCloud()
                     "regenerate" -> onRegenerateKey()
+                    "pause" -> onPauseSync()
+                    "delete_cloud" -> onDeleteCloudData()
                 }
                 onDismiss()
             },
@@ -277,6 +286,46 @@ fun UnitKeySyncDialog(
                 }
             }
 
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Local mode and cloud data removal
+            SectionCard {
+                Text("Данные и конфиденциальность", color = TacticalTextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(2.dp))
+                if (unitKey.isBlank()) {
+                    Text(
+                        "Общий учёт не подключён: данные хранятся только на этом телефоне и никуда не отправляются.",
+                        color = TacticalTextMuted, fontSize = 12.sp, lineHeight = 16.sp
+                    )
+                } else if (isSyncPaused) {
+                    Text(
+                        "Синхронизация приостановлена: данные хранятся только на этом телефоне. Ключ сохранён.",
+                        color = TacticalTextMuted, fontSize = 12.sp, lineHeight = 16.sp
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    FixRow(Icons.Rounded.Sync, "Включить синхронизацию", "продолжить обмен с облаком по этому ключу", SageGreenBright) {
+                        onResumeSync()
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                    FixRow(Icons.Rounded.DeleteForever, "Удалить мои данные из облака", "ключ и данные на телефоне останутся", TacticalRed) {
+                        confirmAction = "delete_cloud"
+                    }
+                } else {
+                    Text(
+                        "Пока синхронизация включена, данные подразделения хранятся в облаке (Google Firebase).",
+                        color = TacticalTextMuted, fontSize = 12.sp, lineHeight = 16.sp
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    FixRow(Icons.Rounded.CloudOff, "Приостановить синхронизацию", "данные и ключ остаются, включить можно в любой момент", TacticalGold) {
+                        confirmAction = "pause"
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                    FixRow(Icons.Rounded.DeleteForever, "Удалить мои данные из облака", "и приостановить синхронизацию", TacticalRed) {
+                        confirmAction = "delete_cloud"
+                    }
+                }
+            }
+
             TextButton(
                 onClick = { confirmAction = "regenerate" },
                 modifier = Modifier.align(Alignment.CenterHorizontally)
@@ -423,6 +472,21 @@ private fun SyncConfirmDialog(
             "Загрузить всё из облака?",
             "ЭТОТ телефон станет точной копией облака. Точки, остатки и операции, которых нет в облаке, будут удалены с этого телефона.",
             "Да, загрузить"
+        )
+        "pause" -> Triple(
+            "Приостановить синхронизацию?",
+            "Обмен с облаком прекратится: данные будут храниться только на этом телефоне и никуда не отправляться. " +
+                "Ключ подразделения и все данные останутся. Данные, которые уже лежат в облаке, не удаляются. " +
+                "Включить синхронизацию обратно можно в любой момент этим же окном.",
+            "Приостановить"
+        )
+        "delete_cloud" -> Triple(
+            "Удалить данные из облака?",
+            "Все данные подразделения (склады, остатки, операции, заявки, список устройств и облачная копия) будут удалены с сервера, " +
+                "синхронизация приостановится. Ключ и данные на этом телефоне останутся. " +
+                "Если у других телефонов подразделения синхронизация включена, они могут загрузить свои данные в облако заново. " +
+                "Отменить удаление нельзя.",
+            "Удалить"
         )
         else -> Triple(
             "Создать новый ключ?",

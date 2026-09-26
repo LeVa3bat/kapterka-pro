@@ -41,8 +41,17 @@ data class SyncState(
     val lastSyncTime: Long = 0L,
     val isOnline: Boolean = true,
     val connectedDevicesCount: Int = 1,
-    val syncMessage: String = "Готов к синхронизации"
+    val syncMessage: String = "Готов к синхронизации",
+    val isPaused: Boolean = false
 )
+
+private const val SYNC_PREFS = "kapterka_sync_prefs"
+private const val KEY_PAUSED = "sync_paused"
+const val PAUSED_MESSAGE = "Синхронизация приостановлена"
+
+/** True while the user has paused cloud sync (the unit key is kept). */
+fun isSyncPaused(context: Context): Boolean =
+    context.getSharedPreferences(SYNC_PREFS, Context.MODE_PRIVATE).getBoolean(KEY_PAUSED, false)
 
 class FirebaseSyncManager(
     private val context: Context,
@@ -50,13 +59,20 @@ class FirebaseSyncManager(
     private val scope: CoroutineScope
 ) {
     private val TAG = "KapterkaSync"
-    private val productionCloudEnabled: Boolean
+    private val cloudBuildEnabled: Boolean
         get() = !BuildConfig.IS_NEXT_SAFE_TEST
+
+    /** User paused sync: the key stays, nothing is sent to or read from the cloud. */
+    val isPaused: Boolean
+        get() = isSyncPaused(context)
+
+    private val productionCloudEnabled: Boolean
+        get() = cloudBuildEnabled && !isPaused
 
     private val firestore: FirebaseFirestore
         by lazy { FirebaseFirestore.getInstance() }
 
-    private val _syncState = MutableStateFlow(SyncState())
+    private val _syncState = MutableStateFlow(SyncState(isPaused = isSyncPaused(context)))
     val syncState: StateFlow<SyncState> = _syncState.asStateFlow()
 
     private val _syncEvents = kotlinx.coroutines.flow.MutableSharedFlow<String>()
@@ -315,7 +331,8 @@ class FirebaseSyncManager(
                 isSyncing = false,
                 isOnline = false,
                 connectedDevicesCount = 1,
-                syncMessage = "NEXT-SAFE: облачная синхронизация отключена"
+                syncMessage = if (isPaused) PAUSED_MESSAGE else "NEXT-SAFE: облачная синхронизация отключена",
+                isPaused = isPaused
             )
             return
         }
@@ -637,7 +654,8 @@ class FirebaseSyncManager(
             _syncState.value = _syncState.value.copy(
                 isSyncing = false,
                 isOnline = false,
-                syncMessage = "NEXT-SAFE: отправка в рабочее облако отключена"
+                syncMessage = if (isPaused) PAUSED_MESSAGE else "NEXT-SAFE: отправка в рабочее облако отключена",
+                isPaused = isPaused
             )
             return
         }
@@ -663,9 +681,10 @@ class FirebaseSyncManager(
                 isSyncing = false,
                 isOnline = false,
                 connectedDevicesCount = 1,
-                syncMessage = "NEXT-SAFE: рабочее облако изолировано"
+                syncMessage = if (isPaused) PAUSED_MESSAGE else "NEXT-SAFE: рабочее облако изолировано",
+                isPaused = isPaused
             )
-            return@withContext Pair(false, "NEXT-SAFE: синхронизация с рабочим облаком отключена")
+            return@withContext Pair(false, if (isPaused) PAUSED_MESSAGE else "NEXT-SAFE: синхронизация с рабочим облаком отключена")
         }
         val cleanKey = unitKey.trim()
         if (cleanKey.isEmpty()) return@withContext Pair(false, "Не указан код подразделения")
@@ -1484,6 +1503,18 @@ class FirebaseSyncManager(
         }
     }
 
+    /** Pause keeps the unit key and local data; resuming starts a normal reconcile. */
+    fun setPaused(paused: Boolean) {
+        context.getSharedPreferences(SYNC_PREFS, Context.MODE_PRIVATE)
+            .edit().putBoolean(KEY_PAUSED, paused).apply()
+        stopSync()
+        _syncState.value = if (paused) {
+            SyncState(isOnline = false, syncMessage = PAUSED_MESSAGE, isPaused = true)
+        } else {
+            SyncState()
+        }
+    }
+
     fun stopSync() {
         connectJob?.cancel()
         connectJob = null
@@ -1517,6 +1548,32 @@ class FirebaseSyncManager(
             } catch (e: Exception) {
                 Log.e(TAG, "Error clearing cloud data", e)
             }
+        }
+    }
+
+    /**
+     * Removes everything this unit stored in the cloud: all synced collections, the device
+     * list and the cloud backup (it lives in the unit document). Membership records are
+     * server-only and are not touched.
+     */
+    suspend fun deleteUnitCloudData(unitKey: String): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            check(cloudBuildEnabled) { "Облако недоступно в этой сборке" }
+            val cleanKey = unitKey.trim()
+            check(cleanKey.isNotEmpty()) { "Ключ подразделения не задан" }
+            val unitRef = firestore.collection("units").document(cleanKey)
+            val collections = listOf(
+                "warehouse_points", "inventory_items", "stock_records", "operation_records",
+                "requisitions", "devices", "sync_tombstones"
+            )
+            for (col in collections) {
+                val snapshot = unitRef.collection(col).get().await()
+                for (doc in snapshot.documents) {
+                    doc.reference.delete().await()
+                }
+            }
+            unitRef.delete().await()
+            Unit
         }
     }
 }

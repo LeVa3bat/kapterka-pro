@@ -689,6 +689,10 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
             onForceSync = { viewModel.simulateCloudSync() },
             onMakeReference = { viewModel.makeThisPhoneReference() },
             onLoadFromCloud = { viewModel.loadEverythingFromCloud() },
+            isSyncPaused = syncState.isPaused,
+            onPauseSync = { viewModel.pauseSync() },
+            onResumeSync = { viewModel.resumeSync() },
+            onDeleteCloudData = { viewModel.deleteCloudDataAndPauseSync() },
             onDismiss = { showUnitKeySyncDialog = false }
         )
     }
