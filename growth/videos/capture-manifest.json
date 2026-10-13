@@ -1,17 +1,109 @@
 {
-  "status": "Запись ожидается; MP4 и новые снимки интерфейса отсутствуют",
-  "plannedOnMoscow": "2026-10-13",
+  "status": "Сгенерированы 3 MP4 и 3 актуальных снимка настоящего Compose-интерфейса на вымышленных данных",
   "packageName": "com.aistudio.kapterka.jmwqve",
-  "recordedAppVersionName": null,
-  "recordedAppVersionCode": null,
-  "installationSource": null,
-  "recordingDateMoscow": null,
-  "screenResolution": null,
-  "dataType": "Только вымышленные данные отдельной учебной базы",
-  "screenshotFiles": [],
-  "videoFiles": [],
-  "covers": ["covers/issue-check.png", "covers/offline-stock.png", "covers/report-export.png"],
-  "subtitleStatus": "*.planned.srt — плановый текст, не субтитры записанного видео. Пересинхронизировать после монтажа.",
-  "deviceCheck": "adb devices: подключённых устройств нет",
-  "published": false
+  "renderedAppVersionName": "3.8.0",
+  "renderedAppVersionCode": 36,
+  "renderDateMoscow": "2026-10-13 16:56:37",
+  "encodedDateMoscow": "2026-10-13T16:57:34+03:00",
+  "sourceType": "Robolectric native Compose renders; slideshow with captions; not physical-device screen recording",
+  "sourceManifest": "app/build/outputs/growth-capture/capture-source.json",
+  "physicalDeviceRecording": false,
+  "dataType": "Temporary in-memory Room; KapterkaRepository.recordIncome/recordIssue; syncManager=null; no keys/QR",
+  "verified": {
+    "before": 12,
+    "issued": 3,
+    "storeAfter": 9,
+    "benchAfter": 3,
+    "conservedTotal": 12,
+    "xlsxContainsStoreQuantity": 9
+  },
+  "encoder": "ffmpeg version 7.1-essentials_build-www.gyan.dev Copyright (c) 2000-2024 the FFmpeg developers",
+  "screenResolution": [
+    1080,
+    2340
+  ],
+  "screenshotFiles": [
+    {
+      "file": "growth/rustore/screenshots/01-06-dashboard-after.png",
+      "sourceFrame": "06-dashboard-after",
+      "sha256": "8f2fe16742dc8b185be0debe295cd9fae3fcd34bfaafc9d9bdf6a369233b69c6"
+    },
+    {
+      "file": "growth/rustore/screenshots/02-05-stock-after.png",
+      "sourceFrame": "05-stock-after",
+      "sha256": "6e3089eb2172ae5a8b2897a666c64f92207f2f6dae3434bf60d5161e1c56e210"
+    },
+    {
+      "file": "growth/rustore/screenshots/03-08-journal-expanded.png",
+      "sourceFrame": "08-journal-expanded",
+      "sha256": "7f59fdec73dd6813a7faab737aa75d33b45c258bedf9e261f9587a44e6990526"
+    }
+  ],
+  "videoFiles": [
+    {
+      "file": "issue-check.mp4",
+      "sha256": "d7641a13621fe3d453b9b12da2a543dd5cdcc5417d1143a63da359966eef3893",
+      "durationSeconds": 30,
+      "width": 1080,
+      "height": 1920,
+      "fps": 30,
+      "audio": false,
+      "subtitles": "issue-check.srt",
+      "sourceFrames": [
+        "02-stock-before",
+        "04-issue-ready",
+        "05-stock-after",
+        "08-journal-expanded"
+      ],
+      "decodeVerified": true
+    },
+    {
+      "file": "offline-stock.mp4",
+      "sha256": "8d29f7d2ca999991b7200b2b0a7e75498cc5fa9c98fa9abe7806102a48f97e70",
+      "durationSeconds": 30,
+      "width": 1080,
+      "height": 1920,
+      "fps": 30,
+      "audio": false,
+      "subtitles": "offline-stock.srt",
+      "sourceFrames": [
+        "09-local-stock",
+        "09-local-stock",
+        "08-journal-expanded"
+      ],
+      "decodeVerified": true
+    },
+    {
+      "file": "report-export.mp4",
+      "sha256": "e13a20af4857feb017e5e609df7ffe37b8834c118aaab8b45d0fbf519df3a0e4",
+      "durationSeconds": 30,
+      "width": 1080,
+      "height": 1920,
+      "fps": 30,
+      "audio": false,
+      "subtitles": "report-export.srt",
+      "sourceFrames": [
+        "06-dashboard-after",
+        "10-report-preview",
+        "11-report-exported"
+      ],
+      "decodeVerified": true
+    }
+  ],
+  "covers": [
+    "covers/issue-check.png",
+    "covers/offline-stock.png",
+    "covers/report-export.png"
+  ],
+  "subtitleStatus": "*.srt — синхронизированы с созданными MP4. *.planned.srt — прежний план съёмки",
+  "exportFile": {
+    "file": "demo-point-stock.xlsx",
+    "sha256": "11e392eb6fdf9d8f8c28da1b498413095ff8730cb0d0e555d0250f5b433c783f"
+  },
+  "published": false,
+  "posters": [
+    "posters/issue-check.png",
+    "posters/offline-stock.png",
+    "posters/report-export.png"
+  ]
 }

@@ -1,0 +1,188 @@
+name: Kapterka PRO 3.8.1 signed candidate
+
+# Выпускает проверенный подписанный кандидат. Публикация выполняется отдельным PR:
+# код, APK и метаданные входят в main вместе после штатных проверок.
+on:
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: 'Источник кандидата: main или work/release-3.8.1'
+        type: string
+        required: true
+        default: work/release-3.8.1
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-3.8.1
+  cancel-in-progress: false
+
+env:
+  EXPECTED_SIGNER_SHA256: 843a7e883914f3a7a5a7665ff07b2e8c43da87a24ee4dc35e1600758aee73cb9
+  EXPECTED_PACKAGE: com.aistudio.kapterka.jmwqve
+  EXPECTED_VERSION_CODE: '37'
+  EXPECTED_VERSION_NAME: '3.8.1'
+  KEYSTORE_PATH: /tmp/kapterka-release-381.keystore
+  KEY_ALIAS: androiddebugkey
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    outputs:
+      source_commit: ${{ steps.source.outputs.commit }}
+      apk_size: ${{ steps.verify.outputs.apk_size }}
+      apk_sha256: ${{ steps.verify.outputs.apk_sha256 }}
+    steps:
+      - name: Require manual main dispatch and allowed source
+        env:
+          SOURCE_REF: ${{ inputs.source_ref }}
+        shell: bash
+        run: |
+          test "$GITHUB_REF" = refs/heads/main || { echo '::error::Dispatch this workflow from main'; exit 1; }
+          case "$SOURCE_REF" in
+            main|work/release-3.8.1) ;;
+            *) echo '::error::Unsupported source_ref'; exit 1 ;;
+          esac
+
+      - name: Checkout candidate source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref }}
+          persist-credentials: false
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Record immutable source commit and check defaults
+        id: source
+        shell: bash
+        run: |
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          const gradle = fs.readFileSync('app/build.gradle.kts', 'utf8');
+          if (!/versionCode\s*=.*\?:\s*37\s*$/m.test(gradle) || !/versionName\s*=.*\?:\s*"3\.8\.1"\s*$/m.test(gradle)) throw new Error('Candidate defaults must be 3.8.1/37');
+          const baseline = JSON.parse(fs.readFileSync('.github/release-apk-baseline.json', 'utf8'));
+          if (baseline.packageName !== process.env.EXPECTED_PACKAGE || baseline.signerSha256 !== process.env.EXPECTED_SIGNER_SHA256) throw new Error('Published update baseline differs');
+          JS
+          node .github/scripts/android-invariants.mjs
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Restore existing release keystore
+        env:
+          KEYSTORE_B64: ${{ secrets.KAPTERKA_RELEASE_KEYSTORE_B64 }}
+        shell: bash
+        run: |
+          test -n "$KEYSTORE_B64" || { echo '::error::Existing KAPTERKA_RELEASE_KEYSTORE_B64 secret is missing'; exit 1; }
+          umask 077
+          printf '%s' "$KEYSTORE_B64" | tr -d ' \r\n' | base64 -d > "$KEYSTORE_PATH"
+
+      - name: Verify historical signer before building
+        env:
+          STORE_PASSWORD: android
+        shell: bash
+        run: |
+          keytool -list -v -keystore "$KEYSTORE_PATH" -storepass "$STORE_PASSWORD" -alias "$KEY_ALIAS" > /tmp/keytool-381.txt
+          ACTUAL="$(grep -m1 'SHA256:' /tmp/keytool-381.txt | sed 's/.*SHA256:[[:space:]]*//' | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+          test "$ACTUAL" = "$EXPECTED_SIGNER_SHA256" || { echo '::error::Historical signer mismatch; no replacement key will be used'; exit 1; }
+          echo "Verified published signer: $ACTUAL"
+
+      - name: Configure Android SDK
+        shell: bash
+        run: |
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -path '*/bin/sdkmanager' 2>/dev/null | sort -V | tail -n 1)"
+          test -x "$SDKMANAGER"
+          echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "ANDROID_HOME=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "SDKMANAGER=$SDKMANAGER" >> "$GITHUB_ENV"
+          echo "$SDK_ROOT/build-tools/36.0.0" >> "$GITHUB_PATH"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
+
+      - name: Install Android SDK
+        shell: bash
+        run: |
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" 'platform-tools' 'build-tools;36.0.0' 'platforms;android-36' 'platforms;android-36.1'
+
+      - name: Test production source and build signed APK
+        env:
+          STORE_PASSWORD: android
+          KEY_PASSWORD: android
+        run: gradle :app:testDebugUnitTest :app:assembleRelease --no-daemon --no-parallel --max-workers=2 --stacktrace
+
+      - name: Verify APK, signer and cloud transport
+        id: verify
+        env:
+          SOURCE_COMMIT: ${{ steps.source.outputs.commit }}
+          SOURCE_REF: ${{ inputs.source_ref }}
+        shell: bash
+        run: |
+          mapfile -t APKS < <(find app/build/outputs/apk/release -type f -name '*.apk')
+          test "${#APKS[@]}" -eq 1 || { echo '::error::Expected exactly one release APK'; exit 1; }
+          APK="${APKS[0]}"
+          aapt dump badging "$APK" > /tmp/badging-381.txt
+          grep -F "package: name='$EXPECTED_PACKAGE' versionCode='$EXPECTED_VERSION_CODE' versionName='$EXPECTED_VERSION_NAME'" /tmp/badging-381.txt
+          grep -q "^sdkVersion:'24'" /tmp/badging-381.txt
+          apksigner verify --verbose --print-certs "$APK" > /tmp/signature-381.txt
+          ACTUAL="$(grep -iE 'Signer #1 certificate SHA-256 digest' /tmp/signature-381.txt | head -n 1 | awk '{print $NF}' | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+          test "$ACTUAL" = "$EXPECTED_SIGNER_SHA256" || { echo '::error::APK signer mismatch'; exit 1; }
+
+          # gRPC discovers these exact classes; the R8 release must preserve them.
+          mkdir /tmp/apkx-381
+          unzip -q "$APK" -d /tmp/apkx-381
+          for dex in /tmp/apkx-381/classes*.dex; do "$ANDROID_SDK_ROOT/build-tools/36.0.0/dexdump" "$dex" | grep 'Class descriptor'; done > /tmp/classes-381.txt
+          for descriptor in 'Lio/grpc/okhttp/OkHttpChannelProvider;' 'Lio/grpc/ManagedChannelProvider;' 'Lcom/google/firebase/firestore/FirebaseFirestore;' 'Lcom/google/firebase/auth/FirebaseAuth;'; do
+            grep -qF "$descriptor" /tmp/classes-381.txt || { echo "::error::R8 stripped/renamed $descriptor"; exit 1; }
+          done
+          if grep -a -q 'oBs99BEUyDFyi5Hp' /tmp/apkx-381/classes*.dex; then
+            echo '::error::Historical YooKassa secret found in APK'
+            exit 1
+          fi
+          mkdir release-candidate
+          cp "$APK" release-candidate/kapterka-pro-3.8.1.apk
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          import crypto from 'node:crypto';
+          const apk = fs.readFileSync('release-candidate/kapterka-pro-3.8.1.apk');
+          const apkSha256 = crypto.createHash('sha256').update(apk).digest('hex');
+          const metadata = { versionName: process.env.EXPECTED_VERSION_NAME, versionCode: Number(process.env.EXPECTED_VERSION_CODE), packageName: process.env.EXPECTED_PACKAGE, minSdk: 24, signerSha256: process.env.EXPECTED_SIGNER_SHA256, apkSize: apk.length, apkSha256, sourceCommit: process.env.SOURCE_COMMIT, sourceRef: process.env.SOURCE_REF, builtAt: new Date().toISOString(), workflowRunId: process.env.GITHUB_RUN_ID };
+          fs.writeFileSync('release-candidate/source.json', JSON.stringify(metadata, null, 2) + '\n');
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `apk_size=${apk.length}\napk_sha256=${apkSha256}\n`);
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `### Verified 3.8.1 (37) candidate\n- Source: \`${metadata.sourceCommit}\`\n- Signer: \`${metadata.signerSha256}\`\n- APK SHA-256: \`${apkSha256}\`\n- Size: ${apk.length} bytes\n- Full unit tests and release build passed. No publication performed.\n`);
+          JS
+
+      - name: Upload verified candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: kapterka-pro-3.8.1
+          path: release-candidate/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload unit test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-3.8.1-unit-tests
+          path: app/build/test-results/testDebugUnitTest/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Remove temporary release key
+        if: always()
+        shell: bash
+        run: rm -f -- "$KEYSTORE_PATH" /tmp/keytool-381.txt

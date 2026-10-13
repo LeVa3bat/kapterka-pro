@@ -19,6 +19,7 @@
 <link rel="apple-touch-icon" href="app_icon_512.png">
 <link rel="stylesheet" href="guide.css?v=3.4.9.3">
 <link rel="stylesheet" href="workshop-tools.css?v=1">
+<link rel="stylesheet" href="scenario-videos.css?v=20261013">
 <script src="workshop-tools.js?v=1" defer></script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"Article","headline":"Учёт инструмента на Android: где хранится и что выдано","description":"Учёт инструмента на Android: каталог, места хранения, выдача, возврат через операции, остатки и история движения инструмента на телефоне.","datePublished":"2026-09-22","dateModified":"2026-10-13","inLanguage":"ru-RU","mainEntityOfPage":{"@type":"WebPage","@id":"https://kapterka-pro.ru/uchet-instrumenta-android.html"},"image":"https://kapterka-pro.ru/app_icon_512.png","author":{"@type":"Organization","name":"Каптёрка PRO","url":"https://kapterka-pro.ru/"},"publisher":{"@type":"Organization","name":"Каптёрка PRO","url":"https://kapterka-pro.ru/","logo":{"@type":"ImageObject","url":"https://kapterka-pro.ru/app_icon_512.png"}},"isPartOf":{"@type":"CollectionPage","name":"Полезные материалы","url":"https://kapterka-pro.ru/guides.html"}}
@@ -54,6 +55,30 @@
 <p id="public-share-status" role="status">Передаётся только публичная ссылка, без ваших данных.</p>
 <label hidden>Публичная ссылка для копирования<input id="public-share-link" type="text" readonly hidden></label>
 <p><a href="inventarizaciya-na-android.html#reconcile">Рассчитать недостачу или излишек в браузере →</a></p>
+</section>
+<section class="scenario-demo" id="report-demo" aria-labelledby="report-demo-title">
+<h2 id="report-demo-title">Как получить отчёт Excel с телефона</h2>
+<div class="scenario-demo-layout">
+<figure>
+<video controls playsinline preload="none" width="1080" height="1920" poster="videos/report-export-poster.webp" aria-label="Демонстрация сохранения отчёта Excel" aria-describedby="report-demo-caption">
+<source src="videos/report-export.mp4" type="video/mp4">
+<track kind="captions" src="videos/report-export.vtt" srclang="ru" label="Русские подписи" default>
+Ваш браузер не поддерживает видео. <a href="videos/report-export.mp4">Скачать ролик MP4</a>.
+</video>
+<figcaption id="report-demo-caption">Настоящие экраны Каптёрки ПРО 3.8 на вымышленных данных. 30 секунд, без звука, с пояснениями.</figcaption>
+</figure>
+<div>
+<p>Открываем ведомость кладовой и нажимаем «Скачать Excel». Приложение создало настоящий XLSX: в строке отвёртки — 9 штук. Пример отчёта можно скачать ниже.</p>
+<details><summary>Текст ролика</summary><ol>
+<li>Открываем «Отчёты» из главного экрана. В примере действует тестовый PRO.</li>
+<li>Выбираем ведомость кладовой и проверяем данные. Экспорт доступен с действующим демо или PRO.</li>
+<li>Нажали «Скачать Excel». Получен настоящий XLSX: отвёртка — 9 штук. Файл приложен к ролику.</li>
+</ol></details>
+<p class="scenario-note">Для экспорта нужен действующий демо или PRO. Ролик собран из отдельных кадров настоящего интерфейса; системное меню отправки и открытие XLSX в другом приложении не показаны.</p>
+<p class="scenario-downloads"><a href="videos/report-export.mp4" download>Скачать MP4 · 414 КБ</a><a href="videos/report-export.srt" download>Скачать подписи · SRT</a><a href="videos/demo-point-stock.xlsx" download>Скачать отчёт из ролика · XLSX</a></p>
+<p><a href="uchet-vydachi-imushchestva-android.html#issue-demo">Посмотреть выдачу и проверку остатка →</a></p>
+</div>
+</div>
 </section>
 <h2>Почему таблица быстро устаревает</h2><p>Если инструмент выдают в течение дня, таблица на отдельном компьютере часто обновляется с задержкой. В этот промежуток фактическое наличие уже изменилось, а учёт продолжает показывать старые данные.</p><p>Телефон удобен тем, что находится рядом с местом выдачи. Операцию можно занести сразу и затем проверить остаток.</p><h2>Как организовать простой учёт инструмента</h2><p>Полезно заранее определить категории и места хранения, чтобы одинаковые позиции не появлялись под разными названиями.</p><ol><li>Создайте места хранения.</li><li>Добавьте инструмент в каталог.</li><li>Проведите начальную сверку.</li><li>Выдавайте инструмент отдельной операцией.</li><li>Возврат фиксируйте как отдельное движение, а не ручную правку числа.</li><li>Периодически сверяйте фактическое наличие с остатком.</li></ol><h2>Что смотреть при расхождении</h2><p>Сначала проверьте историю операций: не была ли выдача записана дважды, не осталось ли перемещение незавершённым в реальном процессе и не изменялся ли остаток вручную. Такая проверка обычно полезнее, чем немедленная корректировка итогового числа.</p>
 <div class="note">Каптёрка PRO не заявляется как специализированная система ремонта, поверки или RFID-контроля инструмента. Здесь речь о складском движении, местах хранения и текущих остатках.</div>

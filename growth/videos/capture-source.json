@@ -1,0 +1,92 @@
+{
+  "kind": "Rendered production Compose demonstration on fictitious data; not physical-device recording",
+  "appVersionName": "3.8.0",
+  "appVersionCode": 36,
+  "captureDateMoscow": "2026-10-13 16:56:37",
+  "androidSdk": 34,
+  "sqliteMode": "LEGACY",
+  "systemShareUI": "Not rendered by this harness; actual export bytes and Downloads\/cache equality verified",
+  "source": "app\/src\/test\/java\/com\/example\/GrowthScreenshotTest.kt",
+  "renderer": "Robolectric native graphics + Roborazzi; real production Compose components",
+  "dataOrigin": "Temporary in-memory Room; KapterkaRepository.recordIncome\/recordIssue; syncManager=null; no keys\/QR",
+  "verified": {
+    "before": 12,
+    "issued": 3,
+    "storeAfter": 9,
+    "benchAfter": 3,
+    "conservedTotal": 12,
+    "xlsxContainsStoreQuantity": 9
+  },
+  "frames": [
+    {
+      "file": "01-dashboard-before.png",
+      "sha256": "195cb8f423ba12ccaa5f21c6e69a9ef6d6f8d4db1eb50ca9d5a223f6856849ec",
+      "width": 1080,
+      "height": 2340
+    },
+    {
+      "file": "02-stock-before.png",
+      "sha256": "44cdd80b1410848f1143ddbd488a394bd3c7a8ed3f80a22f28b4c16e530e84ef",
+      "width": 1080,
+      "height": 2340
+    },
+    {
+      "file": "03-issue-empty.png",
+      "sha256": "e2e76e535de30292917e8ea378af496d4b2d8e7c40904a73ca9dc30f5efa61eb",
+      "width": 1080,
+      "height": 2340
+    },
+    {
+      "file": "04-issue-ready.png",
+      "sha256": "fb0fede1f8d304de0505774bc4f6ce795bef78792bbfaf1b407a85fbf8169c34",
+      "width": 1080,
+      "height": 2340
+    },
+    {
+      "file": "05-stock-after.png",
+      "sha256": "6e3089eb2172ae5a8b2897a666c64f92207f2f6dae3434bf60d5161e1c56e210",
+      "width": 1080,
+      "height": 2340
+    },
+    {
+      "file": "06-dashboard-after.png",
+      "sha256": "8f2fe16742dc8b185be0debe295cd9fae3fcd34bfaafc9d9bdf6a369233b69c6",
+      "width": 1080,
+      "height": 2340
+    },
+    {
+      "file": "07-journal.png",
+      "sha256": "8e9d439b968bbbe81b6005d4102d0c6e187e62ac8c27f2f9f37be8b9941695d3",
+      "width": 1080,
+      "height": 2340
+    },
+    {
+      "file": "08-journal-expanded.png",
+      "sha256": "7f59fdec73dd6813a7faab737aa75d33b45c258bedf9e261f9587a44e6990526",
+      "width": 1080,
+      "height": 2340
+    },
+    {
+      "file": "09-local-stock.png",
+      "sha256": "6e3089eb2172ae5a8b2897a666c64f92207f2f6dae3434bf60d5161e1c56e210",
+      "width": 1080,
+      "height": 2340
+    },
+    {
+      "file": "10-report-preview.png",
+      "sha256": "037329106d5eba91e66e53095faac0cef24706393ac2e70147bc74c1a9138b8e",
+      "width": 1080,
+      "height": 2340
+    },
+    {
+      "file": "11-report-exported.png",
+      "sha256": "037329106d5eba91e66e53095faac0cef24706393ac2e70147bc74c1a9138b8e",
+      "width": 1080,
+      "height": 2340
+    }
+  ],
+  "export": {
+    "file": "demo-point-stock.xlsx",
+    "sha256": "11e392eb6fdf9d8f8c28da1b498413095ff8730cb0d0e555d0250f5b433c783f"
+  }
+}

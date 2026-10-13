@@ -1,0 +1,15 @@
+/* Local videos keep their space while the MP4 waits for a deliberate play. */
+.scenario-demo{margin:24px 0;padding:18px;border:1px solid var(--line);border-radius:16px;background:var(--card2);scroll-margin-top:76px}
+.scenario-demo h2{margin-top:0}
+.scenario-demo-layout{display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:20px;align-items:start}
+.scenario-demo figure{margin:0;min-width:0}
+.scenario-demo video{display:block;width:100%;height:auto;aspect-ratio:9/16;background:#0b1410;border-radius:12px}
+.scenario-demo video:focus-visible,.scenario-demo summary:focus-visible{outline:3px solid var(--mint);outline-offset:4px}
+.scenario-demo figcaption{margin-top:8px;color:#bacbc1;font-size:.76rem;line-height:1.5}
+.scenario-demo details{margin:14px 0}
+.scenario-demo summary{cursor:pointer;color:var(--mint);min-height:44px;display:list-item;align-content:center}
+.scenario-demo details ol{margin:6px 0;padding-left:20px}
+.scenario-demo .scenario-downloads{display:flex;flex-wrap:wrap;gap:8px 16px;margin:12px 0;font-size:.8rem}
+.scenario-demo .scenario-downloads a{min-height:44px;display:inline-flex;align-items:center;text-underline-offset:3px}
+.scenario-demo .scenario-note{font-size:.78rem;color:#bacbc1}
+@media(max-width:680px){.scenario-demo{padding:14px}.scenario-demo-layout{grid-template-columns:1fr;gap:14px}.scenario-demo figure{width:min(100%,320px);margin:0 auto}.scenario-demo .scenario-note{font-size:.76rem}}

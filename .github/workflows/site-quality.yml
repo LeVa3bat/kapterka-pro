@@ -43,6 +43,7 @@ jobs:
 
       - run: npm ci
       - run: node .github/scripts/build-site-css.mjs --check
+      - run: node tools/growth/prepare-site-videos.mjs --check
       - name: Start local candidate preview
         run: node tools/growth/serve.mjs &
 
@@ -80,6 +81,9 @@ jobs:
 
       - name: Verify interactions and layouts
         run: node .github/scripts/site-browser-check.cjs
+
+      - name: Verify video playback, captions and deferred loading
+        run: node .github/scripts/site-video-browser-check.cjs
 
       - name: Upload Lighthouse reports
         if: always()
