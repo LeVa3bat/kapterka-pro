@@ -1,0 +1,14 @@
+{
+  "status": "Альтернативная карточка для ревью; публикация требует отдельной команды владельца.",
+  "consoleName": "Сверка остатков без сети",
+  "name": "Каптёрка ПРО",
+  "shortDescription": "Проверяйте записанные остатки и журнал имущества без интернета",
+  "fullDescriptionFile": "offline-description.txt",
+  "searchTags": [{ "id": 129, "name": "Работа", "type": "MAIN" }],
+  "inheritCategoryAndAgeRating": true,
+  "publicationPeriodProposal": "Бессрочно; пока не включать",
+  "screenshotOrder": ["03-offline.png", "01-stock.png", "04-report.png", "02-issue.png"],
+  "screenshotStatus": "Нужна реальная запись чтения остатков и журнала с отключённой сетью.",
+  "customPageUrl": null,
+  "reason": "Для людей, пришедших из инструкции по сверке без сети; объясняет локальные данные и границы актуальности. Не обещает встроенный автоматический акт расхождений."
+}

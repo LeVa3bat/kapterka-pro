@@ -18,13 +18,14 @@
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="apple-touch-icon" href="app_icon_512.png">
 <link rel="stylesheet" href="guide.css?v=3.4.9.3">
+<link rel="stylesheet" href="workshop-tools.css?v=1">
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"Article","headline":"Перемещение между складами на Android: как сохранить общий остаток","description":"Как учитывать перемещение имущества между складами и местами хранения на Android без потери истории движения.","dateModified":"2026-09-22","inLanguage":"ru-RU","mainEntityOfPage":{"@type":"WebPage","@id":"https://kapterka-pro.ru/peremeshchenie-mezhdu-skladami-android.html"},"image":"https://kapterka-pro.ru/app_icon_512.png","author":{"@type":"Organization","name":"Каптёрка PRO","url":"https://kapterka-pro.ru/"},"publisher":{"@type":"Organization","name":"Каптёрка PRO","url":"https://kapterka-pro.ru/","logo":{"@type":"ImageObject","url":"https://kapterka-pro.ru/app_icon_512.png"}},"isPartOf":{"@type":"CollectionPage","name":"Полезные материалы","url":"https://kapterka-pro.ru/guides.html"}}
+{"@context":"https://schema.org","@type":"Article","headline":"Перемещение между складами на Android: как сохранить общий остаток","description":"Как учитывать перемещение имущества между складами и местами хранения на Android без потери истории движения.","dateModified":"2026-10-13","inLanguage":"ru-RU","mainEntityOfPage":{"@type":"WebPage","@id":"https://kapterka-pro.ru/peremeshchenie-mezhdu-skladami-android.html"},"image":"https://kapterka-pro.ru/app_icon_512.png","author":{"@type":"Organization","name":"Каптёрка PRO","url":"https://kapterka-pro.ru/"},"publisher":{"@type":"Organization","name":"Каптёрка PRO","url":"https://kapterka-pro.ru/","logo":{"@type":"ImageObject","url":"https://kapterka-pro.ru/app_icon_512.png"}},"isPartOf":{"@type":"CollectionPage","name":"Полезные материалы","url":"https://kapterka-pro.ru/guides.html"}}
 </script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Каптёрка PRO","item":"https://kapterka-pro.ru/"},{"@type":"ListItem","position":2,"name":"Полезные материалы","item":"https://kapterka-pro.ru/guides.html"},{"@type":"ListItem","position":3,"name":"Перемещение между складами","item":"https://kapterka-pro.ru/peremeshchenie-mezhdu-skladami-android.html"}]}
 </script>
-<script src="guide-analytics.js?v=1" defer></script>
+<script src="guide-analytics.js?v=2" defer></script>
 </head>
 <body>
 <a class="skip-link" href="#main-content">Перейти к содержимому</a>
@@ -44,6 +45,13 @@
 <div class="card"><b>03</b><h3>Общий контроль</h3><p>Корректное перемещение помогает отличить смену места хранения от реального расхода.</p></div>
 </div>
 <article class="article">
+<section class="tool-card" id="transfer-example">
+<h2>Пример: из кладовой на рабочий участок</h2>
+<p>Вымышленная мастерская хранит 20 пар рабочих перчаток в кладовой и 4 пары на участке. Нужно передать 6 пар на участок.</p>
+<table><caption>Количество в парах до и после одного перемещения</caption><thead><tr><th scope="col">Место хранения</th><th scope="col">До</th><th scope="col">Изменение</th><th scope="col">После</th></tr></thead><tbody><tr><th scope="row">Кладовая</th><td>20</td><td>−6</td><td>14</td></tr><tr><th scope="row">Участок</th><td>4</td><td>+6</td><td>10</td></tr><tr><th scope="row">Всего</th><td>24</td><td>0</td><td>24</td></tr></tbody></table>
+<ol><li>Проверьте, что в кладовой есть 6 пар.</li><li>В приложении выберите «Перемещение», исходную кладовую, участок и количество 6.</li><li>После сохранения проверьте 14 пар в кладовой и 10 на участке; общий итог — 24.</li><li>Если 2 пары вернулись, оформите обратное перемещение: участок → кладовая, 2 пары. Итоги: 16 и 8, всего 24.</li></ol>
+<p>Когда расходник использован, это уже расход, а не смена места хранения. Не записывайте дополнительную выдачу поверх перемещения. <a href="uchet-instrumenta-android.html#workshop-kit">Пустой комплект для мастерской →</a></p>
+</section>
 <h2>Почему два отдельных действия хуже одного перемещения</h2>
 <p>Если сначала оформить обычный расход, а затем независимо создать новый приход, между этими записями теряется явная связь. При задержке второй операции общий учёт временно показывает меньше имущества, чем есть фактически.</p>
 <p>Операция перемещения лучше отражает реальный смысл события: количество меняет место хранения, но остаётся в общей системе учёта.</p>

@@ -8,15 +8,24 @@ on:
       - '.github/scripts/site-live-check.mjs'
       - '.github/scripts/lighthouse-budget.mjs'
       - '.github/workflows/site-quality.yml'
+      - 'package*.json'
+  pull_request:
+    paths:
+      - 'docs/**'
+      - '.github/scripts/lighthouse-budget.mjs'
+      - '.github/scripts/build-site-css.mjs'
+      - '.github/workflows/site-quality.yml'
+      - 'package*.json'
   schedule:
     - cron: '17 5 * * 1'
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
 
 concurrency:
-  group: site-quality-live
+  group: site-quality-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -32,8 +41,10 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Verify live pages and external links
-        run: node .github/scripts/site-live-check.mjs
+      - run: npm ci
+      - run: node .github/scripts/build-site-css.mjs --check
+      - name: Start local candidate preview
+        run: node tools/growth/serve.mjs &
 
       - name: Detect Chrome
         shell: bash
@@ -46,7 +57,7 @@ jobs:
       - name: Lighthouse mobile
         run: >
           npx --yes lighthouse@12
-          https://kapterka-pro.ru/
+          http://127.0.0.1:4173/
           --quiet
           --chrome-path="$CHROME_BIN"
           --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage"
@@ -56,7 +67,7 @@ jobs:
       - name: Lighthouse desktop
         run: >
           npx --yes lighthouse@12
-          https://kapterka-pro.ru/
+          http://127.0.0.1:4173/
           --quiet
           --preset=desktop
           --chrome-path="$CHROME_BIN"
@@ -67,6 +78,9 @@ jobs:
       - name: Check quality gates
         run: node .github/scripts/lighthouse-budget.mjs lh-mobile.json lh-desktop.json
 
+      - name: Verify interactions and layouts
+        run: node .github/scripts/site-browser-check.cjs
+
       - name: Upload Lighthouse reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -75,4 +89,5 @@ jobs:
           path: |
             lh-mobile.json
             lh-desktop.json
+            growth/qa/*.png
           retention-days: 14

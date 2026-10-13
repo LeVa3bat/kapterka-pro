@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.ContentProvider
 import android.content.ContentValues
 import android.content.Context
+import android.content.pm.ProviderInfo
 import android.database.Cursor
 import android.net.Uri
 import android.os.ParcelFileDescriptor
@@ -85,7 +86,7 @@ class GrowthScreenshotTest {
 
     private val profile = UserProfile(
         callsign = "Кладовщик",
-        unitName = "Учебная мастерская",
+        unitName = "Мастерская",
         isLoggedIn = true,
         isProActive = true,
         isOnline = false,
@@ -126,6 +127,8 @@ class GrowthScreenshotTest {
             .allowMainThreadQueries().build()
         try {
             output.mkdirs()
+            val completedManifest = File(output, "capture-source.json")
+            check(!completedManifest.exists() || completedManifest.delete()) { "Cannot invalidate previous capture manifest" }
             val dao = database.kapterkaDao()
             dao.saveUserProfile(profile)
             dao.insertPoints(points)
@@ -145,12 +148,13 @@ class GrowthScreenshotTest {
             capture("02-stock-before")
             compose.onNodeWithTag("op_issue_button").performClick()
             capture("03-issue-empty")
-            compose.onNode(hasSetTextAction() and hasText("Введите название")).performTextInput("Отвёртка")
+            compose.onAllNodes(hasSetTextAction() and hasText("Введите название")).onLast().performTextInput("Отвёртка")
             compose.onAllNodesWithText("Отвёртка").onLast().performClick()
             compose.onNodeWithText("+").performClick()
             compose.onNodeWithText("+").performClick()
             capture("04-issue-ready")
             compose.onNodeWithTag("submit_issue_button").performClick()
+            assertTrue("The real issue dialog must close after saving", !showIssue)
             val issue = requireNotNull(submittedIssue)
             assertEquals(points[0].id, issue.fromId)
             assertEquals(points[1].id, issue.toId)
@@ -175,7 +179,9 @@ class GrowthScreenshotTest {
             compose.onAllNodesWithText("Кладовая").onFirst().performClick()
             capture("09-local-stock")
 
-            val downloads = DemoDownloadsProvider(File(context.filesDir, "growth-demo-download.xlsx"))
+            val downloadedFile = File(context.filesDir, "growth-demo-download.xlsx")
+            val downloads = DemoDownloadsProvider(downloadedFile)
+            downloads.attachInfo(context, ProviderInfo().apply { authority = "media"; exported = true })
             ShadowContentResolver.registerProviderInternal("media", downloads)
             compose.onNodeWithContentDescription("Отчёты").performClick()
             capture("10-report-preview")
@@ -183,9 +189,14 @@ class GrowthScreenshotTest {
             compose.waitForIdle()
             val exported = requireNotNull(File(context.cacheDir, "exports").listFiles()?.singleOrNull { it.name.endsWith(".xlsx") })
             assertTrue(exported.length() > 0)
+            assertTrue("Downloads and share cache must contain the same real export", downloadedFile.readBytes().contentEquals(exported.readBytes()))
             val sheet = worksheetXml(exported)
             assertTrue(sheet.contains("Отвёртка"))
-            assertTrue(sheet.contains(">9<"))
+            val screwdriverRow = Regex("<row\\b[^>]*>.*?</row>", RegexOption.DOT_MATCHES_ALL)
+                .findAll(sheet).single { it.value.contains("Отвёртка") }.value
+            val quantity = Regex("<c r=\"G\\d+\"[^>]*><v>([^<]+)</v></c>")
+                .find(screwdriverRow)?.groupValues?.get(1)?.toDouble()
+            assertEquals("The real XLSX screwdriver row must contain the computed store quantity", 9.0, requireNotNull(quantity), 0.0)
             val proof = File(output, "demo-point-stock.xlsx")
             proof.writeBytes(exported.readBytes())
             capture("11-report-exported")
@@ -196,13 +207,17 @@ class GrowthScreenshotTest {
                 .put("appVersionCode", BuildConfig.VERSION_CODE)
                 .put("captureDateMoscow", SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ROOT).apply { timeZone = TimeZone.getTimeZone("Europe/Moscow") }.format(Date()))
                 .put("androidSdk", 34)
+                .put("sqliteMode", System.getProperty("robolectric.sqliteMode", "NATIVE"))
+                .put("systemShareUI", "Not rendered by this harness; actual export bytes and Downloads/cache equality verified")
                 .put("source", "app/src/test/java/com/example/GrowthScreenshotTest.kt")
                 .put("renderer", "Robolectric native graphics + Roborazzi; real production Compose components")
                 .put("dataOrigin", "Temporary in-memory Room; KapterkaRepository.recordIncome/recordIssue; syncManager=null; no keys/QR")
                 .put("verified", JSONObject().put("before", 12).put("issued", 3).put("storeAfter", 9).put("benchAfter", 3).put("conservedTotal", 12).put("xlsxContainsStoreQuantity", 9))
                 .put("frames", captures)
                 .put("export", JSONObject().put("file", proof.name).put("sha256", sha256(proof)))
-            File(output, "capture-source.json").writeText(manifest.toString(2))
+            val stagedManifest = File(output, "capture-source.json.pending")
+            stagedManifest.writeText(manifest.toString(2))
+            check(stagedManifest.renameTo(completedManifest)) { "Cannot finalize capture manifest" }
         } finally {
             database.close()
         }

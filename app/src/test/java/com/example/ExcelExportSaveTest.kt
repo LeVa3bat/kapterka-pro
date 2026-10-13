@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.ContentProvider
 import android.content.ContentValues
 import android.content.Context
+import android.content.pm.ProviderInfo
 import android.database.Cursor
 import android.net.Uri
 import android.os.ParcelFileDescriptor
@@ -30,6 +31,7 @@ class ExcelExportSaveTest {
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
         provider = FailingDownloadsProvider()
+        provider.attachInfo(context, ProviderInfo().apply { authority = "media"; exported = true })
         ShadowContentResolver.registerProviderInternal("media", provider)
     }
 
@@ -37,6 +39,9 @@ class ExcelExportSaveTest {
     fun `no Downloads entry returns failure instead of reporting success`() {
         val name = "failed-download-insert.xlsx"
         assertNull(ExcelExportHelper.saveXlsxToDownloads(context, name, byteArrayOf(1, 2, 3)))
+        assertTrue(provider.insertCalled)
+        assertFalse(provider.openFileCalled)
+        assertFalse(provider.deleted)
         assertFalse(File(context.cacheDir, "exports/$name").exists())
     }
 
@@ -44,18 +49,27 @@ class ExcelExportSaveTest {
     fun `missing output stream removes the incomplete Downloads entry`() {
         provider.allowInsert = true
         assertNull(ExcelExportHelper.saveXlsxToDownloads(context, "failed-download-write.xlsx", byteArrayOf(1, 2, 3)))
+        assertTrue(provider.insertCalled)
+        assertTrue(provider.openFileCalled)
         assertTrue(provider.deleted)
     }
 
     private class FailingDownloadsProvider : ContentProvider() {
         var allowInsert = false
         var deleted = false
+        var insertCalled = false
+        var openFileCalled = false
 
         override fun onCreate() = true
-        override fun insert(uri: Uri, values: ContentValues?): Uri? =
-            if (allowInsert) Uri.parse("content://media/downloads/1") else null
+        override fun insert(uri: Uri, values: ContentValues?): Uri? {
+            insertCalled = true
+            return if (allowInsert) Uri.parse("content://media/downloads/1") else null
+        }
 
-        override fun openFile(uri: Uri, mode: String): ParcelFileDescriptor? = null
+        override fun openFile(uri: Uri, mode: String): ParcelFileDescriptor? {
+            openFileCalled = true
+            return null
+        }
         override fun delete(uri: Uri, selection: String?, selectionArgs: Array<out String>?): Int {
             deleted = true
             return 1

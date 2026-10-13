@@ -1559,6 +1559,9 @@ async function loadReleaseManifest() {
     document.querySelectorAll('[data-release-version]').forEach(el => { el.textContent = release.versionName; });
     document.querySelectorAll('[data-release-code]').forEach(el => { el.textContent = String(release.versionCode); });
     document.querySelectorAll('[data-release-status]').forEach(el => { el.textContent = release.statusLabel || 'Стабильный релиз'; });
+    document.querySelectorAll('[data-release-sha]').forEach(el => { el.textContent = release.apkSha256; });
+    document.querySelectorAll('[data-release-size]').forEach(el => { el.textContent = (release.apkSize / 1024 / 1024).toFixed(2).replace('.', ',') + ' МиБ (' + release.apkSize + ' байт)'; });
+    document.querySelectorAll('[data-release-integrity]').forEach(el => { el.textContent = release.versionName + ' • build ' + release.versionCode + ' • ' + release.apkSize + ' байт'; });
   } catch (_) {}
 }
 
@@ -1648,8 +1651,8 @@ function trackSiteAction(eventName, params = {}) {
 function trackApkDownload(source) {
   const placement = String(source || 'direct').slice(0, 40);
   trackSiteAction('apk_download', { source: placement });
-  const version = window.KAPTERKA_RELEASE?.versionName || '3.4.9';
-  showToast('📥 Скачивание APK-файла «Каптёрка PRO ' + version + '» началось…');
+  const version = window.KAPTERKA_RELEASE?.versionName;
+  showToast('📥 Открыта ссылка на APK «Каптёрка PRO' + (version ? ' ' + version : '') + '».');
 }
 
 function installSiteFunnelTracking() {

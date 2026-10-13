@@ -34,3 +34,4 @@ decomp*.java
 node_modules/
 .kotlin/
 hs_err_pid*.log
+replay_pid*.log

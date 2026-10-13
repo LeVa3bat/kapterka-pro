@@ -18,13 +18,15 @@
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="apple-touch-icon" href="app_icon_512.png">
 <link rel="stylesheet" href="guide.css?v=3.4.9.3">
+<link rel="stylesheet" href="workshop-tools.css?v=1">
+<script src="workshop-tools.js?v=1" defer></script>
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"Article","headline":"Учёт инструмента на Android: где хранится и что выдано","description":"Учёт инструмента на Android: каталог, места хранения, выдача, возврат через операции, остатки и история движения инструмента на телефоне.","datePublished":"2026-09-22","dateModified":"2026-09-22","inLanguage":"ru-RU","mainEntityOfPage":{"@type":"WebPage","@id":"https://kapterka-pro.ru/uchet-instrumenta-android.html"},"image":"https://kapterka-pro.ru/app_icon_512.png","author":{"@type":"Organization","name":"Каптёрка PRO","url":"https://kapterka-pro.ru/"},"publisher":{"@type":"Organization","name":"Каптёрка PRO","url":"https://kapterka-pro.ru/","logo":{"@type":"ImageObject","url":"https://kapterka-pro.ru/app_icon_512.png"}},"isPartOf":{"@type":"CollectionPage","name":"Полезные материалы","url":"https://kapterka-pro.ru/guides.html"}}
+{"@context":"https://schema.org","@type":"Article","headline":"Учёт инструмента на Android: где хранится и что выдано","description":"Учёт инструмента на Android: каталог, места хранения, выдача, возврат через операции, остатки и история движения инструмента на телефоне.","datePublished":"2026-09-22","dateModified":"2026-10-13","inLanguage":"ru-RU","mainEntityOfPage":{"@type":"WebPage","@id":"https://kapterka-pro.ru/uchet-instrumenta-android.html"},"image":"https://kapterka-pro.ru/app_icon_512.png","author":{"@type":"Organization","name":"Каптёрка PRO","url":"https://kapterka-pro.ru/"},"publisher":{"@type":"Organization","name":"Каптёрка PRO","url":"https://kapterka-pro.ru/","logo":{"@type":"ImageObject","url":"https://kapterka-pro.ru/app_icon_512.png"}},"isPartOf":{"@type":"CollectionPage","name":"Полезные материалы","url":"https://kapterka-pro.ru/guides.html"}}
 </script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Каптёрка PRO","item":"https://kapterka-pro.ru/"},{"@type":"ListItem","position":2,"name":"Полезные материалы","item":"https://kapterka-pro.ru/guides.html"},{"@type":"ListItem","position":3,"name":"Учёт инструмента","item":"https://kapterka-pro.ru/uchet-instrumenta-android.html"}]}
 </script>
-<script src="guide-analytics.js?v=1" defer></script>
+<script src="guide-analytics.js?v=2" defer></script>
 </head>
 <body>
 <a class="skip-link" href="#main-content">Перейти к содержимому</a>
@@ -40,6 +42,19 @@
 </section>
 <div class="grid"><div class="card"><b>01</b><h3>Каталог</h3><p>Инструмент можно держать в категориях и быстро находить в общем списке.</p></div><div class="card"><b>02</b><h3>Выдача</h3><p>Операция сразу отражается в текущем остатке.</p></div><div class="card"><b>03</b><h3>Возврат</h3><p>Возвращённый инструмент снова отражается через операцию поступления по правилам учёта.</p></div></div>
 <article class="article">
+<section class="tool-card" id="workshop-kit" aria-labelledby="kit-title">
+<h2 id="kit-title">Бесплатный комплект для кладовой мастерской</h2>
+<p>Расходники, приход, выдача, возврат и остаток: начните с готовой таблицы или печатного журнала. Скачивание прямое, без регистрации и передачи контактов. В примере только вымышленные данные.</p>
+<div class="download-grid">
+<div><h3>Пустые материалы</h3><a href="downloads/workshop-blank.xlsx" download>Скачать пустой XLSX</a><a href="downloads/workshop-blank.pdf" download>Скачать журнал для печати · PDF</a><a href="downloads/inventory-checklist.pdf" download>Скачать лист сверки · PDF</a></div>
+<div><h3>Заполненный пример</h3><a href="downloads/workshop-example.xlsx" download>Скачать пример · XLSX</a><a href="downloads/workshop-example.pdf" download>Скачать пример · PDF</a><p>Возврат увеличивает остаток отдельной записью. Отрицательный остаток требует проверки журнала.</p></div>
+</div>
+<p>Таблицы достаточно, если учёт ведёт один человек и записей немного. Приложение удобнее, когда приход и выдачу нужно записывать у места хранения, искать историю и получать отчёт с телефона. Импорт этого XLSX в приложение не заявлен.</p>
+<div class="cta"><button type="button" class="btn secondary" data-public-share="template">Поделиться пустым шаблоном</button><button type="button" class="btn secondary" data-public-share="app">Посоветовать приложение</button><a class="btn primary" href="/#tabDownload">Установить на Android</a></div>
+<p id="public-share-status" role="status">Передаётся только публичная ссылка, без ваших данных.</p>
+<label hidden>Публичная ссылка для копирования<input id="public-share-link" type="text" readonly hidden></label>
+<p><a href="inventarizaciya-na-android.html#reconcile">Рассчитать недостачу или излишек в браузере →</a></p>
+</section>
 <h2>Почему таблица быстро устаревает</h2><p>Если инструмент выдают в течение дня, таблица на отдельном компьютере часто обновляется с задержкой. В этот промежуток фактическое наличие уже изменилось, а учёт продолжает показывать старые данные.</p><p>Телефон удобен тем, что находится рядом с местом выдачи. Операцию можно занести сразу и затем проверить остаток.</p><h2>Как организовать простой учёт инструмента</h2><p>Полезно заранее определить категории и места хранения, чтобы одинаковые позиции не появлялись под разными названиями.</p><ol><li>Создайте места хранения.</li><li>Добавьте инструмент в каталог.</li><li>Проведите начальную сверку.</li><li>Выдавайте инструмент отдельной операцией.</li><li>Возврат фиксируйте как отдельное движение, а не ручную правку числа.</li><li>Периодически сверяйте фактическое наличие с остатком.</li></ol><h2>Что смотреть при расхождении</h2><p>Сначала проверьте историю операций: не была ли выдача записана дважды, не осталось ли перемещение незавершённым в реальном процессе и не изменялся ли остаток вручную. Такая проверка обычно полезнее, чем немедленная корректировка итогового числа.</p>
 <div class="note">Каптёрка PRO не заявляется как специализированная система ремонта, поверки или RFID-контроля инструмента. Здесь речь о складском движении, местах хранения и текущих остатках.</div>
 </article>

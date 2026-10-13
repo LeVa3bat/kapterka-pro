@@ -1,0 +1,95 @@
+{
+  "status": "Тексты и ссылки готовы к ревью. Видео не записаны и не опубликованы. Использовать описания только вместе с проверенным готовым роликом.",
+  "utmCampaign": "workshop_30d",
+  "rules": {
+    "rutube": "source=rutube, medium=video",
+    "telegram": "source=telegram, medium=social",
+    "site": "Внутренние ссылки сайта без UTM; прямой переход из плеера в RuStore: source=site, medium=owned",
+    "content": "issue_check | offline_stock | report_export",
+    "privacy": "Только фиксированные метки материала. Не помещать в URL названия имущества, имена, количества, почту и ключи.",
+    "customPages": "После отдельного одобрения заменить основной URL RuStore на реальный URL одобренной кастомной страницы, сохранить UTM. Сейчас customPageUrl=null."
+  },
+  "videos": [
+    {
+      "id": "issue_check",
+      "status": "Монтажный план; видео не записано, описания предназначены для будущей проверенной публикации",
+      "videoFile": null,
+      "coverFile": "covers/issue-check.png",
+      "subtitlePlanFile": "issue-check.planned.srt",
+      "durationPlanSeconds": 68,
+      "rutube": {
+        "title": "Как проверить выдачу имущества в Каптёрке ПРО",
+        "description": "Проверяем выдачу на примере учебной кладовой: было 12 отвёрток, передали 3 на рабочее место, получили остатки 9 и 3. Затем находим запись в журнале и проверяем направление движения. Все данные вымышленные. Выдача отличается от списания; возврат между точками оформляется обратным перемещением.\n\nИнструкция: https://kapterka-pro.ru/uchet-vydachi-imushchestva-android.html?utm_source=rutube&utm_medium=video&utm_campaign=workshop_30d&utm_content=issue_check\nУстановка из RuStore: https://www.rustore.ru/catalog/app/com.aistudio.kapterka.jmwqve?utm_source=rutube&utm_medium=video&utm_campaign=workshop_30d&utm_content=issue_check\n\nВ ролике показана локальная проверка на одном телефоне. Перед работой с общими данными сверяйте актуальность каждого устройства.",
+        "tags": ["складской учёт", "выдача инструмента", "Каптёрка ПРО", "Android"]
+      },
+      "telegram": {
+        "title": "Куда делись три отвёртки? Проверяем выдачу",
+        "description": "В учебной кладовой было 12 отвёрток. Передали 3 на рабочее место — проверяем 9 и 3 в остатках, затем открываем журнал. В короткой инструкции показываем, где искать запись и почему выдача отличается от списания. Данные вымышленные.\n\nИнструкция: https://kapterka-pro.ru/uchet-vydachi-imushchestva-android.html?utm_source=telegram&utm_medium=social&utm_campaign=workshop_30d&utm_content=issue_check\nУстановка: https://www.rustore.ru/catalog/app/com.aistudio.kapterka.jmwqve?utm_source=telegram&utm_medium=social&utm_campaign=workshop_30d&utm_content=issue_check"
+      },
+      "site": {
+        "title": "Как проверить выдачу имущества",
+        "description": "Учебный пример: проверка остатка до и после выдачи и поиск операции в журнале. Данные вымышленные.",
+        "instructionUrl": "https://kapterka-pro.ru/uchet-vydachi-imushchestva-android.html",
+        "installUrl": "https://www.rustore.ru/catalog/app/com.aistudio.kapterka.jmwqve?utm_source=site&utm_medium=owned&utm_campaign=workshop_30d&utm_content=issue_check",
+        "videoUrl": null,
+        "implementationStatus": "Не встроено: нужен готовый ролик, разрешённая публикация и реальный URL."
+      }
+    },
+    {
+      "id": "offline_stock",
+      "status": "Монтажный план; видео не записано, описания предназначены для будущей проверенной публикации",
+      "videoFile": null,
+      "coverFile": "covers/offline-stock.png",
+      "subtitlePlanFile": "offline-stock.planned.srt",
+      "durationPlanSeconds": 80,
+      "rutube": {
+        "title": "Сверка остатков без интернета: учёт и фактическое наличие",
+        "description": "Разбираем ручную сверку на учебном примере: в учёте 9 отвёрток, по факту 8. Открываем сохранённые остатки и журнал на телефоне без сети, записываем разницу и проверяем возможную причину. Все данные вымышленные. Телефон без сети не получает свежие изменения других устройств.\n\nПустой лист сверки и калькулятор: https://kapterka-pro.ru/inventarizaciya-na-android.html?utm_source=rutube&utm_medium=video&utm_campaign=workshop_30d&utm_content=offline_stock#reconcile\nУстановка из RuStore: https://www.rustore.ru/catalog/app/com.aistudio.kapterka.jmwqve?utm_source=rutube&utm_medium=video&utm_campaign=workshop_30d&utm_content=offline_stock\n\nЛист и калькулятор — отдельные инструменты сайта. В приложении показана проверка локальных остатков, а не автоматический акт расхождений.",
+        "tags": ["инвентаризация", "сверка остатков", "Каптёрка ПРО", "учёт без интернета"]
+      },
+      "telegram": {
+        "title": "В учёте 9, на полке 8. С чего начать сверку",
+        "description": "Сначала проверяем записанный остаток и журнал, затем фиксируем расхождение. В учебном примере показываем просмотр локальных данных без интернета. Не исправляйте количество до выяснения причины. Все данные вымышленные.\n\nПустой лист и калькулятор: https://kapterka-pro.ru/inventarizaciya-na-android.html?utm_source=telegram&utm_medium=social&utm_campaign=workshop_30d&utm_content=offline_stock#reconcile\nУстановка: https://www.rustore.ru/catalog/app/com.aistudio.kapterka.jmwqve?utm_source=telegram&utm_medium=social&utm_campaign=workshop_30d&utm_content=offline_stock"
+      },
+      "site": {
+        "title": "Сверка остатков без интернета",
+        "description": "Просмотр сохранённого учёта на телефоне и ручная проверка фактического наличия. Отдельный калькулятор расхождений работает в браузере.",
+        "instructionUrl": "https://kapterka-pro.ru/inventarizaciya-na-android.html#reconcile",
+        "installUrl": "https://www.rustore.ru/catalog/app/com.aistudio.kapterka.jmwqve?utm_source=site&utm_medium=owned&utm_campaign=workshop_30d&utm_content=offline_stock",
+        "videoUrl": null,
+        "implementationStatus": "Не встроено: запись, готовность сайта и URL ролика должны быть подтверждены."
+      }
+    },
+    {
+      "id": "report_export",
+      "status": "Монтажный план; видео не записано, описания предназначены для будущей проверенной публикации",
+      "videoFile": null,
+      "coverFile": "covers/report-export.png",
+      "subtitlePlanFile": "report-export.planned.srt",
+      "durationPlanSeconds": 73,
+      "rutube": {
+        "title": "Как получить отчёт Excel в Каптёрке ПРО",
+        "description": "Выбираем сводную ведомость или отчёт по точке, проверяем строку с количеством, сохраняем настоящий XLSX и открываем полученный файл. Все данные учебные. Для экспорта в приложении нужен действующий демо или PRO. Сохраняйте копию с датой, чтобы иметь точку отсчёта для сверки.\n\nИнструкция: https://kapterka-pro.ru/rukovodstvo-polzovatelya.html?utm_source=rutube&utm_medium=video&utm_campaign=workshop_30d&utm_content=report_export\nУстановка из RuStore: https://www.rustore.ru/catalog/app/com.aistudio.kapterka.jmwqve?utm_source=rutube&utm_medium=video&utm_campaign=workshop_30d&utm_content=report_export\n\nФайл создаётся из внесённого учёта. Импорт Excel не демонстрируется. Отчёт может содержать данные имущества; отправляйте его только по собственному решению.",
+        "tags": ["отчёт Excel", "ведомость", "Каптёрка ПРО", "складской учёт"]
+      },
+      "telegram": {
+        "title": "Сохранить учёт в Excel и проверить строки",
+        "description": "Открываем «Отчёты», выбираем нужную ведомость и сохраняем XLSX. Затем сверяем количество в полученном файле. Действующий демо или PRO требуется для экспорта. Все данные в примере вымышленные.\n\nИнструкция: https://kapterka-pro.ru/rukovodstvo-polzovatelya.html?utm_source=telegram&utm_medium=social&utm_campaign=workshop_30d&utm_content=report_export\nУстановка: https://www.rustore.ru/catalog/app/com.aistudio.kapterka.jmwqve?utm_source=telegram&utm_medium=social&utm_campaign=workshop_30d&utm_content=report_export"
+      },
+      "site": {
+        "title": "Как получить отчёт Excel",
+        "description": "Выбор ведомости, сохранение XLSX и проверка строк. Для экспорта нужен действующий демо или PRO.",
+        "instructionUrl": "https://kapterka-pro.ru/rukovodstvo-polzovatelya.html",
+        "installUrl": "https://www.rustore.ru/catalog/app/com.aistudio.kapterka.jmwqve?utm_source=site&utm_medium=owned&utm_campaign=workshop_30d&utm_content=report_export",
+        "videoUrl": null,
+        "implementationStatus": "Не встроено: нужен готовый ролик и разрешённая внешняя публикация."
+      }
+    }
+  ],
+  "measurement": {
+    "site": "Переходы и события сайта по существующему счётчику; клик не является установкой.",
+    "rustore": "При доступе владельца к Консоли экспортировать реальные первичные установки, обновления и просмотры отдельно, с UTM-фильтрами. Просмотры карточки в браузере не входят в метрику просмотров RuStore.",
+    "source": "https://www.rustore.ru/help/developers/developer-statistics/versions-download-stat",
+    "limitation": "UTM в магазине поддержаны документацией, но атрибуция от просмотра ролика через сайт до оплаты не подтверждена. Консоль не открывалась, статистика не получена."
+  }
+}

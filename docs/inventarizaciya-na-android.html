@@ -18,13 +18,15 @@
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="apple-touch-icon" href="app_icon_512.png">
 <link rel="stylesheet" href="guide.css?v=3.4.9.3">
+<link rel="stylesheet" href="workshop-tools.css?v=1">
+<script src="workshop-tools.js?v=1" defer></script>
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"Article","headline":"Инвентаризация на Android: как сверить фактические остатки на телефоне","description":"Практический порядок инвентаризации и сверки складских остатков на Android.","dateModified":"2026-09-22","inLanguage":"ru-RU","mainEntityOfPage":{"@type":"WebPage","@id":"https://kapterka-pro.ru/inventarizaciya-na-android.html"},"image":"https://kapterka-pro.ru/app_icon_512.png","author":{"@type":"Organization","name":"Каптёрка PRO","url":"https://kapterka-pro.ru/"},"publisher":{"@type":"Organization","name":"Каптёрка PRO","url":"https://kapterka-pro.ru/","logo":{"@type":"ImageObject","url":"https://kapterka-pro.ru/app_icon_512.png"}},"isPartOf":{"@type":"CollectionPage","name":"Полезные материалы","url":"https://kapterka-pro.ru/guides.html"}}
+{"@context":"https://schema.org","@type":"Article","headline":"Инвентаризация на Android: как сверить фактические остатки на телефоне","description":"Практический порядок инвентаризации и сверки складских остатков на Android.","dateModified":"2026-10-13","inLanguage":"ru-RU","mainEntityOfPage":{"@type":"WebPage","@id":"https://kapterka-pro.ru/inventarizaciya-na-android.html"},"image":"https://kapterka-pro.ru/app_icon_512.png","author":{"@type":"Organization","name":"Каптёрка PRO","url":"https://kapterka-pro.ru/"},"publisher":{"@type":"Organization","name":"Каптёрка PRO","url":"https://kapterka-pro.ru/","logo":{"@type":"ImageObject","url":"https://kapterka-pro.ru/app_icon_512.png"}},"isPartOf":{"@type":"CollectionPage","name":"Полезные материалы","url":"https://kapterka-pro.ru/guides.html"}}
 </script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Каптёрка PRO","item":"https://kapterka-pro.ru/"},{"@type":"ListItem","position":2,"name":"Полезные материалы","item":"https://kapterka-pro.ru/guides.html"},{"@type":"ListItem","position":3,"name":"Инвентаризация на Android","item":"https://kapterka-pro.ru/inventarizaciya-na-android.html"}]}
 </script>
-<script src="guide-analytics.js?v=1" defer></script>
+<script src="guide-analytics.js?v=2" defer></script>
 </head>
 <body>
 <a class="skip-link" href="#main-content">Перейти к содержимому</a>
@@ -46,6 +48,19 @@
 </div>
 
 <article class="article">
+<section class="tool-card" id="reconcile" aria-labelledby="reconcile-title">
+<h2 id="reconcile-title">Калькулятор расхождений и лист сверки</h2>
+<p>Сравните учётное и фактическое количество. Недостача = учёт минус факт; излишек = факт минус учёт. Используйте одинаковую единицу в каждой строке. Допустимы дроби до трёх знаков, например 1,125 кг.</p>
+<p>Введённый список обрабатывается только в вашем браузере, не сохраняется на сайте и не передаётся в аналитику. После закрытия или перезагрузки страницы он исчезнет. Сначала экспортируйте результат.</p>
+<form id="reconcile-form">
+<div id="reconcile-inputs"></div>
+<div class="cta"><button type="button" id="reconcile-add" class="btn secondary">Добавить строку</button><button type="submit" class="btn primary">Рассчитать</button><button type="button" id="reconcile-export" class="btn secondary" disabled>Экспорт результата · CSV</button><button type="button" id="reconcile-clear" class="btn secondary">Очистить список</button></div>
+</form>
+<p id="reconcile-status" role="status">Заполните хотя бы одну строку. До 100 позиций.</p>
+<ul id="reconcile-results"></ul>
+<p><a href="downloads/inventory-checklist.pdf" download>Скачать пустой лист сверки для печати · PDF</a></p>
+<p>Распечатайте лист заранее. Перед обходом внесите учётные остатки, затем запишите факт и причину расхождения. Для калькулятора без сети оставьте загруженную страницу открытой. Сам результат не меняет остатки приложения.</p>
+</section>
 <h2>Что подготовить перед инвентаризацией</h2>
 <p>Сначала завершите текущие операции. Если часть выдач или поступлений ещё лежит в черновиках, сравнивать фактическое наличие с учётным остатком рано: расхождение будет искусственным.</p>
 <p>Затем определите порядок обхода. Для небольшого склада удобно идти по местам хранения последовательно: один склад, помещение или точка — затем следующая. На телефоне при этом можно сверять наименование позиции и текущий остаток, не перенося список на бумагу.</p>

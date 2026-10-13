@@ -1,0 +1,155 @@
+{
+  "sourceUrl": "https://kapterka-pro.ru/uchet-instrumenta-android.html#workshop-kit",
+  "qrDecoder": "zxing-cpp 3.1.1",
+  "checks": [
+    {
+      "kind": "decoded QR",
+      "label": "workshop-blank.xlsx embedded image",
+      "url": "https://kapterka-pro.ru/uchet-instrumenta-android.html#workshop-kit",
+      "passed": true
+    },
+    {
+      "kind": "XLSX native package",
+      "file": "workshop-blank.xlsx",
+      "validationRules": 6,
+      "conditionalRules": 4,
+      "formulaErrors": [],
+      "macros": false,
+      "passed": true
+    },
+    {
+      "kind": "decoded QR",
+      "label": "workshop-example.xlsx embedded image",
+      "url": "https://kapterka-pro.ru/uchet-instrumenta-android.html#workshop-kit",
+      "passed": true
+    },
+    {
+      "kind": "XLSX native package",
+      "file": "workshop-example.xlsx",
+      "validationRules": 6,
+      "conditionalRules": 4,
+      "formulaErrors": [],
+      "macros": false,
+      "passed": true
+    },
+    {
+      "kind": "decoded QR",
+      "label": "workshop-blank.pdf page 1 rendered at 120 dpi",
+      "url": "https://kapterka-pro.ru/uchet-instrumenta-android.html#workshop-kit",
+      "passed": true
+    },
+    {
+      "kind": "decoded QR",
+      "label": "workshop-blank.pdf page 1 grayscale at 120 dpi",
+      "url": "https://kapterka-pro.ru/uchet-instrumenta-android.html#workshop-kit",
+      "passed": true
+    },
+    {
+      "kind": "decoded QR",
+      "label": "workshop-blank.pdf page 2 rendered at 120 dpi",
+      "url": "https://kapterka-pro.ru/uchet-instrumenta-android.html#workshop-kit",
+      "passed": true
+    },
+    {
+      "kind": "decoded QR",
+      "label": "workshop-blank.pdf page 2 grayscale at 120 dpi",
+      "url": "https://kapterka-pro.ru/uchet-instrumenta-android.html#workshop-kit",
+      "passed": true
+    },
+    {
+      "kind": "PDF print geometry",
+      "file": "workshop-blank.pdf",
+      "pages": 2,
+      "paper": "A4 landscape",
+      "sourceLinkOnEveryPage": true,
+      "passed": true
+    },
+    {
+      "kind": "decoded QR",
+      "label": "workshop-example.pdf page 1 rendered at 120 dpi",
+      "url": "https://kapterka-pro.ru/uchet-instrumenta-android.html#workshop-kit",
+      "passed": true
+    },
+    {
+      "kind": "decoded QR",
+      "label": "workshop-example.pdf page 1 grayscale at 120 dpi",
+      "url": "https://kapterka-pro.ru/uchet-instrumenta-android.html#workshop-kit",
+      "passed": true
+    },
+    {
+      "kind": "decoded QR",
+      "label": "workshop-example.pdf page 2 rendered at 120 dpi",
+      "url": "https://kapterka-pro.ru/uchet-instrumenta-android.html#workshop-kit",
+      "passed": true
+    },
+    {
+      "kind": "decoded QR",
+      "label": "workshop-example.pdf page 2 grayscale at 120 dpi",
+      "url": "https://kapterka-pro.ru/uchet-instrumenta-android.html#workshop-kit",
+      "passed": true
+    },
+    {
+      "kind": "PDF print geometry",
+      "file": "workshop-example.pdf",
+      "pages": 2,
+      "paper": "A4 landscape",
+      "sourceLinkOnEveryPage": true,
+      "passed": true
+    },
+    {
+      "kind": "decoded QR",
+      "label": "inventory-checklist.pdf page 1 rendered at 120 dpi",
+      "url": "https://kapterka-pro.ru/uchet-instrumenta-android.html#workshop-kit",
+      "passed": true
+    },
+    {
+      "kind": "decoded QR",
+      "label": "inventory-checklist.pdf page 1 grayscale at 120 dpi",
+      "url": "https://kapterka-pro.ru/uchet-instrumenta-android.html#workshop-kit",
+      "passed": true
+    },
+    {
+      "kind": "PDF print geometry",
+      "file": "inventory-checklist.pdf",
+      "pages": 1,
+      "paper": "A4 landscape",
+      "sourceLinkOnEveryPage": true,
+      "passed": true
+    },
+    {
+      "kind": "decoded QR",
+      "label": "XLSX preview blank-guide.png",
+      "url": "https://kapterka-pro.ru/uchet-instrumenta-android.html#workshop-kit",
+      "passed": true
+    },
+    {
+      "kind": "decoded QR",
+      "label": "XLSX preview example-guide.png",
+      "url": "https://kapterka-pro.ru/uchet-instrumenta-android.html#workshop-kit",
+      "passed": true
+    }
+  ],
+  "files": [
+    {
+      "file": "workshop-blank.xlsx",
+      "bytes": 63031
+    },
+    {
+      "file": "workshop-example.xlsx",
+      "bytes": 64148
+    },
+    {
+      "file": "workshop-blank.pdf",
+      "bytes": 95022
+    },
+    {
+      "file": "workshop-example.pdf",
+      "bytes": 96865
+    },
+    {
+      "file": "inventory-checklist.pdf",
+      "bytes": 88514
+    }
+  ],
+  "physicalPrinterTest": "not performed"
+}
