@@ -31,3 +31,6 @@ DEV_ACCESS_KEY.txt
 __pycache__/
 cfr*.jar
 decomp*.java
+node_modules/
+.kotlin/
+hs_err_pid*.log

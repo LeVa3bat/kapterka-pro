@@ -31,10 +31,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.data.model.*
 import com.example.ui.theme.*
 import com.example.util.ExcelExportHelper
 import com.example.util.ExcelReportData
+import com.example.util.ReviewPromptPreferences
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -89,6 +93,29 @@ fun ExcelReportPreviewDialog(
         mutableIntStateOf(initialFormIndex.coerceIn(0, (tabTitles.size - 1).coerceAtLeast(0)))
     }
     val context = LocalContext.current
+    val reviewPreferences = remember(context) {
+        ReviewPromptPreferences(context.getSharedPreferences("kapterka_app_prefs", Context.MODE_PRIVATE))
+    }
+    var showReviewRequest by remember { mutableStateOf(false) }
+    var reviewPendingAfterChooser by remember { mutableStateOf(false) }
+    var chooserWasPaused by remember { mutableStateOf(false) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    // Saving is the useful action. Returning from the chooser does not prove delivery.
+    DisposableEffect(lifecycleOwner, reviewPreferences) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_PAUSE && reviewPendingAfterChooser) {
+                chooserWasPaused = true
+            }
+            if (event == Lifecycle.Event.ON_RESUME && reviewPendingAfterChooser && chooserWasPaused) {
+                reviewPendingAfterChooser = false
+                chooserWasPaused = false
+                showReviewRequest = reviewPreferences.recordPromptAfterSavedExport()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     // Build structured military blocks and exportable text
     val (blocks, exportCsv) = remember(selectedTab, operations, stockRecords, points, catalogItems, requisitions, unitName) {
@@ -258,7 +285,13 @@ fun ExcelReportPreviewDialog(
                             val excelData = extractExcelReportData(sheetName, blocks)
                             val bytes = ExcelExportHelper.generateXlsxBytes(excelData)
                             val file = ExcelExportHelper.saveXlsxToDownloads(context, "$baseFileName.xlsx", bytes)
-                            ExcelExportHelper.shareOrOpenExcel(context, file, "$baseFileName.xlsx")
+                            if (file != null) {
+                                reviewPendingAfterChooser = !showReviewRequest
+                                chooserWasPaused = false
+                                if (!ExcelExportHelper.shareOrOpenExcel(context, file, "$baseFileName.xlsx")) {
+                                    reviewPendingAfterChooser = false
+                                }
+                            }
                         },
                         modifier = Modifier
                             .weight(1f)
@@ -306,6 +339,23 @@ fun ExcelReportPreviewDialog(
                             fontSize = 11.sp
                         )
                     }
+                }
+                if (showReviewRequest) {
+                    ReviewRequestCard(
+                        onOpenReview = {
+                            reviewPreferences.stop()
+                            showReviewRequest = false
+                        },
+                        onLater = {
+                            reviewPreferences.later()
+                            showReviewRequest = false
+                        },
+                        onStopAsking = {
+                            reviewPreferences.stop()
+                            showReviewRequest = false
+                        },
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                    )
                 }
             }
         }
