@@ -18,8 +18,9 @@
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="apple-touch-icon" href="app_icon_512.png">
 <link rel="stylesheet" href="guide.css?v=3.4.9.3">
+<link rel="stylesheet" href="scenario-videos.css?v=20261013">
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"Article","headline":"Учёт выдачи имущества на Android: как сохранять понятную историю","description":"Как фиксировать выдачу имущества на Android и поддерживать актуальный остаток после каждой операции.","dateModified":"2026-09-22","inLanguage":"ru-RU","mainEntityOfPage":{"@type":"WebPage","@id":"https://kapterka-pro.ru/uchet-vydachi-imushchestva-android.html"},"image":"https://kapterka-pro.ru/app_icon_512.png","author":{"@type":"Organization","name":"Каптёрка PRO","url":"https://kapterka-pro.ru/"},"publisher":{"@type":"Organization","name":"Каптёрка PRO","url":"https://kapterka-pro.ru/","logo":{"@type":"ImageObject","url":"https://kapterka-pro.ru/app_icon_512.png"}},"isPartOf":{"@type":"CollectionPage","name":"Полезные материалы","url":"https://kapterka-pro.ru/guides.html"}}
+{"@context":"https://schema.org","@type":"Article","headline":"Учёт выдачи имущества на Android: как сохранять понятную историю","description":"Как фиксировать выдачу имущества на Android и поддерживать актуальный остаток после каждой операции.","dateModified":"2026-10-13","inLanguage":"ru-RU","mainEntityOfPage":{"@type":"WebPage","@id":"https://kapterka-pro.ru/uchet-vydachi-imushchestva-android.html"},"image":"https://kapterka-pro.ru/app_icon_512.png","author":{"@type":"Organization","name":"Каптёрка PRO","url":"https://kapterka-pro.ru/"},"publisher":{"@type":"Organization","name":"Каптёрка PRO","url":"https://kapterka-pro.ru/","logo":{"@type":"ImageObject","url":"https://kapterka-pro.ru/app_icon_512.png"}},"isPartOf":{"@type":"CollectionPage","name":"Полезные материалы","url":"https://kapterka-pro.ru/guides.html"}}
 </script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Каптёрка PRO","item":"https://kapterka-pro.ru/"},{"@type":"ListItem","position":2,"name":"Полезные материалы","item":"https://kapterka-pro.ru/guides.html"},{"@type":"ListItem","position":3,"name":"Учёт выдачи имущества","item":"https://kapterka-pro.ru/uchet-vydachi-imushchestva-android.html"}]}
@@ -44,6 +45,31 @@
 <div class="card"><b>03</b><h3>Проверяйте историю</h3><p>Если возникло расхождение, последовательность операций помогает найти пропущенную или повторную запись.</p></div>
 </div>
 <article class="article">
+<section class="scenario-demo" id="issue-demo" aria-labelledby="issue-demo-title">
+<h2 id="issue-demo-title">Выдача и проверка остатка за 30 секунд</h2>
+<div class="scenario-demo-layout">
+<figure>
+<video controls playsinline preload="none" width="1080" height="1920" poster="videos/issue-check-poster.webp" aria-label="Демонстрация выдачи и проверки остатка" aria-describedby="issue-demo-caption">
+<source src="videos/issue-check.mp4" type="video/mp4">
+<track kind="captions" src="videos/issue-check.vtt" srclang="ru" label="Русские подписи" default>
+Ваш браузер не поддерживает видео. <a href="videos/issue-check.mp4">Скачать ролик MP4</a>.
+</video>
+<figcaption id="issue-demo-caption">Настоящие экраны Каптёрки ПРО 3.8 на вымышленных данных. 30 секунд, без звука, с пояснениями.</figcaption>
+</figure>
+<div>
+<p>В учебной кладовой 12 отвёрток. Выдаём 3 на рабочее место, проверяем остатки 9 и 3 и запись в журнале. Общий итог остаётся 12.</p>
+<details><summary>Текст ролика</summary><ol>
+<li>В учебной кладовой 12 отвёрток. Открываем выдачу.</li>
+<li>Выбираем отвёртку и 3 штуки. Получатель — рабочее место.</li>
+<li>Сохранено через приложение: в кладовой осталось 9, на рабочем месте — 3.</li>
+<li>В журнале проверяем направление и количество. Выдача отличается от списания.</li>
+</ol></details>
+<p class="scenario-note">Ролик собран из отдельных кадров настоящего интерфейса; это демонстрация экранов, а не запись с физического телефона.</p>
+<p class="scenario-downloads"><a href="videos/issue-check.mp4" download>Скачать MP4 · 497 КБ</a><a href="videos/issue-check.srt" download>Скачать подписи · SRT</a></p>
+<p><a href="inventarizaciya-na-android.html#stock-demo">Посмотреть сверку локального остатка →</a></p>
+</div>
+</div>
+</section>
 <h2>Почему выдачу лучше не заменять ручной правкой остатка</h2>
 <p>Простое изменение числа показывает только новое количество, но не объясняет, почему оно стало таким. Отдельная операция выдачи сохраняет смысл движения: какая позиция уменьшилась, на сколько и в какой момент.</p>
 <p>Это особенно важно, когда один склад обслуживает несколько получателей или выдачи происходят в течение дня. Запись на телефоне позволяет фиксировать операцию непосредственно в месте хранения.</p>

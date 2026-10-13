@@ -19,6 +19,7 @@
 <link rel="apple-touch-icon" href="app_icon_512.png">
 <link rel="stylesheet" href="guide.css?v=3.4.9.3">
 <link rel="stylesheet" href="workshop-tools.css?v=1">
+<link rel="stylesheet" href="scenario-videos.css?v=20261013">
 <script src="workshop-tools.js?v=1" defer></script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"Article","headline":"Инвентаризация на Android: как сверить фактические остатки на телефоне","description":"Практический порядок инвентаризации и сверки складских остатков на Android.","dateModified":"2026-10-13","inLanguage":"ru-RU","mainEntityOfPage":{"@type":"WebPage","@id":"https://kapterka-pro.ru/inventarizaciya-na-android.html"},"image":"https://kapterka-pro.ru/app_icon_512.png","author":{"@type":"Organization","name":"Каптёрка PRO","url":"https://kapterka-pro.ru/"},"publisher":{"@type":"Organization","name":"Каптёрка PRO","url":"https://kapterka-pro.ru/","logo":{"@type":"ImageObject","url":"https://kapterka-pro.ru/app_icon_512.png"}},"isPartOf":{"@type":"CollectionPage","name":"Полезные материалы","url":"https://kapterka-pro.ru/guides.html"}}
@@ -60,6 +61,30 @@
 <ul id="reconcile-results"></ul>
 <p><a href="downloads/inventory-checklist.pdf" download>Скачать пустой лист сверки для печати · PDF</a></p>
 <p>Распечатайте лист заранее. Перед обходом внесите учётные остатки, затем запишите факт и причину расхождения. Для калькулятора без сети оставьте загруженную страницу открытой. Сам результат не меняет остатки приложения.</p>
+</section>
+<section class="scenario-demo" id="stock-demo" aria-labelledby="stock-demo-title">
+<h2 id="stock-demo-title">Как начать сверку локального остатка</h2>
+<div class="scenario-demo-layout">
+<figure>
+<video controls playsinline preload="none" width="1080" height="1920" poster="videos/offline-stock-poster.webp" aria-label="Демонстрация сверки локального остатка" aria-describedby="stock-demo-caption">
+<source src="videos/offline-stock.mp4" type="video/mp4">
+<track kind="captions" src="videos/offline-stock.vtt" srclang="ru" label="Русские подписи" default>
+Ваш браузер не поддерживает видео. <a href="videos/offline-stock.mp4">Скачать ролик MP4</a>.
+</video>
+<figcaption id="stock-demo-caption">Настоящие экраны Каптёрки ПРО 3.8 на вымышленных данных. 30 секунд, без звука, с пояснениями.</figcaption>
+</figure>
+<div>
+<p>В учебной базе сохранено 9 отвёрток. В условном ручном пересчёте получилось 8. Сначала смотрим последнюю выдачу в журнале и выясняем причину разницы.</p>
+<details><summary>Текст ролика</summary><ol>
+<li>Сохранённый остаток в учебной базе — 9 отвёрток. Облачная синхронизация отключена.</li>
+<li>При ручном пересчёте получилось 8. Разница — минус 1. Сначала выясняем причину.</li>
+<li>Проверяем последнюю выдачу в журнале. Этот пример не проверяет свежесть данных другого телефона.</li>
+</ol></details>
+<p class="scenario-note">Ролик собран из отдельных кадров настоящего интерфейса. Облачная синхронизация учебной базы отключена; работу физического телефона без сети этот ролик не проверяет.</p>
+<p class="scenario-downloads"><a href="videos/offline-stock.mp4" download>Скачать MP4 · 445 КБ</a><a href="videos/offline-stock.srt" download>Скачать подписи · SRT</a></p>
+<p><a href="#reconcile">Рассчитать расхождение в калькуляторе выше →</a></p>
+</div>
+</div>
 </section>
 <h2>Что подготовить перед инвентаризацией</h2>
 <p>Сначала завершите текущие операции. Если часть выдач или поступлений ещё лежит в черновиках, сравнивать фактическое наличие с учётным остатком рано: расхождение будет искусственным.</p>
