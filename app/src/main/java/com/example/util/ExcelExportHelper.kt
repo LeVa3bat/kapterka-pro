@@ -339,34 +339,48 @@ object ExcelExportHelper {
      * Сохраняет файл в папку «Загрузки» устройства (Downloads) и возвращает File.
      */
     fun saveXlsxToDownloads(context: Context, fileName: String, bytes: ByteArray): File? {
+        var downloadsUri: Uri? = null
+        var cachedFile: File? = null
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 val values = ContentValues().apply {
                     put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
                     put(MediaStore.MediaColumns.MIME_TYPE, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
                     put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/Каптерка")
+                    put(MediaStore.MediaColumns.IS_PENDING, 1)
                 }
                 val resolver = context.contentResolver
                 val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
-                if (uri != null) {
-                    resolver.openOutputStream(uri)?.use { os ->
-                        os.write(bytes)
-                        os.flush()
-                    }
+                    ?: throw java.io.IOException("Не удалось создать файл в Загрузках")
+                downloadsUri = uri
+                val output = resolver.openOutputStream(uri)
+                    ?: throw java.io.IOException("Не удалось записать файл в Загрузки")
+                output.use { os ->
+                    os.write(bytes)
+                    os.flush()
                 }
             }
 
             // Also save locally in app cache / files directory so FileProvider can immediately open/share it
             val exportDir = File(context.cacheDir, "exports").apply { mkdirs() }
             val localFile = File(exportDir, fileName)
+            cachedFile = localFile
             FileOutputStream(localFile).use { fos ->
                 fos.write(bytes)
                 fos.flush()
+            }
+            downloadsUri?.let { uri ->
+                val completed = ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }
+                if (context.contentResolver.update(uri, completed, null, null) == 0) {
+                    throw java.io.IOException("Не удалось завершить сохранение в Загрузки")
+                }
             }
 
             Toast.makeText(context, "Файл сохранен: $fileName", Toast.LENGTH_LONG).show()
             return localFile
         } catch (e: Exception) {
+            downloadsUri?.let { uri -> runCatching { context.contentResolver.delete(uri, null, null) } }
+            cachedFile?.delete()
             e.printStackTrace()
             Toast.makeText(context, "Ошибка сохранения: ${e.message}", Toast.LENGTH_LONG).show()
             return null
@@ -376,10 +390,10 @@ object ExcelExportHelper {
     /**
      * Открывает диалог "Поделиться / Открыть в Excel" через системный шлюз Android
      */
-    fun shareOrOpenExcel(context: Context, file: File?, fileName: String) {
+    fun shareOrOpenExcel(context: Context, file: File?, fileName: String): Boolean {
         if (file == null || !file.exists()) {
             Toast.makeText(context, "Не удалось подготовить файл для отправки", Toast.LENGTH_SHORT).show()
-            return
+            return false
         }
 
         try {
@@ -399,9 +413,11 @@ object ExcelExportHelper {
             val chooser = Intent.createChooser(shareIntent, "Открыть или отправить ведомость Excel")
             chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(chooser)
+            return true
         } catch (e: Exception) {
             e.printStackTrace()
             Toast.makeText(context, "Не удалось открыть Excel: ${e.message}", Toast.LENGTH_LONG).show()
+            return false
         }
     }
 }
