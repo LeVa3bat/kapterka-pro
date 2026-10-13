@@ -56,4 +56,5 @@ jobs:
           node .github/scripts/site-release-check.mjs
           node .github/scripts/site-growth-check.mjs
           node .github/scripts/workshop-tools.test.cjs
+          node .github/scripts/analytics-scheduler.test.mjs
           node .github/scripts/site-release-check.test.mjs

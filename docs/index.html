@@ -165,7 +165,7 @@
   <meta name="apple-mobile-web-app-title" content="Каптёрка PRO">
   <meta name="color-scheme" content="dark">
 
-  <!-- Analytics: queue immediately, load heavy third-party scripts right after the page load event (or on first interaction). -->
+  <!-- Analytics: queue immediately; load vendors in idle time, one at a time, after the initial page work. -->
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){ dataLayer.push(arguments); }
@@ -185,29 +185,52 @@
 
     (function scheduleAnalyticsLoad(){
       let started = false;
-      function loadScript(src, id) {
-        if (id && document.getElementById(id)) return;
+      let delayTimer;
+      const interactionTypes = ['pointerdown','touchstart','keydown','scroll'];
+      function whenIdle(task) {
+        if (window.requestIdleCallback) window.requestIdleCallback(task, { timeout:2000 });
+        else window.setTimeout(task, 0);
+      }
+      function loadScript(src, id, onDone) {
+        if (document.getElementById(id)) { if (onDone) onDone(); return; }
         const script = document.createElement('script');
-        if (id) script.id = id;
+        script.id = id;
         script.async = true;
+        script.fetchPriority = 'low';
         script.src = src;
+        if (onDone) script.onload = script.onerror = onDone;
         document.head.appendChild(script);
       }
       function start() {
         if (started) return;
         started = true;
-        loadScript('https://www.googletagmanager.com/gtag/js?id=G-RYV6TP63D3', 'kapterka-ga');
-        loadScript('https://mc.yandex.ru/metrika/tag.js', 'kapterka-ym');
-        ['pointerdown','touchstart','keydown','scroll'].forEach(type =>
+        window.clearTimeout(delayTimer);
+        interactionTypes.forEach(type =>
           window.removeEventListener(type, start, { capture:true })
         );
+        whenIdle(function() {
+          let googleScheduled = false;
+          function scheduleGoogle() {
+            if (googleScheduled) return;
+            googleScheduled = true;
+            window.setTimeout(function() {
+              whenIdle(function() {
+                loadScript('https://www.googletagmanager.com/gtag/js?id=G-RYV6TP63D3', 'kapterka-ga');
+              });
+            }, 1500);
+          }
+          // Сбой одного поставщика не должен останавливать второй счётчик.
+          window.setTimeout(scheduleGoogle, 4000);
+          loadScript('https://mc.yandex.ru/metrika/tag.js', 'kapterka-ym', scheduleGoogle);
+        });
       }
-      ['pointerdown','touchstart','keydown','scroll'].forEach(type =>
+      interactionTypes.forEach(type =>
         window.addEventListener(type, start, { once:true, passive:true, capture:true })
       );
-      // Не ждём действий пользователя: считаем и короткие визиты. Скрипты грузятся после события load,
-      // поэтому на первую отрисовку страницы не влияют.
-      function startSoon() { window.setTimeout(start, 1200); }
+      // Очереди уже содержат просмотр и ранние события. SDK не конкурируют с первой загрузкой:
+      // запуск в idle через 5 с после load либо раньше по действию пользователя.
+      // Очень короткий визит до загрузки SDK может не попасть в статистику.
+      function startSoon() { if (!started) delayTimer = window.setTimeout(start, 5000); }
       if (document.readyState === 'complete') startSoon();
       else window.addEventListener('load', startSoon, { once:true });
     })();

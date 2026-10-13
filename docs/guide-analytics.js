@@ -16,28 +16,56 @@
     webvisor: false
   });
 
-  let started = false;
-  function loadScript(src, id) {
-    if (document.getElementById(id)) return;
-    const s = document.createElement('script');
-    s.id = id;
-    s.async = true;
-    s.src = src;
-    document.head.appendChild(s);
-  }
-  function start() {
-    if (started) return;
-    started = true;
-    loadScript('https://www.googletagmanager.com/gtag/js?id=G-RYV6TP63D3', 'kapterka-guide-ga');
-    loadScript('https://mc.yandex.ru/metrika/tag.js', 'kapterka-guide-ym');
-  }
-  ['pointerdown','touchstart','keydown','scroll'].forEach(type =>
-    window.addEventListener(type, start, { once:true, passive:true, capture:true })
-  );
-  // Считаем и короткие визиты: грузим счётчики вскоре после события load, а не по таймеру в несколько секунд.
-  function startSoon() { setTimeout(start, 1200); }
-  if (document.readyState === 'complete') startSoon();
-  else window.addEventListener('load', startSoon, { once: true });
+  const start = (function scheduleAnalyticsLoad(){
+    let started = false;
+    let delayTimer;
+    const interactionTypes = ['pointerdown','touchstart','keydown','scroll'];
+    function whenIdle(task) {
+      if (window.requestIdleCallback) window.requestIdleCallback(task, { timeout:2000 });
+      else window.setTimeout(task, 0);
+    }
+    function loadScript(src, id, onDone) {
+      if (document.getElementById(id)) { if (onDone) onDone(); return; }
+      const script = document.createElement('script');
+      script.id = id;
+      script.async = true;
+      script.fetchPriority = 'low';
+      script.src = src;
+      if (onDone) script.onload = script.onerror = onDone;
+      document.head.appendChild(script);
+    }
+    function start() {
+      if (started) return;
+      started = true;
+      window.clearTimeout(delayTimer);
+      interactionTypes.forEach(type =>
+        window.removeEventListener(type, start, { capture:true })
+      );
+      whenIdle(function() {
+        let googleScheduled = false;
+        function scheduleGoogle() {
+          if (googleScheduled) return;
+          googleScheduled = true;
+          window.setTimeout(function() {
+            whenIdle(function() {
+              loadScript('https://www.googletagmanager.com/gtag/js?id=G-RYV6TP63D3', 'kapterka-guide-ga');
+            });
+          }, 1500);
+        }
+        // Сбой одного поставщика не должен останавливать второй счётчик.
+        window.setTimeout(scheduleGoogle, 4000);
+        loadScript('https://mc.yandex.ru/metrika/tag.js', 'kapterka-guide-ym', scheduleGoogle);
+      });
+    }
+    interactionTypes.forEach(type =>
+      window.addEventListener(type, start, { once:true, passive:true, capture:true })
+    );
+    // Очереди сохраняют ранние события; очень короткий визит до загрузки SDK может не учитываться.
+    function startSoon() { if (!started) delayTimer = window.setTimeout(start, 5000); }
+    if (document.readyState === 'complete') startSoon();
+    else window.addEventListener('load', startSoon, { once:true });
+    return start;
+  })();
 
   function destination(link) {
     const href = link.getAttribute('href') || '';
