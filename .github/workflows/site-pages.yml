@@ -1,0 +1,45 @@
+name: Publish checked site (manual)
+# Сначала Pages > Source = GitHub Actions; запуск только после команды владельца.
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require current main branch
+        run: test "$GITHUB_REF" = refs/heads/main
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: node .github/scripts/build-site-css.mjs --check
+      - run: |
+          node .github/scripts/site-smoke.mjs
+          node .github/scripts/site-release-check.mjs
+          node .github/scripts/site-publish-check.mjs
+          node .github/scripts/site-growth-check.mjs
+          node .github/scripts/workshop-tools.test.cjs
+          node .github/scripts/site-release-check.test.mjs
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+  publish:
+    needs: [verify, performance]
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment
+  performance:
+    uses: ./.github/workflows/site-quality.yml

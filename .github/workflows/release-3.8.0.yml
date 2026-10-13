@@ -222,6 +222,7 @@ jobs:
         run: |
           mv kapterka-pro-3.8.0.apk docs/kapterka-pro.apk
           node .github/scripts/update-release-380.mjs "$APK_SIZE" "$APK_SHA256" "$EXPECTED_SIGNER_SHA256" "$(date -u +%F)"
+          node .github/scripts/site-release-check.mjs --write
 
       - name: Install APK inspection tools
         shell: bash
@@ -240,6 +241,7 @@ jobs:
           aapt dump badging docs/kapterka-pro.apk > /tmp/apk-badging.txt
           node .github/scripts/release-artifact-audit.mjs /tmp/apk-badging.txt /tmp/apk-signature.txt
           node .github/scripts/site-smoke.mjs
+          node .github/scripts/site-release-check.mjs
           node .github/scripts/android-invariants.mjs
 
       - name: Commit and push to main

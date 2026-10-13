@@ -1,0 +1,6 @@
+/lh-*.json
+/qa/*.png
+/qa/*.ndjson
+/qa/*.log
+/qa/native-blank-test.xlsx
+/.tmp/

@@ -1,0 +1,14 @@
+{
+  "status": "Альтернативная карточка для ревью; публикация требует отдельной команды владельца.",
+  "consoleName": "Мастерская количественный учёт",
+  "name": "Каптёрка ПРО",
+  "shortDescription": "Инструмент и расходники мастерской: приход, выдача и остатки на телефоне",
+  "fullDescriptionFile": "workshop-description.txt",
+  "searchTags": [{ "id": 129, "name": "Работа", "type": "MAIN" }],
+  "inheritCategoryAndAgeRating": true,
+  "publicationPeriodProposal": "Бессрочно; пока не включать",
+  "screenshotOrder": ["01-stock.png", "02-issue.png", "04-report.png", "03-offline.png"],
+  "screenshotStatus": "Нужны новые снимки настоящего интерфейса на вымышленных данных мастерской.",
+  "customPageUrl": null,
+  "reason": "Подходит людям, пришедшим за пустой таблицей для кладовой мастерской; отличается объяснением задачи и порядком кадров. Сама карточка трафик не создаёт."
+}

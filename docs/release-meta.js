@@ -10,6 +10,7 @@
       if (!response.ok) return;
       const release = await response.json();
       if (!release || !release.versionName || !release.versionCode) return;
+      window.KAPTERKA_RELEASE = release;
       setText('[data-release-version]', release.versionName);
       setText('[data-release-code]', release.versionCode);
       setText('[data-release-android]', release.minAndroid);
@@ -18,6 +19,8 @@
       setText('[data-release-package]', release.packageName);
       setText('[data-release-sha]', release.apkSha256);
       setText('[data-release-signer]', release.signerSha256);
+      setText('[data-release-size]', (release.apkSize / 1024 / 1024).toFixed(2).replace('.', ',') + ' МиБ (' + release.apkSize + ' байт)');
+      setText('[data-release-integrity]', release.versionName + ' • build ' + release.versionCode + ' • ' + release.apkSize + ' байт');
       document.querySelectorAll('[data-release-rustore]').forEach(link => {
         if (release.rustoreUrl) link.href = release.rustoreUrl;
       });

@@ -1,4 +1,5 @@
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 
 // Usage: node update-release-380.mjs <apkSize> <apkSha256> <signerSha256> <releaseDate>
 // Moves the site from 3.7.0 (35) to 3.8.0 (36). Fails loudly if an expected marker is missing.
@@ -70,7 +71,7 @@ for (const f of readdirSync('docs').filter((n) => n.endsWith('.html'))) {
     .replace(new RegExp(`(<span>Что изменилось в ${escRe(NEW.name)}<\\/span>\\s*<div>)[^<]*(<\\/div>)`), `$1${SHORT}$2`);
   must(p, s, t);
   if (!t.includes(sha)) throw new Error('SHA-256 marker not updated');
-  if (!t.includes(`${NEW.name} • build ${NEW.code}`)) throw new Error('integrity line not updated');
+  // Integrity markers are rendered from release.json after all release edits below.
 }
 
 // updates.html: new current release on top, 3.6.0 becomes history.
@@ -107,20 +108,7 @@ ${HIGHLIGHTS.map((h, i) => `          <li>${h}${i === HIGHLIGHTS.length - 1 ? '.
   must(p, s, t);
 }
 
-// Site smoke test expectations.
-{
-  const p = '.github/scripts/site-smoke.mjs';
-  const s = readFileSync(p, 'utf8');
-  const t = s
-    .replace(`index.includes('v${OLD.name}') && !index.includes('${OLD.name}')) fail('site version ${OLD.name}`,
-      `index.includes('v${NEW.name}') && !index.includes('${NEW.name}')) fail('site version ${NEW.name}`)
-    .replace(`!index.includes('сборка ${OLD.code}') && !index.includes('Сборка ${OLD.code}') && !index.includes('data-release-code>${OLD.code}</span>')) fail('site build ${OLD.code}`,
-      `!index.includes('сборка ${NEW.code}') && !index.includes('Сборка ${NEW.code}') && !index.includes('data-release-code>${NEW.code}</span>')) fail('site build ${NEW.code}`)
-    .replace(`releaseManifest.versionName !== '${OLD.name}' || Number(releaseManifest.versionCode) !== ${OLD.code}`,
-      `releaseManifest.versionName !== '${NEW.name}' || Number(releaseManifest.versionCode) !== ${NEW.code}`)
-    .split(`'${OLD.sha}'`).join(`'${sha}'`);
-  must(p, s, t);
-}
+// Site checks derive version and hash from the verified release manifest.
 
 // README.md and PROJECT_MAP.md: current version lines.
 for (const [p, from, to] of [
@@ -128,7 +116,10 @@ for (const [p, from, to] of [
   ['PROJECT_MAP.md', /\*\*\d+\.\d+\.\d+\*\*, build \*\*\d+\*\*/,'**' + NEW.name + '**, build **' + NEW.code + '**']
 ]) {
   const s = readFileSync(p, 'utf8');
-  must(p, s, s.replace(from, to));
+  const t = s.replace(from, to);
+  if (t !== s) writeFileSync(p, t);
+  else if (!s.includes(to)) throw new Error('release version marker missing in ' + p);
 }
 
+execFileSync(process.execPath, ['.github/scripts/site-release-check.mjs', '--write'], { stdio: 'inherit' });
 console.log(`site metadata updated for ${NEW.name} (${NEW.code})`);

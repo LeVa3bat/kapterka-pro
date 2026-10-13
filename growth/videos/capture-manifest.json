@@ -1,0 +1,17 @@
+{
+  "status": "Запись ожидается; MP4 и новые снимки интерфейса отсутствуют",
+  "plannedOnMoscow": "2026-10-13",
+  "packageName": "com.aistudio.kapterka.jmwqve",
+  "recordedAppVersionName": null,
+  "recordedAppVersionCode": null,
+  "installationSource": null,
+  "recordingDateMoscow": null,
+  "screenResolution": null,
+  "dataType": "Только вымышленные данные отдельной учебной базы",
+  "screenshotFiles": [],
+  "videoFiles": [],
+  "covers": ["covers/issue-check.png", "covers/offline-stock.png", "covers/report-export.png"],
+  "subtitleStatus": "*.planned.srt — плановый текст, не субтитры записанного видео. Пересинхронизировать после монтажа.",
+  "deviceCheck": "adb devices: подключённых устройств нет",
+  "published": false
+}

@@ -1,5 +1,9 @@
 {
   "dependencies": {
     "acorn": "^8.18.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.5",
+    "playwright": "1.62.1"
   }
 }

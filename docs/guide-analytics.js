@@ -8,11 +8,11 @@
   gtag('js', new Date());
   gtag('config', 'G-RYV6TP63D3', { send_page_view: true });
   ym(112255061, 'init', {
-    clickmap: true,
+    clickmap: !document.getElementById('reconcile-form'),
     referrer: document.referrer,
     url: location.href,
     accurateTrackBounce: true,
-    trackLinks: true,
+    trackLinks: !document.getElementById('reconcile-form'),
     webvisor: false
   });
 
@@ -42,7 +42,7 @@
   function destination(link) {
     const href = link.getAttribute('href') || '';
     if (/kapterka-pro\.apk/i.test(href)) return 'apk';
-    if (/apps\.rustore\.ru/i.test(href)) return 'rustore';
+    if (/(apps\.)?rustore\.ru/i.test(href)) return 'rustore';
     if (/#tabDownload/.test(href)) return 'download_section';
     if (/guides\.html/.test(href)) return 'guides';
     return 'internal';
@@ -50,6 +50,10 @@
   document.addEventListener('click', function(e) {
     const link = e.target.closest('a');
     if (!link) return;
+    const href = link.getAttribute('href') || '';
+    if (/^downloads\/(workshop-(blank|example)\.(xlsx|pdf)|inventory-checklist\.pdf)$/.test(href)) window.trackPublicTool('template_download');
+    if (/kapterka-pro\.apk/i.test(href)) window.trackPublicTool('apk_download');
+    if (/(apps\.)?rustore\.ru/i.test(href)) window.trackPublicTool('rustore_open');
     if (!link.closest('.cta,.related,.release-list,.back,.page-links')) return;
     const dest = destination(link);
     const params = {
@@ -61,4 +65,12 @@
     try { ym(112255061, 'reachGoal', 'guide_action', { destination: dest, page_path: location.pathname }); } catch(_) {}
     start();
   }, { capture:true });
+  // В событиях инструментов только имя события и фиксированный путь страницы.
+  // Ни названий, ни единиц, ни количеств, ни содержимого CSV.
+  window.trackPublicTool = function(name) {
+    if (!['template_download','calculator_use','calculator_export','rustore_open','apk_download','share_menu_requested'].includes(name)) return;
+    try { gtag('event', name, {page_path: location.pathname}); } catch (_) {}
+    try { ym(112255061, 'reachGoal', name, {page_path: location.pathname}); } catch (_) {}
+    start();
+  };
 })();

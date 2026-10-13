@@ -1,0 +1,17 @@
+{
+  "periodStart": "2026-10-06",
+  "periodEnd": "2026-10-12",
+  "metrics": {
+    "siteVisits": {"value": null, "source": "Нет разрешённой выгрузки Метрики 112255061"},
+    "templateDownloadClicks": {"value": null, "source": "Новые цели ещё не опубликованы"},
+    "calculatorUses": {"value": null, "source": "Новые цели ещё не опубликованы"},
+    "rustoreClicks": {"value": null, "source": "Нет разрешённой выгрузки Метрики"},
+    "apkClicks": {"value": null, "source": "Нет разрешённой выгрузки Метрики"},
+    "shareMenuRequests": {"value": null, "source": "Новые цели ещё не опубликованы"},
+    "rustoreInstalls": {"value": null, "source": "Нет разрешённой выгрузки Консоли RuStore"},
+    "demoStarts": {"value": null, "source": "Нет агрегированного разрешённого источника этого показателя"},
+    "confirmedPayments": {"value": null, "source": "Нет разрешённой агрегированной выгрузки оплат"}
+  },
+  "errors": ["Локальный APK 3.7.0/35, опубликованный манифест 3.8.0/36: публикация текущего снимка заблокирована", "Новые видео и актуальные скриншоты ожидают съёмки на тестовом устройстве"],
+  "nextImprovement": "Перенести изменения сайта на свежую main с сохранением опубликованных APK/release.json, затем измерить первые реальные скачивания шаблона"
+}

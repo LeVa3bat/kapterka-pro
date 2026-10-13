@@ -13,6 +13,7 @@ const index = read('docs/index.html');
 const app = read('docs/app.js');
 const auth = read('docs/auth-v2.js');
 const authConfig = read('docs/auth-config.js');
+const releaseExpected = JSON.parse(read('docs/release.json'));
 
 const requiredFiles = [
   'docs/CNAME',
@@ -196,8 +197,8 @@ if (!/Contact:\s*mailto:/i.test(securityTxt) || !/Canonical:\s*https:\/\/kapterk
   ok('security.txt contains contact and canonical');
 }
 
-if (!index.includes('v3.8.0') && !index.includes('3.8.0')) fail('site version 3.8.0 is not visible');
-if (!index.includes('сборка 36') && !index.includes('Сборка 36') && !index.includes('data-release-code>36</span>')) fail('site build 36 marker is missing');
+if (!index.includes(releaseExpected.versionName)) fail('release version is not visible');
+if (!index.includes('data-release-code>' + releaseExpected.versionCode + '</span>')) fail('release build marker is missing');
 
 
 const htmlFiles = ['docs/index.html', 'docs/privacy.html', 'docs/terms.html', 'docs/security.html', 'docs/updates.html', 'docs/help.html', 'docs/skladskoy-uchet-android.html', 'docs/uchet-imushchestva-offline.html', 'docs/uchet-ostatkov-na-telefone.html', 'docs/guides.html', 'docs/prihod-rashod-sklad-android.html', 'docs/inventarizaciya-na-android.html', 'docs/uchet-vydachi-imushchestva-android.html', 'docs/peremeshchenie-mezhdu-skladami-android.html', 'docs/uchet-tmc-android.html', 'docs/uchet-instrumenta-android.html', 'docs/uchet-oborudovaniya-android.html', 'docs/uchet-inventarya-android.html', 'docs/skladskoy-uchet-dlya-nebolshogo-sklada.html', 'docs/sklad-bez-1c-na-telefone.html', 'docs/zhurnal-dvizheniya-imushchestva-android.html', 'docs/uchet-neskolkih-skladov-android.html', 'docs/bezopasnoe-obnovlenie-kapterka-pro.html', 'docs/404.html'];
@@ -249,7 +250,6 @@ if (process.exitCode) {
   console.error('\nSite smoke check FAILED.');
   process.exit(process.exitCode);
 }
-console.log('\nSite smoke check PASSED.');
 
 
 if (!app.includes('function classifyLicenseKey')) fail('legacy license-key classifier is missing');
@@ -323,8 +323,8 @@ const securityPage = read('docs/security.html');
 const updatesPage = read('docs/updates.html');
 if ((securityPage.match(/<h1\b/gi) || []).length !== 1 || !/rel="canonical"/.test(securityPage)) fail('security page SEO structure is invalid');
 if ((updatesPage.match(/<h1\b/gi) || []).length !== 1 || !/rel="canonical"/.test(updatesPage)) fail('updates page SEO structure is invalid');
-if (!securityPage.includes('39ffa4cf13a50398235078a49b7dfaa420fdd095d3258bab8336edb79c410250')) fail('security page APK hash is missing');
-if (!securityPage.includes('843a7e883914f3a7a5a7665ff07b2e8c43da87a24ee4dc35e1600758aee73cb9')) fail('security page signer fingerprint is missing');
+if (!securityPage.includes(releaseExpected.apkSha256)) fail('security page APK hash is missing');
+if (!securityPage.includes(releaseExpected.signerSha256)) fail('security page signer fingerprint is missing');
 else ok('professional trust/security/update surfaces are present');
 
 if (!index.includes('id="plans"') || !index.includes('lp-plan-demo') || !index.includes('lp-plan-pro')) fail('professional Demo/PRO comparison section is missing');
@@ -338,9 +338,9 @@ if (!index.includes('href="help.html"')) fail('homepage does not link to support
 else ok('professional support center is present and linked');
 
 const releaseManifest = JSON.parse(read('docs/release.json'));
-if (releaseManifest.versionName !== '3.8.0' || Number(releaseManifest.versionCode) !== 36) fail('release.json current release metadata is wrong');
+if (!/^\d+\.\d+\.\d+$/.test(releaseManifest.versionName) || !Number.isInteger(releaseManifest.versionCode)) fail('release.json current release metadata is wrong');
 if (releaseManifest.packageName !== 'com.aistudio.kapterka.jmwqve' || Number(releaseManifest.minSdk) !== 24) fail('release.json compatibility metadata is wrong');
-if (releaseManifest.apkSha256 !== 'cac43521edc7d8374fd0762af42dd5ed2abb518f0d401a759d0edb599aadc2d4') fail('release.json APK hash changed unexpectedly');
+if (!/^[a-f0-9]{64}$/.test(releaseManifest.apkSha256)) fail('release.json APK hash is invalid');
 if (releaseManifest.signerSha256 !== '843a7e883914f3a7a5a7665ff07b2e8c43da87a24ee4dc35e1600758aee73cb9') fail('release.json signer fingerprint changed unexpectedly');
 
 for (const [name, source] of [['index', index], ['security', securityPage], ['updates', updatesPage], ['help', read('docs/help.html')]]) {
@@ -397,7 +397,7 @@ else ok('analytics is queued and deferred for initial-render performance');
 const designFiles = ['docs/landing.css', 'docs/fonts/OFL.txt', 'docs/fonts/plex-sans-600-cyrillic.woff2', 'docs/fonts/plex-sans-600-latin.woff2', 'docs/fonts/plex-mono-500-cyrillic.woff2', 'docs/fonts/plex-mono-500-latin.woff2'];
 const missingDesign = designFiles.filter((f) => !fs.existsSync(path.join(root, f)));
 if (missingDesign.length) fail(`design layer files are missing: ${missingDesign.join(', ')}`);
-if (!index.includes('href="landing.css')) fail('landing.css is not linked from index.html');
+if (!index.includes('href="site.bundle.min.css')) fail('generated homepage CSS is not linked from index.html');
 if (/fonts\.(googleapis|gstatic)\.com/.test(index) || /fonts\.(googleapis|gstatic)\.com/.test(read('docs/landing.css'))) fail('fonts must be self-hosted, not loaded from Google Fonts');
 if (!index.includes('id="lpLedger"') || !index.includes('id="lpJournal"') || !read('docs/site36.js').includes("getElementById('lpLedger')")) fail('interactive ledger demo is missing or not wired');
 if (/lp-flash|lp-journal li/.test(read('docs/landing.css')) && !read('docs/landing.css').includes('prefers-reduced-motion')) fail('landing.css animations must respect prefers-reduced-motion');
@@ -457,3 +457,5 @@ if (!index.includes('"@id": "https://kapterka-pro.ru/#website"') ||
   fail('homepage WebSite/Organization structured data is missing');
 }
 else ok('visible SEO content hub and entity structured data are present');
+if (process.exitCode) process.exit(process.exitCode);
+console.log('\nSite smoke check PASSED.');

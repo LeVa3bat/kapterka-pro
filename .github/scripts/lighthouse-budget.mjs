@@ -45,9 +45,10 @@ for (const file of files) {
   if (a11y < 90) { console.error('FAIL: accessibility below 90'); failed = true; }
   if (best < 85) { console.error('FAIL: best-practices below 85'); failed = true; }
   if (seo < 90) { console.error('FAIL: SEO below 90'); failed = true; }
-  if (perf < 65) console.warn('WARN: performance below 65');
-  if (Number.isFinite(lcp) && lcp > 4000) console.warn('WARN: Lighthouse LCP above 4s');
-  if (Number.isFinite(cls) && cls > 0.15) console.warn('WARN: Lighthouse CLS above 0.15');
+  if (perf < 70) { console.error('FAIL: performance below 70'); failed = true; }
+  if (!Number.isFinite(lcp) || lcp > 4500) { console.error('FAIL: LCP missing or above 4.5s'); failed = true; }
+  if (!Number.isFinite(cls) || cls > 0.1) { console.error('FAIL: CLS missing or above 0.1'); failed = true; }
+  if (!Number.isFinite(tbt) || tbt > 300) { console.error('FAIL: TBT missing or above 300ms'); failed = true; }
 }
 if (failed) process.exit(1);
 console.log('\nLighthouse quality gates PASSED.');

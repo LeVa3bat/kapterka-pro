@@ -37,7 +37,7 @@
     "applicationSubCategory": "Складской учёт и учёт имущества",
     "inLanguage": "ru",
     "softwareVersion": "3.8.0",
-    "dateModified": "2026-09-24",
+    "dateModified":"2026-10-13",
     "offers": {
       "@type": "Offer",
       "price": "490.00",
@@ -150,10 +150,8 @@
   
   <link rel="preload" as="font" type="font/woff2" href="fonts/plex-sans-600-cyrillic.woff2" crossorigin>
   <link rel="preload" as="font" type="font/woff2" href="fonts/plex-sans-400-cyrillic.woff2" crossorigin>
-  <link rel="stylesheet" href="style.css?v=3.4.9.44">
-  <link rel="stylesheet" href="tabs_and_cabinet.css?v=3.4.9.35">
-  <link rel="stylesheet" href="site36.css?v=1">
-  <link rel="stylesheet" href="landing.css?v=1">
+  <!-- Собрано из style.css, tabs_and_cabinet.css, site36.css и landing.css -->
+  <link rel="stylesheet" href="site.bundle.min.css?v=20261013">
 
   <!-- Favicon & Mobile Icons (Тактическая светящаяся иконка Каптёрка Про) -->
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
@@ -299,6 +297,7 @@
             <div class="lp-actions">
               <a class="lp-btn lp-btn-gold" href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('neo_hero')">Скачать APK</a>
               <button type="button" class="lp-btn lp-btn-line" onclick="openModal('modalRuStore')">Открыть в RuStore</button>
+              <a class="lp-btn lp-btn-line" href="uchet-instrumenta-android.html#workshop-kit">Бесплатный XLSX для мастерской</a>
             </div>
             <ul class="lp-facts"><li>3 дня бесплатно</li><li>без рекламы</li><li>работает офлайн</li><li>Android 7.0+</li></ul>
           </div>
@@ -317,7 +316,7 @@
       <section class="lp-section lp-gallery" aria-labelledby="galTitle">
         <div class="lp-wrap">
           <div class="lp-gallery-top">
-            <div><h2 class="lp-h2" id="galTitle">Приложение в работе</h2><p class="lp-sub">Настоящие экраны версии <span data-release-version>3.8.0</span>: склады, заявки, журнал, отчёты.</p></div>
+            <div><h2 class="lp-h2" id="galTitle">Приложение в работе</h2><p class="lp-sub">Примеры интерфейса на демонстрационных данных, подготовленные для версии 3.6. Вид экранов в установленной версии может отличаться.</p></div>
             <div class="lp-gnav" aria-label="Переключение скриншотов">
               <button type="button" id="previewGalleryPrev" onclick="movePreviewGallery(-1)" aria-label="Предыдущий скриншот">‹</button>
               <span id="previewGalleryCount" aria-live="polite">1 / 7</span>
@@ -326,31 +325,31 @@
           </div>
           <div class="lp-shots" id="previewGalleryTrack" aria-label="Скриншоты Каптёрка PRO">
             <button type="button" class="lp-shot active" data-gallery-index="0" onclick="openGallerySlide(0)">
-              <img src="screens/36-2-dashboard.jpg" alt="Каптёрка PRO 3.6 — Главная: склады, остатки и быстрые операции" loading="lazy" decoding="async" width="1080" height="2340">
+              <img src="screens/36-2-dashboard-preview.webp" alt="Пример интерфейса — Главная: склады, остатки и быстрые операции" loading="lazy" decoding="async" width="1080" height="2340">
               <strong>Главная</strong><small>Склады, остатки и быстрые операции</small>
             </button>
             <button type="button" class="lp-shot" data-gallery-index="1" onclick="openGallerySlide(1)">
-              <img src="screens/36-3-stock-table.jpg" alt="Каптёрка PRO 3.6 — Остатки: приход, расход и остаток по складу" loading="lazy" decoding="async" width="1080" height="2340">
+              <img src="screens/36-3-stock-table-preview.webp" alt="Пример интерфейса — Остатки: приход, расход и остаток по складу" loading="lazy" decoding="async" width="1080" height="2340">
               <strong>Остатки</strong><small>Приход, расход и остаток по складу</small>
             </button>
             <button type="button" class="lp-shot" data-gallery-index="2" onclick="openGallerySlide(2)">
-              <img src="screens/36-4-requests.jpg" alt="Каптёрка PRO 3.6 — Заявки: новая → сборка → собрана → выдана" loading="lazy" decoding="async" width="1080" height="2340">
+              <img src="screens/36-4-requests-preview.webp" alt="Пример интерфейса — Заявки: новая → сборка → собрана → выдана" loading="lazy" decoding="async" width="1080" height="2340">
               <strong>Заявки</strong><small>Новая → сборка → собрана → выдана</small>
             </button>
             <button type="button" class="lp-shot" data-gallery-index="3" onclick="openGallerySlide(3)">
-              <img src="screens/36-5-journal.jpg" alt="Каптёрка PRO 3.6 — Журнал: операции по дням и за период" loading="lazy" decoding="async" width="1080" height="2340">
+              <img src="screens/36-5-journal-preview.webp" alt="Пример интерфейса — Журнал: операции по дням и за период" loading="lazy" decoding="async" width="1080" height="2340">
               <strong>Журнал</strong><small>Операции по дням и за период</small>
             </button>
             <button type="button" class="lp-shot" data-gallery-index="4" onclick="openGallerySlide(4)">
-              <img src="screens/36-6-unit-qr.jpg" alt="Каптёрка PRO 3.6 — QR-подключение: второй телефон за секунды" loading="lazy" decoding="async" width="1080" height="2340">
+              <img src="screens/36-6-unit-qr-preview.webp" alt="Пример интерфейса — QR-подключение: второй телефон за секунды" loading="lazy" decoding="async" width="1080" height="2340">
               <strong>QR-подключение</strong><small>Второй телефон за секунды</small>
             </button>
             <button type="button" class="lp-shot" data-gallery-index="5" onclick="openGallerySlide(5)">
-              <img src="screens/36-8-form8.jpg" alt="Каптёрка PRO 3.6 — Форма № 8: раздаточная ведомость в excel" loading="lazy" decoding="async" width="1080" height="2340">
+              <img src="screens/36-8-form8-preview.webp" alt="Пример интерфейса — Форма № 8: раздаточная ведомость в excel" loading="lazy" decoding="async" width="1080" height="2340">
               <strong>Форма № 8</strong><small>Раздаточная ведомость в Excel</small>
             </button>
             <button type="button" class="lp-shot" data-gallery-index="6" onclick="openGallerySlide(6)">
-              <img src="screens/36-7-pro.jpg" alt="Каптёрка PRO 3.6 — PRO: оплата и ключ на почту" loading="lazy" decoding="async" width="1080" height="2340">
+              <img src="screens/36-7-pro-preview.webp" alt="Пример интерфейса — PRO: оплата и ключ на почту" loading="lazy" decoding="async" width="1080" height="2340">
               <strong>PRO</strong><small>Оплата и ключ на почту</small>
             </button>
           </div>
@@ -394,7 +393,7 @@
             <button type="button" role="tab" class="lp-tab" aria-selected="false" data-persona="3">Мастерская</button>
           </div>
           <div class="lp-persona-card">
-            <img id="personaImg" src="screens/36-8-form8.jpg" alt="" loading="lazy" decoding="async" width="1080" height="2340">
+            <img id="personaImg" src="screens/36-8-form8-preview.webp" alt="" loading="lazy" decoding="async" width="1080" height="2340">
             <div>
               <h3 id="personaHead">Имущество роты под контролем</h3>
               <ul id="personaList">
@@ -466,12 +465,12 @@
       <section class="lp-section lp-plans" id="plans" aria-labelledby="plansTitle">
         <div class="lp-wrap">
           <h2 class="lp-h2" id="plansTitle">Сначала попробуйте, потом решайте</h2>
-          <p class="lp-sub">Три дня полного доступа после установки. Дальше PRO, если приложение пригодилось.</p>
+          <p class="lp-sub">Демо — 72 часа с первого запуска. Дальше PRO, если приложение пригодилось.</p>
           <div class="lp-plans-grid">
             <article class="lp-plan lp-plan-demo">
               <div class="lp-plan-head"><span>Демо</span><span class="lp-plan-price">3 дня</span></div>
               <span class="lp-plan-term">бесплатно</span>
-              <p>Полный доступ для нового пользователя после установки приложения.</p>
+              <p>Полный доступ для нового пользователя в течение 72 часов с первого запуска приложения.</p>
               <ul>
                 <li>основной учёт офлайн</li>
                 <li>склады, операции и отчёты</li>
@@ -491,6 +490,15 @@
               <button type="button" class="lp-btn lp-btn-line" onclick="switchMainTab('tabPayment')">Открыть PRO</button>
             </article>
           </div>
+        </div>
+      </section>
+
+      <!-- 10. Вопросы -->
+      <section class="lp-section" aria-labelledby="access-terms-title">
+        <div class="lp-wrap">
+          <h2 class="lp-h2" id="access-terms-title">Как действует доступ</h2>
+          <p class="lp-sub">PRO действует 30 суток. Лицензия связана с установкой приложения; общий код учёта не передаёт её второму телефону. Продление до окончания добавляет 30 суток к оставшемуся сроку. После окончания данные на телефоне сохраняются и доступны для просмотра; для Excel-отчётов и списания по форме № 8 требуется действующее демо или PRO.</p>
+          <p><a href="uchet-instrumenta-android.html#workshop-kit">Бесплатный XLSX и PDF для небольшой мастерской →</a></p>
         </div>
       </section>
 
@@ -846,7 +854,7 @@
             <div><b>🔐</b><span><strong>Лицензия на сервере</strong><small>Не пропадёт при переустановке; ключ и чек — на почту</small></span></div>
             <p class="s36-note">Платёж обрабатывает ЮKassa. Данные карты сайт и приложение не видят.</p>
           </div>
-          <img class="s36-tabshot" src="screens/36-7-pro.jpg" alt="Окно лицензии PRO в приложении Каптёрка" loading="lazy" decoding="async" width="1080" height="2340">
+          <img class="s36-tabshot" src="screens/36-7-pro-preview.webp" alt="Окно лицензии PRO в приложении Каптёрка" loading="lazy" decoding="async" width="1080" height="2340">
         </div>
       </div>
     </section>
@@ -862,9 +870,9 @@
         </div>
 
         <div class="s36-tabrow s36-qrsync">
-          <img class="s36-tabshot" src="screens/36-6-unit-qr.jpg" alt="QR-код подразделения в приложении Каптёрка" loading="lazy" decoding="async" width="1080" height="2340">
+          <img class="s36-tabshot" src="screens/36-6-unit-qr-preview.webp" alt="QR-код подразделения в приложении Каптёрка" loading="lazy" decoding="async" width="1080" height="2340">
           <div class="s36-benefits">
-            <span class="s36-new">Новое в 3.6</span>
+            <span class="s36-new">Подключение по QR</span>
             <h3>Второй телефон — по QR-коду</h3>
             <div><b>1</b><span><strong>Откройте «Подключить»</strong><small>На главном экране первого телефона — появится QR-код подразделения</small></span></div>
             <div><b>2</b><span><strong>Отсканируйте</strong><small>На втором телефоне при входе нажмите значок QR и наведите камеру</small></span></div>
@@ -932,7 +940,7 @@
             <h3>Вы на компьютере?</h3>
             <p>Наведите камеру телефона на QR-код — APK скачается сразу на телефон. Или откройте на телефоне <b>kapterka-pro.ru</b>.</p>
           </div>
-          <img class="s36-dlphone" src="screens/36-2-dashboard.jpg" alt="Главный экран Каптёрка PRO" width="1080" height="2340" loading="lazy" decoding="async">
+          <img class="s36-dlphone" src="screens/36-2-dashboard-preview.webp" alt="Главный экран Каптёрка PRO" width="1080" height="2340" loading="lazy" decoding="async">
         </div>
 
         <div class="v2-download-card">
@@ -946,7 +954,7 @@
           </div>
 
           <div class="v2-download-actions">
-            <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('direct_v2')" class="btn btn-primary btn-lg">Скачать APK • ~5 МБ</a>
+            <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('direct_v2')" class="btn btn-primary btn-lg">Скачать APK • <span data-release-size>4,97 МиБ (5214669 байт)</span></a>
             <button class="btn btn-outline btn-lg" onclick="openModal('modalRuStore')">Открыть RuStore</button>
           </div>
 
@@ -954,8 +962,8 @@
             <summary>Проверка официального APK</summary>
             <div class="v3-integrity-body">
               <span><strong>Пакет:</strong> <code>com.aistudio.kapterka.jmwqve</code></span>
-              <span><strong>Версия:</strong> 3.8.0 • build 36 • 5 214 669 байт</span>
-              <span><strong>SHA-256:</strong> <code>cac43521edc7d8374fd0762af42dd5ed2abb518f0d401a759d0edb599aadc2d4</code></span>
+              <span><strong>Версия:</strong> <span data-release-integrity>3.8.0 • build 36 • 5214669 байт</span></span>
+              <span><strong>SHA-256:</strong> <code data-release-sha>cac43521edc7d8374fd0762af42dd5ed2abb518f0d401a759d0edb599aadc2d4</code></span>
             </div>
           </details>
 
@@ -1175,7 +1183,7 @@
         </div>
         <div class="v3-store-actions">
           <a href="https://apps.rustore.ru/app/com.aistudio.kapterka.jmwqve" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-lg">Открыть в RuStore</a>
-          <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('rustore_modal'); closeModal('modalRuStore');" class="btn btn-primary btn-lg">Скачать APK • ~5 МБ</a>
+          <a href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('rustore_modal'); closeModal('modalRuStore');" class="btn btn-primary btn-lg">Скачать APK • <span data-release-size>4,97 МиБ (5214669 байт)</span></a>
         </div>
         <div class="v3-modal-note">При обновлении поверх установленной версии Android должен сохранить локальные данные приложения при совпадающей подписи пакета.</div>
       </div>
@@ -1206,9 +1214,9 @@
     </button>
   </nav>
 
-  <script src="app.js?v=3.6.0.1"></script>
+  <script src="app.js?v=20261013" defer></script>
   <script src="site36.js?v=1" defer></script>
-  <script src="auth-config.js?v=3.4.9.31a"></script>
-  <script src="auth-v2.js?v=3.4.9.31i"></script>
+  <script src="auth-config.js?v=3.4.9.31a" defer></script>
+  <script src="auth-v2.js?v=3.4.9.31i" defer></script>
 </body>
 </html>
