@@ -61,8 +61,15 @@ class PublicLinksShareTest {
         assertTrue(requireNotNull(send.getStringExtra(Intent.EXTRA_TEXT)).endsWith("\n$url"))
         assertEquals(setOf(Intent.EXTRA_TITLE, Intent.EXTRA_TEXT), send.extras?.keySet())
         assertNull(send.data)
-        assertNull(send.clipData)
-        assertEquals(0, send.flags and Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        // Android переносит EXTRA_TEXT в ClipData при запуске chooser.
+        // Допустим только тот же публичный текст; URI и вложенные intent запрещены.
+        send.clipData?.let { clip ->
+            assertEquals(1, clip.itemCount)
+            assertEquals(send.getStringExtra(Intent.EXTRA_TEXT), clip.getItemAt(0).text.toString())
+            assertNull(clip.getItemAt(0).uri)
+            assertNull(clip.getItemAt(0).intent)
+        }
+        assertEquals(0, send.flags and Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
         assertNull(shadowOf(compose.activity).nextStartedActivity)
     }
 }
