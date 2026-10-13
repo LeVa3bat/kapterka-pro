@@ -1,0 +1,146 @@
+{
+  "checkedAt": "2026-10-13T18:16:08.806984+00:00",
+  "method": "Lossless canvas padding only; original PNG decoded pixel region copied 1:1 without resize, crop or interface edits",
+  "status": "all-checks-passed",
+  "visualInspection": {
+    "sourceImages": "passed",
+    "outputImages": "passed",
+    "imagesInspected": 6,
+    "result": "Every source screen and output was visually inspected. Original titles, counters, tables, issue details and bottom navigation remain visible; padding is uniform and introduces no crop or stretch."
+  },
+  "allFilesPass": true,
+  "files": [
+    {
+      "sourcePath": "C:\\Projects\\kapterka-pro\\growth\\rustore\\screenshots\\01-06-dashboard-after.png",
+      "outputPath": "C:\\Projects\\kapterka-pro\\growth\\rustore\\screenshots\\store-9x16\\01-06-dashboard-after.png",
+      "sourceDimensions": [
+        1080,
+        2340
+      ],
+      "outputDimensions": [
+        1440,
+        2560
+      ],
+      "aspectRatio": "9:16",
+      "sourceMode": "RGBA",
+      "sourceOffset": [
+        180,
+        110
+      ],
+      "preservedRegionExclusiveBounds": [
+        180,
+        110,
+        1260,
+        2450
+      ],
+      "backgroundPixel": [
+        15,
+        18,
+        22,
+        255
+      ],
+      "resized": false,
+      "cropped": false,
+      "allSourcePixelsPreserved": true,
+      "pixelRegionBytesEqual": true,
+      "sourceDecodedPixelSha256": "f8cdd0aa4da8004391c1aa37c8f59597d0795ed049dea86c797d10998105384c",
+      "outputRegionDecodedPixelSha256": "f8cdd0aa4da8004391c1aa37c8f59597d0795ed049dea86c797d10998105384c",
+      "borderUniform": true,
+      "sourcePngSha256": "8f2fe16742dc8b185be0debe295cd9fae3fcd34bfaafc9d9bdf6a369233b69c6",
+      "outputPngSha256": "e5bf48d19a5a10157b0630c2904a634077e501388857c9a7c3694d0180c89c17",
+      "outputBytes": 194230,
+      "under3000000Bytes": true,
+      "sourceFileUnchanged": true,
+      "cornerPixelsPreserved": true,
+      "visualInspectionPassed": true
+    },
+    {
+      "sourcePath": "C:\\Projects\\kapterka-pro\\growth\\rustore\\screenshots\\02-05-stock-after.png",
+      "outputPath": "C:\\Projects\\kapterka-pro\\growth\\rustore\\screenshots\\store-9x16\\02-05-stock-after.png",
+      "sourceDimensions": [
+        1080,
+        2340
+      ],
+      "outputDimensions": [
+        1440,
+        2560
+      ],
+      "aspectRatio": "9:16",
+      "sourceMode": "RGBA",
+      "sourceOffset": [
+        180,
+        110
+      ],
+      "preservedRegionExclusiveBounds": [
+        180,
+        110,
+        1260,
+        2450
+      ],
+      "backgroundPixel": [
+        15,
+        18,
+        22,
+        255
+      ],
+      "resized": false,
+      "cropped": false,
+      "allSourcePixelsPreserved": true,
+      "pixelRegionBytesEqual": true,
+      "sourceDecodedPixelSha256": "dac5dc8195ac6f270537a113199f69f889bc5342484de99e22a4ec5b91020546",
+      "outputRegionDecodedPixelSha256": "dac5dc8195ac6f270537a113199f69f889bc5342484de99e22a4ec5b91020546",
+      "borderUniform": true,
+      "sourcePngSha256": "6e3089eb2172ae5a8b2897a666c64f92207f2f6dae3434bf60d5161e1c56e210",
+      "outputPngSha256": "33f6a9003f7234c4da3d9d8d64b7b5f9571aef626f46ace9466696a0f2ef9743",
+      "outputBytes": 198206,
+      "under3000000Bytes": true,
+      "sourceFileUnchanged": true,
+      "cornerPixelsPreserved": true,
+      "visualInspectionPassed": true
+    },
+    {
+      "sourcePath": "C:\\Projects\\kapterka-pro\\growth\\rustore\\screenshots\\03-08-journal-expanded.png",
+      "outputPath": "C:\\Projects\\kapterka-pro\\growth\\rustore\\screenshots\\store-9x16\\03-08-journal-expanded.png",
+      "sourceDimensions": [
+        1080,
+        2340
+      ],
+      "outputDimensions": [
+        1440,
+        2560
+      ],
+      "aspectRatio": "9:16",
+      "sourceMode": "RGBA",
+      "sourceOffset": [
+        180,
+        110
+      ],
+      "preservedRegionExclusiveBounds": [
+        180,
+        110,
+        1260,
+        2450
+      ],
+      "backgroundPixel": [
+        15,
+        18,
+        22,
+        255
+      ],
+      "resized": false,
+      "cropped": false,
+      "allSourcePixelsPreserved": true,
+      "pixelRegionBytesEqual": true,
+      "sourceDecodedPixelSha256": "34d7115fde0626cfd83bde603fc72aa293b911e81b6081b9d63537f3f2a4d486",
+      "outputRegionDecodedPixelSha256": "34d7115fde0626cfd83bde603fc72aa293b911e81b6081b9d63537f3f2a4d486",
+      "borderUniform": true,
+      "sourcePngSha256": "7f59fdec73dd6813a7faab737aa75d33b45c258bedf9e261f9587a44e6990526",
+      "outputPngSha256": "61c15a699d872624d2b09c3c0ba9ae9aed7f56feb477548932c53b5c4d4c574a",
+      "outputBytes": 211373,
+      "under3000000Bytes": true,
+      "sourceFileUnchanged": true,
+      "cornerPixelsPreserved": true,
+      "visualInspectionPassed": true
+    }
+  ]
+}
