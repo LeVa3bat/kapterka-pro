@@ -71,6 +71,7 @@
     const href = link.getAttribute('href') || '';
     if (/kapterka-pro\.apk/i.test(href)) return 'apk';
     if (/(apps\.)?rustore\.ru/i.test(href)) return 'rustore';
+    if (/^https:\/\/t\.me\/kapterka_pro(?:[/?#]|$)/i.test(href)) return 'telegram_channel';
     if (/#tabDownload/.test(href)) return 'download_section';
     if (/guides\.html/.test(href)) return 'guides';
     return 'internal';
@@ -82,8 +83,13 @@
     if (/^downloads\/(workshop-(blank|example)\.(xlsx|pdf)|inventory-checklist\.pdf)$/.test(href)) window.trackPublicTool('template_download');
     if (/kapterka-pro\.apk/i.test(href)) window.trackPublicTool('apk_download');
     if (/(apps\.)?rustore\.ru/i.test(href)) window.trackPublicTool('rustore_open');
-    if (!link.closest('.cta,.related,.release-list,.back,.page-links')) return;
     const dest = destination(link);
+    if (dest === 'telegram_channel') {
+      try { gtag('event', 'telegram_channel_open', { source: 'site', page_path: location.pathname }); } catch(_) {}
+      try { ym(112255061, 'reachGoal', 'telegram_channel_open', { source: 'site', page_path: location.pathname }); } catch(_) {}
+      start();
+    }
+    if (!link.closest('.cta,.related,.release-list,.back,.page-links')) return;
     const params = {
       destination: dest,
       page_path: location.pathname,
