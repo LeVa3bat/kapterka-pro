@@ -1,0 +1,24 @@
+{
+  "checkedAt": "2026-10-13T17:25:20.879Z",
+  "channel": "channel41822330",
+  "visibility": "Для всех",
+  "videos": [
+    {
+      "id": "report_export",
+      "title": "Как получить отчёт Excel в Каптёрке ПРО",
+      "url": "https://rutube.ru/shorts/89517af1b26fbd5935fc1e9313dbb168/"
+    },
+    {
+      "id": "offline_stock",
+      "title": "Как сверить локальный остаток: учёт и ручной пересчёт",
+      "url": "https://rutube.ru/shorts/240e9714c5fc95c605786a394b03bdb6/"
+    },
+    {
+      "id": "issue_check",
+      "title": "Как проверить выдачу имущества в Каптёрке ПРО",
+      "url": "https://rutube.ru/shorts/43b60712fe8fcda9433c91c5dc556b22/"
+    }
+  ],
+  "proof": "rutube-published-top.jpg",
+  "method": "Public URLs read from RUTUBE Studio Share dialogs after successful publication/save; test data and captured application screens."
+}
