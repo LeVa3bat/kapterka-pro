@@ -1,0 +1,103 @@
+{
+  "checkedAt": "2026-10-13T18:31:21.385Z",
+  "status": "PASS",
+  "fullInterfaceVisible": true,
+  "previews": [
+    {
+      "card": "offline",
+      "file": "02-05-stock-after.png",
+      "display": {
+        "bottom": 612,
+        "height": 496,
+        "left": 500.5,
+        "right": 779.5,
+        "top": 116,
+        "width": 279,
+        "x": 500.5,
+        "y": 116
+      },
+      "height": 2560,
+      "width": 1440
+    },
+    {
+      "card": "offline",
+      "file": "03-08-journal-expanded.png",
+      "display": {
+        "bottom": 612,
+        "height": 496,
+        "left": 500.5,
+        "right": 779.5,
+        "top": 116,
+        "width": 279,
+        "x": 500.5,
+        "y": 116
+      },
+      "height": 2560,
+      "width": 1440
+    },
+    {
+      "card": "offline",
+      "file": "01-06-dashboard-after.png",
+      "display": {
+        "bottom": 612,
+        "height": 496,
+        "left": 500.5,
+        "right": 779.5,
+        "top": 116,
+        "width": 279,
+        "x": 500.5,
+        "y": 116
+      },
+      "height": 2560,
+      "width": 1440
+    },
+    {
+      "card": "workshop",
+      "file": "01-06-dashboard-after.png",
+      "display": {
+        "bottom": 612,
+        "height": 496,
+        "left": 500.5,
+        "right": 779.5,
+        "top": 116,
+        "width": 279,
+        "x": 500.5,
+        "y": 116
+      },
+      "height": 2560,
+      "width": 1440
+    },
+    {
+      "card": "workshop",
+      "file": "02-05-stock-after.png",
+      "display": {
+        "bottom": 612,
+        "height": 496,
+        "left": 500.5,
+        "right": 779.5,
+        "top": 116,
+        "width": 279,
+        "x": 500.5,
+        "y": 116
+      },
+      "height": 2560,
+      "width": 1440
+    },
+    {
+      "card": "workshop",
+      "file": "03-08-journal-expanded.png",
+      "display": {
+        "bottom": 612,
+        "height": 496,
+        "left": 500.5,
+        "right": 779.5,
+        "top": 116,
+        "width": 279,
+        "x": 500.5,
+        "y": 116
+      },
+      "height": 2560,
+      "width": 1440
+    }
+  ]
+}
