@@ -1,0 +1,44 @@
+{
+  "checkedAt": "2026-10-13T17:46:47.056Z",
+  "site": "https://kapterka-pro.ru/",
+  "deploymentRunId": "38440893789",
+  "checks": [
+    {
+      "page": "uchet-vydachi-imushchestva-android.html",
+      "section": "issue-demo",
+      "video": "issue-check.mp4",
+      "bytes": 508210,
+      "sha256": "d7641a13621fe3d453b9b12da2a543dd5cdcc5417d1143a63da359966eef3893",
+      "mime": "video/mp4",
+      "byteRangeStatus": 206,
+      "russianVtt": true
+    },
+    {
+      "page": "inventarizaciya-na-android.html",
+      "section": "stock-demo",
+      "video": "offline-stock.mp4",
+      "bytes": 455551,
+      "sha256": "8d29f7d2ca999991b7200b2b0a7e75498cc5fa9c98fa9abe7806102a48f97e70",
+      "mime": "video/mp4",
+      "byteRangeStatus": 206,
+      "russianVtt": true
+    },
+    {
+      "page": "uchet-instrumenta-android.html",
+      "section": "report-demo",
+      "video": "report-export.mp4",
+      "bytes": 423791,
+      "sha256": "e13a20af4857feb017e5e609df7ffe37b8834c118aaab8b45d0fbf519df3a0e4",
+      "mime": "video/mp4",
+      "byteRangeStatus": 206,
+      "russianVtt": true
+    }
+  ],
+  "analyticsNotLoaded": true,
+  "publishedRelease": {
+    "versionName": "3.8.0",
+    "versionCode": 36,
+    "apkSha256": "cac43521edc7d8374fd0762af42dd5ed2abb518f0d401a759d0edb599aadc2d4"
+  },
+  "status": "PASS"
+}

@@ -19,9 +19,9 @@ android {
     applicationId = "com.aistudio.kapterka.jmwqve"
     minSdk = 24
     targetSdk = 34
-    // Stable defaults: 3.7.0 / build 35. CI may override only for side-by-side test builds.
-    versionCode = System.getenv("NEXT_SAFE_VERSION_CODE")?.toIntOrNull() ?: 36
-    versionName = System.getenv("NEXT_SAFE_VERSION_NAME")?.takeIf { it.isNotBlank() } ?: "3.8.0"
+    // Stable defaults: 3.8.1 / build 37. CI may override only for side-by-side test builds.
+    versionCode = System.getenv("NEXT_SAFE_VERSION_CODE")?.toIntOrNull() ?: 37
+    versionName = System.getenv("NEXT_SAFE_VERSION_NAME")?.takeIf { it.isNotBlank() } ?: "3.8.1"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

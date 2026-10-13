@@ -100,10 +100,18 @@
     "file": "demo-point-stock.xlsx",
     "sha256": "11e392eb6fdf9d8f8c28da1b498413095ff8730cb0d0e555d0250f5b433c783f"
   },
-  "published": false,
+  "published": true,
   "posters": [
     "posters/issue-check.png",
     "posters/offline-stock.png",
     "posters/report-export.png"
+  ],
+  "publishedOn": [
+    "rutube",
+    "site"
+  ],
+  "publicationEvidenceFiles": [
+    "../qa/rutube-publication.json",
+    "../qa/site-media-live-publication.json"
   ]
 }
