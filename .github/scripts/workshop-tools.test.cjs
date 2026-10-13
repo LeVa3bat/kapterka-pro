@@ -1,0 +1,11 @@
+const assert = require('node:assert/strict');
+const { quantity, reconcile, csv } = require('../../docs/workshop-tools.js');
+assert.equal(quantity('1,125'), 1.125);
+for (const value of ['', '-1', '1e3', 'Infinity', '1.1234', '1000000001']) assert.throws(() => quantity(value));
+const rows = reconcile([{name:'Вымышленная позиция',unit:'шт.',book:'10',actual:'8'},{name:'Расходник',unit:'кг',book:'0,1',actual:'0,3'},{name:'Равенство',unit:'шт.',book:'0',actual:'0'}]);
+assert.deepEqual(rows.map(r=>[r.shortage,r.surplus]), [[2,0],[0,0.2],[0,0]]);
+assert.throws(() => reconcile([{name:'',unit:'шт.',book:'1',actual:'1'}]));
+assert.ok(csv(reconcile([{name:'=HYPERLINK("x")',unit:'шт.',book:'1',actual:'0'}])).includes('"\'=HYPERLINK(""x"")"'));
+assert.ok(csv(rows).includes('"-2"'));
+assert.ok(csv(rows).includes('"0,2"'));
+console.log('PASS: сверка, дроби, пустые/отрицательные значения, безопасный CSV.');

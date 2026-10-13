@@ -1,0 +1,56 @@
+{
+  "type": "lab-not-field",
+  "lighthouse": "12",
+  "results": [
+    {
+      "name": "lh-mobile-before",
+      "url": "http://127.0.0.1:4173/",
+      "fetchedAt": "2026-10-13T12:12:41.863Z",
+      "performance": 73,
+      "accessibility": 97,
+      "lcpMs": 4965,
+      "cls": 0,
+      "tbtMs": 89
+    },
+    {
+      "name": "lh-mobile-after",
+      "url": "http://127.0.0.1:4173/",
+      "fetchedAt": "2026-10-13T12:24:24.003Z",
+      "performance": 84,
+      "accessibility": 97,
+      "lcpMs": 3985,
+      "cls": 0,
+      "tbtMs": 5
+    },
+    {
+      "name": "lh-mobile-final",
+      "url": "http://127.0.0.1:4173/",
+      "fetchedAt": "2026-10-13T12:34:04.380Z",
+      "performance": 82,
+      "accessibility": 97,
+      "lcpMs": 3983,
+      "cls": 0,
+      "tbtMs": 158
+    },
+    {
+      "name": "lh-desktop-final",
+      "url": "http://127.0.0.1:4173/",
+      "fetchedAt": "2026-10-13T12:34:50.470Z",
+      "performance": 99,
+      "accessibility": 97,
+      "lcpMs": 970,
+      "cls": 0.002901937923937416,
+      "tbtMs": 0
+    },
+    {
+      "name": "lh-mobile-live",
+      "url": "https://kapterka-pro.ru/",
+      "fetchedAt": "2026-10-13T12:36:35.889Z",
+      "performance": 93,
+      "accessibility": 97,
+      "lcpMs": 2235,
+      "cls": 0.0003385671872800425,
+      "tbtMs": 191
+    }
+  ]
+}

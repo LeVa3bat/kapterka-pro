@@ -1,0 +1,13 @@
+{
+  "status": "Тексты готовы к ревью. Новые скриншоты ожидают записи. Не загружено и не опубликовано.",
+  "name": "Каптёрка ПРО",
+  "shortDescription": "Учёт имущества на Android: остатки, выдача, перемещения и отчёты Excel",
+  "fullDescriptionFile": "main-description.txt",
+  "searchTags": [{ "id": 129, "name": "Работа", "type": "MAIN" }],
+  "category": "Полезные инструменты",
+  "categoryAction": "Сохранить существующую категорию; не менять возрастной рейтинг без проверки в Консоли.",
+  "website": "https://kapterka-pro.ru/",
+  "screenshotOrder": ["01-stock.png", "02-issue.png", "03-offline.png", "04-report.png"],
+  "screenshotStatus": "Файлы не созданы: нужен актуальный установленный APK и тестовый телефон.",
+  "reviewDateMoscow": "2026-10-13"
+}

@@ -1,0 +1,188 @@
+{
+  "engine": "Microsoft Excel",
+  "version": "16.0",
+  "source": "https://kapterka-pro.ru/uchet-instrumenta-android.html#workshop-kit",
+  "checks": [
+    {
+      "label": "Excel: пустая позиция",
+      "cell": "Остатки!H8",
+      "expected": "",
+      "actual": "",
+      "passed": true
+    },
+    {
+      "label": "Excel: пустая строка 300",
+      "cell": "Журнал!J307",
+      "expected": "",
+      "actual": "",
+      "passed": true
+    },
+    {
+      "label": "Excel: saved native features",
+      "file": "workshop-blank.xlsx",
+      "validations": 6,
+      "hyperlinks": 1,
+      "passed": true
+    },
+    {
+      "label": "Excel: остаток примера",
+      "cell": "Остатки!H8",
+      "expected": 52,
+      "actual": 52.0,
+      "passed": true
+    },
+    {
+      "label": "Excel: остаток примера",
+      "cell": "Остатки!H9",
+      "expected": 7,
+      "actual": 7.0,
+      "passed": true
+    },
+    {
+      "label": "Excel: остаток примера",
+      "cell": "Остатки!H10",
+      "expected": 7,
+      "actual": 7.0,
+      "passed": true
+    },
+    {
+      "label": "Excel: остаток примера",
+      "cell": "Остатки!H11",
+      "expected": 2,
+      "actual": 2.0,
+      "passed": true
+    },
+    {
+      "label": "Excel: остаток примера",
+      "cell": "Остатки!H12",
+      "expected": 5.5,
+      "actual": 5.5,
+      "passed": true
+    },
+    {
+      "label": "Excel: остаток примера",
+      "cell": "Остатки!H13",
+      "expected": 40,
+      "actual": 40.0,
+      "passed": true
+    },
+    {
+      "label": "Excel: строка учтена",
+      "cell": "Журнал!J20",
+      "expected": "Да",
+      "actual": "Да",
+      "passed": true
+    },
+    {
+      "label": "Excel: typed date display",
+      "cell": "Журнал!A8",
+      "actual": "01.10.2026",
+      "passed": true
+    },
+    {
+      "label": "Excel: saved native features",
+      "file": "workshop-example.xlsx",
+      "validations": 6,
+      "hyperlinks": 1,
+      "passed": true
+    },
+    {
+      "label": "Excel: изменение прихода",
+      "cell": "Остатки!H8",
+      "expected": 53,
+      "actual": 53.0,
+      "passed": true
+    },
+    {
+      "label": "Excel: отрицательный остаток после выдачи",
+      "cell": "Журнал!H9",
+      "expected": "-10",
+      "actual": -10.0,
+      "passed": true
+    },
+    {
+      "label": "Excel: отрицательный итог",
+      "cell": "Остатки!H9",
+      "expected": "-9",
+      "actual": -9.0,
+      "passed": true
+    },
+    {
+      "label": "Excel: предупреждение",
+      "cell": "Журнал!I9",
+      "expected": "Отрицательный остаток",
+      "actual": "Отрицательный остаток",
+      "passed": true
+    },
+    {
+      "label": "Excel: нулевая операция исключена",
+      "cell": "Журнал!J8",
+      "expected": "Нет",
+      "actual": "Нет",
+      "passed": true
+    },
+    {
+      "label": "Excel: нулевая операция не добавила приход",
+      "cell": "Остатки!H8",
+      "expected": 12,
+      "actual": 12.0,
+      "passed": true
+    },
+    {
+      "label": "Excel: неизвестный код",
+      "cell": "Журнал!J8",
+      "expected": "Нет",
+      "actual": "Нет",
+      "passed": true
+    },
+    {
+      "label": "Excel: пустое поле",
+      "cell": "Остатки!I8",
+      "expected": "Укажите начальный остаток",
+      "actual": "Укажите начальный остаток",
+      "passed": true
+    },
+    {
+      "label": "Excel: пустой остаток не принят как ноль",
+      "cell": "Журнал!J8",
+      "expected": "Нет",
+      "actual": "Нет",
+      "passed": true
+    },
+    {
+      "label": "Excel: начальный ноль допустим",
+      "cell": "Остатки!H8",
+      "expected": 32,
+      "actual": 32.0,
+      "passed": true
+    },
+    {
+      "label": "Excel: возврат больше выдачи",
+      "cell": "Остатки!I9",
+      "expected": "Проверьте возврат",
+      "actual": "Проверьте возврат",
+      "passed": true
+    },
+    {
+      "label": "Excel: дублированный код",
+      "cell": "Остатки!I8",
+      "expected": "Повтор кода",
+      "actual": "Повтор кода",
+      "passed": true
+    },
+    {
+      "label": "Excel: дублированный код исключён",
+      "cell": "Журнал!J8",
+      "expected": "Нет",
+      "actual": "Нет",
+      "passed": true
+    },
+    {
+      "label": "Excel: запись 300 учтена",
+      "cell": "Остатки!H8",
+      "expected": 53,
+      "actual": 53.0,
+      "passed": true
+    }
+  ]
+}

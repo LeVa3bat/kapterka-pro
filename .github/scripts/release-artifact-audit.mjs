@@ -55,12 +55,12 @@ if (Number(release.apkSize) !== size) fail(`release.json APK size ${release.apkS
 if (String(release.apkSha256 || '').toLowerCase() !== sha256) fail('release.json APK SHA-256 does not match file');
 if (!process.exitCode) ok('release.json matches Gradle and APK artifact');
 
-const siteHash = (index.match(/<strong>SHA-256:<\/strong>\s*<code>([a-f0-9]{64})<\/code>/i) || [])[1] || '';
+const siteHash = (index.match(/<strong>SHA-256:<\/strong>\s*<code\b[^>]*>([a-f0-9]{64})<\/code>/i) || [])[1] || '';
 if (!siteHash) fail('site APK SHA-256 marker is missing');
 else if (siteHash.toLowerCase() !== sha256) fail(`site SHA-256 ${siteHash} != APK ${sha256}`);
 else ok(`site SHA-256 matches APK: ${sha256}`);
 
-const integrityLine = (index.match(/<strong>Версия:<\/strong>\s*([^<]+)<\/span>/i) || [])[1] || '';
+const integrityLine = (index.match(/<span\b[^>]*data-release-integrity[^>]*>([^<]+)<\/span>/i) || index.match(/<strong>Версия:<\/strong>\s*([^<]+)<\/span>/i) || [])[1] || '';
 const normalizedLine = integrityLine.replace(/\s+/g, ' ').trim();
 const siteSizeDigits = ((normalizedLine.match(/([\d\s]+)\s*байт/) || [])[1] || '').replace(/\s/g, '');
 if (siteSizeDigits && Number(siteSizeDigits) !== size) fail(`site APK size ${siteSizeDigits} != file size ${size}`);

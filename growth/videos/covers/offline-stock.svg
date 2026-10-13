@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" role="img" aria-labelledby="title desc">
+<title id="title">Сверка остатков без интернета</title>
+<desc id="desc">Титульная обложка будущей инструкции Каптёрки ПРО. Снимки интерфейса не изображены.</desc>
+<rect width="1920" height="1080" fill="#101C18"/>
+<rect x="0" y="0" width="1920" height="18" fill="#F2CF72"/>
+<circle cx="1780" cy="145" r="210" fill="#193329"/>
+<circle cx="1780" cy="145" r="156" fill="none" stroke="#2B5746" stroke-width="4"/>
+<g font-family="Segoe UI, Arial, sans-serif">
+<text x="144" y="173" font-size="38" fill="#F2CF72" letter-spacing="4">КЛАДОВАЯ МАСТЕРСКОЙ</text>
+<text x="144" y="331" font-size="43" fill="#AAC1B8">УЧЁТ И ФАКТИЧЕСКОЕ НАЛИЧИЕ</text>
+<text x="144" y="542" font-size="112" font-weight="700" fill="#F4F8F6">Сверка остатков</text>
+<text x="144" y="680" font-size="112" font-weight="700" fill="#F4F8F6">без интернета</text>
+<rect x="144" y="773" width="306" height="12" rx="6" fill="#F2CF72"/>
+<text x="144" y="947" font-size="44" font-weight="600" fill="#F4F8F6">Каптёрка ПРО</text>
+<text x="510" y="947" font-size="40" fill="#AAC1B8">Учебный пример</text>
+<text x="1540" y="945" font-size="70" font-weight="700" fill="#F2CF72">02</text>
+</g>
+</svg>

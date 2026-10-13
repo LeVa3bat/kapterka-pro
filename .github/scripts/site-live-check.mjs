@@ -85,7 +85,12 @@ async function check(target) {
     } else console.warn(`WARN: external ${target.name} could not be probed: ${error.name || error.message}`);
   } finally { clearTimeout(timer); }
 }
-await waitForPublishedVersion();
+// До публикации наблюдаем доступность текущего сайта без ожидания локальной версии.
+if (process.argv.includes('--observe')) {
+  const response = await fetch('https://kapterka-pro.ru/version.json', {signal:AbortSignal.timeout(timeoutMs)});
+  const live = await response.json();
+  console.log(`OBSERVE: published=${live.version}; local=${expectedVersion}; equality is not required before publication`);
+} else await waitForPublishedVersion();
 for (const target of targets) await check(target);
 if (failed) process.exit(1);
 console.log('Live link check PASSED.');
