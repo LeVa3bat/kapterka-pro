@@ -1,0 +1,378 @@
+{
+  "rendered": true,
+  "generatedWith": "HTML/CSS, existing public illustrations and real educational interface frames",
+  "covers": [
+    {
+      "slug": "tool-accounting-templates",
+      "width": 1000,
+      "height": 1500,
+      "bytes": 130726,
+      "textBounds": [
+        {
+          "text": "Инструментпод учётом",
+          "left": 60,
+          "right": 488.328125,
+          "top": 164,
+          "bottom": 325.09375,
+          "scrollWidth": 428,
+          "clientWidth": 428
+        },
+        {
+          "text": "Шаблоны XLSX и PDF для кладовой мастерской",
+          "left": 60,
+          "right": 940,
+          "top": 440,
+          "bottom": 480.796875,
+          "scrollWidth": 880,
+          "clientWidth": 880
+        },
+        {
+          "text": "Иллюстрация, не экран приложения",
+          "left": 60,
+          "right": 566.53125,
+          "top": 1179,
+          "bottom": 1213,
+          "scrollWidth": 507,
+          "clientWidth": 507
+        },
+        {
+          "text": "Приход • выдача • возврат • остаток",
+          "left": 60,
+          "right": 940,
+          "top": 1240,
+          "bottom": 1277.8125,
+          "scrollWidth": 880,
+          "clientWidth": 880
+        },
+        {
+          "text": "Скачать шаблоны и открыть инструкцию",
+          "left": 60,
+          "right": 940,
+          "top": 1340,
+          "bottom": 1416,
+          "scrollWidth": 880,
+          "clientWidth": 880
+        },
+        {
+          "text": "kapterka-pro.ru",
+          "left": 60,
+          "right": 243.71875,
+          "top": 1445,
+          "bottom": 1472,
+          "scrollWidth": 184,
+          "clientWidth": 184
+        }
+      ]
+    },
+    {
+      "slug": "inventory-reconcile",
+      "width": 1000,
+      "height": 1500,
+      "bytes": 148807,
+      "textBounds": [
+        {
+          "text": "Учёт ≠ факт?Проверьтерасхождение",
+          "left": 60,
+          "right": 533.046875,
+          "top": 164,
+          "bottom": 405.640625,
+          "scrollWidth": 473,
+          "clientWidth": 473
+        },
+        {
+          "text": "Порядок сверки + лист инвентаризации",
+          "left": 60,
+          "right": 940,
+          "top": 440,
+          "bottom": 480.796875,
+          "scrollWidth": 880,
+          "clientWidth": 880
+        },
+        {
+          "text": "Учебный пример · иллюстрация, не интерфейс",
+          "left": 60,
+          "right": 719.828125,
+          "top": 1179,
+          "bottom": 1213,
+          "scrollWidth": 660,
+          "clientWidth": 660
+        },
+        {
+          "text": "Остаток 9 · факт 8 · разница −1",
+          "left": 60,
+          "right": 940,
+          "top": 1240,
+          "bottom": 1277.8125,
+          "scrollWidth": 880,
+          "clientWidth": 880
+        },
+        {
+          "text": "Инструкция и калькулятор на сайте",
+          "left": 60,
+          "right": 940,
+          "top": 1340,
+          "bottom": 1416,
+          "scrollWidth": 880,
+          "clientWidth": 880
+        },
+        {
+          "text": "kapterka-pro.ru",
+          "left": 60,
+          "right": 243.71875,
+          "top": 1445,
+          "bottom": 1472,
+          "scrollWidth": 184,
+          "clientWidth": 184
+        }
+      ]
+    },
+    {
+      "slug": "stock-transfer",
+      "width": 1000,
+      "height": 1500,
+      "bytes": 150715,
+      "textBounds": [
+        {
+          "text": "Два склада.Один общийостаток.",
+          "left": 60,
+          "right": 510.140625,
+          "top": 164,
+          "bottom": 405.640625,
+          "scrollWidth": 450,
+          "clientWidth": 450
+        },
+        {
+          "text": "Как записать перемещение без потери истории",
+          "left": 60,
+          "right": 940,
+          "top": 440,
+          "bottom": 480.796875,
+          "scrollWidth": 880,
+          "clientWidth": 880
+        },
+        {
+          "text": "Учебный пример · иллюстрация, не интерфейс",
+          "left": 60,
+          "right": 719.828125,
+          "top": 1179,
+          "bottom": 1213,
+          "scrollWidth": 660,
+          "clientWidth": 660
+        },
+        {
+          "text": "Кладовая 14 + участок 10 = 24 пары",
+          "left": 60,
+          "right": 940,
+          "top": 1240,
+          "bottom": 1277.8125,
+          "scrollWidth": 880,
+          "clientWidth": 880
+        },
+        {
+          "text": "Учебный пример и порядок действий",
+          "left": 60,
+          "right": 940,
+          "top": 1340,
+          "bottom": 1416,
+          "scrollWidth": 880,
+          "clientWidth": 880
+        },
+        {
+          "text": "kapterka-pro.ru",
+          "left": 60,
+          "right": 243.71875,
+          "top": 1445,
+          "bottom": 1472,
+          "scrollWidth": 184,
+          "clientWidth": 184
+        }
+      ]
+    },
+    {
+      "slug": "issue-check",
+      "width": 1000,
+      "height": 1500,
+      "bytes": 133698,
+      "textBounds": [
+        {
+          "text": "Выдали 3.Осталось 9.",
+          "left": 60,
+          "right": 485.0625,
+          "top": 164,
+          "bottom": 325.09375,
+          "scrollWidth": 425,
+          "clientWidth": 425
+        },
+        {
+          "text": "Как записать выдачу и проверить остаток",
+          "left": 60,
+          "right": 940,
+          "top": 440,
+          "bottom": 480.796875,
+          "scrollWidth": 880,
+          "clientWidth": 880
+        },
+        {
+          "text": "Настоящий интерфейс 3.8 · учебные данные",
+          "left": 60,
+          "right": 689.03125,
+          "top": 1179,
+          "bottom": 1213,
+          "scrollWidth": 629,
+          "clientWidth": 629
+        },
+        {
+          "text": "Количество · получатель · история операции",
+          "left": 60,
+          "right": 940,
+          "top": 1240,
+          "bottom": 1277.8125,
+          "scrollWidth": 880,
+          "clientWidth": 880
+        },
+        {
+          "text": "Порядок учёта и короткая демонстрация",
+          "left": 60,
+          "right": 940,
+          "top": 1340,
+          "bottom": 1416,
+          "scrollWidth": 880,
+          "clientWidth": 880
+        },
+        {
+          "text": "kapterka-pro.ru",
+          "left": 60,
+          "right": 243.71875,
+          "top": 1445,
+          "bottom": 1472,
+          "scrollWidth": 184,
+          "clientWidth": 184
+        }
+      ]
+    },
+    {
+      "slug": "operation-journal",
+      "width": 1000,
+      "height": 1500,
+      "bytes": 149996,
+      "textBounds": [
+        {
+          "text": "Остатокне сходится?Откройте журнал.",
+          "left": 60,
+          "right": 701.6875,
+          "top": 164,
+          "bottom": 405.640625,
+          "scrollWidth": 642,
+          "clientWidth": 642
+        },
+        {
+          "text": "Найдите приход, выдачу и перемещение",
+          "left": 60,
+          "right": 940,
+          "top": 440,
+          "bottom": 480.796875,
+          "scrollWidth": 880,
+          "clientWidth": 880
+        },
+        {
+          "text": "Настоящий интерфейс 3.8 · учебные данные",
+          "left": 60,
+          "right": 689.03125,
+          "top": 1179,
+          "bottom": 1213,
+          "scrollWidth": 629,
+          "clientWidth": 629
+        },
+        {
+          "text": "Проверьте историю до исправления числа",
+          "left": 60,
+          "right": 940,
+          "top": 1240,
+          "bottom": 1277.8125,
+          "scrollWidth": 880,
+          "clientWidth": 880
+        },
+        {
+          "text": "Инструкция по разбору расхождений",
+          "left": 60,
+          "right": 940,
+          "top": 1340,
+          "bottom": 1416,
+          "scrollWidth": 880,
+          "clientWidth": 880
+        },
+        {
+          "text": "kapterka-pro.ru",
+          "left": 60,
+          "right": 243.71875,
+          "top": 1445,
+          "bottom": 1472,
+          "scrollWidth": 184,
+          "clientWidth": 184
+        }
+      ]
+    },
+    {
+      "slug": "phone-stock",
+      "width": 1000,
+      "height": 1500,
+      "bytes": 135118,
+      "textBounds": [
+        {
+          "text": "Проверьтеостатоку полки",
+          "left": 60,
+          "right": 443.421875,
+          "top": 164,
+          "bottom": 405.640625,
+          "scrollWidth": 383,
+          "clientWidth": 383
+        },
+        {
+          "text": "Учёт на телефоне рядом с местом хранения",
+          "left": 60,
+          "right": 940,
+          "top": 440,
+          "bottom": 480.796875,
+          "scrollWidth": 880,
+          "clientWidth": 880
+        },
+        {
+          "text": "Настоящий интерфейс 3.8 · учебные данные",
+          "left": 60,
+          "right": 689.03125,
+          "top": 1179,
+          "bottom": 1213,
+          "scrollWidth": 629,
+          "clientWidth": 629
+        },
+        {
+          "text": "Сначала операция — затем актуальный остаток",
+          "left": 60,
+          "right": 940,
+          "top": 1240,
+          "bottom": 1277.8125,
+          "scrollWidth": 880,
+          "clientWidth": 880
+        },
+        {
+          "text": "Порядок проверки наличия на Android",
+          "left": 60,
+          "right": 940,
+          "top": 1340,
+          "bottom": 1416,
+          "scrollWidth": 880,
+          "clientWidth": 880
+        },
+        {
+          "text": "kapterka-pro.ru",
+          "left": 60,
+          "right": 243.71875,
+          "top": 1445,
+          "bottom": 1472,
+          "scrollWidth": 184,
+          "clientWidth": 184
+        }
+      ]
+    }
+  ]
+}

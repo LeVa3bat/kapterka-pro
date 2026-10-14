@@ -1,0 +1,22 @@
+name: Check curated Pinterest RSS
+
+on:
+  pull_request:
+    paths:
+      - 'docs/**'
+      - 'growth/social-channels-2026-10-14/pinterest/**'
+      - 'tools/growth/pinterest-feed.mjs'
+      - 'tools/growth/check-pinterest-feed.py'
+      - '.github/workflows/pinterest-feed-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tools/growth/check-pinterest-feed.py
