@@ -1,0 +1,272 @@
+{
+  "checkedOn": "2026-10-14",
+  "timezone": "Europe/Moscow",
+  "evidenceScope": "Repository, historical observations and current read-only GA4/account UI checks on 2026-10-14",
+  "existingAnalytics": {
+    "googleAnalytics": "G-RYV6TP63D3",
+    "yandexMetrika": 112255061,
+    "newCollectors": false
+  },
+  "aggregatePeriod": {
+    "start": "2026-10-06",
+    "end": "2026-10-12",
+    "evidenceDate": "2026-10-13"
+  },
+  "sources": [
+    {
+      "platform": "Site",
+      "date": "2026-10-13",
+      "status": "Published previously",
+      "url": "https://kapterka-pro.ru/",
+      "visits": null,
+      "downloadClicks": null,
+      "installs": null,
+      "reason": "Overall GA4 aggregates kept locally; source-specific visits and primary installs not confirmed",
+      "currentCheck": "Live links and existing GA4 UI checked 2026-10-14"
+    },
+    {
+      "platform": "Telegram",
+      "date": "2026-10-13",
+      "status": "Start pin published previously",
+      "url": "https://t.me/kapterka_pro/81",
+      "visits": null,
+      "downloadClicks": null,
+      "installs": null,
+      "membersAtEvidenceDate": 126,
+      "reason": "Member count is historical; no click-to-install attribution"
+    },
+    {
+      "platform": "TGStat",
+      "date": "2026-10-13",
+      "status": "Existing listing checked previously",
+      "url": "https://tgstat.ru/en/channel/@kapterka_pro/stat",
+      "visits": null,
+      "downloadClicks": null,
+      "installs": null
+    },
+    {
+      "platform": "RuStore",
+      "date": "2026-10-13",
+      "status": "Existing listing; 3.8.1 and pages409/410 submitted previously",
+      "url": "https://www.rustore.ru/catalog/app/com.aistudio.kapterka.jmwqve",
+      "visits": null,
+      "downloadClicks": null,
+      "installs": null,
+      "reason": "Prior aggregate snapshot was kept locally; primary installs were not obtained, and all installs/updates must not replace primary installs. Current moderation status not checked by this audit"
+    },
+    {
+      "platform": "RUTUBE",
+      "date": "2026-10-13",
+      "status": "Three demonstrations published previously",
+      "url": "https://rutube.ru/shorts/43b60712fe8fcda9433c91c5dc556b22/",
+      "additionalUrls": [
+        "https://rutube.ru/shorts/240e9714c5fc95c605786a394b03bdb6/",
+        "https://rutube.ru/shorts/89517af1b26fbd5935fc1e9313dbb168/"
+      ],
+      "visits": null,
+      "downloadClicks": null,
+      "installs": null
+    },
+    {
+      "platform": "Prior individual email outreach",
+      "date": "2026-10-13",
+      "status": "Six messages sent; no external publication confirmed at that time",
+      "url": null,
+      "visits": null,
+      "downloadClicks": null,
+      "installs": null,
+      "evidence": "Prior local outreach-email-receipts.json; no repeat sent"
+    },
+    {
+      "platform": "A2IS",
+      "date": "2026-10-14",
+      "status": "Owner signed in; 0 products after three ordinary form attempts, no receipt or UI status change",
+      "url": "https://www.a2is.ru/profile/add-program/",
+      "visits": null,
+      "downloadClicks": null,
+      "installs": null,
+      "linkType": "Unconfirmed product form; not a public product or application receipt",
+      "formAttemptCount": 3,
+      "confirmedApplicationSubmitted": false
+    },
+    {
+      "platform": "Uptodown",
+      "date": "2026-10-14",
+      "status": "App overall Draft; publisher profile change request Pending revision confirmed after reload; APK Pending Review, 3 screenshots and Featured Pending approval, RU/EN descriptions under editorial review. App general information persistence remains unconfirmed.",
+      "url": "https://www.uptodown.dev/apps/1000901708/information",
+      "visits": null,
+      "downloadClicks": null,
+      "installs": null,
+      "linkType": "Private draft console, not a published product or full-application moderation receipt",
+      "componentReviewStatuses": {
+        "apk": {
+          "count": 1,
+          "versionName": "3.8.1",
+          "versionCode": 37,
+          "status": "Pending Review"
+        },
+        "screenshots": {
+          "count": 3,
+          "status": "Pending approval"
+        },
+        "featuredImage": {
+          "count": 1,
+          "status": "Pending approval"
+        },
+        "descriptions": {
+          "languages": [
+            "ru",
+            "en"
+          ],
+          "saveToastConfirmed": true,
+          "status": "Under editorial review"
+        }
+      },
+      "confirmedApplicationSubmitted": false,
+      "generalInformationPersistenceConfirmed": false,
+      "iconSavedConfirmed": false,
+      "observedHeaderIcon": "Standard Android placeholder",
+      "localEvidence": "growth/promotion-2026-10-14/qa/uptodown-media-pending.jpg",
+      "localEvidencePublicGit": false,
+      "publisherProfileReview": {
+        "url": "https://www.uptodown.dev/organization-edit",
+        "status": "Pending revision",
+        "changeRequestSubmittedConfirmed": true,
+        "statusPersistsAfterReload": true,
+        "brandPublishedConfirmed": false,
+        "fullAppSubmissionConfirmed": false,
+        "localEvidence": "growth/promotion-2026-10-14/qa/uptodown-publisher-pending.jpg",
+        "localEvidencePublicGit": false
+      }
+    },
+    {
+      "platform": "IndexNow",
+      "date": "2026-10-14",
+      "status": "Existing integration under repair; proposed deployment hook not launched",
+      "url": "https://www.indexnow.org/faq",
+      "acceptedUrls": null,
+      "visits": null,
+      "installs": null
+    },
+    {
+      "platform": "Google Discover",
+      "date": "2026-10-14",
+      "status": "Three existing guides prepared and locally verified; not deployed",
+      "url": "https://kapterka-pro.ru/uchet-instrumenta-android.html",
+      "impressions": null,
+      "visits": null,
+      "installs": null
+    }
+  ],
+  "existingUtmConventions": [
+    {
+      "campaign": "workshop_30d",
+      "sources": [
+        "rutube",
+        "telegram",
+        "site",
+        "referral"
+      ],
+      "mediums": [
+        "video",
+        "social",
+        "owned",
+        "share"
+      ],
+      "evidence": "growth/videos/publication-kit.json and MEASUREMENT_AND_EXPERIMENT.md"
+    },
+    {
+      "campaign": "free_promotion_202610",
+      "source": "telegram",
+      "medium": "channel",
+      "content": "Topic identifier",
+      "evidence": "Prior promotion-2026-10-13/RESULT.json"
+    },
+    {
+      "campaign": "free_templates_oct2026",
+      "source": "Prior authorized publication identifier",
+      "medium": "referral",
+      "status": "Prepared for editorial publication after approval; no publication confirmed",
+      "evidence": "Prior promotion-2026-10-13/outreach.md"
+    }
+  ],
+  "automation": [
+    {
+      "item": "Site quality audit",
+      "location": "GitHub Actions .github/workflows/site-quality.yml",
+      "trigger": "Existing schedule Monday 05:17 UTC / 08:17 Moscow, plus PR/push/manual/reusable",
+      "pcRequired": false,
+      "scope": "Candidate browser/Lighthouse checks; not analytics exports or store publication",
+      "scheduleConfigured": true,
+      "latestRunNotCheckedByThisAudit": true
+    },
+    {
+      "item": "Site publication",
+      "location": "GitHub Actions .github/workflows/site-pages.yml",
+      "trigger": "Owner-authorized manual workflow on main",
+      "pcRequired": false,
+      "automaticLaunch": false
+    },
+    {
+      "item": "IndexNow",
+      "location": "GitHub Actions",
+      "trigger": "Existing push integration; deployment-bound replacement proposed in this branch",
+      "pcRequired": false,
+      "newVersionLaunched": false
+    },
+    {
+      "item": "Weekly marketing report",
+      "location": "tools/growth/weekly-report.mjs",
+      "trigger": "Manual run with supplied aggregates",
+      "pcRequired": true,
+      "scheduleConfigured": false
+    },
+    {
+      "item": "Telegram queue",
+      "location": "Existing separate cloud process",
+      "trigger": "Existing schedule",
+      "currentProcessInspectedOrChanged": false,
+      "scope": "Excluded from this task"
+    },
+    {
+      "item": "A2IS/Uptodown applications and APK updates",
+      "location": "Platform accounts",
+      "automaticLaunch": false,
+      "scope": "Manual account UI. Accounts are open; full application submission is unconfirmed because the platform forms do not persist the required general information. Components in review are not a verified automatic publishing pipeline."
+    }
+  ],
+  "measurementLimits": [
+    "null means unknown, not zero",
+    "A download click does not confirm file receipt or installation",
+    "A store click is not an install",
+    "A share API request is not delivery",
+    "IndexNow acceptance is not indexing or traffic",
+    "Discover metadata does not guarantee impressions",
+    "No end-to-end attribution from UTM to installs/demo/payments is established",
+    "No private business aggregate snapshot or personal data copied to public Git"
+  ],
+  "currentAnalyticsAccess": {
+    "ga4": "Available; aggregate observation saved locally in qa/ga4-observation.json, outside public Git",
+    "metrika": "Temporarily unavailable in live browser 2026-10-14",
+    "webmaster": "Temporarily unavailable in live browser 2026-10-14",
+    "propertyTimezoneVerified": false
+  },
+  "statusRecordedAtMoscow": "2026-10-14T12:31:04+03:00",
+  "preparedCatalogUtm": [
+    {
+      "source": "a2is",
+      "medium": "catalog",
+      "campaign": "free_promotion_202610",
+      "content": "product_card",
+      "verifiedSaved": false
+    },
+    {
+      "source": "uptodown",
+      "medium": "app_store",
+      "campaign": "free_promotion_202610",
+      "content": "product_card",
+      "verifiedSaved": false
+    }
+  ],
+  "actualSavedCatalogUtmLinks": []
+}

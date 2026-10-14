@@ -1,0 +1,152 @@
+{
+  "checkedAt": "2026-10-14T07:56:24.523Z",
+  "results": [
+    {
+      "page": "https://kapterka-pro.ru/uchet-instrumenta-android.html",
+      "assets": [
+        {
+          "path": "images/discover/tool-accounting-1200.webp",
+          "width": 1200,
+          "height": 675,
+          "bytes": 17408
+        },
+        {
+          "path": "images/discover/tool-accounting-600.webp",
+          "width": 600,
+          "height": 338,
+          "bytes": 8602
+        }
+      ],
+      "browser": [
+        {
+          "viewport": "mobile-360",
+          "src": "http://127.0.0.1:4177/images/discover/tool-accounting-600.webp",
+          "naturalWidth": 308,
+          "naturalHeight": 173,
+          "displayWidth": 308,
+          "overflow": false,
+          "selectedAssetWidth": 600,
+          "selectedImageBytes": 8602
+        },
+        {
+          "viewport": "mobile-412",
+          "src": "http://127.0.0.1:4177/images/discover/tool-accounting-600.webp",
+          "naturalWidth": 360,
+          "naturalHeight": 202,
+          "displayWidth": 360,
+          "overflow": false,
+          "selectedAssetWidth": 600,
+          "selectedImageBytes": 8602
+        },
+        {
+          "viewport": "desktop",
+          "src": "http://127.0.0.1:4177/images/discover/tool-accounting-1200.webp",
+          "naturalWidth": 720,
+          "naturalHeight": 405,
+          "displayWidth": 720,
+          "overflow": false,
+          "selectedAssetWidth": 1200,
+          "selectedImageBytes": 17408
+        }
+      ]
+    },
+    {
+      "page": "https://kapterka-pro.ru/inventarizaciya-na-android.html",
+      "assets": [
+        {
+          "path": "images/discover/inventory-reconcile-1200.webp",
+          "width": 1200,
+          "height": 675,
+          "bytes": 18430
+        },
+        {
+          "path": "images/discover/inventory-reconcile-600.webp",
+          "width": 600,
+          "height": 338,
+          "bytes": 9372
+        }
+      ],
+      "browser": [
+        {
+          "viewport": "mobile-360",
+          "src": "http://127.0.0.1:4177/images/discover/inventory-reconcile-600.webp",
+          "naturalWidth": 308,
+          "naturalHeight": 173,
+          "displayWidth": 308,
+          "overflow": false,
+          "selectedAssetWidth": 600,
+          "selectedImageBytes": 9372
+        },
+        {
+          "viewport": "mobile-412",
+          "src": "http://127.0.0.1:4177/images/discover/inventory-reconcile-600.webp",
+          "naturalWidth": 360,
+          "naturalHeight": 202,
+          "displayWidth": 360,
+          "overflow": false,
+          "selectedAssetWidth": 600,
+          "selectedImageBytes": 9372
+        },
+        {
+          "viewport": "desktop",
+          "src": "http://127.0.0.1:4177/images/discover/inventory-reconcile-1200.webp",
+          "naturalWidth": 720,
+          "naturalHeight": 405,
+          "displayWidth": 720,
+          "overflow": false,
+          "selectedAssetWidth": 1200,
+          "selectedImageBytes": 18430
+        }
+      ]
+    },
+    {
+      "page": "https://kapterka-pro.ru/peremeshchenie-mezhdu-skladami-android.html",
+      "assets": [
+        {
+          "path": "images/discover/stock-transfer-1200.webp",
+          "width": 1200,
+          "height": 675,
+          "bytes": 19334
+        },
+        {
+          "path": "images/discover/stock-transfer-600.webp",
+          "width": 600,
+          "height": 338,
+          "bytes": 9830
+        }
+      ],
+      "browser": [
+        {
+          "viewport": "mobile-360",
+          "src": "http://127.0.0.1:4177/images/discover/stock-transfer-600.webp",
+          "naturalWidth": 308,
+          "naturalHeight": 173,
+          "displayWidth": 308,
+          "overflow": false,
+          "selectedAssetWidth": 600,
+          "selectedImageBytes": 9830
+        },
+        {
+          "viewport": "mobile-412",
+          "src": "http://127.0.0.1:4177/images/discover/stock-transfer-600.webp",
+          "naturalWidth": 360,
+          "naturalHeight": 202,
+          "displayWidth": 360,
+          "overflow": false,
+          "selectedAssetWidth": 600,
+          "selectedImageBytes": 9830
+        },
+        {
+          "viewport": "desktop",
+          "src": "http://127.0.0.1:4177/images/discover/stock-transfer-1200.webp",
+          "naturalWidth": 720,
+          "naturalHeight": 405,
+          "displayWidth": 720,
+          "overflow": false,
+          "selectedAssetWidth": 1200,
+          "selectedImageBytes": 19334
+        }
+      ]
+    }
+  ]
+}

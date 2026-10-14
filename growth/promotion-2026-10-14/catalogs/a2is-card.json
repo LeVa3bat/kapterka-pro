@@ -1,0 +1,111 @@
+{
+  "platform": "A2IS",
+  "checkedOn": "2026-10-14",
+  "status": "form_attempt_failed_unconfirmed",
+  "submitted": false,
+  "published": false,
+  "applicationReceipt": null,
+  "publicCardUrl": null,
+  "duplicateCheck": {
+    "localPromotionRecordsFound": false,
+    "indexedSearchMatchesFound": false,
+    "queryTerms": [
+      "Каптёрка",
+      "Каптерка",
+      "kapterka-pro.ru"
+    ],
+    "certainty": "not_found_in_checks_is_not_proof_of_absence",
+    "siteSearchVerification": "see catalog-audit.json",
+    "internalSearches": [
+      {
+        "query": "Каптёрка",
+        "result": "Ничего не найдено"
+      },
+      {
+        "query": "Каптерка",
+        "url": "https://www.a2is.ru/search/results?q=%D0%9A%D0%B0%D0%BF%D1%82%D0%B5%D1%80%D0%BA%D0%B0",
+        "result": "Ничего не найдено"
+      },
+      {
+        "query": "kapterka",
+        "url": "https://www.a2is.ru/search/results?q=kapterka",
+        "result": "Ничего не найдено"
+      }
+    ],
+    "internalSearchMethod": "Primary agent reviewed live browser searches on 2026-10-14"
+  },
+  "placement": {
+    "budgetRubles": 0,
+    "categoryCount": 1,
+    "categoryName": "Системы управления складом (WMS-системы)",
+    "categoryUrl": "https://a2is.ru/catalog/skladskoj-uchet",
+    "categoryRationale": "В каталоге эта категория охватывает приёмку, перемещения, хранение и складские остатки. Описание не заявляет полный функционал WMS.",
+    "freeOneCategoryConfirmed": true,
+    "confirmationSource": "https://a2is.ru/publications/crm/funtsional-kabineta-razrabotchika",
+    "confirmationMethod": "2026-10-14 browser review by primary agent after the site's normal JavaScript page load",
+    "paidServicesRequested": false,
+    "categoryApplied": false
+  },
+  "preparedFieldValues": {
+    "name": "Каптёрка PRO",
+    "shortDescription": "Количественный складской учёт имущества и инструмента на Android",
+    "descriptionFile": "a2is-description.txt",
+    "officialWebsite": "https://kapterka-pro.ru/?utm_source=a2is&utm_medium=catalog&utm_campaign=free_promotion_202610&utm_content=product_card",
+    "canonicalWebsite": "https://kapterka-pro.ru/",
+    "platforms": [
+      "Приложение - Android"
+    ],
+    "language": "Русский",
+    "startingPriceRubles": 490,
+    "pricePeriod": "30 суток PRO",
+    "freeVersion": "Базовый учёт; Excel и списание по форме № 8 требуют демо/PRO",
+    "freeTrial": "72 часа полного доступа с первого запуска",
+    "training": [
+      "Документация"
+    ],
+    "supportWebsite": "https://kapterka-pro.ru/help.html",
+    "privacyPolicy": "https://kapterka-pro.ru/privacy.html",
+    "terms": "https://kapterka-pro.ru/terms.html",
+    "telegram": "https://t.me/kapterka_pro",
+    "verifiedFeatures": [
+      "Остатки по местам хранения",
+      "Приход",
+      "Выдача",
+      "Перемещение между точками",
+      "Журнал и поиск операций",
+      "Excel при действующем демо/PRO"
+    ],
+    "supportHours": null,
+    "developerLegalName": null,
+    "developerNationality": null,
+    "destination": "Складской учёт на Android для небольших складов и мастерских: остатки, приход, выдача, перемещения и журнал операций."
+  },
+  "formVerification": "В авторизованной форме проверены name, destination, video_link (необязательное) и link. Имя, назначение и сайт обязательны; все заполненные поля валидны. Расширенные поля описания, категории и изображений не открылись, поскольку создание продукта не подтверждено.",
+  "assets": {
+    "iconFile": "docs/app_icon_512.png",
+    "iconSha256": "3b52892775ce1d48e13d60da7a01bf64a24c30f68136ab242e1d60c3c5da8489",
+    "iconSize": [
+      512,
+      512
+    ],
+    "submissionScreenshots": [],
+    "referenceManifest": "screenshot-provenance.json",
+    "referenceNotice": "Настоящие экраны production Compose сняты в тестовой среде Android 3.8.0/36. Исходники app/src/main идентичны опубликованной 3.8.1; provenance содержит проверку. Это не запись с физического устройства. Изображения не изменены и на A2IS ещё не загружены.",
+    "youtubeVideo": null,
+    "actualApkScreenshotRequirement": "Три проверенных снимка доступны в screenshot-provenance.json. Статья рекомендует изображения, не требует захвата физическим устройством. Добавление на A2IS возможно после подтверждённого создания продукта."
+  },
+  "account": {
+    "existingSessionAvailable": true,
+    "loginUrl": "https://www.a2is.ru/developer/login",
+    "newTermsAccepted": false,
+    "neededAction": "Владелец зарегистрировался/вошёл; кабинет доступен. Три обычные попытки отправки формы не создали подтверждённого продукта. ID/квитанции нет, сервисов 0. Подробности a2is-browser-result.json. Для завершения нужна исправная форма A2IS; повторная регистрация не требуется.",
+    "accountCreatedByAgent": false
+  },
+  "publicationStages": {
+    "save": "Сохранение полей само по себе не является подтверждением отправки.",
+    "submit": "После проверки существующих продуктов — сохранить информацию и отправить на модерацию; записать полученный ID/URL и видимый статус.",
+    "moderation": "Статья говорит об обработке в течение двух дней; срок не обещан. По статье программа может быть видна посетителям до завершения модерации.",
+    "published": "Наличие публичной карточки и результат модерации проверить раздельно по живому URL и кабинету."
+  },
+  "automation": "Создание и правка карточки требуют кабинета; подтверждённого разрешённого API публикации нет. Автоматическая подача не включена."
+}

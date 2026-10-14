@@ -1,0 +1,122 @@
+{
+  "auditDate": "2026-10-14",
+  "timezone": "Europe/Moscow",
+  "status": "prepared_and_locally_verified_awaiting_merge_and_deployment_approval",
+  "officialSource": {
+    "url": "https://developers.google.com/search/docs/appearance/google-discover",
+    "retrievedAt": "2026-10-14",
+    "sourceLastUpdated": "2026-03-09",
+    "requirementsReviewed": [
+      "Relevant, high-quality content images at least 1200 px wide and more than 300000 total pixels; landscape 16:9 recommended.",
+      "Large image previews enabled; representative image specified with og:image or schema markup.",
+      "Avoid generic site logos, excessive image text, clickbait and sensationalism; provide a good page experience.",
+      "Eligibility requires Google indexing and policy compliance; neither technical preparation nor eligibility guarantees Discover appearances."
+    ]
+  },
+  "liveBeforeChange": {
+    "verificationMethod": "HTTPS GET with Invoke-WebRequest; web tool could not fetch this domain",
+    "allThreeHttpStatus": 200,
+    "allThreeOgImage": "https://kapterka-pro.ru/app_icon_512.png",
+    "allThreeLargeImagePreviewAlreadyEnabled": true,
+    "changesDeployed": false
+  },
+  "selectedGuides": [
+    {
+      "url": "https://kapterka-pro.ru/uchet-instrumenta-android.html",
+      "reason": "Existing useful instruction with a free blank and completed workshop kit, direct XLSX/PDF downloads and a real export demonstration.",
+      "illustration": "Original vector illustration of stored tools and separate receipt, issue and return records; explicitly labeled as an illustration, not app UI.",
+      "image": "docs/images/discover/tool-accounting-1200.webp",
+      "dimensions": [1200, 675],
+      "bytes": 17408,
+      "mobileImage": "docs/images/discover/tool-accounting-600.webp",
+      "mobileBytes": 8602
+    },
+    {
+      "url": "https://kapterka-pro.ru/inventarizaciya-na-android.html",
+      "reason": "Existing practical inventory instruction with a local discrepancy calculator, safe CSV export and a printable checklist.",
+      "illustration": "Original diagram of the existing educational example: book quantity 9 screwdrivers, actual 8, discrepancy minus 1; no fabricated app screenshot.",
+      "image": "docs/images/discover/inventory-reconcile-1200.webp",
+      "dimensions": [1200, 675],
+      "bytes": 18430,
+      "mobileImage": "docs/images/discover/inventory-reconcile-600.webp",
+      "mobileBytes": 9372
+    },
+    {
+      "url": "https://kapterka-pro.ru/peremeshchenie-mezhdu-skladami-android.html",
+      "reason": "Existing instruction with a concrete transfer example and an auditable before/after table preserving the overall stock.",
+      "illustration": "Original diagram of the same fictitious example: move 6 pairs of gloves; storeroom 20 to 14, worksite 4 to 10, total 24 pairs.",
+      "image": "docs/images/discover/stock-transfer-1200.webp",
+      "dimensions": [1200, 675],
+      "bytes": 19334,
+      "mobileImage": "docs/images/discover/stock-transfer-600.webp",
+      "mobileBytes": 9830
+    }
+  ],
+  "changes": {
+    "existingArticlesOnly": true,
+    "newArticles": 0,
+    "existingTitlesRetained": true,
+    "existingDatesRetained": true,
+    "schemaSitemapDatesStillMatch": true,
+    "ogImageReplaced": true,
+    "ogImageDimensionsMimeAndAlt": true,
+    "twitterLargeImageAndAlt": true,
+    "articleImageObjectWithDimensions": true,
+    "visibleIllustrationsWithCaptions": true,
+    "responsive600And1200PxWebp": true,
+    "lazyLoadingAndAsyncDecode": true,
+    "intrinsicDimensionsReserveLayoutSpace": true,
+    "newBlockingScriptsOrStylesheets": 0,
+    "newTrackingOrPersonalDataCollectors": 0,
+    "appDatabasePaymentSyncChanges": 0,
+    "imageGenerator": "tools/growth/build-discover-images.mjs",
+    "regenerationDependency": "sharp 0.35.5, only for local regeneration; checked-in WebP files and CI checks do not require sharp",
+    "regenerationCommand": "npm install --no-save --package-lock=false sharp@0.35.5; node tools/growth/build-discover-images.mjs",
+    "regenerationAlternative": "Set SHARP_MODULE_PATH to an existing sharp module directory, then run the same generator; no absolute library path is hardcoded in the generator."
+  },
+  "validation": {
+    "staticCheck": "node .github/scripts/site-discover-check.mjs",
+    "browserCheck": "node .github/scripts/site-discover-check.mjs --browser",
+    "checkStatus": "passed",
+    "imageBudgetsBytes": {"1200px": 40000, "600px": 20000},
+    "browserViewports": ["360x800", "412x915", "1280x800"],
+    "browserExternalRequests": "blocked during local QA to avoid telemetry from tests",
+    "mobileSelectedAssetWidth": 600,
+    "desktopSelectedAssetWidth": 1200,
+    "allImagesDecode": true,
+    "allImagesHttpStatus": 200,
+    "allImagesMime": "image/webp",
+    "horizontalOverflow": false,
+    "browserErrors": [],
+    "visualInspection": "All three full-size images plus three 360px mobile illustrations and a desktop illustration inspected; captions readable, main content preserved.",
+    "browserEvidence": "growth/promotion-2026-10-14/discover-qa/",
+    "machineResults": "growth/promotion-2026-10-14/discover-check-results.json",
+    "existingChecksPassed": ["site-growth-check.mjs", "build-site-css.mjs --check", "site-publish-check.mjs"],
+    "lighthouse": {
+      "status": "passed_existing_lighthouse_budget_without_changed_thresholds",
+      "mode": "mobile, local candidate, default Lighthouse simulated throttling",
+      "analyticsBlocked": true,
+      "results": [
+        {"guide": "uchet-instrumenta-android.html", "performance": 99, "accessibility": 98, "bestPractices": 100, "seo": 100, "lcpMs": 2105, "cls": 0, "tbtMs": 27},
+        {"guide": "inventarizaciya-na-android.html", "performance": 96, "accessibility": 98, "bestPractices": 96, "seo": 100, "lcpMs": 2109, "cls": 0, "tbtMs": 184},
+        {"guide": "peremeshchenie-mezhdu-skladami-android.html", "performance": 100, "accessibility": 97, "bestPractices": 96, "seo": 100, "lcpMs": 1131, "cls": 0, "tbtMs": 0}
+      ],
+      "fieldData": null,
+      "rawEvidence": ["discover-qa/lh-tool-accounting.json", "discover-qa/lh-inventory-reconcile.json", "discover-qa/lh-stock-transfer.json"],
+      "limitation": "Local lab scores with existing analytics endpoints blocked, not live user measurements; no comparison with pre-change field data is claimed."
+    }
+  },
+  "measurement": {
+    "newDiscoverImpressions": null,
+    "newDiscoverClicks": null,
+    "newDiscoverInstalls": null,
+    "unavailableReason": "Changes are not deployed. No authorized Search Console or acquisition dataset was available in this subtask; no impressions, clicks or installations are inferred from technical checks.",
+    "recommendedExistingReport": "Search Console Discover performance report, if available for the existing property; Google only exposes it after the report's impression threshold is reached."
+  },
+  "automation": {
+    "candidateValidation": "Static and browser checks are ready for existing GitHub Actions; activation depends on merging the proposed workflow integration.",
+    "runtimeHosting": "Images and metadata will be served by the existing static-site hosting after an approved deployment, with no running PC or new paid service.",
+    "discoveryAndPublication": "Google selects Discover appearances automatically; this task does not submit or publish a card in Discover.",
+    "manualNextStep": "Review and approve the PR merge and deployment. After deployment, recheck the three live pages and all six image URLs before reporting the technical changes as live."
+  }
+}
