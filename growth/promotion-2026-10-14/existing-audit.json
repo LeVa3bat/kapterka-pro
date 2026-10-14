@@ -1,0 +1,51 @@
+{
+  "checkedOn": "2026-10-14",
+  "timezone": "Europe/Moscow",
+  "method": "Read-only repository and prior local evidence audit; no publication, email, account, analytics setting or Telegram queue action",
+  "priorLocalEvidence": "C:/Projects/kapterka-pro/growth/promotion-2026-10-13/RESULT.json",
+  "historicalEvidenceDate": "2026-10-13",
+  "publishedPreviously": [
+    {"platform": "Site", "url": "https://kapterka-pro.ru/", "pullRequest": "https://github.com/LeVa3bat/kapterka-pro/pull/18", "deployment": "https://github.com/LeVa3bat/kapterka-pro/actions/runs/38458149687", "status": "Previously published and checked; do not repeat", "evidence": "promotion-2026-10-13/RESULT.json and site-live-publication.json"},
+    {"platform": "Telegram", "url": "https://t.me/kapterka_pro/81", "previousPin": "https://t.me/kapterka_pro/63", "status": "Previously published start pin; do not repeat", "evidence": "promotion-2026-10-13/RESULT.json"},
+    {"platform": "TGStat", "url": "https://tgstat.ru/en/channel/@kapterka_pro/stat", "status": "Previously verified existing listing; no resubmission", "evidence": "promotion-2026-10-13/RESULT.json"},
+    {"platform": "RuStore", "url": "https://www.rustore.ru/catalog/app/com.aistudio.kapterka.jmwqve", "status": "Existing public listing; 3.8.0/36 was the last public version checked on 13 October", "evidence": "growth/IMPLEMENTATION_STATUS.md"},
+    {"platform": "RUTUBE", "url": "https://rutube.ru/shorts/43b60712fe8fcda9433c91c5dc556b22/", "status": "Previously published issue demonstration", "evidence": "growth/qa/rutube-publication.json"},
+    {"platform": "RUTUBE", "url": "https://rutube.ru/shorts/240e9714c5fc95c605786a394b03bdb6/", "status": "Previously published stock demonstration", "evidence": "growth/qa/rutube-publication.json"},
+    {"platform": "RUTUBE", "url": "https://rutube.ru/shorts/89517af1b26fbd5935fc1e9313dbb168/", "status": "Previously published export demonstration", "evidence": "growth/qa/rutube-publication.json"}
+  ],
+  "historicalModeration": [
+    {"platform": "RuStore", "item": "3.8.1/37, version console 2064881549", "statusAtEvidenceDate": "Ожидает модерацию", "currentStatus": null, "evidence": "growth/qa/rustore-publication.json"},
+    {"platform": "RuStore", "item": "Custom page 409: Мастерская количественный учёт", "statusAtEvidenceDate": "На модерации", "currentStatus": null, "publishedUrl": null, "evidence": "growth/qa/rustore-publication.json"},
+    {"platform": "RuStore", "item": "Custom page 410: Сверка остатков без сети", "statusAtEvidenceDate": "На модерации", "currentStatus": null, "publishedUrl": null, "evidence": "growth/qa/rustore-publication.json"}
+  ],
+  "priorOutreach": {
+    "sentEmails": 6,
+    "sentRecipients": ["Арсенал Мастера", "Рубанков", "Академия Ремёсел", "ГАРВИН", "PRO 3PL", "ЭЛЬБРУС"],
+    "preparedButNotSent": ["SHUM", "Мастеровой"],
+    "externalPublicationsConfirmed": 0,
+    "evidence": "C:/Projects/kapterka-pro/growth/promotion-2026-10-13/outreach-email-receipts.json and RESULT.json",
+    "actionNow": "No emails or messages sent; do not duplicate or add recipients"
+  },
+  "telegramQueue": {
+    "historicalStatus": "14 queued posts: 7 existing on 14–20 October and 7 added on 24–30 October, 10:00 Moscow",
+    "readOrChangedLiveQueueNow": false,
+    "videoPublicationNow": false,
+    "evidence": "Only the historical RESULT.json and README.md; queue files and live queue are outside this task"
+  },
+  "priorCatalogAttempts": [
+    {"platform": "TLGRM", "submitted": false, "reasonAtEvidenceDate": "Browser operation timed out"},
+    {"platform": "Telemetr", "submitted": false, "reasonAtEvidenceDate": "No existing session confirmed; registration/agreement requires owner decision"}
+  ],
+  "a2isAndUptodown": "No evidence of submission found in the reviewed prior promotion log; this alone does not establish that no public listing exists",
+  "existingSiteMaterials": {
+    "duplicatePagesCreatedNow": false,
+    "alreadyAvailable": ["Five public workshop XLSX/PDF downloads", "Local stock reconciliation calculator and CSV", "Warehouse transfer example", "Three embedded demonstrations", "Existing instructions and user manual"],
+    "evidence": "growth/IMPLEMENTATION_STATUS.md, docs/ and prior site-live-publication.json"
+  },
+  "existingIndexNow": {
+    "configured": true,
+    "keyFile": "docs/903fd952854fcb833f54ad87ef4b033b.txt",
+    "workflow": ".github/workflows/indexnow.yml",
+    "defectsBeforeThisChange": ["Runs on push before confirmed deployment", "Sends a fixed list of 26 URLs", "No persisted per-URL accepted fingerprint", "A failed key check does not prevent the following POST step"]
+  }
+}

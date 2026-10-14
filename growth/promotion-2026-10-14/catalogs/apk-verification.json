@@ -1,0 +1,128 @@
+{
+  "checkedAtUtc": "2026-10-14T08:00:33.881Z",
+  "scope": "Read-only verification; no store submission or publication",
+  "apkPath": "C:\\Users\\Пользователь\\.codex\\worktrees\\free-promotion-2026-10-14\\kapterka-pro\\docs\\kapterka-pro.apk",
+  "releaseManifestPath": "C:\\Users\\Пользователь\\.codex\\worktrees\\free-promotion-2026-10-14\\kapterka-pro\\docs\\release.json",
+  "checks": [
+    {
+      "name": "APK SHA-256 matches release.json",
+      "passed": true,
+      "observed": "e39e7bdd01c37cb774d257329e4b39d91bd48464dadb7a78901674f7601da628",
+      "expected": "e39e7bdd01c37cb774d257329e4b39d91bd48464dadb7a78901674f7601da628"
+    },
+    {
+      "name": "APK size matches release.json",
+      "passed": true,
+      "observed": 5231055,
+      "expected": 5231055
+    },
+    {
+      "name": "Package identity preserved",
+      "passed": true,
+      "observed": "com.aistudio.kapterka.jmwqve",
+      "expected": "com.aistudio.kapterka.jmwqve"
+    },
+    {
+      "name": "Version name matches release.json",
+      "passed": true,
+      "observed": "3.8.1",
+      "expected": "3.8.1"
+    },
+    {
+      "name": "Version code matches release.json",
+      "passed": true,
+      "observed": 37,
+      "expected": 37
+    },
+    {
+      "name": "Minimum SDK matches release.json",
+      "passed": true,
+      "observed": 24,
+      "expected": 24
+    },
+    {
+      "name": "APK is not marked debuggable/testOnly",
+      "passed": true,
+      "observed": "false or absent"
+    },
+    {
+      "name": "Cryptographic signature verifies",
+      "passed": true,
+      "observed": true
+    },
+    {
+      "name": "Single historical signer preserved",
+      "passed": true,
+      "observed": {
+        "signerCount": 1,
+        "signerSha256": "843a7e883914f3a7a5a7665ff07b2e8c43da87a24ee4dc35e1600758aee73cb9"
+      },
+      "expected": {
+        "signerCount": 1,
+        "signerSha256": "843a7e883914f3a7a5a7665ff07b2e8c43da87a24ee4dc35e1600758aee73cb9"
+      }
+    },
+    {
+      "name": "Live APK equals verified local APK",
+      "passed": true,
+      "observed": {
+        "sha256": "e39e7bdd01c37cb774d257329e4b39d91bd48464dadb7a78901674f7601da628",
+        "sizeBytes": 5231055
+      },
+      "expected": {
+        "sha256": "e39e7bdd01c37cb774d257329e4b39d91bd48464dadb7a78901674f7601da628",
+        "sizeBytes": 5231055
+      }
+    },
+    {
+      "name": "Live release manifest matches candidate",
+      "passed": true,
+      "observed": "3.8.1",
+      "expected": "3.8.1"
+    },
+    {
+      "name": "Live APK has Android MIME type",
+      "passed": true,
+      "observed": "application/vnd.android.package-archive"
+    }
+  ],
+  "submissionPerformed": false,
+  "published": false,
+  "physicalDeviceTestPerformed": false,
+  "actualApkScreenshotsCaptured": false,
+  "malwareScanResult": null,
+  "apk": {
+    "sha256": "e39e7bdd01c37cb774d257329e4b39d91bd48464dadb7a78901674f7601da628",
+    "sizeBytes": 5231055,
+    "packageName": "com.aistudio.kapterka.jmwqve",
+    "versionCode": 37,
+    "versionName": "3.8.1",
+    "minSdk": 24,
+    "targetSdk": 34,
+    "nativeAbis": [
+      "arm64-v8a",
+      "armeabi-v7a",
+      "x86",
+      "x86_64"
+    ],
+    "signerSha256": "843a7e883914f3a7a5a7665ff07b2e8c43da87a24ee4dc35e1600758aee73cb9",
+    "signerDn": "CN=Android Debug, O=Android, C=US",
+    "signatureSchemes": [
+      "v2"
+    ]
+  },
+  "tools": {
+    "buildTools": "C:\\Android\\Sdk\\build-tools\\36.0.0",
+    "aapt": "C:\\Android\\Sdk\\build-tools\\36.0.0\\aapt.exe",
+    "apksignerJar": "C:\\Android\\Sdk\\build-tools\\36.0.0\\lib\\apksigner.jar"
+  },
+  "publicSource": {
+    "apkUrl": "https://kapterka-pro.ru/kapterka-pro.apk",
+    "httpStatus": 200,
+    "contentType": "application/vnd.android.package-archive",
+    "sha256": "e39e7bdd01c37cb774d257329e4b39d91bd48464dadb7a78901674f7601da628",
+    "sizeBytes": 5231055,
+    "releaseManifestUrl": "https://kapterka-pro.ru/release.json"
+  },
+  "passed": true
+}

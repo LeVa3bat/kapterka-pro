@@ -1,0 +1,29 @@
+{
+  "checkedOn": "2026-10-14",
+  "timezone": "Europe/Moscow",
+  "productionPostSent": false,
+  "realNotificationReceipt": null,
+  "tests": {
+    "command": "node --test .github/scripts/indexnow.test.mjs",
+    "passed": 25,
+    "failed": 0,
+    "network": "Mock only; CLI integration children explicitly replace global fetch with a denial shim",
+    "importantCases": ["HTML and rendered dependency changes only", "Sitemap-only and anchor changes do not propagate", "Public release.json selects only data-release-* consumers; version.json reload is excluded", "Outside host, redirects, noindex and standalone none are excluded", "Predeployment unknown responses fail closed", "Successful deployment, same SHA, exact key and exact live fingerprints required", "Cache/journal accepted fingerprint suppresses repeat", "Rerun requires complete immediately preceding attempt metadata", "Incomplete history remains incomplete on later reruns", "Real CLI rejects stale cache and older journal without any GET/POST", "Network/408/429/5xx bounded retries and permanent 4xx no retry", "Retry-After honored in GET and POST without shortening", "Preparation and notification total time budgets fail closed", "Workflow hooks and absence of added permissions"]
+  },
+  "realGetOnlyPreparation": {
+    "command": "node .github/scripts/indexnow.mjs prepare growth/promotion-2026-10-14/indexnow-get-only-plan.json",
+    "preparedAtUTC": "2026-10-14T08:32:07.606Z",
+    "preparedAtMoscow": "2026-10-14T11:32:07.606+03:00",
+    "changedPages": 3,
+    "unchangedPages": 26,
+    "skippedPages": 0,
+    "uniqueResourceURLsChecked": 84,
+    "statusesObserved": [200, 404],
+    "changedURLs": ["https://kapterka-pro.ru/inventarizaciya-na-android.html", "https://kapterka-pro.ru/peremeshchenie-mezhdu-skladami-android.html", "https://kapterka-pro.ru/uchet-instrumenta-android.html"],
+    "meaning": "Proposed Discover page/image changes differ from the current live site; no POST, submission or indexing inferred",
+    "evidence": "indexnow-get-only-plan.json"
+  },
+  "releaseManifestConsumersChecked": ["docs/index.html", "docs/help.html", "docs/security.html", "docs/updates.html"],
+  "gitDiffCheck": "Passed",
+  "awaiting": "Owner approval to merge and deploy; verify real post-deploy artifact after that run"
+}

@@ -24,10 +24,25 @@ jobs:
           node .github/scripts/site-release-check.mjs
           node .github/scripts/site-publish-check.mjs
           node .github/scripts/site-growth-check.mjs
+          node .github/scripts/site-discover-check.mjs
           node tools/growth/prepare-site-videos.mjs --check
           node .github/scripts/workshop-tools.test.cjs
           node .github/scripts/analytics-scheduler.test.mjs
           node .github/scripts/site-release-check.test.mjs
+          node --test .github/scripts/indexnow.test.mjs
+      - name: Prepare changed public URLs against the currently deployed site (GET only)
+        continue-on-error: true
+        run: node .github/scripts/indexnow.mjs prepare .indexnow/plan.json
+      - name: Save deployment-bound IndexNow plan outside the public site
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: indexnow-plan-${{ github.run_id }}
+          path: .indexnow/plan.json
+          overwrite: true
+          include-hidden-files: true
+          retention-days: 30
+          if-no-files-found: warn
       - uses: actions/upload-pages-artifact@v3
         with:
           path: docs
@@ -43,5 +58,65 @@ jobs:
     steps:
       - uses: actions/deploy-pages@v4
         id: deployment
+  indexnow:
+    needs: [verify, publish]
+    if: ${{ needs.publish.result == 'success' }}
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Download the plan prepared before this deployment
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: indexnow-plan-${{ github.run_id }}
+          path: .indexnow
+      - name: Restore accepted URL fingerprints from existing Actions storage
+        id: indexnow-cache
+        uses: actions/cache/restore@v4
+        continue-on-error: true
+        with:
+          path: .indexnow-state
+          key: indexnow-receipts-v1-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            indexnow-receipts-v1-
+      - name: Recover receipts from previous attempts of this same deployment
+        if: ${{ github.run_attempt > 1 }}
+        id: indexnow-prior-results
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          pattern: indexnow-result-${{ github.run_id }}-*
+          path: .indexnow-prior-results
+          merge-multiple: false
+      - name: Verify the public ownership file and deployed content, then notify
+        continue-on-error: true
+        env:
+          INDEXNOW_DEPLOYMENT_SUCCESS: 'true'
+          INDEXNOW_CACHE_MATCHED_KEY: ${{ steps.indexnow-cache.outputs.cache-matched-key }}
+        run: node .github/scripts/indexnow.mjs notify .indexnow/plan.json
+      - name: Preserve accepted fingerprints, including partial or failed runs
+        if: always()
+        uses: actions/cache/save@v4
+        continue-on-error: true
+        with:
+          path: .indexnow-state
+          key: indexnow-receipts-v1-${{ github.run_id }}-${{ github.run_attempt }}
+      - name: Save the IndexNow result journal (receipt is not indexing)
+        if: always()
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: indexnow-result-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .indexnow/result.json
+          include-hidden-files: true
+          retention-days: 90
+          if-no-files-found: warn
   performance:
     uses: ./.github/workflows/site-quality.yml

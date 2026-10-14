@@ -1,0 +1,56 @@
+{
+  "checkedOn": "2026-10-14",
+  "timezone": "Europe/Moscow",
+  "accountAccess": "Developer profile opened after owner sign-in",
+  "accountCreatedByAgent": false,
+  "accountCreationObserved": "Profile displays registration date 2026-10-14; owner handled registration/sign-in",
+  "developerProfileUrl": "https://www.a2is.ru/profile/dev/",
+  "formUrl": "https://www.a2is.ru/profile/add-program/",
+  "existingProductsBefore": 0,
+  "status": "form_attempt_failed_unconfirmed",
+  "submittedConfirmed": false,
+  "moderationConfirmed": false,
+  "publishedConfirmed": false,
+  "applicationReceipt": null,
+  "publicCardUrl": null,
+  "categoryApplied": false,
+  "intendedCategory": "Системы управления складом (WMS-системы)",
+  "attempts": [
+    {
+      "fields": "Verified product name, purpose and public source-tagged website",
+      "outcome": "Form remained; no receipt, no product ID"
+    },
+    {
+      "fields": "Same name, shorter purpose, canonical website without query parameters",
+      "outcome": "Form remained; refreshed developer list still empty"
+    },
+    {
+      "fields": "Fresh owner-linked form with verified purpose and canonical website; ordinary Enter submission",
+      "outcome": "Same form returned; no confirmation, receipt or product ID; Services remains 0"
+    }
+  ],
+  "formFieldsValidity": "All four text inputs were valid; no reported HTML validation message",
+  "optionalMarketingConsents": {
+    "marketing_interested": false,
+    "lead_generation_interested": false
+  },
+  "browserErrorsObserved": [
+    "TypeError: window.jQuery is not a function",
+    "ReferenceError: jQuery is not defined",
+    "Uncaught TypeError: jQuery(...).yiiActiveForm is not a function"
+  ],
+  "interpretation": "Observed errors may prevent normal form operation. A browser click and HTTP navigation are not proof that the service received a valid application.",
+  "workaroundBypassPerformed": false,
+  "supportMessageSent": false,
+  "mailCheck": {
+    "method": "Read-only search from a2is.ru after 2026-10-13; message body and credential links not read",
+    "matchedSubjects": [
+      "Приглашение в A2is.ru"
+    ],
+    "invitationDate": "2026-10-14T11:02:50+03:00",
+    "productApplicationReceiptFound": false
+  },
+  "paidServiceRequested": false,
+  "nextStep": "Владелец может проверить обычную отправку в своём браузере. Если форма также не создаёт продукт, требуется исправление на стороне A2IS. Новая регистрация, обход формы и письмо поддержке агентом не выполнялись.",
+  "productsAfterAttempts": 0
+}

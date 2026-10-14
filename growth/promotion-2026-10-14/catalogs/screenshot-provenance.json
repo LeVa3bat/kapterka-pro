@@ -1,0 +1,85 @@
+{
+  "checkedOn": "2026-10-14",
+  "currentPublicApk": {
+    "versionName": "3.8.1",
+    "versionCode": 37
+  },
+  "actualCurrentApkScreenshotsAvailable": false,
+  "selectedForSubmission": [
+    "growth/rustore/screenshots/01-06-dashboard-after.png",
+    "growth/rustore/screenshots/02-05-stock-after.png",
+    "growth/rustore/screenshots/03-08-journal-expanded.png"
+  ],
+  "captureEnvironment": {
+    "adbDevices": [],
+    "emulatorAvailableInSdk": false,
+    "checkBy": "primary agent, 2026-10-14"
+  },
+  "references": [
+    {
+      "file": "growth/rustore/screenshots/01-06-dashboard-after.png",
+      "sha256": "8f2fe16742dc8b185be0debe295cd9fae3fcd34bfaafc9d9bdf6a369233b69c6",
+      "size": [
+        1080,
+        2340
+      ],
+      "bytes": 169999,
+      "screen": "Главная после выдачи"
+    },
+    {
+      "file": "growth/rustore/screenshots/02-05-stock-after.png",
+      "sha256": "6e3089eb2172ae5a8b2897a666c64f92207f2f6dae3434bf60d5161e1c56e210",
+      "size": [
+        1080,
+        2340
+      ],
+      "bytes": 175349,
+      "screen": "Локальные остатки"
+    },
+    {
+      "file": "growth/rustore/screenshots/03-08-journal-expanded.png",
+      "sha256": "7f59fdec73dd6813a7faab737aa75d33b45c258bedf9e261f9587a44e6990526",
+      "size": [
+        1080,
+        2340
+      ],
+      "bytes": 179815,
+      "screen": "Раскрытая операция журнала"
+    }
+  ],
+  "referenceOrigin": "production Compose 3.8.0/36 через Robolectric native graphics + Roborazzi, SDK34, временная in-memory Room, вымышленные данные, syncManager=null; это не захват установленного подписанного APK 3.8.1",
+  "referenceEvidence": [
+    "growth/videos/CAPTURE.md",
+    "growth/videos/capture-source.json",
+    "growth/videos/VERIFICATION.md"
+  ],
+  "acceptableReferenceCaption": "Демонстрация настоящих компонентов интерфейса версии 3.8.0 на вымышленных данных; тестовый рендер, не снимок установленного APK 3.8.1.",
+  "excluded": [
+    {
+      "group": "docs/screens/36-*.jpg и preview.webp",
+      "reason": "Изображения подготовлены для 3.6; связь с StoreScreenshotTest косвенная, актуальность 3.8.1 не подтверждена."
+    },
+    {
+      "group": "Прежние восемь RuStore JPEG",
+      "reason": "CDN, размеры и байты проверялись, исходный способ захвата не установлен; не переиспользованы как фактические новые скриншоты."
+    },
+    {
+      "group": "GenerateScreenshots.java и GenerateRealScreenshots.java",
+      "reason": "Ручная отрисовка Graphics2D; имя Real не доказывает работу APK."
+    }
+  ],
+  "nextCapture": "На отдельном тестовом телефоне или эмуляторе установить неизменённый официальный подписанный 3.8.1, сверить package/version/signature, использовать вымышленные позиции и точки, снять главную/остатки/журнал. Сохранить оригиналы и SHA-256, проверить отсутствие реальных имён, ключей, QR и документов владельца. Не очищать рабочую базу владельца.",
+  "sourceParity": {
+    "captureSourceRef": "7701735",
+    "publicReleaseRef": "v3.8.1",
+    "comparison": "git diff --name-only 7701735 v3.8.1 -- app/src/main",
+    "productionSourceFilesDifferent": [],
+    "checkedOn": "2026-10-14",
+    "currentApkVersionName": "3.8.1",
+    "sourceCaptureVersionName": "3.8.0",
+    "sourceCaptureVersionCode": 36
+  },
+  "selectionReason": "Настоящие production Compose-компоненты и операции Room, а не нарисованный интерфейс. Код app/src/main побайтно совпадает с релизом 3.8.1; исходные пиксели и SHA сохранены. Официальные проверенные правила Uptodown не требуют съёмки только с физического устройства.",
+  "acceptableSubmissionCaption": "Снимки настоящего интерфейса учёта на вымышленных данных из тестового Android-окружения. Код экранов совпадает с опубликованным 3.8.1; это не запись физического телефона.",
+  "physicalDeviceRecordingClaimed": false
+}

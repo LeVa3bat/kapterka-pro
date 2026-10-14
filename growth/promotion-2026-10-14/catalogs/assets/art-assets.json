@@ -1,0 +1,81 @@
+{
+  "createdOn": "2026-10-14",
+  "generator": "tools/growth/build-catalog-art.mjs",
+  "authoringDependency": "sharp 0.35.5",
+  "originalIcon": {
+    "file": "docs/app_icon_512.png",
+    "sha256": "3b52892775ce1d48e13d60da7a01bf64a24c30f68136ab242e1d60c3c5da8489",
+    "modified": false,
+    "displayTreatment": "proportional scaling within artwork; original file unmodified"
+  },
+  "newStockImagesUsed": false,
+  "newAiImagesUsed": false,
+  "artworkIsNotAppScreenshot": true,
+  "copyClaims": [
+    "Учёт имущества на Android",
+    "Приход · выдача · остатки",
+    "Работает офлайн"
+  ],
+  "notes": [
+    "No price, free unlimited access or approval claims are displayed.",
+    "Store upload and moderation status must be recorded separately by the submitting agent."
+  ],
+  "assets": [
+    {
+      "platform": "Uptodown",
+      "language": "ru",
+      "file": "growth/promotion-2026-10-14/catalogs/assets/uptodown-featured-ru.png",
+      "editableSource": "growth/promotion-2026-10-14/catalogs/assets/uptodown-featured-ru.svg",
+      "width": 1024,
+      "height": 500,
+      "bytes": 53643,
+      "sha256": "77eb79dcd589282bb41e4cb87732daebc0e10b0f45ef65b8a9ea19665329d6e6",
+      "classification": "promotional_artwork_not_app_screenshot",
+      "publicationStatus": "uploaded_pending_approval",
+      "appDraftId": "1000901708",
+      "uploadConfirmed": true,
+      "published": false,
+      "observedAtMoscow": "2026-10-14T12:22:27+03:00",
+      "publisherProfileUse": {
+        "uploadConfirmed": true,
+        "changeRequestStatus": "Pending revision",
+        "published": false,
+        "consoleUrl": "https://www.uptodown.dev/organization-edit"
+      }
+    },
+    {
+      "platform": "A2IS",
+      "language": "ru",
+      "file": "growth/promotion-2026-10-14/catalogs/assets/a2is-promo-ru.png",
+      "editableSource": "growth/promotion-2026-10-14/catalogs/assets/a2is-promo-ru.svg",
+      "width": 1200,
+      "height": 675,
+      "bytes": 71130,
+      "sha256": "acbba6a544ff9cc2ef0a8ca464d11466d17391179f7ca617118c509b2154aae7",
+      "classification": "promotional_artwork_not_app_screenshot",
+      "publicationStatus": "prepared_not_uploaded",
+      "uploadConfirmed": false,
+      "published": false
+    },
+    {
+      "platform": "Uptodown",
+      "role": "publisher_profile_icon",
+      "file": "growth/promotion-2026-10-14/catalogs/assets/uptodown-organization-icon.png",
+      "editableSource": "growth/promotion-2026-10-14/catalogs/assets/uptodown-organization-icon.svg",
+      "width": 200,
+      "height": 200,
+      "bytes": 17873,
+      "sha256": "5ad9cf32817b7c5abac320711ead59b6756bc3d50a5aa8fd10202a5c6a38e83c",
+      "classification": "publisher_brand_icon_not_app_screenshot",
+      "publicationStatus": "publisher_change_request_pending_revision",
+      "uploadConfirmed": true,
+      "published": false,
+      "consoleUrl": "https://www.uptodown.dev/organization-edit",
+      "sourceAsset": "docs/app_icon_512.png",
+      "sourceSha256": "3b52892775ce1d48e13d60da7a01bf64a24c30f68136ab242e1d60c3c5da8489",
+      "originalAssetModified": false,
+      "treatment": "Proportional composition of the original brand icon on 200x200 canvas",
+      "recordedAtMoscow": "2026-10-14T12:31:04+03:00"
+    }
+  ]
+}

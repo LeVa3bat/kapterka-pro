@@ -9,6 +9,7 @@ on:
       - 'package*.json'
       - '.github/scripts/build-site-css.mjs'
       - '.github/scripts/site-growth-check.mjs'
+      - '.github/scripts/site-discover-check.mjs'
       - '.github/scripts/workshop-tools.test.cjs'
       - '.github/scripts/site-release-check.mjs'
       - '.github/scripts/site-smoke.mjs'
@@ -20,6 +21,7 @@ on:
       - 'package*.json'
       - '.github/scripts/build-site-css.mjs'
       - '.github/scripts/site-growth-check.mjs'
+      - '.github/scripts/site-discover-check.mjs'
       - '.github/scripts/workshop-tools.test.cjs'
       - '.github/scripts/site-release-check.mjs'
       - '.github/scripts/site-smoke.mjs'
@@ -55,6 +57,7 @@ jobs:
           node .github/scripts/site-smoke.mjs
           node .github/scripts/site-release-check.mjs
           node .github/scripts/site-growth-check.mjs
+          node .github/scripts/site-discover-check.mjs
           node .github/scripts/workshop-tools.test.cjs
           node .github/scripts/analytics-scheduler.test.mjs
           node .github/scripts/site-release-check.test.mjs

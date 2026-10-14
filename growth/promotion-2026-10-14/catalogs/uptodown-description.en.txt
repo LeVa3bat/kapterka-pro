@@ -1,0 +1,15 @@
+Kapterka PRO brings quantity-based stock tracking to Android for a small stockroom, warehouse or workshop. Balances by storage location and a movement journal help you check what is available and where an item was transferred.
+
+Add item names and storage locations, record incoming stock or an issue, and transfer items between a stockroom and a work area. A tool returned between locations can be recorded as a reverse transfer. Find a journal entry and compare the recorded balance with the actual quantity.
+
+The main records are stored on the phone. Stock balances and previously entered operations remain available offline. Registration, payment, license verification and cloud synchronization require internet access.
+
+Export XLSX reports including consolidated and location statements, forms No. 8 and No. 18, and a request register. The full trial lasts 72 hours from the first launch. After the trial, Excel export and write-offs using form No. 8 require PRO: currently 490 RUB for 30 days, paid through YooKassa. A license belongs to the app installation ID; a shared inventory code does not transfer PRO access to another phone. When PRO expires, local data is retained and basic operations and viewing remain available.
+
+The APK is free to download. There are no ads. Android 7.0 or later is required. The app interface is in Russian; this English store description is a translation. The current release is 3.8.1 (37).
+
+Installation and guides: https://kapterka-pro.ru/
+Privacy: https://kapterka-pro.ru/privacy.html
+Access terms: https://kapterka-pro.ru/terms.html
+
+Images show the real app interface with sample records. They were captured from production Compose components in an Android test environment; the screen source code matches release 3.8.1. The featured image is branded artwork.

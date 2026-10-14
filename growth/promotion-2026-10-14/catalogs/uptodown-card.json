@@ -1,0 +1,314 @@
+{
+  "platform": "Uptodown",
+  "checkedOn": "2026-10-14",
+  "status": "draft_general_information_save_blocked_components_in_review",
+  "submitted": false,
+  "published": false,
+  "applicationReceipt": null,
+  "publicCardUrl": null,
+  "duplicateCheck": {
+    "localPromotionRecordsFound": false,
+    "indexedSearchMatchesFound": false,
+    "queryTerms": [
+      "Каптёрка",
+      "Каптерка",
+      "kapterka",
+      "kapterka-pro.ru",
+      "com.aistudio.kapterka.jmwqve"
+    ],
+    "certainty": "not_found_in_checks_is_not_proof_of_absence",
+    "internalSearch": {
+      "url": "https://www.uptodown.com/android/buscar?query=kapterka",
+      "checkedOn": "2026-10-14",
+      "matchingProductFound": false,
+      "visibleResults": [
+        "Scrollshot (HUAWEI)",
+        "Samsung Single Take"
+      ],
+      "method": "Primary agent reviewed the live browser search page"
+    },
+    "requiredBeforeCreate": "Повторно проверить список приложений существующей организации; если карточка уже есть, использовать Edit/claim вместо Add new app.",
+    "accountAppListCheckedBeforeCreate": true,
+    "accountAppCountBeforeCreate": 0
+  },
+  "publicationCostRubles": 0,
+  "preparedFieldValues": {
+    "name": "Каптёрка PRO",
+    "operatingSystem": "Android",
+    "directoryCandidate": "Personal / Productivity",
+    "directoryFinalSelection": null,
+    "packageName": "com.aistudio.kapterka.jmwqve",
+    "officialWebsite": "https://kapterka-pro.ru/?utm_source=uptodown&utm_medium=app_store&utm_campaign=free_promotion_202610&utm_content=product_card",
+    "canonicalWebsite": "https://kapterka-pro.ru/",
+    "author": "Каптёрка PRO",
+    "authorLegalIdentity": null,
+    "nationality": "Russian Federation",
+    "pegi": "None",
+    "countryRestrictions": [],
+    "iconFile": "docs/app_icon_512.png",
+    "iconUrl": "https://kapterka-pro.ru/app_icon_512.png",
+    "iconSha256": "3b52892775ce1d48e13d60da7a01bf64a24c30f68136ab242e1d60c3c5da8489",
+    "iconSize": [
+      512,
+      512
+    ],
+    "descriptions": {
+      "ru": {
+        "short": "Складской учёт имущества и инструмента на Android",
+        "fullFile": "uptodown-description.ru.txt"
+      },
+      "en": {
+        "short": "Track stock, tools and inventory movements on Android",
+        "fullFile": "uptodown-description.en.txt"
+      }
+    },
+    "interfaceLanguages": [
+      "Russian"
+    ],
+    "privacyPolicy": "https://kapterka-pro.ru/privacy.html",
+    "terms": "https://kapterka-pro.ru/terms.html",
+    "supportWebsite": "https://kapterka-pro.ru/help.html",
+    "nationalityBasis": "Страна автора/организации по публичному российскому оператору и условиям сайта; не юридическое заявление о гражданстве.",
+    "pegiNote": "Официальный PEGI/IARC рейтинг не предоставлен, рейтинг не выдуман.",
+    "websitePersistenceVerified": false,
+    "nationalityPersistenceVerified": false,
+    "iconPersistenceVerified": false
+  },
+  "apk": {
+    "localReadOnlySource": "C:/Projects/kapterka-pro/docs/kapterka-pro.apk",
+    "directOfficialDownloadUrl": "https://kapterka-pro.ru/kapterka-pro.apk",
+    "releaseManifestUrl": "https://kapterka-pro.ru/release.json",
+    "releasePage": "https://github.com/LeVa3bat/kapterka-pro/releases/tag/v3.8.1",
+    "fileFormat": "APK",
+    "version": "3.8.1",
+    "versionCode": 37,
+    "developmentStage": "Final Release",
+    "packageName": "com.aistudio.kapterka.jmwqve",
+    "minSdk": 24,
+    "targetSdk": 34,
+    "maxSdk": null,
+    "sizeBytes": 5231055,
+    "sha256": "e39e7bdd01c37cb774d257329e4b39d91bd48464dadb7a78901674f7601da628",
+    "signerSha256": "843a7e883914f3a7a5a7665ff07b2e8c43da87a24ee4dc35e1600758aee73cb9",
+    "signerDn": "CN=Android Debug, O=Android, C=US",
+    "signerNote": "Это фактическое имя прежнего сертификата официального APK. Подпись не изменялась; сертификат не переименован и не описан как новый производственный ключ.",
+    "signatureVerified": true,
+    "verifiedSignatureSchemes": [
+      "v2"
+    ],
+    "debuggableOrTestOnlyAttributePresent": false,
+    "nativeAbis": [
+      "arm64-v8a",
+      "armeabi-v7a",
+      "x86",
+      "x86_64"
+    ],
+    "tools": {
+      "aapt": "C:/Android/Sdk/build-tools/36.0.0/aapt.exe",
+      "apksigner": "C:/Android/Sdk/build-tools/36.0.0/apksigner.bat"
+    },
+    "publicDownloadVerified": {
+      "httpStatus": 200,
+      "contentType": "application/vnd.android.package-archive",
+      "byteCountAndSha256Match": true
+    },
+    "apkCopiedIntoSubmissionDirectory": false,
+    "apkCodeOrSignatureModified": false,
+    "freshInstalledApkFunctionalCheckPerformed": false,
+    "malwareScanResult": null,
+    "storeFileStatusObserved": "Pending Review",
+    "storeFileUiMaxSdkObserved": 14,
+    "maxSdkMetadataDiscrepancy": true,
+    "maxSdkMetadataDiscrepancyNote": "APK has no maxSdkVersion; Min SDK is 24. The store file UI displays Max SDK 14. APK was not modified; this console metadata needs correction/verification."
+  },
+  "monetization": {
+    "distributionModel": "Freemium",
+    "reason": "Базовые приход, выдача, перемещение и просмотр не требуют PRO; Excel и списание по форме № 8 платные после 72-часового полного демо.",
+    "iap": true,
+    "iapNote": "Покупка PRO вызывается из приложения; платёж обрабатывается сторонней ЮKassa. Uptodown разрешает сторонние IAP без требования замены SDK.",
+    "subscription": false,
+    "subscriptionNote": "PRO — фиксированная 30-суточная лицензия. Автоматические повторные списания не подтверждены; официальный термин Subscription определяется как recurring payments. Если форма использует иное определение, уточнить перед подачей.",
+    "ads": false,
+    "licenseType": "Proprietary",
+    "licenseTextUrl": "https://kapterka-pro.ru/terms.html",
+    "trialHours": 72,
+    "proDays": 30,
+    "publishedPriceRubles": 490,
+    "priceSource": "Публичный сайт и клиентский код на 2026-10-14; фактический платёж не выполнялся.",
+    "paymentFlowModified": false,
+    "valuesKind": "prepared_values_not_verified_saved",
+    "persistenceVerified": false
+  },
+  "changelogRu": "3.8.1: в разделе «Ещё» добавлены ссылки, чтобы поделиться приложением или бесплатным шаблоном учёта. После сохранения Excel можно добровольно оставить честный отзыв, отложить или отключить предложение. При ошибке сохранения неполный файл удаляется, успешное сохранение не показывается.",
+  "assets": {
+    "submissionScreenshots": [
+      "growth/rustore/screenshots/01-06-dashboard-after.png",
+      "growth/rustore/screenshots/02-05-stock-after.png",
+      "growth/rustore/screenshots/03-08-journal-expanded.png"
+    ],
+    "referenceManifest": "screenshot-provenance.json",
+    "featuredImage": "growth/promotion-2026-10-14/catalogs/assets/uptodown-featured-ru.png",
+    "featuredImageOptionalRequiredSize": [
+      1024,
+      500
+    ],
+    "youtubeVideo": null,
+    "blocker": null,
+    "languageRule": "Русские изображения загружать с языком ru. Английские изображения видны во всех языках, по официальной инструкции; интерфейс приложения не объявлять английским.",
+    "screenshotLanguage": "ru",
+    "screenshotCaption": "Снимки настоящего интерфейса учёта на вымышленных данных из тестового Android-окружения. Код экранов совпадает с опубликованным 3.8.1; это не запись физического телефона.",
+    "sourceCaptureVersionName": "3.8.0",
+    "sourceCaptureVersionCode": 36,
+    "productionSourceMatchesPublished381": true,
+    "physicalDeviceRecordingClaimed": false,
+    "featuredImageLanguage": "ru",
+    "featuredImageClassification": "promotional_artwork_not_app_screenshot",
+    "featuredImageSha256": "77eb79dcd589282bb41e4cb87732daebc0e10b0f45ef65b8a9ea19665329d6e6",
+    "screenshotUploadCount": 3,
+    "screenshotReviewStatus": "Pending approval",
+    "featuredImageUploadConfirmed": true,
+    "featuredImageReviewStatus": "Pending approval",
+    "screenshotsUploadConfirmed": true,
+    "iconStoreSaveConfirmed": false,
+    "observedHeaderIcon": "Standard Android placeholder",
+    "iconNeededAction": "Retry ordinary icon upload and Save after resolving general-information persistence; do not claim the icon is saved until a fresh page verifies it."
+  },
+  "account": {
+    "existingSessionAvailable": true,
+    "loginUrl": "https://www.uptodown.dev/",
+    "newTermsAccepted": false,
+    "registrationTermsUrl": "https://en.uptodown.com/developers-zone/services",
+    "registrationPrivacyUrl": "https://en.uptodown.com/aboutus/privacy",
+    "neededAction": "Resolve ordinary UI persistence of the existing draft general information and Max SDK metadata discrepancy, then verify an overall Pending status. Component review does not prove submission of the full app. No missing-login or physical-capture blocker exists.",
+    "newTermsShown": false,
+    "accountCreatedByAgent": false
+  },
+  "editorUpdatePreference": {
+    "disableUploadsByUptodownEditors": false,
+    "currentlyApplied": false,
+    "reason": "Официальная инструкция говорит, что редакторы могут самостоятельно получать обновления из официальных источников. Это возможность магазина, а не настроенный или гарантированный наш pipeline. APK всегда проверяется после фактической публикации."
+  },
+  "publicationStages": [
+    "Draft",
+    "Pending",
+    "Waiting for Publication",
+    "Published",
+    "Rejected"
+  ],
+  "updateProcedureFile": "APK_UPDATE.md",
+  "automaticSubmissionConfigured": false,
+  "draftAppId": "1000901708",
+  "draftConsoleUrl": "https://www.uptodown.dev/apps/1000901708/information",
+  "overallStatusObserved": "Draft",
+  "observedAtMoscow": "2026-10-14T12:22:27+03:00",
+  "observationSource": "Primary-agent live-browser observations relayed on 2026-10-14; recorded at 2026-10-14T12:22:27+03:00",
+  "applicationSubmissionConfirmed": false,
+  "componentReviewStatuses": {
+    "apk": {
+      "count": 1,
+      "versionName": "3.8.1",
+      "versionCode": 37,
+      "status": "Pending Review"
+    },
+    "screenshots": {
+      "count": 3,
+      "status": "Pending approval"
+    },
+    "featuredImage": {
+      "count": 1,
+      "status": "Pending approval"
+    },
+    "descriptions": {
+      "languages": [
+        "ru",
+        "en"
+      ],
+      "saveToastConfirmed": true,
+      "status": "Under editorial review"
+    }
+  },
+  "generalInformationSave": {
+    "saveAttempted": true,
+    "persistenceConfirmed": false,
+    "intendedUiCategory": "Personal",
+    "intendedCategoryFamily": "Personal / Productivity",
+    "intendedCanonicalWebsite": "https://kapterka-pro.ru/",
+    "outcome": "Save/Confirm did not persist the general information; fields cleared after ordinary navigation",
+    "utmVerifiedSaved": false,
+    "retryAfterPublisherRequest": "Original 512px icon and all verified fields entered again; Save and Submit/Confirm attempted after publisher Pending revision. Reload still shows Draft, default app icon and empty category, website and author. Full submission remains unconfirmed."
+  },
+  "descriptionSave": {
+    "languages": [
+      "ru",
+      "en"
+    ],
+    "toastConfirmed": true,
+    "reviewState": "Under editorial review",
+    "published": false
+  },
+  "blockers": [
+    {
+      "kind": "general_information_ui_persistence",
+      "description": "Save/Confirm did not persist the general information; fields cleared after ordinary navigation"
+    },
+    {
+      "kind": "store_max_sdk_metadata",
+      "description": "APK has no maxSdkVersion; Min SDK is 24. The store file UI displays Max SDK 14. APK was not modified; this console metadata needs correction/verification."
+    },
+    {
+      "kind": "store_icon_not_confirmed",
+      "description": "The draft header still shows the standard Android icon. Local 512px branding is verified, but store persistence is not."
+    }
+  ],
+  "utm": {
+    "prepared": true,
+    "verifiedSavedOnCard": false,
+    "lastAttemptedWebsite": "https://kapterka-pro.ru/"
+  },
+  "localMediaEvidence": "growth/promotion-2026-10-14/qa/uptodown-media-pending.jpg",
+  "localMediaEvidencePublicGit": false,
+  "publisherProfileReview": {
+    "consoleUrl": "https://www.uptodown.dev/organization-edit",
+    "statusObserved": "Pending revision",
+    "changeRequestSubmittedConfirmed": true,
+    "statusPersistsAfterReload": true,
+    "currentRequestedChangesPendingApproval": true,
+    "fieldsDisabledUntilProcessed": true,
+    "oldDefaultFieldsRemainVisible": true,
+    "oldDefaultFieldsInterpretation": "Existing values shown disabled while the change request is pending; this is not a failed publisher-profile save",
+    "requestedBrandName": "Каптёрка PRO",
+    "requestedContact": "Existing public support email; no private contact data added",
+    "requestedWebpage": "https://kapterka-pro.ru/",
+    "requestedNationality": "Russian Federation",
+    "nationalityMeaning": "Country of author/organization; no invented legal identity or citizenship declaration",
+    "requestedBio": {
+      "language": "en",
+      "wordCount": 72,
+      "basis": "Verified stock-tracking functions and demo terms"
+    },
+    "requestedIcon": {
+      "file": "growth/promotion-2026-10-14/catalogs/assets/uptodown-organization-icon.png",
+      "editableSource": "growth/promotion-2026-10-14/catalogs/assets/uptodown-organization-icon.svg",
+      "width": 200,
+      "height": 200,
+      "bytes": 17873,
+      "sha256": "5ad9cf32817b7c5abac320711ead59b6756bc3d50a5aa8fd10202a5c6a38e83c",
+      "originalIconModified": false
+    },
+    "requestedFeaturedImage": "growth/promotion-2026-10-14/catalogs/assets/uptodown-featured-ru.png",
+    "brandPublishedConfirmed": false,
+    "fullAppApplicationSubmittedConfirmed": false,
+    "newTermsShownOrAccepted": false,
+    "legalIdentityInvented": false,
+    "localEvidence": "growth/promotion-2026-10-14/qa/uptodown-publisher-pending.jpg",
+    "localEvidencePublicGit": false,
+    "recordedAtMoscow": "2026-10-14T12:31:04+03:00",
+    "source": "Primary-agent live-browser Save Organization, Confirm change request, OK and reload observations relayed on 2026-10-14",
+    "possibleEffectOnDraft": {
+      "statement": "The app Draft may depend on publisher-profile approval",
+      "kind": "inference",
+      "verified": false
+    },
+    "submittedBioEnglish": "Kapterka PRO creates practical inventory software for small workshops and storage facilities. Our Android app helps Russian-speaking users record receipts, issues and transfers, check stock balances and review an operation journal. Basic inventory work is available offline. Excel reports and disposal documents are available during the 72-hour trial and with a paid PRO license. Product documentation, current APK downloads, privacy information and support links are available on our official website."
+  }
+}

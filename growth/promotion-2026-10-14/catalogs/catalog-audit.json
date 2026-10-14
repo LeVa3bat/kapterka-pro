@@ -1,0 +1,309 @@
+{
+  "checkedAtMoscow": "2026-10-14T12:31:04+03:00",
+  "scope": [
+    "A2IS",
+    "Uptodown"
+  ],
+  "budgetRubles": 0,
+  "newTermsAccepted": false,
+  "newRecipientsContacted": false,
+  "telegramQueueTouched": false,
+  "videoRepublished": false,
+  "a2is": {
+    "status": "form_attempt_failed_unconfirmed",
+    "preparedCardFile": "a2is-card.json",
+    "freeOneCategory": {
+      "verified": true,
+      "source": "https://a2is.ru/publications/crm/funtsional-kabineta-razrabotchika",
+      "method": "Live browser article review by primary agent; normal site JavaScript load"
+    },
+    "category": {
+      "name": "Системы управления складом (WMS-системы)",
+      "url": "https://a2is.ru/catalog/skladskoj-uchet",
+      "count": 1,
+      "applied": false,
+      "role": "intended_single_category_not_saved"
+    },
+    "duplicateCheck": {
+      "indexedSearch": "No matching indexed result for Каптёрка/Каптерка/kapterka-pro.ru",
+      "internalSearch": "Live searches Каптёрка, Каптерка, kapterka each showed Ничего не найдено",
+      "accountProductListChecked": true,
+      "absenceProven": false,
+      "accountProductCountObserved": 0
+    },
+    "session": {
+      "url": "https://www.a2is.ru/developer/login",
+      "available": true,
+      "observed": "Owner signed in; developer account list contains 0 products after three ordinary form attempts",
+      "loginAttempted": false
+    },
+    "submission": {
+      "sent": false,
+      "confirmed": false,
+      "attemptCount": 3,
+      "receipt": null,
+      "moderationStatus": null,
+      "publicCardUrl": null,
+      "latestAttempt": "Enter on filled add-program form; no receipt or UI status change"
+    },
+    "visibilityCaveat": "Статья допускает доступность созданной программы до завершения модерации. Факт публичной видимости и результат модерации нужно фиксировать раздельно.",
+    "images": "Genuine production Compose images and branded promotional artwork prepared; no A2IS product exists, so media submission is not confirmed.",
+    "nextAction": "The ordinary A2IS form must persist a product before its single category and publication status can be recorded. Session is available; no further account or blind repeat is required."
+  },
+  "uptodown": {
+    "status": "draft_general_information_save_blocked_components_in_review",
+    "preparedCardFile": "uptodown-card.json",
+    "publicationFree": true,
+    "apkFormatSupported": true,
+    "thirdPartyIapAllowed": true,
+    "purchaseToDownloadPremiumSupported": false,
+    "chosenDistribution": "Freemium, with explicit 72h trial and 490 RUB / 30-day PRO disclosure",
+    "sourceBasedEligibility": "Приложение имеет конкретную функцию локального количественного учёта, подписанный APK и подходящую иконку. Платные функции допускаются правилами. Одобрение зависит от проверки Uptodown; новый runtime/антивирусный тест этим аудитом не заявлен.",
+    "duplicateCheck": {
+      "indexedSearch": "No matching results for product name, domain or package",
+      "internalSearchUrl": "https://www.uptodown.com/android/buscar?query=kapterka",
+      "internalSearch": "Two unrelated results: Scrollshot (HUAWEI), Samsung Single Take",
+      "accountAppListChecked": true,
+      "absenceProven": false,
+      "accountAppCountBeforeCreate": 0
+    },
+    "session": {
+      "url": "https://www.uptodown.dev/",
+      "available": true,
+      "observed": "Owner completed sign-in; primary agent created one draft app 1000901708 after the organization list showed zero apps",
+      "loginAttempted": false
+    },
+    "termsForAnyNewRegistration": [
+      "https://en.uptodown.com/developers-zone/services",
+      "https://en.uptodown.com/aboutus/privacy"
+    ],
+    "apkVerificationFile": "apk-verification.json",
+    "submission": {
+      "sent": false,
+      "confirmed": false,
+      "receipt": null,
+      "overallModerationStatus": null,
+      "publicCardUrl": null,
+      "confirmReviewAttempted": true,
+      "confirmReviewOutcome": "Overall status remained Draft"
+    },
+    "screenshots": {
+      "actualProductionInterfaceAvailable": true,
+      "sourceCaptureVersion": "3.8.0/36",
+      "productionSourceMatchesPublished381": true,
+      "physicalDeviceRecording": false,
+      "selectedFiles": [
+        "growth/rustore/screenshots/01-06-dashboard-after.png",
+        "growth/rustore/screenshots/02-05-stock-after.png",
+        "growth/rustore/screenshots/03-08-journal-expanded.png"
+      ],
+      "manifest": "screenshot-provenance.json"
+    },
+    "needsOwnerVerifiedFields": [],
+    "nextAction": "Check the publisher profile Pending revision outcome, then verify ordinary persistence of app general information, branded app icon and Max SDK metadata. The full app remains Draft. Whether profile approval blocks the app is an unverified inference; no public brand or full app submission is claimed.",
+    "draftConsoleUrl": "https://www.uptodown.dev/apps/1000901708/information",
+    "draftAppId": "1000901708",
+    "overallStatusObserved": "Draft",
+    "componentReviewStatuses": {
+      "apk": {
+        "count": 1,
+        "versionName": "3.8.1",
+        "versionCode": 37,
+        "status": "Pending Review"
+      },
+      "screenshots": {
+        "count": 3,
+        "status": "Pending approval"
+      },
+      "featuredImage": {
+        "count": 1,
+        "status": "Pending approval"
+      },
+      "descriptions": {
+        "languages": [
+          "ru",
+          "en"
+        ],
+        "saveToastConfirmed": true,
+        "status": "Under editorial review"
+      }
+    },
+    "generalInformation": {
+      "saveAttempted": true,
+      "persistenceConfirmed": false,
+      "intendedUiCategory": "Personal",
+      "intendedCategoryFamily": "Personal / Productivity",
+      "intendedCanonicalWebsite": "https://kapterka-pro.ru/",
+      "outcome": "Save/Confirm did not persist the general information; fields cleared after ordinary navigation",
+      "utmVerifiedSaved": false
+    },
+    "storeMetadataDiscrepancy": {
+      "field": "Max SDK",
+      "observedFileUiValue": 14,
+      "actualApkMaxSdk": null,
+      "actualApkMinSdk": 24,
+      "apkChanged": false,
+      "resolution": "Correct/verify the store metadata through the ordinary UI; do not change APK SDK values to fit the console."
+    },
+    "newTermsShownOrAccepted": false,
+    "storeIcon": {
+      "sourceAssetVerified": true,
+      "storeSaveConfirmed": false,
+      "observedHeaderIcon": "Standard Android placeholder",
+      "neededAction": "Retry ordinary icon upload and Save after resolving general-information persistence; do not claim the icon is saved until a fresh page verifies it."
+    },
+    "localMediaEvidence": "growth/promotion-2026-10-14/qa/uptodown-media-pending.jpg",
+    "localMediaEvidencePublicGit": false,
+    "publisherProfileReview": {
+      "consoleUrl": "https://www.uptodown.dev/organization-edit",
+      "statusObserved": "Pending revision",
+      "changeRequestSubmittedConfirmed": true,
+      "statusPersistsAfterReload": true,
+      "currentRequestedChangesPendingApproval": true,
+      "fieldsDisabledUntilProcessed": true,
+      "oldDefaultFieldsRemainVisible": true,
+      "oldDefaultFieldsInterpretation": "Existing values shown disabled while the change request is pending; this is not a failed publisher-profile save",
+      "requestedBrandName": "Каптёрка PRO",
+      "requestedContact": "Existing public support email; no private contact data added",
+      "requestedWebpage": "https://kapterka-pro.ru/",
+      "requestedNationality": "Russian Federation",
+      "nationalityMeaning": "Country of author/organization; no invented legal identity or citizenship declaration",
+      "requestedBio": {
+        "language": "en",
+        "wordCount": 72,
+        "basis": "Verified stock-tracking functions and demo terms"
+      },
+      "requestedIcon": {
+        "file": "growth/promotion-2026-10-14/catalogs/assets/uptodown-organization-icon.png",
+        "editableSource": "growth/promotion-2026-10-14/catalogs/assets/uptodown-organization-icon.svg",
+        "width": 200,
+        "height": 200,
+        "bytes": 17873,
+        "sha256": "5ad9cf32817b7c5abac320711ead59b6756bc3d50a5aa8fd10202a5c6a38e83c",
+        "originalIconModified": false
+      },
+      "requestedFeaturedImage": "growth/promotion-2026-10-14/catalogs/assets/uptodown-featured-ru.png",
+      "brandPublishedConfirmed": false,
+      "fullAppApplicationSubmittedConfirmed": false,
+      "newTermsShownOrAccepted": false,
+      "legalIdentityInvented": false,
+      "localEvidence": "growth/promotion-2026-10-14/qa/uptodown-publisher-pending.jpg",
+      "localEvidencePublicGit": false,
+      "recordedAtMoscow": "2026-10-14T12:31:04+03:00",
+      "source": "Primary-agent live-browser Save Organization, Confirm change request, OK and reload observations relayed on 2026-10-14",
+      "possibleEffectOnDraft": {
+        "statement": "The app Draft may depend on publisher-profile approval",
+        "kind": "inference",
+        "verified": false
+      }
+    }
+  },
+  "verifiedPublicLinks": [
+    {
+      "url": "https://kapterka-pro.ru/",
+      "httpStatus": 200
+    },
+    {
+      "url": "https://kapterka-pro.ru/privacy.html",
+      "httpStatus": 200
+    },
+    {
+      "url": "https://kapterka-pro.ru/terms.html",
+      "httpStatus": 200
+    },
+    {
+      "url": "https://kapterka-pro.ru/release.json",
+      "httpStatus": 200
+    },
+    {
+      "url": "https://kapterka-pro.ru/kapterka-pro.apk",
+      "httpStatus": 200,
+      "sha256Verified": true
+    },
+    {
+      "url": "https://kapterka-pro.ru/app_icon_512.png",
+      "httpStatus": 200
+    },
+    {
+      "url": "https://t.me/kapterka_pro",
+      "httpStatus": 200
+    },
+    {
+      "url": "https://apps.rustore.ru/app/com.aistudio.kapterka.jmwqve",
+      "httpStatus": 200
+    }
+  ],
+  "sources": [
+    {
+      "url": "https://a2is.ru/publications/crm/funtsional-kabineta-razrabotchika",
+      "supports": "One free category, save/submit, moderation and possible pre-moderation visibility"
+    },
+    {
+      "url": "https://a2is.ru/catalog/skladskoj-uchet",
+      "supports": "Official stock-management category and public feature vocabulary"
+    },
+    {
+      "url": "https://support.uptodown.com/hc/en-us/articles/4424141383181-Basic-guide-to-register-and-publish-apps-on-Uptodown",
+      "supports": "Free publishing, IAP allowed, purchase-to-download premium unsupported"
+    },
+    {
+      "url": "https://support.uptodown.com/hc/en-us/articles/360052729052-How-to-create-an-account-in-Uptodown-s-Developers-Console",
+      "supports": "Registration and Email confirmation"
+    },
+    {
+      "url": "https://support.uptodown.com/hc/en-us/articles/360053260491-How-to-publish-an-app-on-Uptodown",
+      "supports": "Submission fields, description lengths, images, language rules, licensing, editor updates"
+    },
+    {
+      "url": "https://support.uptodown.com/hc/en-us/articles/360052792972-Uptodown-s-app-publication-criteria",
+      "supports": "Author distribution rights, functioning app, malware and image quality review; admission not guaranteed"
+    },
+    {
+      "url": "https://support.uptodown.com/hc/en-us/articles/360053260051-Supported-file-formats-on-Uptodown",
+      "supports": "APK and XAPK support"
+    },
+    {
+      "url": "https://support.uptodown.com/hc/en-us/articles/46750051396237-Information-on-licenses-and-distribution-models-at-Uptodown",
+      "supports": "Freemium, IAP, recurring-payment Subscription, proprietary licensing"
+    },
+    {
+      "url": "https://support.uptodown.com/hc/en-us/articles/12516112067597-Potential-stages-during-the-app-publication-process",
+      "supports": "Draft/Pending/Waiting for Publication/Published/Rejected distinctions"
+    },
+    {
+      "url": "https://support.uptodown.com/hc/en-us/articles/360061457991-How-to-update-an-app-that-you-already-published-on-Uptodown",
+      "supports": "Same package, higher versionCode, edit existing listing, possible editor-driven updates"
+    }
+  ],
+  "automation": {
+    "catalogSubmission": "No configured or verified cloud mechanism; manual Console work after authorized login",
+    "apkValidation": "tools/growth/catalog-apk-check.mjs, manually invoked locally; reads only, does not submit, does not guarantee runtime behavior",
+    "uptodownEditorUpdates": "Officially possible on the store side when not disabled; not yet verified for this product, no guaranteed schedule",
+    "cloudAutomationActivatedByThisCatalogWork": false,
+    "updateProcedure": "APK_UPDATE.md"
+  },
+  "measurement": {
+    "existingAnalyticsOnly": [
+      "GA4 G-RYV6TP63D3",
+      "Yandex Metrika 112255061"
+    ],
+    "utmPreparedNotPublished": [
+      "a2is / catalog / free_promotion_202610 / product_card",
+      "uptodown / app_store / free_promotion_202610 / product_card"
+    ],
+    "personalDataInUtm": false,
+    "newCollectorAdded": false,
+    "cardVisits": null,
+    "siteTransitionsFromCards": null,
+    "apkInstallsFromCards": null,
+    "reason": "Accounts are open. A2IS has no confirmed product/application; Uptodown remains Draft with individual components in review. No live source-tagged card link or attribution to installs is confirmed.",
+    "actualSavedUtmLinksConfirmed": false
+  },
+  "confirmedApplicationSubmissionsMade": false,
+  "externalFormAttemptsMade": true,
+  "newAccountsCreatedByAgent": false,
+  "ownerHandledAccountAccess": true,
+  "statusObservationSource": "Primary-agent live-browser observations relayed on 2026-10-14; recorded at 2026-10-14T12:22:27+03:00",
+  "publisherProfileChangeRequestSubmittedConfirmed": true,
+  "confirmedFullAppApplicationSubmissionsMade": false
+}

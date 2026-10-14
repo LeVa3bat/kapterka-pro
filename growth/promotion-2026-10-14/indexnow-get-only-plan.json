@@ -1,0 +1,1119 @@
+{
+  "version": 1,
+  "origin": "https://kapterka-pro.ru",
+  "commit": "",
+  "preparedAt": "2026-10-14T08:32:07.606Z",
+  "changed": [
+    {
+      "url": "https://kapterka-pro.ru/inventarizaciya-na-android.html",
+      "fingerprint": "871bf8bda11803fbef0894a27975af7f2d731707c9fb6f84d0c24fd62bfcd78c",
+      "resources": [
+        {
+          "url": "https://kapterka-pro.ru/guide-analytics.js?v=3",
+          "hash": "78e4a1a4d50052e74027b15efb36ea409b5c1a19cbbd20e391cef4afc6289bf0"
+        },
+        {
+          "url": "https://kapterka-pro.ru/guide.css?v=3.4.9.3",
+          "hash": "cd7ed62636e65b1232cb9652908688252ef794c8e3398f8b174431f7e269a24b"
+        },
+        {
+          "url": "https://kapterka-pro.ru/images/discover/inventory-reconcile-1200.webp",
+          "hash": "3a193f6e6098d682e103bd36561a492e605f577fb1d0d0b70bdbe2f578f6fc36"
+        },
+        {
+          "url": "https://kapterka-pro.ru/images/discover/inventory-reconcile-600.webp",
+          "hash": "66336b29d9c5c1f6504f69bb872c78e1bd75027f10db077c776b6655be942a8f"
+        },
+        {
+          "url": "https://kapterka-pro.ru/inventarizaciya-na-android.html",
+          "hash": "9289bffaced5b27da6021bfb0e312d7e5f98f63a0f926e12ac95acc8c624093a"
+        },
+        {
+          "url": "https://kapterka-pro.ru/release-meta.js?v=1",
+          "hash": "ffa17c36a9f673101845dab668b70618611853289031c09e0ad6ebc331f7dda3"
+        },
+        {
+          "url": "https://kapterka-pro.ru/scenario-videos.css?v=20261013",
+          "hash": "638e19b1d00d1145c18b321e6bc123d8075aea8f1d7fe7bf56e15e8f7dbbc6e7"
+        },
+        {
+          "url": "https://kapterka-pro.ru/videos/offline-stock-poster.webp",
+          "hash": "7d4fbcde83749319e4c765db8b0a0fd2da035c151406df0fac58fec75000a45e"
+        },
+        {
+          "url": "https://kapterka-pro.ru/videos/offline-stock.mp4",
+          "hash": "8d29f7d2ca999991b7200b2b0a7e75498cc5fa9c98fa9abe7806102a48f97e70"
+        },
+        {
+          "url": "https://kapterka-pro.ru/videos/offline-stock.vtt",
+          "hash": "c86c8a0915877066e5eafbbbc7d4b31f92f5a5a3730cc2f40efe58bc8139d41d"
+        },
+        {
+          "url": "https://kapterka-pro.ru/workshop-tools.css?v=1",
+          "hash": "0fe30cd0fb7072fa62f83e75c3b7be71a0be8318a5702b87adfbaa096510022d"
+        },
+        {
+          "url": "https://kapterka-pro.ru/workshop-tools.js?v=1",
+          "hash": "5bf075cc3d227943cd02d7efba9451f7ea842cdbbe9acc2437b543c785461390"
+        }
+      ],
+      "reason": "page_changed",
+      "changedResources": [
+        "https://kapterka-pro.ru/images/discover/inventory-reconcile-1200.webp",
+        "https://kapterka-pro.ru/images/discover/inventory-reconcile-600.webp",
+        "https://kapterka-pro.ru/inventarizaciya-na-android.html"
+      ]
+    },
+    {
+      "url": "https://kapterka-pro.ru/peremeshchenie-mezhdu-skladami-android.html",
+      "fingerprint": "d5a307151e60163a230a5ce3d37dea3fb035c6649011769ae1b0e6cdceabfcbf",
+      "resources": [
+        {
+          "url": "https://kapterka-pro.ru/guide-analytics.js?v=2",
+          "hash": "78e4a1a4d50052e74027b15efb36ea409b5c1a19cbbd20e391cef4afc6289bf0"
+        },
+        {
+          "url": "https://kapterka-pro.ru/guide.css?v=3.4.9.3",
+          "hash": "cd7ed62636e65b1232cb9652908688252ef794c8e3398f8b174431f7e269a24b"
+        },
+        {
+          "url": "https://kapterka-pro.ru/images/discover/stock-transfer-1200.webp",
+          "hash": "c7c6510fc39afde7a3a06e2f89acde5ba5da72c21674a9abc3e51dfbc8617cd9"
+        },
+        {
+          "url": "https://kapterka-pro.ru/images/discover/stock-transfer-600.webp",
+          "hash": "def552746fa35d4ee308b3919ba4a90f7dea6cf9a7c67c2c0c631e7e7f382cfb"
+        },
+        {
+          "url": "https://kapterka-pro.ru/peremeshchenie-mezhdu-skladami-android.html",
+          "hash": "2510f4c7d77f9f5ee8bb949a5d37211804c9312b5a34bf5ed54f7b27e2288f74"
+        },
+        {
+          "url": "https://kapterka-pro.ru/release-meta.js?v=1",
+          "hash": "ffa17c36a9f673101845dab668b70618611853289031c09e0ad6ebc331f7dda3"
+        },
+        {
+          "url": "https://kapterka-pro.ru/workshop-tools.css?v=1",
+          "hash": "0fe30cd0fb7072fa62f83e75c3b7be71a0be8318a5702b87adfbaa096510022d"
+        }
+      ],
+      "reason": "page_changed",
+      "changedResources": [
+        "https://kapterka-pro.ru/images/discover/stock-transfer-1200.webp",
+        "https://kapterka-pro.ru/images/discover/stock-transfer-600.webp",
+        "https://kapterka-pro.ru/peremeshchenie-mezhdu-skladami-android.html"
+      ]
+    },
+    {
+      "url": "https://kapterka-pro.ru/uchet-instrumenta-android.html",
+      "fingerprint": "ea162da45e1d3bae7fba5f13a65b6653299a889e8d0132b53ee9ec5831eef4f9",
+      "resources": [
+        {
+          "url": "https://kapterka-pro.ru/guide-analytics.js?v=3",
+          "hash": "78e4a1a4d50052e74027b15efb36ea409b5c1a19cbbd20e391cef4afc6289bf0"
+        },
+        {
+          "url": "https://kapterka-pro.ru/guide.css?v=3.4.9.3",
+          "hash": "cd7ed62636e65b1232cb9652908688252ef794c8e3398f8b174431f7e269a24b"
+        },
+        {
+          "url": "https://kapterka-pro.ru/images/discover/tool-accounting-1200.webp",
+          "hash": "ccab5f00b8c4bff0f3c372384b7d95c2be4ab9dbdb4e9e6346348e11c95cd61f"
+        },
+        {
+          "url": "https://kapterka-pro.ru/images/discover/tool-accounting-600.webp",
+          "hash": "1d12b47e91d335fb5d1bc8c808a2208bfdf0e6095c4e701b1c0d6231d6596699"
+        },
+        {
+          "url": "https://kapterka-pro.ru/release-meta.js?v=1",
+          "hash": "ffa17c36a9f673101845dab668b70618611853289031c09e0ad6ebc331f7dda3"
+        },
+        {
+          "url": "https://kapterka-pro.ru/scenario-videos.css?v=20261013",
+          "hash": "638e19b1d00d1145c18b321e6bc123d8075aea8f1d7fe7bf56e15e8f7dbbc6e7"
+        },
+        {
+          "url": "https://kapterka-pro.ru/uchet-instrumenta-android.html",
+          "hash": "588b39152c7f3e2f0694b32b00c3d89370e80e12647e96f114bbdb2ef4ec2b0d"
+        },
+        {
+          "url": "https://kapterka-pro.ru/videos/report-export-poster.webp",
+          "hash": "2f4b8413144996a93f70cc531818b3b8b09586b5bec728fdef7b2d324de69f4f"
+        },
+        {
+          "url": "https://kapterka-pro.ru/videos/report-export.mp4",
+          "hash": "e13a20af4857feb017e5e609df7ffe37b8834c118aaab8b45d0fbf519df3a0e4"
+        },
+        {
+          "url": "https://kapterka-pro.ru/videos/report-export.vtt",
+          "hash": "375e1244e5361902bff8b25a9c8c5ade29e242dd775663f367afa2059443fddc"
+        },
+        {
+          "url": "https://kapterka-pro.ru/workshop-tools.css?v=1",
+          "hash": "0fe30cd0fb7072fa62f83e75c3b7be71a0be8318a5702b87adfbaa096510022d"
+        },
+        {
+          "url": "https://kapterka-pro.ru/workshop-tools.js?v=1",
+          "hash": "5bf075cc3d227943cd02d7efba9451f7ea842cdbbe9acc2437b543c785461390"
+        }
+      ],
+      "reason": "page_changed",
+      "changedResources": [
+        "https://kapterka-pro.ru/images/discover/tool-accounting-1200.webp",
+        "https://kapterka-pro.ru/images/discover/tool-accounting-600.webp",
+        "https://kapterka-pro.ru/uchet-instrumenta-android.html"
+      ]
+    }
+  ],
+  "unchanged": [
+    "https://kapterka-pro.ru/",
+    "https://kapterka-pro.ru/bezopasnoe-obnovlenie-kapterka-pro.html",
+    "https://kapterka-pro.ru/forma-8-razdatochnaya-vedomost.html",
+    "https://kapterka-pro.ru/guides.html",
+    "https://kapterka-pro.ru/help.html",
+    "https://kapterka-pro.ru/kak-nachat-rabotu-kapterka-pro.html",
+    "https://kapterka-pro.ru/perenos-kapterka-pro-na-novyy-telefon.html",
+    "https://kapterka-pro.ru/prihod-rashod-sklad-android.html",
+    "https://kapterka-pro.ru/privacy.html",
+    "https://kapterka-pro.ru/programma-dlya-starshiny-roty.html",
+    "https://kapterka-pro.ru/rezervnaya-kopiya-kapterka-pro.html",
+    "https://kapterka-pro.ru/rukovodstvo-polzovatelya.html",
+    "https://kapterka-pro.ru/security.html",
+    "https://kapterka-pro.ru/sklad-bez-1c-na-telefone.html",
+    "https://kapterka-pro.ru/skladskoy-uchet-android.html",
+    "https://kapterka-pro.ru/skladskoy-uchet-dlya-nebolshogo-sklada.html",
+    "https://kapterka-pro.ru/terms.html",
+    "https://kapterka-pro.ru/uchet-imushchestva-offline.html",
+    "https://kapterka-pro.ru/uchet-inventarya-android.html",
+    "https://kapterka-pro.ru/uchet-neskolkih-skladov-android.html",
+    "https://kapterka-pro.ru/uchet-oborudovaniya-android.html",
+    "https://kapterka-pro.ru/uchet-ostatkov-na-telefone.html",
+    "https://kapterka-pro.ru/uchet-tmc-android.html",
+    "https://kapterka-pro.ru/uchet-vydachi-imushchestva-android.html",
+    "https://kapterka-pro.ru/updates.html",
+    "https://kapterka-pro.ru/zhurnal-dvizheniya-imushchestva-android.html"
+  ],
+  "skipped": [],
+  "checks": [
+    {
+      "url": "https://kapterka-pro.ru/terms.html",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/privacy.html",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/skladskoy-uchet-android.html",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/uchet-imushchestva-offline.html",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/app.js?v=20261013",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/auth-config.js?v=3.4.9.31a",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/auth-v2.js?v=3.4.9.31i",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/fonts/plex-mono-500-cyrillic.woff2",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/fonts/plex-mono-500-latin.woff2",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/fonts/plex-sans-400-cyrillic.woff2",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/fonts/plex-sans-400-latin.woff2",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/fonts/plex-sans-600-cyrillic.woff2",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/fonts/plex-sans-600-latin.woff2",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/release.json",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/rustore_badge.svg",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/screens/36-2-dashboard-preview.webp",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/screens/36-3-stock-table-preview.webp",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/screens/36-4-requests-preview.webp",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/screens/36-5-journal-preview.webp",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/screens/36-6-unit-qr-preview.webp",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/screens/36-7-pro-preview.webp",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/screens/36-8-form8-preview.webp",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/screens/36-promo-1920x1080.jpg",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/screens/qr-download.png",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/site.bundle.min.css?v=20261013",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/site36.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/app_icon_512.png",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide-analytics.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide.css?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/release-meta.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/app_icon_512.png",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide-analytics.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide.css?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/release-meta.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/uchet-ostatkov-na-telefone.html",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/app_icon_512.png",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide-analytics.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide.css?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/release-meta.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/security.html",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/updates.html",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/help.html",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/app_icon_512.png",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide-analytics.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide.css?v=3.4.9.3",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/release-meta.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/release.json",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/app_icon_512.png",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide-analytics.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide.css?v=3.4.9.3",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/release-meta.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/release.json",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/app_icon_512.png",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide-analytics.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide.css?v=3.4.9.3",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/release-meta.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/release.json",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/prihod-rashod-sklad-android.html",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/app_icon_512.png",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide-analytics.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide.css?v=3.4.9.3",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/release-meta.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/inventarizaciya-na-android.html",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guides.html",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/app_icon_512.png",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide-analytics.js?v=3",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide.css?v=3.4.9.3",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/release-meta.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/uchet-vydachi-imushchestva-android.html",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide-analytics.js?v=3",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide.css?v=3.4.9.3",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/images/discover/inventory-reconcile-1200.webp",
+      "status": 404,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/images/discover/inventory-reconcile-600.webp",
+      "status": 404,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/release-meta.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/scenario-videos.css?v=20261013",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/videos/offline-stock-poster.webp",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/videos/offline-stock.mp4",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/videos/offline-stock.vtt",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/workshop-tools.css?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/workshop-tools.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/peremeshchenie-mezhdu-skladami-android.html",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/app_icon_512.png",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide-analytics.js?v=3",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide.css?v=3.4.9.3",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/release-meta.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/scenario-videos.css?v=20261013",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/videos/issue-check-poster.webp",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/videos/issue-check.mp4",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/videos/issue-check.vtt",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/uchet-tmc-android.html",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/app_icon_512.png",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide-analytics.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide.css?v=3.4.9.3",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/release-meta.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide-analytics.js?v=2",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide.css?v=3.4.9.3",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/images/discover/stock-transfer-1200.webp",
+      "status": 404,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/images/discover/stock-transfer-600.webp",
+      "status": 404,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/release-meta.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/workshop-tools.css?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/uchet-instrumenta-android.html",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/uchet-oborudovaniya-android.html",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/app_icon_512.png",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide-analytics.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide.css?v=3.4.9.3",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/release-meta.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/uchet-inventarya-android.html",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/app_icon_512.png",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide-analytics.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide.css?v=3.4.9.3",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/release-meta.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/rukovodstvo-polzovatelya.html",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide-analytics.js?v=3",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide.css?v=3.4.9.3",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/images/discover/tool-accounting-1200.webp",
+      "status": 404,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/images/discover/tool-accounting-600.webp",
+      "status": 404,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/release-meta.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/scenario-videos.css?v=20261013",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/videos/report-export-poster.webp",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/videos/report-export.mp4",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/videos/report-export.vtt",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/workshop-tools.css?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/workshop-tools.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/skladskoy-uchet-dlya-nebolshogo-sklada.html",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/app_icon_512.png",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide-analytics.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide.css?v=3.4.9.3",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/release-meta.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/sklad-bez-1c-na-telefone.html",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/app_icon_512.png",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide-analytics.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide.css?v=3.4.9.3",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/release-meta.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide-analytics.js?v=3",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide.css?v=3.4.9.3",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/screens/36-1-splash.jpg",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/screens/36-2-dashboard.jpg",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/screens/36-3-stock-table.jpg",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/screens/36-4-requests.jpg",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/screens/36-5-journal.jpg",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/screens/36-6-unit-qr.jpg",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/screens/36-7-pro.jpg",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/screens/36-8-form8.jpg",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/zhurnal-dvizheniya-imushchestva-android.html",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/app_icon_512.png",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide-analytics.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide.css?v=3.4.9.3",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/release-meta.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/uchet-neskolkih-skladov-android.html",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/app_icon_512.png",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide-analytics.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide.css?v=3.4.9.3",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/release-meta.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/kak-nachat-rabotu-kapterka-pro.html",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/app_icon_512.png",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide-analytics.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide.css?v=3.4.9.3",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/release-meta.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/rezervnaya-kopiya-kapterka-pro.html",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/app_icon_512.png",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide-analytics.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide.css?v=3.4.9.3",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/release-meta.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/perenos-kapterka-pro-na-novyy-telefon.html",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/app_icon_512.png",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide-analytics.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide.css?v=3.4.9.3",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/release-meta.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/forma-8-razdatochnaya-vedomost.html",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide-analytics.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide.css?v=3.4.9.3",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/screens/36-8-form8.jpg",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/screens/36-promo-1920x1080.jpg",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/programma-dlya-starshiny-roty.html",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide-analytics.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide.css?v=3.4.9.3",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/screens/36-4-requests.jpg",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/screens/36-promo-1920x1080.jpg",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/bezopasnoe-obnovlenie-kapterka-pro.html",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/app_icon_512.png",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide-analytics.js?v=1",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/guide.css?v=3.4.9.3",
+      "status": 200,
+      "error": null
+    },
+    {
+      "url": "https://kapterka-pro.ru/release-meta.js?v=1",
+      "status": 200,
+      "error": null
+    }
+  ]
+}
