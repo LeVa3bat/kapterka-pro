@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "stage": "pilot",
+  "activeSlugs": [
+    "tool-accounting-templates"
+  ],
+  "pilotVerification": {
+    "pinUrl": null,
+    "checkedAt": null,
+    "imageMatchesEnclosure": false,
+    "destinationWorksAndRetainsUtm": false,
+    "duplicateCheckPassed": false
+  },
+  "note": "Do not activate staged materials before an actual pilot Pin is observed and its image, destination and absence of duplicates are verified. Allow up to 24 hours for Pinterest RSS processing."
+}

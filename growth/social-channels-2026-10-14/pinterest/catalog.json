@@ -1,0 +1,204 @@
+{
+  "schemaVersion": 1,
+  "site": "https://kapterka-pro.ru",
+  "createdOn": "2026-10-14",
+  "purpose": "Curated useful public materials only; six covers ready, RSS pilot only.",
+  "publicationDateMeaning": "feedPublishedAt is the editorial RSS inclusion date, not a claim about the original article publication date.",
+  "items": [
+    {
+      "slug": "tool-accounting-templates",
+      "page": "uchet-instrumenta-android.html",
+      "title": "Учёт инструмента: бесплатные шаблоны для кладовой мастерской",
+      "description": "С чего начать учёт инструмента в мастерской? Записывайте приход, выдачу и возврат, чтобы проверять остаток по журналу. В инструкции — бесплатные шаблоны XLSX и PDF и заполненный учебный пример. Скачайте комплект без регистрации и настройте свой порядок учёта.",
+      "articlePublishedAt": "2026-09-22",
+      "articleModifiedAt": "2026-10-13",
+      "feedPublishedAt": "2026-10-14T00:00:00+03:00",
+      "cover": {
+        "title": [
+          "Инструмент",
+          "под учётом"
+        ],
+        "subtitle": "Шаблоны XLSX и PDF для кладовой мастерской",
+        "benefit": "Приход • выдача • возврат • остаток",
+        "cta": "Скачать шаблоны и открыть инструкцию",
+        "source": "docs/images/discover/tool-accounting-1200.webp",
+        "sourcePublicUrl": "https://kapterka-pro.ru/images/discover/tool-accounting-1200.webp",
+        "sourceType": "public_original_illustration",
+        "caption": "Иллюстрация, не экран приложения",
+        "layout": "illustration",
+        "theme": "mint",
+        "sourceSha256": "ccab5f00b8c4bff0f3c372384b7d95c2be4ab9dbdb4e9e6346348e11c95cd61f"
+      },
+      "guid": "https://kapterka-pro.ru/uchet-instrumenta-android.html",
+      "link": "https://kapterka-pro.ru/uchet-instrumenta-android.html?utm_source=pinterest&utm_medium=organic_social&utm_campaign=evergreen&utm_content=tool-accounting-templates",
+      "image": "https://kapterka-pro.ru/images/pinterest/tool-accounting-templates.jpg"
+    },
+    {
+      "slug": "inventory-reconcile",
+      "page": "inventarizaciya-na-android.html",
+      "title": "Инвентаризация: как сверить факт с остатками",
+      "description": "Учётный остаток не совпадает с тем, что лежит на полке? Подготовьте список, пересчитайте имущество и разберите расхождения по операциям. Откройте порядок инвентаризации, бесплатный лист сверки для печати и калькулятор недостачи или излишка.",
+      "articlePublishedAt": null,
+      "articleModifiedAt": "2026-10-13",
+      "feedPublishedAt": "2026-10-14T00:00:00+03:00",
+      "cover": {
+        "title": [
+          "Учёт ≠ факт?",
+          "Проверьте",
+          "расхождение"
+        ],
+        "subtitle": "Порядок сверки + лист инвентаризации",
+        "benefit": "Остаток 9 · факт 8 · разница −1",
+        "cta": "Инструкция и калькулятор на сайте",
+        "source": "docs/images/discover/inventory-reconcile-1200.webp",
+        "sourcePublicUrl": "https://kapterka-pro.ru/images/discover/inventory-reconcile-1200.webp",
+        "sourceType": "public_original_illustration",
+        "caption": "Учебный пример · иллюстрация, не интерфейс",
+        "layout": "illustration",
+        "theme": "gold",
+        "sourceSha256": "3a193f6e6098d682e103bd36561a492e605f577fb1d0d0b70bdbe2f578f6fc36"
+      },
+      "guid": "https://kapterka-pro.ru/inventarizaciya-na-android.html",
+      "link": "https://kapterka-pro.ru/inventarizaciya-na-android.html?utm_source=pinterest&utm_medium=organic_social&utm_campaign=evergreen&utm_content=inventory-reconcile",
+      "image": "https://kapterka-pro.ru/images/pinterest/inventory-reconcile.jpg"
+    },
+    {
+      "slug": "stock-transfer",
+      "page": "peremeshchenie-mezhdu-skladami-android.html",
+      "title": "Перемещение между складами: как сохранить общий остаток",
+      "description": "Перенесли инструмент или расходники на другой участок? Запишите перемещение и проверьте остатки в обоих местах. Разберите учебный пример с 6 парами перчаток: общий остаток сохраняется, а история показывает, откуда и куда отправлено имущество.",
+      "articlePublishedAt": null,
+      "articleModifiedAt": "2026-10-13",
+      "feedPublishedAt": "2026-10-14T00:00:00+03:00",
+      "cover": {
+        "title": [
+          "Два склада.",
+          "Один общий",
+          "остаток."
+        ],
+        "subtitle": "Как записать перемещение без потери истории",
+        "benefit": "Кладовая 14 + участок 10 = 24 пары",
+        "cta": "Учебный пример и порядок действий",
+        "source": "docs/images/discover/stock-transfer-1200.webp",
+        "sourcePublicUrl": "https://kapterka-pro.ru/images/discover/stock-transfer-1200.webp",
+        "sourceType": "public_original_illustration",
+        "caption": "Учебный пример · иллюстрация, не интерфейс",
+        "layout": "illustration",
+        "theme": "blue",
+        "sourceSha256": "c7c6510fc39afde7a3a06e2f89acde5ba5da72c21674a9abc3e51dfbc8617cd9"
+      },
+      "guid": "https://kapterka-pro.ru/peremeshchenie-mezhdu-skladami-android.html",
+      "link": "https://kapterka-pro.ru/peremeshchenie-mezhdu-skladami-android.html?utm_source=pinterest&utm_medium=organic_social&utm_campaign=evergreen&utm_content=stock-transfer",
+      "image": "https://kapterka-pro.ru/images/pinterest/stock-transfer.jpg"
+    },
+    {
+      "slug": "issue-check",
+      "page": "uchet-vydachi-imushchestva-android.html",
+      "title": "Выдача имущества: запись операции и проверка остатка",
+      "description": "Было 12 отвёрток, выдали 3 — в кладовой осталось 9. Посмотрите учебную демонстрацию настоящего интерфейса и порядок записи выдачи: количество, получатель и комментарий. Проверяйте остаток и историю после операции, чтобы видеть, кому и сколько выдано.",
+      "articlePublishedAt": null,
+      "articleModifiedAt": "2026-10-13",
+      "feedPublishedAt": "2026-10-14T00:00:00+03:00",
+      "cover": {
+        "title": [
+          "Выдали 3.",
+          "Осталось 9."
+        ],
+        "subtitle": "Как записать выдачу и проверить остаток",
+        "benefit": "Количество · получатель · история операции",
+        "cta": "Порядок учёта и короткая демонстрация",
+        "source": "growth/rustore/screenshots/02-05-stock-after.png",
+        "sourcePublicUrl": "https://kapterka-pro.ru/videos/issue-check.mp4",
+        "sourceType": "real_interface_frame_in_public_video",
+        "sourceManifest": "growth/videos/capture-manifest.json",
+        "sourceFrame": "05-stock-after",
+        "caption": "Настоящий интерфейс 3.8 · учебные данные",
+        "layout": "screen",
+        "theme": "mint",
+        "crop": {
+          "left": 0,
+          "top": 1250,
+          "width": 1080,
+          "height": 950
+        },
+        "sourceSha256": "6e3089eb2172ae5a8b2897a666c64f92207f2f6dae3434bf60d5161e1c56e210"
+      },
+      "guid": "https://kapterka-pro.ru/uchet-vydachi-imushchestva-android.html",
+      "link": "https://kapterka-pro.ru/uchet-vydachi-imushchestva-android.html?utm_source=pinterest&utm_medium=organic_social&utm_campaign=evergreen&utm_content=issue-check",
+      "image": "https://kapterka-pro.ru/images/pinterest/issue-check.jpg"
+    },
+    {
+      "slug": "operation-journal",
+      "page": "zhurnal-dvizheniya-imushchestva-android.html",
+      "title": "Журнал движения имущества: где искать причину расхождений",
+      "description": "Остаток не сходится? До исправления итогового числа откройте журнал: проверьте приход, выдачу и перемещения. Инструкция помогает восстановить последовательность движений и найти возможную причину расхождения. На обложке — настоящий интерфейс с учебными данными.",
+      "articlePublishedAt": "2026-09-22",
+      "articleModifiedAt": "2026-09-22",
+      "feedPublishedAt": "2026-10-14T00:00:00+03:00",
+      "cover": {
+        "title": [
+          "Остаток",
+          "не сходится?",
+          "Откройте журнал."
+        ],
+        "subtitle": "Найдите приход, выдачу и перемещение",
+        "benefit": "Проверьте историю до исправления числа",
+        "cta": "Инструкция по разбору расхождений",
+        "source": "growth/rustore/screenshots/03-08-journal-expanded.png",
+        "sourcePublicUrl": "https://kapterka-pro.ru/videos/issue-check.mp4",
+        "sourceType": "real_interface_frame_in_public_video",
+        "sourceManifest": "growth/videos/capture-manifest.json",
+        "sourceFrame": "08-journal-expanded",
+        "caption": "Настоящий интерфейс 3.8 · учебные данные",
+        "layout": "screen",
+        "theme": "gold",
+        "crop": {
+          "left": 0,
+          "top": 650,
+          "width": 1080,
+          "height": 1200
+        },
+        "sourceSha256": "7f59fdec73dd6813a7faab737aa75d33b45c258bedf9e261f9587a44e6990526"
+      },
+      "guid": "https://kapterka-pro.ru/zhurnal-dvizheniya-imushchestva-android.html",
+      "link": "https://kapterka-pro.ru/zhurnal-dvizheniya-imushchestva-android.html?utm_source=pinterest&utm_medium=organic_social&utm_campaign=evergreen&utm_content=operation-journal",
+      "image": "https://kapterka-pro.ru/images/pinterest/operation-journal.jpg"
+    },
+    {
+      "slug": "phone-stock",
+      "page": "uchet-ostatkov-na-telefone.html",
+      "title": "Остатки на телефоне: проверка наличия у места хранения",
+      "description": "Проверяйте наличие там, где хранится инструмент: записывайте движения и смотрите остаток по выбранному месту на телефоне. Разберите простой порядок учёта на Android — от записи операции до сверки факта. Основной учёт работает без интернета; фактическое наличие проверяет человек.",
+      "articlePublishedAt": "2026-09-22",
+      "articleModifiedAt": "2026-09-22",
+      "feedPublishedAt": "2026-10-14T00:00:00+03:00",
+      "cover": {
+        "title": [
+          "Проверьте",
+          "остаток",
+          "у полки"
+        ],
+        "subtitle": "Учёт на телефоне рядом с местом хранения",
+        "benefit": "Сначала операция — затем актуальный остаток",
+        "cta": "Порядок проверки наличия на Android",
+        "source": "docs/videos/offline-stock-poster.webp",
+        "sourcePublicUrl": "https://kapterka-pro.ru/videos/offline-stock-poster.webp",
+        "sourceType": "public_real_interface_poster",
+        "sourceManifest": "growth/videos/capture-manifest.json",
+        "caption": "Настоящий интерфейс 3.8 · учебные данные",
+        "layout": "poster",
+        "theme": "blue",
+        "crop": {
+          "left": 255,
+          "top": 835,
+          "width": 570,
+          "height": 660
+        },
+        "sourceSha256": "7d4fbcde83749319e4c765db8b0a0fd2da035c151406df0fac58fec75000a45e"
+      },
+      "guid": "https://kapterka-pro.ru/uchet-ostatkov-na-telefone.html",
+      "link": "https://kapterka-pro.ru/uchet-ostatkov-na-telefone.html?utm_source=pinterest&utm_medium=organic_social&utm_campaign=evergreen&utm_content=phone-stock",
+      "image": "https://kapterka-pro.ru/images/pinterest/phone-stock.jpg"
+    }
+  ]
+}
