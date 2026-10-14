@@ -1,0 +1,52 @@
+{
+  "checkedAt": "2026-10-14T21:11:14+03:00",
+  "status": "local_candidate_checked_waiting_for_PR_and_separate_website_deployment_approval",
+  "candidateFeedItems": 6,
+  "liveFeedItemsBeforeActivation": 1,
+  "firstPilotItemIdentityPreserved": true,
+  "newMaterials": 5,
+  "checks": {
+    "rssGenerator": "passed",
+    "standardXmlAndJpegValidator": "passed",
+    "siteSmoke": "passed",
+    "siteGrowth": "passed",
+    "siteDiscover": "passed",
+    "cssBundle": "passed",
+    "publicationDowngradeGuard": "passed",
+    "liveLinks": "passed",
+    "androidInvariants": "passed",
+    "workerTests": "35/35 passed",
+    "gitDiffWhitespace": "passed",
+    "siteReleaseCheck": "passed on exact copies of public APK, release.json and HTML in ASCII temporary path to work around Windows aapt Unicode paths",
+    "siteQuality": "pending GitHub PR CI"
+  },
+  "release": {
+    "versionName": "3.8.1",
+    "versionCode": 37,
+    "applicationId": "com.aistudio.kapterka.jmwqve",
+    "minSdk": 24,
+    "roomDatabaseVersion": 3,
+    "apkSize": 5231055,
+    "apkSha256": "e39e7bdd01c37cb774d257329e4b39d91bd48464dadb7a78901674f7601da628",
+    "gradleManifestReadmeIndexUpdatesWorkflowAgree": true,
+    "liveReleaseMatches": true,
+    "webVersion": "3.8.1-web.57"
+  },
+  "scope": {
+    "appChanged": false,
+    "paymentChanged": false,
+    "syncChanged": false,
+    "userDataChanged": false,
+    "existingImagesChanged": false,
+    "platformPostingScriptsAdded": false
+  },
+  "publication": {
+    "pilotPin": "https://ru.pinterest.com/pin/620159811234161964/",
+    "remainingFivePublished": false,
+    "remainingFiveRequires": "Separate website deployment approval and native Pinterest processing, potentially up to 24 hours"
+  },
+  "warnings": [
+    "The candidate feed has six items, but the current live feed still has one. Remaining five are not claimed published.",
+    "Android build skipped: no Android or Gradle files changed."
+  ]
+}
