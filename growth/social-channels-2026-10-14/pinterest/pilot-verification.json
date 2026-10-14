@@ -1,0 +1,41 @@
+{
+  "status": "published_pilot_verified",
+  "recordedAt": "2026-10-14T21:03:30+03:00",
+  "timezone": "Europe/Moscow",
+  "verificationSource": "Root agent browser observation in the authorised project account, supplied to RSS activation subtask on 2026-10-14.",
+  "pinUrl": "https://ru.pinterest.com/pin/620159811234161964/",
+  "canonicalPinUrl": "https://www.pinterest.com/pin/620159811234161964/",
+  "pinId": "620159811234161964",
+  "nativeRssSettingsSaved": true,
+  "boardPinCountObserved": 1,
+  "duplicatePinsObserved": 0,
+  "actualPinterestImage": {
+    "url": "https://i.pinimg.com/736x/04/5a/43/045a4329c4f0ec4e15706d465c4e0e86.jpg",
+    "width": 736,
+    "height": 1104,
+    "aspectRatio": "2:3",
+    "matches": "tool-accounting-templates.jpg mint vertical enclosure; illustration caption retained"
+  },
+  "expectedRssEnclosure": "https://kapterka-pro.ru/images/pinterest/tool-accounting-templates.jpg",
+  "pinDestinationFromDom": "https://kapterka-pro.ru/uchet-instrumenta-android.html?utm_source=pinterest&utm_medium=organic_social&utm_campaign=evergreen&utm_content=tool-accounting-templates",
+  "destinationOpenedInBrowser": true,
+  "destinationPage": "Useful instruction and free XLSX/PDF templates appeared; query parameters retained.",
+  "imageMatchesEnclosure": true,
+  "destinationWorksAndRetainsUtm": true,
+  "duplicateCheckPassed": true,
+  "publicationClaims": {
+    "pilot": "Actually published",
+    "remainingFive": "Prepared for separately approved RSS website deployment; publication not yet claimed"
+  },
+  "limitations": [
+    "Pinterest reprocessed the enclosure to its 736 x 1104 pinimg representation; byte identity is not claimed.",
+    "An observed pilot does not prove publication of the remaining five Pins or guarantee traffic."
+  ],
+  "browserObservedBetweenMoscow": [
+    "2026-10-14T21:00:00+03:00",
+    "2026-10-14T21:02:59+03:00"
+  ],
+  "boardUrl": "https://ru.pinterest.com/kapterka_pro/%D1%83%D1%87%D1%91%D1%82-%D0%B8%D0%BD%D1%81%D1%82%D1%80%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D0%B0-%D0%B8-%D0%B8%D0%BC%D1%83%D1%89%D0%B5%D1%81%D1%82%D0%B2%D0%B0-%D0%BA%D0%B0%D0%BF%D1%82%D1%91%D1%80%D0%BA%D0%B0-pro/",
+  "boardPublic": true,
+  "canonicalPinUrlExplanation": "Actual browser observation used the ru.pinterest.com locale URL. State uses the same factual Pin ID on the official global www.pinterest.com URL accepted by the existing activation gate."
+}

@@ -1,15 +1,21 @@
 {
   "schemaVersion": 1,
-  "stage": "pilot",
+  "stage": "expanded",
   "activeSlugs": [
-    "tool-accounting-templates"
+    "tool-accounting-templates",
+    "inventory-reconcile",
+    "stock-transfer",
+    "issue-check",
+    "operation-journal",
+    "phone-stock"
   ],
   "pilotVerification": {
-    "pinUrl": null,
-    "checkedAt": null,
-    "imageMatchesEnclosure": false,
-    "destinationWorksAndRetainsUtm": false,
-    "duplicateCheckPassed": false
+    "pinUrl": "https://www.pinterest.com/pin/620159811234161964/",
+    "checkedAt": "2026-10-14T21:03:30+03:00",
+    "imageMatchesEnclosure": true,
+    "destinationWorksAndRetainsUtm": true,
+    "duplicateCheckPassed": true,
+    "evidence": "pilot-verification.json"
   },
-  "note": "Do not activate staged materials before an actual pilot Pin is observed and its image, destination and absence of duplicates are verified. Allow up to 24 hours for Pinterest RSS processing."
+  "note": "Pilot Pin is actually published and checked. Expanding only the five distinct materials from the reviewed six-item whitelist; allow up to 24 hours for native Pinterest RSS processing after separately approved website deployment."
 }
