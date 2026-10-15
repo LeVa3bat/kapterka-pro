@@ -66,6 +66,7 @@ jobs:
           --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage"
           --output=json
           --output-path=lh-mobile.json
+          --save-assets
 
       - name: Lighthouse desktop
         run: >
@@ -77,6 +78,7 @@ jobs:
           --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage"
           --output=json
           --output-path=lh-desktop.json
+          --save-assets
 
       - name: Check quality gates
         run: node .github/scripts/lighthouse-budget.mjs lh-mobile.json lh-desktop.json
@@ -98,6 +100,10 @@ jobs:
           path: |
             lh-mobile.json
             lh-desktop.json
+            lh-mobile-0.trace.json
+            lh-mobile-0.devtoolslog.json
+            lh-desktop-0.trace.json
+            lh-desktop-0.devtoolslog.json
             growth/qa/*.png
             growth/qa/discover/*.png
           retention-days: 14
