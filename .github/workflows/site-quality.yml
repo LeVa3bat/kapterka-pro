@@ -8,12 +8,14 @@ on:
       - '.github/scripts/site-live-check.mjs'
       - '.github/scripts/site-discover-check.mjs'
       - '.github/scripts/lighthouse-budget.mjs'
+      - '.github/scripts/payment-browser-check.cjs'
       - '.github/workflows/site-quality.yml'
       - 'package*.json'
   pull_request:
     paths:
       - 'docs/**'
       - '.github/scripts/lighthouse-budget.mjs'
+      - '.github/scripts/payment-browser-check.cjs'
       - '.github/scripts/build-site-css.mjs'
       - '.github/scripts/site-discover-check.mjs'
       - '.github/workflows/site-quality.yml'
@@ -84,7 +86,9 @@ jobs:
         run: node .github/scripts/lighthouse-budget.mjs lh-mobile.json lh-desktop.json
 
       - name: Verify interactions and layouts
-        run: node .github/scripts/site-browser-check.cjs
+        run: |
+          node .github/scripts/site-browser-check.cjs
+          node .github/scripts/payment-browser-check.cjs
 
       - name: Verify Discover image selection and mobile layouts
         run: node .github/scripts/site-discover-check.mjs --browser

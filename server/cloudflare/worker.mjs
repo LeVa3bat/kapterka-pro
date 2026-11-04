@@ -32,6 +32,12 @@ const MAIL_RELAY_TIMEOUT_MS = 28000;
 const LICENSES = 'srv_licenses';
 const FIGHTERS = 'srv_fighters';
 const EMAIL_CODES = 'srv_email_codes';
+const LICENSE_DELIVERIES = 'srv_license_deliveries';
+const DELIVERY_LEASE_MS = 2 * 60 * 1000;
+const DELIVERY_BATCH_SIZE = 3;
+const COMMIT_ATTEMPTS = 5;
+const RECONCILIATION = 'srv_payment_reconciliation';
+const RECONCILIATION_BATCH_SIZE = 3;
 const EMAIL_CODE_TTL_MS = 10 * 60 * 1000;
 const EMAIL_CODE_RESEND_MS = 60 * 1000;
 const EMAIL_CODE_MAX_ATTEMPTS = 5;
@@ -395,7 +401,47 @@ class Firestore {
     if (r.status === 404) return null;
     if (!r.ok) throw new Error(`Firestore read failed: HTTP ${r.status}`);
     const doc = await r.json();
-    return { id, ...fromFirestoreFields(doc.fields) };
+    return { id, ...fromFirestoreFields(doc.fields), _updateTime: doc.updateTime };
+  }
+
+  // Optimistic transactions: every read used to calculate a write is guarded
+  // by its exact version. Firestore commits all writes or none of them.
+  write(collection, id, data, snapshot) {
+    if (!id || String(id).includes('/') || (snapshot && !snapshot._updateTime)) throw new Error('Invalid Firestore write precondition');
+    const fields = Object.fromEntries(Object.entries(data).map(([key, value]) => [key, toFirestoreValue(value)]));
+    return {
+      update: { name: `projects/${this.cfg.projectId}/databases/(default)/documents/${collection}/${id}`, fields },
+      updateMask: { fieldPaths: Object.keys(data) },
+      currentDocument: snapshot ? { updateTime: snapshot._updateTime } : { exists: false }
+    };
+  }
+
+  async commit(writes) {
+    if (!writes.length) return;
+    const r = await this.request('POST', ':commit', { writes });
+    if (!r.ok) {
+      const detail = await r.json().catch(() => ({}));
+      const error = new Error(`Firestore commit failed: HTTP ${r.status}`);
+      error.code = detail?.error?.status || '';
+      throw error;
+    }
+    await r.json(); // Consume the small response so its connection can be reused.
+  }
+
+  async dueDeliveries(now, limit = DELIVERY_BATCH_SIZE) {
+    const r = await this.request('POST', ':runQuery', {
+      structuredQuery: {
+        from: [{ collectionId: LICENSE_DELIVERIES }],
+        where: { fieldFilter: { field: { fieldPath: 'nextAttemptAt' }, op: 'LESS_THAN_OR_EQUAL', value: { integerValue: String(now) } } },
+        orderBy: [{ field: { fieldPath: 'nextAttemptAt' }, direction: 'ASCENDING' }],
+        limit
+      }
+    });
+    if (!r.ok) throw new Error(`Firestore delivery query failed: HTTP ${r.status}`);
+    return (await r.json()).filter((row) => row.document).map(({ document }) => ({
+      id: decodeURIComponent(document.name.split('/').pop()),
+      ...fromFirestoreFields(document.fields)
+    }));
   }
 
   // Merge-patch the given fields. `mustExist`: true → update only, false → create only.
@@ -622,6 +668,238 @@ function paymentTimestampMillis(payment) {
   return Number.isFinite(parsed) ? parsed : Date.now();
 }
 
+function commitConflict(error) {
+  return ['ABORTED', 'FAILED_PRECONDITION', 'ALREADY_EXISTS'].includes(error?.code);
+}
+
+async function withCommitRetry(operation) {
+  for (let attempt = 0; ; attempt++) {
+    try { return await operation(); } catch (error) {
+      if (!commitConflict(error) || attempt >= COMMIT_ATTEMPTS - 1) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 10 * 2 ** attempt));
+    }
+  }
+}
+
+// One atomic commit both consumes this payment and advances the fighter's
+// entitlement. Retrying after a lost response never consumes it a second time.
+async function persistPaymentLicense(db, cfg, paymentId, payment, requestedFighterId, trustedWebhook, webClaimVerified) {
+  const licenseKey = await keyForPayment(paymentId);
+  return withCommitRetry(async () => {
+    const stored = await db.get(LICENSES, licenseKey);
+    const existing = normalizeLicense(stored);
+    if (existing?.paymentId && existing.paymentId !== paymentId) throw new Error('Payment license collision');
+    if (existing && !(existing.expiresAt > 0)) throw new Error('Invalid stored license');
+    if (existing && existing.status !== 'ACTIVE') {
+      const error = new Error('License is not active');
+      error.code = 'LICENSE_NOT_ACTIVE';
+      throw error;
+    }
+    if (existing?.fighterId && !trustedWebhook && !webClaimVerified && existing.fighterId !== requestedFighterId) {
+      const error = new Error('License fighter mismatch');
+      error.code = 'LICENSE_FIGHTER_MISMATCH';
+      throw error;
+    }
+    const fighterId = existing ? existing.fighterId : cleanText(payment.metadata?.fighter_id, 100) ||
+      (payment.metadata?.web_claim_hash ? '' : requestedFighterId);
+    const fighter = fighterId ? await db.get(FIGHTERS, fighterId) : null;
+    const delivery = await db.get(LICENSE_DELIVERIES, licenseKey);
+    const now = Date.now();
+    const activatedAt = paymentTimestampMillis(payment);
+    const expiresAt = existing?.expiresAt > 0 ? existing.expiresAt
+      : Math.max(activatedAt, Number(fighter?.expiresAt || 0)) + LICENSE_DURATION_MS;
+    const email = existing?.email || cleanEmail(payment.metadata?.email);
+    const callsign = existing?.callsign || cleanText(payment.metadata?.callsign || 'Пользователь', 80);
+    const writes = [];
+    if (!existing) {
+      writes.push(db.write(LICENSES, licenseKey, {
+        licenseKey, fighterId, callsign, email, paymentId, amount: cfg.amountRub,
+        activatedAt, expiresAt, durationDays: 30, status: 'ACTIVE', source: 'YooKassa server verification'
+      }, null));
+    }
+    // Also repairs old partially delivered payments, without replacing a newer
+    // fighter entitlement with an older key or shortening its expiry.
+    if (fighterId && (!fighter || Number(fighter.expiresAt || 0) < expiresAt)) {
+      writes.push(db.write(FIGHTERS, fighterId, {
+        ...(!fighter ? { fighterId, email, callsign } : {}),
+        licenseKey, expiresAt, isProActive: expiresAt > now, lastSeenAt: now
+      }, fighter));
+    }
+    if (!delivery && email) {
+      writes.push(db.write(LICENSE_DELIVERIES, licenseKey, {
+        licenseKey, paymentId, email, callsign, expiresAt,
+        state: 'PENDING', attempts: 0, nextAttemptAt: now, leaseOwner: '', lastError: '', createdAt: now
+      }, null));
+    }
+    await db.commit(writes);
+    return { licenseKey, expiresAt, created: !existing, deliveryPending: Boolean(email && (!delivery || delivery.nextAttemptAt <= now)) };
+  });
+}
+
+// The outbox survives client disconnects, Worker restarts and provider errors.
+// A lease prevents concurrent sends. Delivery is at least once: if the mail
+// provider accepts a letter but the checkpoint is lost, a retry can duplicate
+// that same letter; it cannot create another key or extend the licence.
+async function deliverLicense(db, cfg, licenseKey) {
+  const leaseOwner = crypto.randomUUID();
+  const job = await db.get(LICENSE_DELIVERIES, licenseKey);
+  const now = Date.now();
+  if (!job || job.state === 'SENT' || job.nextAttemptAt > now) return false;
+  try {
+    await db.commit([db.write(LICENSE_DELIVERIES, licenseKey, {
+      state: 'SENDING', leaseOwner, attempts: Number(job.attempts || 0) + 1,
+      nextAttemptAt: now + DELIVERY_LEASE_MS
+    }, job)]);
+  } catch (error) {
+    if (commitConflict(error)) return false;
+    throw error;
+  }
+  let failure = '';
+  try {
+    await sendLicenseEmail(cfg, {
+      toEmail: job.email, callsign: job.callsign, licenseKey,
+      days: Math.max(1, Math.ceil((job.expiresAt - Date.now()) / DAY_MS))
+    });
+  } catch (error) {
+    failure = mailReason(error);
+    console.error(JSON.stringify({ event: 'license_email_failed', reason: failure }));
+  }
+  await withCommitRetry(async () => {
+    const current = await db.get(LICENSE_DELIVERIES, licenseKey);
+    if (!current || current.leaseOwner !== leaseOwner) return;
+    await db.commit([db.write(LICENSE_DELIVERIES, licenseKey, {
+      state: failure ? 'PENDING' : 'SENT', leaseOwner: '', lastError: failure,
+      nextAttemptAt: failure ? Date.now() + Math.min(3600000, 60000 * 2 ** Math.min(Number(current.attempts || 1), 6)) : Number.MAX_SAFE_INTEGER,
+      ...(!failure ? { sentAt: Date.now() } : {})
+    }, current)]);
+  });
+  return !failure;
+}
+
+async function retryLicenseDeliveries(env) {
+  const cfg = getConfig(env);
+  const db = new Firestore(cfg);
+  const jobs = await db.dueDeliveries(Date.now());
+  await Promise.all(jobs.map((job) => deliverLicense(db, cfg, job.id).catch((error) => {
+    console.error(JSON.stringify({ event: 'license_delivery_retry_failed', error: error?.message || 'Unknown error' }));
+  })));
+}
+
+async function reconcilePayments(env) {
+  const cfg = getConfig(env);
+  const db = new Firestore(cfg);
+  const state = await db.get(RECONCILIATION, 'succeeded');
+  const now = Date.now();
+  if (Number(state?.leaseUntil || 0) > now) return;
+  const leaseOwner = crypto.randomUUID();
+  const windowStart = state?.inProgress ? state.windowStart
+    : Math.min(now - 7 * DAY_MS, Number(state?.completedThrough || now) - DAY_MS);
+  const windowEnd = state?.inProgress ? state.windowEnd : now;
+  const cursor = state?.inProgress ? String(state.cursor || '') : '';
+  try {
+    await db.commit([db.write(RECONCILIATION, 'succeeded', {
+      leaseOwner, leaseUntil: now + 5 * 60000, inProgress: true, windowStart, windowEnd, cursor
+    }, state)]);
+  } catch (error) {
+    if (commitConflict(error)) return;
+    throw error;
+  }
+  let nextCursor = cursor;
+  let completed = false;
+  let failure = null;
+  try {
+    const params = new URLSearchParams({
+      status: 'succeeded', 'captured_at.gte': new Date(windowStart).toISOString(),
+      'captured_at.lte': new Date(windowEnd).toISOString(), limit: String(RECONCILIATION_BATCH_SIZE)
+    });
+    if (cursor) params.set('cursor', cursor);
+    const page = await requestYooKassa(cfg, 'GET', '/v3/payments?' + params);
+    if (!Array.isArray(page.items) || page.items.length > RECONCILIATION_BATCH_SIZE) throw new Error('Invalid YooKassa reconciliation page');
+    const ctx = {
+      cfg, db, body: {}, hasBackground: false,
+      ok: (payload) => Response.json(payload),
+      fail: (code, error, extra = {}) => Response.json({ ok: false, error, ...extra }, { status: code })
+    };
+    for (const payment of page.items) {
+      if (payment.metadata?.product !== 'kapterka_pro_30d' || !cleanEmail(payment.metadata?.email) ||
+          payment.status !== 'succeeded' || payment.paid !== true || !amountMatchesTariff(payment, cfg.amountRub)) continue;
+      const paymentId = String(payment.id || '');
+      if (!/^[A-Za-z0-9-]{8,100}$/.test(paymentId)) throw new Error('Invalid payment ID in reconciliation');
+      // Re-fetch each candidate through the same shop-authenticated path. Mail
+      // stays deferred to the single bounded outbox batch below.
+      const response = await processPayment(ctx, paymentId, '', true);
+      if (response.status >= 500 || response.status === 429) throw new Error('Payment reconciliation temporarily unavailable');
+    }
+    nextCursor = String(page.next_cursor || '');
+    if (nextCursor === cursor && nextCursor) throw new Error('YooKassa reconciliation cursor did not advance');
+    completed = !nextCursor;
+  } catch (error) { failure = error; }
+  await withCommitRetry(async () => {
+    const current = await db.get(RECONCILIATION, 'succeeded');
+    if (!current || current.leaseOwner !== leaseOwner) return;
+    await db.commit([db.write(RECONCILIATION, 'succeeded', {
+      leaseOwner: '', leaseUntil: 0,
+      cursor: failure ? cursor : nextCursor,
+      inProgress: failure || !completed ? true : false,
+      lastError: failure ? 'RECONCILIATION_FAILED' : '',
+      ...(!failure && completed ? { completedThrough: windowEnd } : {})
+    }, current)]);
+  });
+  if (failure) throw failure;
+}
+
+async function processPayment(ctx, paymentId, requestedFighterId, trustedWebhook = false) {
+  const { cfg, db } = ctx;
+  let payment;
+  try {
+    payment = await requestYooKassa(cfg, 'GET', `/v3/payments/${encodeURIComponent(paymentId)}`);
+  } catch (error) {
+    if (error?.status === 404) return ctx.ok({ ok: true, paid: false, status: 'not_found' });
+    if (error?.status === 401 || error?.status === 403) return ctx.fail(502, 'PAYMENT_GATEWAY_AUTH');
+    throw error;
+  }
+  const status = payment.status || 'unknown';
+  if (!(status === 'succeeded' && payment.paid === true)) return ctx.ok({ ok: true, paid: false, status });
+  if (!amountMatchesTariff(payment, cfg.amountRub)) return ctx.fail(409, 'PAYMENT_AMOUNT_MISMATCH', { paid: false, status });
+  const product = payment.metadata?.product;
+  if ((product && product !== 'kapterka_pro_30d') || (trustedWebhook && product !== 'kapterka_pro_30d')) {
+    return ctx.fail(409, 'PAYMENT_PRODUCT_MISMATCH', { paid: false, status });
+  }
+  if (trustedWebhook && !cleanEmail(payment.metadata?.email)) return ctx.fail(409, 'PAYMENT_EMAIL_MISSING', { paid: false, status });
+  const paymentFighterId = cleanText(payment.metadata?.fighter_id, 100);
+  const webClaimHash = String(payment.metadata?.web_claim_hash || '');
+  let webClaimVerified = false;
+  if (!trustedWebhook && webClaimHash) {
+    const token = String(ctx.body.web_claim_token || '');
+    if (!/^[a-f0-9]{32,128}$/i.test(token) || !/^[a-f0-9]{64}$/i.test(webClaimHash) ||
+        !constantTimeEqual(await sha256Hex(token), webClaimHash.toLowerCase())) {
+      return ctx.fail(403, 'PAYMENT_CLAIM_MISMATCH', { paid: false, status });
+    }
+    webClaimVerified = true;
+  }
+  if (!trustedWebhook && paymentFighterId && requestedFighterId !== paymentFighterId) {
+    return ctx.fail(403, 'FIGHTER_MISMATCH', { paid: false, status });
+  }
+  let issued;
+  try {
+    issued = await persistPaymentLicense(db, cfg, paymentId, payment, requestedFighterId, trustedWebhook, webClaimVerified);
+  } catch (error) {
+    if (error?.code === 'LICENSE_FIGHTER_MISMATCH') return ctx.fail(403, error.code, { paid: false, status });
+    if (error?.code === 'LICENSE_NOT_ACTIVE') return ctx.fail(409, error.code, { paid: true, status: 'inactive' });
+    console.error(JSON.stringify({ event: 'license_registry_failed', error: error?.message || 'Unknown error' }));
+    return ctx.fail(503, 'LICENSE_REGISTRY_UNAVAILABLE', { paid: true, status });
+  }
+  if (issued.deliveryPending && ctx.hasBackground) {
+    ctx.background(deliverLicense(db, cfg, issued.licenseKey).catch((error) => {
+      console.error(JSON.stringify({ event: 'license_delivery_failed', error: error?.message || 'Unknown error' }));
+    }));
+  }
+  if (issued.created && ctx.hasBackground) {
+    ctx.background(sendTelegram(cfg, '✅ <b>Оплата подтверждена</b>\nКлюч: <code>' + escapeHtml(maskKey(issued.licenseKey)) + '</code>'));
+  }
+  return ctx.ok(licenseResponse(status, issued.licenseKey, issued.expiresAt));
+}
+
 // ---------------------------------------------------------------- Firebase ID tokens
 
 const FIREBASE_JWKS_URL =
@@ -752,6 +1030,7 @@ const handlers = {
       ok: true,
       service: SERVICE_NAME,
       apiVersion: API_VERSION,
+      fulfillmentVersion: 1,
       secretConfigured: Boolean(cfg.secretKey),
       licenseRegistryConfigured: Boolean(cfg.serviceAccount),
       adminAuthConfigured: /^[a-f0-9]{64}$/.test(cfg.adminSecretSha256) || cfg.adminPassword.length >= 12,
@@ -829,20 +1108,27 @@ const handlers = {
         active = null;
       }
     }
-    await db.patch(FIGHTERS, fighterId, {
-      fighterId,
-      callsign,
-      role: 'Старшина подразделения',
-      unitName,
-      unitKey,
-      email,
-      deviceModel,
-      registeredAt: now,
-      lastSeenAt: now,
-      licenseKey: active?.licenseKey || '',
-      expiresAt: active?.expiresAt || 0,
-      isProActive: isActive(active, now)
-    });
+    try {
+      await db.commit([db.write(FIGHTERS, fighterId, {
+        fighterId,
+        callsign,
+        role: 'Старшина подразделения',
+        unitName,
+        unitKey,
+        email,
+        deviceModel,
+        registeredAt: now,
+        lastSeenAt: now,
+        licenseKey: active?.licenseKey || '',
+        expiresAt: active?.expiresAt || 0,
+        isProActive: isActive(active, now)
+      }, null)]);
+    } catch (error) {
+      // Registration may race the first paid entitlement. Never overwrite the
+      // fighter and erase its newly committed license fields.
+      if (commitConflict(error)) return ctx.ok({ ok: true, existing: true });
+      throw error;
+    }
     // Users coming from ≤3.5.0 already exist in the legacy registry: report
     // them as an upgrade, not as a brand-new registration.
     let upgraded = false;
@@ -985,21 +1271,52 @@ const handlers = {
     if (!LICENSE_KEY_RE.test(licenseKey)) return ctx.fail(400, 'INVALID_LICENSE_KEY');
     if (!(await ctx.limit('verify:' + ctx.ip))) return ctx.fail(429, 'RATE_LIMITED');
 
-    const license = normalizeLicense(await db.get(LICENSES, licenseKey));
-    if (!isActive(license)) return ctx.fail(404, 'LICENSE_NOT_ACTIVE');
-    if (license.fighterId && license.fighterId !== fighterId) return ctx.fail(403, 'FIGHTER_MISMATCH');
+    return withCommitRetry(async () => {
+      const stored = await db.get(LICENSES, licenseKey);
+      const license = normalizeLicense(stored);
+      if (!isActive(license)) return ctx.fail(404, 'LICENSE_NOT_ACTIVE');
+      if (license.fighterId && license.fighterId !== fighterId) return ctx.fail(403, 'FIGHTER_MISMATCH');
+      // Only one Android installation can win the first claim, including when
+      // requests arrive together. This also mirrors a web/legacy entitlement.
+      if (!license.fighterId && fighterId) {
+        const fighter = await db.get(FIGHTERS, fighterId);
+        // A web/legacy purchase cannot know its Android fighter at checkout.
+        // Stack its paid month onto that fighter only once, at first binding.
+        if (stored.paymentId && fighter?.licenseKey !== licenseKey) {
+          license.expiresAt = Math.max(license.expiresAt, Number(fighter?.expiresAt || 0) + LICENSE_DURATION_MS);
+        }
+        const writes = [db.write(LICENSES, licenseKey, { fighterId, expiresAt: license.expiresAt, boundAt: Date.now() }, stored)];
+        if (license.expiresAt !== Number(stored.expiresAt)) {
+          const delivery = await db.get(LICENSE_DELIVERIES, licenseKey);
+          // Never take or alter an active sender's lease. If it wins this race,
+          // retry binding against that version and leave its delivery alone.
+          if (delivery?.state === 'PENDING' && !delivery.leaseOwner) {
+            writes.push(db.write(LICENSE_DELIVERIES, licenseKey, { expiresAt: license.expiresAt }, delivery));
+          }
+        }
+        if (!fighter || Number(fighter.expiresAt || 0) < license.expiresAt) {
+          writes.push(db.write(FIGHTERS, fighterId, {
+            ...(!fighter ? { fighterId, email: license.email, callsign: license.callsign } : {}),
+            licenseKey, expiresAt: license.expiresAt, isProActive: true
+          }, fighter));
+        }
+        await db.commit(writes);
+        license.fighterId = fighterId;
+      }
+      return ctx.ok({ ok: true, license_key: license.licenseKey, expires_at: license.expiresAt, fighter_id: license.fighterId });
+    });
+  },
 
-    // A license bought by a 3.5.0 client has no fighter yet: the first verified
-    // 3.6+ installation claims it, so the same key cannot be spread further.
-    if (!license.fighterId && fighterId) {
-      await db.patch(LICENSES, licenseKey, { fighterId, boundAt: Date.now() }, { mustExist: true });
-      license.fighterId = fighterId;
-    }
+  async license_status(ctx) {
+    const licenseKey = cleanText(ctx.body.license_key, 40).toUpperCase();
+    if (!LICENSE_KEY_RE.test(licenseKey)) return ctx.fail(400, 'INVALID_LICENSE_KEY');
+    if (!(await ctx.limit('status:' + ctx.ip))) return ctx.fail(429, 'RATE_LIMITED');
+    const stored = await ctx.db.get(LICENSES, licenseKey);
+    if (!stored) return ctx.fail(404, 'LICENSE_NOT_FOUND');
+    const license = normalizeLicense(stored);
     return ctx.ok({
-      ok: true,
-      license_key: license.licenseKey,
-      expires_at: license.expiresAt,
-      fighter_id: license.fighterId
+      ok: true, active: isActive(license), status: license.status === 'ACTIVE' && license.expiresAt <= Date.now() ? 'EXPIRED' : license.status,
+      expires_at: license.expiresAt, activated_at: Number(stored.activatedAt || 0)
     });
   },
 
@@ -1252,36 +1569,34 @@ const handlers = {
     const days = Math.min(365, Math.max(1, Number.parseInt(body.days, 10) || 30));
     if (!fighterId) return ctx.fail(400, 'MISSING_FIGHTER_ID');
 
-    const fighter = normalizeFighter(await db.get(FIGHTERS, fighterId));
-    if (!fighter) return ctx.fail(404, 'FIGHTER_NOT_FOUND');
-
-    const now = Date.now();
-    let licenseKey = cleanText(fighter.licenseKey, 40).toUpperCase();
-    const existing = LICENSE_KEY_RE.test(licenseKey) ? normalizeLicense(await db.get(LICENSES, licenseKey)) : null;
-    let expiresAt;
-    if (isActive(existing, now) && existing.fighterId === fighterId) {
-      // "+N days" extends the current license and keeps the same key.
-      expiresAt = existing.expiresAt + days * DAY_MS;
-      await db.patch(LICENSES, licenseKey, { expiresAt, status: 'ACTIVE' }, { mustExist: true });
-    } else {
-      licenseKey = generateAdminLicenseKey();
-      expiresAt = now + days * DAY_MS;
-      await db.patch(LICENSES, licenseKey, {
-        licenseKey,
-        fighterId,
-        callsign: cleanText(fighter.callsign, 80),
-        email: cleanEmail(fighter.email),
-        paymentId: '',
-        amount: 0,
-        activatedAt: now,
-        expiresAt,
-        durationDays: days,
-        status: 'ACTIVE',
-        source: 'Admin server grant'
-      }, { mustExist: false });
-    }
-    await db.patch(FIGHTERS, fighterId, { licenseKey, expiresAt, isProActive: true });
-    return ctx.ok({ ok: true, license_key: licenseKey, expires_at: expiresAt, days });
+    return withCommitRetry(async () => {
+      const fighterDoc = await db.get(FIGHTERS, fighterId);
+      const fighter = normalizeFighter(fighterDoc);
+      if (!fighter) return ctx.fail(404, 'FIGHTER_NOT_FOUND');
+      const now = Date.now();
+      let licenseKey = cleanText(fighter.licenseKey, 40).toUpperCase();
+      const licenseDoc = LICENSE_KEY_RE.test(licenseKey) ? await db.get(LICENSES, licenseKey) : null;
+      const existing = normalizeLicense(licenseDoc);
+      let expiresAt;
+      let licenseFields;
+      if (isActive(existing, now) && existing.fighterId === fighterId) {
+        expiresAt = existing.expiresAt + days * DAY_MS;
+        licenseFields = { expiresAt, status: 'ACTIVE' };
+      } else {
+        licenseKey = generateAdminLicenseKey();
+        expiresAt = now + days * DAY_MS;
+        licenseFields = {
+          licenseKey, fighterId, callsign: cleanText(fighter.callsign, 80), email: cleanEmail(fighter.email),
+          paymentId: '', amount: 0, activatedAt: now, expiresAt, durationDays: days,
+          status: 'ACTIVE', source: 'Admin server grant'
+        };
+      }
+      await db.commit([
+        db.write(LICENSES, licenseKey, licenseFields, isActive(existing, now) && existing.fighterId === fighterId ? licenseDoc : null),
+        db.write(FIGHTERS, fighterId, { licenseKey, expiresAt, isProActive: true }, fighterDoc)
+      ]);
+      return ctx.ok({ ok: true, license_key: licenseKey, expires_at: expiresAt, days });
+    });
   },
 
   // Only test accounts can be removed: anyone who ever had a licence (paid,
@@ -1312,6 +1627,10 @@ const handlers = {
     const callsign = cleanText(body.callsign || query.callsign || 'Пользователь', 80);
     const fighterId = cleanText(body.fighter_id || query.fighter_id, 100);
     if (!email) return ctx.fail(400, 'INVALID_EMAIL');
+    const webClaimToken = String(body.web_claim_token || '');
+    if (query.web_claim_token || (webClaimToken && (!/^[a-f0-9]{32,128}$/i.test(webClaimToken) || fighterId))) {
+      return ctx.fail(400, 'INVALID_WEB_CLAIM');
+    }
     if (!(await ctx.limit('create:' + ctx.ip))) return ctx.fail(429, 'RATE_LIMITED');
 
     const returnUrlRaw = cleanText(body.return_url || query.return_url, 300);
@@ -1325,6 +1644,7 @@ const handlers = {
 
     const metadata = { callsign, email, duration_days: '30', product: 'kapterka_pro_30d' };
     if (fighterId) metadata.fighter_id = fighterId;
+    if (webClaimToken) metadata.web_claim_hash = await sha256Hex(webClaimToken);
 
     // Price comes only from server configuration, never from the client.
     const payment = await requestYooKassa(cfg, 'POST', '/v3/payments', {
@@ -1350,126 +1670,27 @@ const handlers = {
   },
 
   async check(ctx) {
-    const { body, query, db, cfg } = ctx;
-    const paymentId = cleanText(body.payment_id || query.payment_id, 100);
-    const requestedFighterId = cleanText(body.fighter_id || query.fighter_id, 100);
-    if (!paymentId || !/^[A-Za-z0-9-]{8,100}$/.test(paymentId)) return ctx.fail(400, 'MISSING_PAYMENT_ID');
+    const paymentId = cleanText(ctx.body.payment_id || ctx.query.payment_id, 100);
+    const fighterId = cleanText(ctx.body.fighter_id || ctx.query.fighter_id, 100);
+    if (!/^[A-Za-z0-9-]{8,100}$/.test(paymentId)) return ctx.fail(400, 'MISSING_PAYMENT_ID');
     if (!(await ctx.limit('check:' + ctx.ip))) return ctx.fail(429, 'RATE_LIMITED');
+    return processPayment(ctx, paymentId, fighterId);
+  },
 
-    let payment;
-    try {
-      payment = await requestYooKassa(cfg, 'GET', `/v3/payments/${encodeURIComponent(paymentId)}`);
-    } catch (error) {
-      // Unknown payment: not paid (also proves the shop credentials work).
-      if (error?.status === 404) return ctx.ok({ ok: true, paid: false, status: 'not_found' });
-      if (error?.status === 401 || error?.status === 403) {
-        console.error('YooKassa rejected the shop credentials');
-        return ctx.fail(502, 'PAYMENT_GATEWAY_AUTH');
-      }
-      throw error;
-    }
-    const status = payment.status || 'unknown';
-    if (!(status === 'succeeded' && payment.paid === true)) return ctx.ok({ ok: true, paid: false, status });
-    if (!amountMatchesTariff(payment, cfg.amountRub)) {
-      return ctx.fail(409, 'PAYMENT_AMOUNT_MISMATCH', { paid: false, status });
-    }
-    if (payment.metadata?.product && payment.metadata.product !== 'kapterka_pro_30d') {
-      return ctx.fail(409, 'PAYMENT_PRODUCT_MISMATCH', { paid: false, status });
-    }
-    const paymentFighterId = cleanText(payment.metadata?.fighter_id, 100);
-    if (paymentFighterId && requestedFighterId !== paymentFighterId) {
-      return ctx.fail(403, 'FIGHTER_MISMATCH', { paid: false, status });
-    }
-
-    const licenseKey = await keyForPayment(paymentId);
-    const activatedAt = paymentTimestampMillis(payment);
-    const email = cleanEmail(payment.metadata?.email);
-    const callsign = cleanText(payment.metadata?.callsign || 'Пользователь', 80);
-
-    let existing;
-    try {
-      existing = normalizeLicense(await db.get(LICENSES, licenseKey));
-    } catch (error) {
-      console.error('Existing license read error:', error?.message || error);
-      return ctx.fail(503, 'LICENSE_REGISTRY_UNAVAILABLE', { paid: true, status });
-    }
-
-    // One succeeded payment = one license. Re-checks never extend or rebind it.
-    if (existing && existing.expiresAt > 0) {
-      if (existing.fighterId && requestedFighterId && existing.fighterId !== requestedFighterId) {
-        return ctx.fail(403, 'LICENSE_FIGHTER_MISMATCH', { paid: false, status });
-      }
-      return ctx.ok(licenseResponse(status, licenseKey, existing.expiresAt));
-    }
-
-    const fighterId = paymentFighterId || requestedFighterId;
-    let expiresAt = activatedAt + LICENSE_DURATION_MS;
-    try {
-      if (fighterId) {
-        const fighter = normalizeFighter(await db.get(FIGHTERS, fighterId));
-        // Renewal keeps unused paid/admin time.
-        if (fighter && fighter.expiresAt > activatedAt) expiresAt = fighter.expiresAt + LICENSE_DURATION_MS;
-      }
-      await db.patch(LICENSES, licenseKey, {
-        licenseKey,
-        fighterId,
-        callsign,
-        email,
-        paymentId,
-        amount: cfg.amountRub,
-        activatedAt,
-        expiresAt,
-        durationDays: 30,
-        status: 'ACTIVE',
-        source: 'YooKassa server verification'
-      }, { mustExist: false });
-    } catch (error) {
-      if (error?.code === 'ALREADY_EXISTS') {
-        // A concurrent check created it first — return that record unchanged.
-        const winner = normalizeLicense(await db.get(LICENSES, licenseKey));
-        if (!winner || !(winner.expiresAt > 0)) {
-          return ctx.fail(503, 'LICENSE_REGISTRY_UNAVAILABLE', { paid: true, status });
-        }
-        if (winner.fighterId && requestedFighterId && winner.fighterId !== requestedFighterId) {
-          return ctx.fail(403, 'LICENSE_FIGHTER_MISMATCH', { paid: false, status });
-        }
-        return ctx.ok(licenseResponse(status, licenseKey, winner.expiresAt));
-      }
-      console.error('License registry error:', error?.message || error);
-      return ctx.fail(503, 'LICENSE_REGISTRY_UNAVAILABLE', { paid: true, status });
-    }
-
-    if (fighterId) {
-      try {
-        await db.patch(FIGHTERS, fighterId, {
-          licenseKey,
-          expiresAt,
-          isProActive: expiresAt > Date.now(),
-          lastSeenAt: Date.now()
-        });
-      } catch (error) {
-        console.error('Fighter license mirror error:', error?.message || error);
-      }
-    }
-    if (email) {
-      try {
-        await sendLicenseEmail(cfg, {
-          toEmail: email,
-          callsign,
-          licenseKey,
-          days: Math.max(1, Math.ceil((expiresAt - Date.now()) / DAY_MS))
-        });
-      } catch (error) {
-        console.error('Licence email after payment failed:', error?.message || error);
-      }
-    }
-    await sendTelegram(cfg,
-      '✅ <b>Оплата подтверждена</b>\n' +
-      'Позывной: <b>' + escapeHtml(callsign) + '</b>\n' +
-      'Ключ: <code>' + escapeHtml(maskKey(licenseKey)) + '</code>'
-    );
-    return ctx.ok(licenseResponse(status, licenseKey, expiresAt));
+  async payment_webhook(ctx) {
+    if (ctx.body.type !== 'notification') return ctx.fail(400, 'INVALID_NOTIFICATION');
+    if (ctx.body.event !== 'payment.succeeded') return ctx.ok({ ok: true, received: true, ignored: true });
+    const paymentId = cleanText(ctx.body.object?.id, 100);
+    if (!/^[A-Za-z0-9-]{8,100}$/.test(paymentId)) return ctx.fail(400, 'MISSING_PAYMENT_ID');
+    if (!(await ctx.limit('webhook:' + ctx.ip))) return ctx.fail(429, 'RATE_LIMITED');
+    // Only the GET authenticated to our shop supplies fighter/email/amount.
+    const response = await processPayment(ctx, paymentId, '', true);
+    if (response.status >= 500 || response.status === 429) return response;
+    const result = await response.json();
+    // Never return a reusable key or customer data to webhook callers.
+    return ctx.ok({ ok: true, received: true, fulfilled: result.paid === true && result.ok === true });
   }
+
 };
 handlers.pay = handlers.create;
 
@@ -1489,6 +1710,17 @@ function licenseResponse(status, licenseKey, expiresAt) {
 const REMOVED_ACTIONS = new Set(['send_telegram']);
 
 export default {
+  async scheduled(_controller, env) {
+    // Keep recovery independent: a YooKassa outage must not stop mail retries.
+    let failure;
+    try { await reconcilePayments(env); } catch (error) {
+      failure = error;
+      console.error(JSON.stringify({ event: 'payment_reconciliation_failed', error: error?.message || 'Unknown error' }));
+    }
+    await retryLicenseDeliveries(env);
+    if (failure) throw failure;
+  },
+
   async fetch(request, env, execCtx) {
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(request) });
     if (request.method !== 'GET' && request.method !== 'POST') {
@@ -1511,7 +1743,7 @@ export default {
       }
     }
 
-    const action = cleanText(query.action || body.action, 40).toLowerCase();
+    const action = url.pathname === '/yookassa/webhook' ? 'payment_webhook' : cleanText(query.action || body.action, 40).toLowerCase();
     const cfg = getConfig(env);
     const ip = clientIp(request);
     const ctx = {
@@ -1520,6 +1752,7 @@ export default {
       cfg,
       ip,
       // Background work that must not delay the answer (e.g. a welcome letter).
+      hasBackground: Boolean(execCtx && typeof execCtx.waitUntil === 'function'),
       background: (promise) => (execCtx && typeof execCtx.waitUntil === 'function' ? execCtx.waitUntil(promise) : promise),
       query,
       body,
