@@ -4,8 +4,8 @@ Android-приложение и официальный сайт проекта.
 
 ## Текущий релиз
 
-- Версия: **3.8.1**
-- Build / versionCode: **37**
+- Версия: **3.8.2**
+- Build / versionCode: **38**
 - Package: `com.aistudio.kapterka.jmwqve`
 - Сайт: папка `docs`
 - Room DB: версия 3
