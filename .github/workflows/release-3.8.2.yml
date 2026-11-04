@@ -131,7 +131,18 @@ jobs:
         env:
           STORE_PASSWORD: android
           KEY_PASSWORD: android
-        run: gradle :app:testDebugUnitTest :app:assembleRelease --no-daemon --no-parallel --max-workers=2 --stacktrace
+        shell: bash
+        run: |
+          # Robolectric fetches Android jars itself, outside Gradle's repositories.
+          # Use Maven Central's canonical endpoint to avoid repo1 HTTP 429 failures.
+          cat > "$RUNNER_TEMP/robolectric-central.init.gradle" <<'GRADLE'
+          allprojects {
+            tasks.withType(org.gradle.api.tasks.testing.Test).configureEach {
+              systemProperty 'robolectric.dependency.repo.url', 'https://repo.maven.apache.org/maven2'
+            }
+          }
+          GRADLE
+          gradle --init-script "$RUNNER_TEMP/robolectric-central.init.gradle" :app:testDebugUnitTest :app:assembleRelease --no-daemon --no-parallel --max-workers=2 --stacktrace
 
       - name: Verify APK, signer and cloud transport
         id: verify
