@@ -4,10 +4,12 @@ on:
   push:
     paths:
       - 'server/cloudflare/**'
+      - '.github/scripts/payment-live-check*.mjs'
       - '.github/workflows/kapterka-api.yml'
   pull_request:
     paths:
       - 'server/cloudflare/**'
+      - '.github/scripts/payment-live-check*.mjs'
   workflow_dispatch:
     inputs:
       deploy:
@@ -34,7 +36,9 @@ jobs:
         with:
           node-version: '22'
       - name: Backend self-test
-        run: node server/cloudflare/worker.test.mjs
+        run: |
+          node server/cloudflare/worker.test.mjs
+          node .github/scripts/payment-live-check.test.mjs
       - name: No secrets in worker source
         run: |
           if grep -E -n 'live_[A-Za-z0-9_-]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY-----[A-Za-z0-9+/=]{20}|[0-9]{8,10}:AA[A-Za-z0-9_-]{30,}' server/cloudflare/worker.mjs server/cloudflare/wrangler.toml; then
@@ -87,3 +91,4 @@ jobs:
           code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/?action=admin_list_fighters" -H 'Content-Type: application/json' -d '{"admin_token":"x.y.z"}')
           [ "$code" = "403" ] || { echo "admin must reject forged token, got $code"; exit 1; }
           echo "Live checks passed"
+          node .github/scripts/payment-live-check.mjs --require-fulfillment

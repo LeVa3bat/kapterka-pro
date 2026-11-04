@@ -226,6 +226,7 @@
   }
 
   function migrateAndSetSession(serverUser, token, expiresAt) {
+    if (typeof window.pausePaymentChecks === "function") window.pausePaymentChecks();
     const targetEmail = normalizeAccountEmail(serverUser?.email || pendingEmail || "");
     const currentSession = typeof window.getActiveUserSession === "function" ? window.getActiveUserSession() : null;
     const currentEmail = normalizeAccountEmail(currentSession?.email || localStorage.getItem("kapterka_user_email") || "");
@@ -283,6 +284,7 @@
     }
 
     snapshotAccount(user.email);
+    if (typeof window.resumePendingPaymentChecks === "function") window.resumePendingPaymentChecks();
   }
 
   function showRegistrationVerify() {
@@ -576,6 +578,7 @@
   }
 
   function logoutV2() {
+    if (typeof window.pausePaymentChecks === "function") window.pausePaymentChecks();
     const current = typeof window.getActiveUserSession === "function" ? window.getActiveUserSession() : null;
     snapshotAccount(current?.email || localStorage.getItem("kapterka_user_email"));
 

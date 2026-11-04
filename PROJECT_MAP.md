@@ -73,7 +73,7 @@
 | `server/cloudflare/wrangler.toml` | Настройки развёртывания Worker'а |
 | `server/firestore/` | Правила базы Firestore (`transition.rules`, `strict.rules`), их тесты и конфиг эмулятора |
 | `server/google-apps-script-*.js` | Скрипты Google Apps Script для почты и входа |
-| `server/yookassa-webhook.js` | Обработчик платежей ЮKassa |
+| `server/yookassa-webhook.js` | Старый обработчик; текущая выдача и webhook находятся в `server/cloudflare/worker.mjs` |
 | `server/WEB_AUTH_DEPLOY.md` | Заметки по развёртыванию входа |
 
 ## `tools/graphics/`

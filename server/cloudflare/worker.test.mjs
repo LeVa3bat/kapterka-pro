@@ -66,8 +66,21 @@ const state = {
   telegram: [],
   relayed: [],
   emails: [],
-  firestoreDown: false
+  firestoreDown: false,
+  versions: new Map(),
+  version: 0,
+  failFighterCommitOnce: false,
+  mailDown: false,
+  reconciliationIds: [],
+  listRequests: [],
+  failPaymentGets: new Set(),
+  requestCount: 0
 };
+
+function versionFor(key, changed = false) {
+  if (changed || !state.versions.has(key)) state.versions.set(key, new Date(1760000000000 + ++state.version).toISOString());
+  return state.versions.get(key);
+}
 
 function toFields(obj) {
   const fields = {};
@@ -86,6 +99,7 @@ function fromFields(fields) {
 const jsonResponse = (status, body) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
 globalThis.fetch = async (input, init = {}) => {
+  state.requestCount++;
   const url = new URL(typeof input === 'string' ? input : input.url);
   const method = (init.method || 'GET').toUpperCase();
   const body = init.body ? String(init.body) : '';
@@ -101,6 +115,29 @@ globalThis.fetch = async (input, init = {}) => {
     if (state.firestoreDown) return jsonResponse(503, {});
     const prefix = '/v1/projects/kapterka-pro/databases/(default)/documents';
     const path = decodeURIComponent(url.pathname.slice(prefix.length));
+    if (path === ':commit') {
+      const writes = JSON.parse(body).writes;
+      const parsed = writes.map((write) => ({
+        write, key: write.update.name.split('/documents/')[1], data: fromFields(write.update.fields)
+      }));
+      if (state.failFighterCommitOnce && parsed.some(({ key }) => key.startsWith('srv_fighters/'))) {
+        state.failFighterCommitOnce = false;
+        return jsonResponse(503, { error: { status: 'UNAVAILABLE' } });
+      }
+      // Validate the entire batch before changing any document, like Firestore.
+      for (const { write, key } of parsed) {
+        const condition = write.currentDocument;
+        if ((condition.exists === false && state.docs.has(key)) ||
+            (condition.updateTime && (!state.docs.has(key) || versionFor(key) !== condition.updateTime))) {
+          return jsonResponse(400, { error: { status: 'FAILED_PRECONDITION' } });
+        }
+      }
+      for (const { key, data } of parsed) {
+        state.docs.set(key, { ...(state.docs.get(key) || {}), ...data });
+        versionFor(key, true);
+      }
+      return jsonResponse(200, { writeResults: parsed.map(({ key }) => ({ updateTime: versionFor(key) })) });
+    }
     if (path === ':runQuery') {
       const q = JSON.parse(body).structuredQuery;
       const coll = q.from[0].collectionId;
@@ -115,13 +152,15 @@ globalThis.fetch = async (input, init = {}) => {
         return jsonResponse(200, rows);
       }
       const field = q.where.fieldFilter.field.fieldPath;
-      const value = q.where.fieldFilter.value.stringValue;
+      const value = q.where.fieldFilter.value.stringValue ?? Number(q.where.fieldFilter.value.integerValue);
       const rows = [];
       for (const [key, doc] of state.docs) {
         const [c, id] = key.split('/');
-        if (c === coll && doc[field] === value) rows.push({ document: { name: `${prefix}/${c}/${id}`, fields: toFields(doc) } });
+        const matches = q.where.fieldFilter.op === 'LESS_THAN_OR_EQUAL' ? doc[field] <= value : doc[field] === value;
+        if (c === coll && matches) rows.push({ document: { name: `${prefix}/${c}/${id}`, fields: toFields(doc) } });
       }
-      return jsonResponse(200, rows);
+      if (q.orderBy) rows.sort((a, b) => fromFields(a.document.fields)[field] - fromFields(b.document.fields)[field]);
+      return jsonResponse(200, rows.slice(0, q.limit || rows.length));
     }
     const parts = path.replace(/^\//, '').split('/');
     if (parts.length % 2 === 1) {
@@ -133,7 +172,7 @@ globalThis.fetch = async (input, init = {}) => {
     }
     const key = parts.join('/');
     if (method === 'GET') {
-      return state.docs.has(key) ? jsonResponse(200, { name: key, fields: toFields(state.docs.get(key)) }) : jsonResponse(404, {});
+      return state.docs.has(key) ? jsonResponse(200, { name: key, fields: toFields(state.docs.get(key)), updateTime: versionFor(key) }) : jsonResponse(404, {});
     }
     if (method === 'DELETE') {
       state.docs.delete(key);
@@ -144,6 +183,7 @@ globalThis.fetch = async (input, init = {}) => {
       if (exists === 'false' && state.docs.has(key)) return jsonResponse(409, { error: { status: 'ALREADY_EXISTS' } });
       if (exists === 'true' && !state.docs.has(key)) return jsonResponse(404, { error: { status: 'NOT_FOUND' } });
       state.docs.set(key, { ...(state.docs.get(key) || {}), ...fromFields(JSON.parse(body).fields) });
+      versionFor(key, true);
       return jsonResponse(200, {});
     }
   }
@@ -156,8 +196,19 @@ globalThis.fetch = async (input, init = {}) => {
       state.payments.set(id, { id, status: 'pending', paid: false, amount: req.amount, metadata: req.metadata });
       return jsonResponse(200, { id, confirmation: { confirmation_url: 'https://yoomoney.ru/checkout/' + id } });
     }
+    if (method === 'GET' && url.pathname === '/v3/payments') {
+      state.listRequests.push(Object.fromEntries(url.searchParams));
+      const from = Date.parse(url.searchParams.get('captured_at.gte'));
+      const until = Date.parse(url.searchParams.get('captured_at.lte'));
+      const all = state.reconciliationIds.map((id) => state.payments.get(id)).filter((payment) =>
+        payment.status === url.searchParams.get('status') && Date.parse(payment.captured_at) >= from && Date.parse(payment.captured_at) <= until);
+      const offset = Number(url.searchParams.get('cursor') || 0);
+      const limit = Number(url.searchParams.get('limit'));
+      return jsonResponse(200, { items: all.slice(offset, offset + limit), ...(offset + limit < all.length ? { next_cursor: String(offset + limit) } : {}) });
+    }
     const id = decodeURIComponent(url.pathname.split('/').pop());
     const p = state.payments.get(id);
+    if (state.failPaymentGets.has(id)) return jsonResponse(503, {});
     if (id.startsWith('boom-')) return jsonResponse(500, { description: 'secret upstream detail' });
     return p ? jsonResponse(200, p) : jsonResponse(404, { description: 'secret upstream detail' });
   }
@@ -179,6 +230,7 @@ globalThis.fetch = async (input, init = {}) => {
   }
 
   if (url.hostname === 'api.brevo.com') {
+    if (state.mailDown) return jsonResponse(503, {});
     state.emails.push(JSON.parse(body));
     return jsonResponse(201, {});
   }
@@ -189,17 +241,19 @@ globalThis.fetch = async (input, init = {}) => {
   throw new Error('Unexpected outbound request: ' + url.href);
 };
 
-async function call(action, body = {}, { method = 'POST', ip = '10.0.0.1', origin, envOverride } = {}) {
-  const url = 'https://kapterka-api.test/?action=' + encodeURIComponent(action);
+async function call(action, body = {}, { method = 'POST', ip = '10.0.0.1', origin, envOverride, drainBackground = true, noBackground = false, path = '/' } = {}) {
+  const url = 'https://kapterka-api.test' + path + '?action=' + encodeURIComponent(action);
   const headers = { 'CF-Connecting-IP': ip, 'Content-Type': 'application/json' };
   if (origin) headers.Origin = origin;
   const request = new Request(url, method === 'POST' ? { method, headers, body: JSON.stringify(body) } : { method, headers });
-  const response = await worker.fetch(request, envOverride || env);
+  const background = [];
+  const response = await worker.fetch(request, envOverride || env, noBackground ? undefined : { waitUntil(promise) { background.push(promise); } });
   const text = await response.text();
   for (const secret of [...Object.values(SECRETS), pkcs8.slice(10, 40), 'secret upstream detail']) {
     assert.ok(!text.includes(secret), `response for ${action} leaks secret material`);
   }
-  return { status: response.status, headers: response.headers, body: JSON.parse(text || '{}') };
+  if (drainBackground) await Promise.all(background);
+  return { status: response.status, headers: response.headers, body: JSON.parse(text || '{}'), background };
 }
 
 function pay(id, patch = {}) {
@@ -215,6 +269,7 @@ test('health reports readiness without secrets', async () => {
   const r = await call('health', {}, { method: 'GET' });
   assert.equal(r.status, 200);
   assert.equal(r.body.service, 'kapterka-payment-api');
+  assert.equal(r.body.fulfillmentVersion, 1);
   for (const f of ['secretConfigured', 'licenseRegistryConfigured', 'adminAuthConfigured', 'adminSessionConfigured', 'emailConfigured']) {
     assert.equal(r.body[f], true, f);
   }
@@ -623,6 +678,327 @@ test('e-mail via the owner Gmail relay (Apps Script)', async () => {
   assert.equal(d.body.secret_matches, true);
   assert.equal(d.body.post_wrong_secret.error, 'FORBIDDEN');
   assert.equal(state.relayed.filter((x) => x.to === 'nobody@invalid').length, 0);
+});
+
+test('webhook: verifies the real payment, issues without a client and never exposes the key', async () => {
+  const c = await call('create', { email: 'hook@x.ru', fighter_id: 'HOOK-FIGHTER' });
+  const notification = { type: 'notification', event: 'payment.succeeded', object: { id: c.body.payment_id, paid: true, status: 'succeeded', amount: { value: '490.00' }, metadata: { fighter_id: 'ATTACKER', email: 'attacker@x.ru' } } };
+  const pending = await call('', notification, { path: '/yookassa/webhook' });
+  assert.equal(pending.body.fulfilled, false, 'forged succeeded body cannot make a pending payment paid');
+  assert.equal(state.docs.has('srv_licenses/' + await keyForPayment(c.body.payment_id)), false);
+  pay(c.body.payment_id);
+  const first = await call('', notification, { path: '/yookassa/webhook' });
+  assert.equal(first.status, 200);
+  assert.deepEqual(first.body, { ok: true, received: true, fulfilled: true });
+  const key = await keyForPayment(c.body.payment_id);
+  const stored = state.docs.get('srv_licenses/' + key);
+  assert.equal(stored.fighterId, 'HOOK-FIGHTER');
+  assert.equal(stored.email, 'hook@x.ru');
+  assert.equal(state.emails.at(-1).to[0].email, 'hook@x.ru');
+  const again = await call('', notification, { path: '/yookassa/webhook' });
+  assert.deepEqual(again.body, first.body);
+  assert.equal(state.docs.get('srv_licenses/' + key).expiresAt, stored.expiresAt);
+  assert.equal((await call('check', { payment_id: c.body.payment_id })).status, 403, 'public check still needs fighter identity');
+  assert.equal((await call('check', { payment_id: c.body.payment_id, fighter_id: 'ATTACKER' })).status, 403);
+});
+
+test('webhook: transient registry failure requests redelivery instead of acknowledging a lost license', async () => {
+  const c = await call('create', { email: 'hook-fail@x.ru', fighter_id: 'HOOK-FAIL' });
+  pay(c.body.payment_id);
+  const notification = { type: 'notification', event: 'payment.succeeded', object: { id: c.body.payment_id } };
+  state.firestoreDown = true;
+  try { assert.equal((await call('payment_webhook', notification)).status, 503); }
+  finally { state.firestoreDown = false; }
+  assert.equal((await call('payment_webhook', notification)).body.fulfilled, true);
+  assert.equal((await call('payment_webhook', { ...notification, event: 'payment.canceled' })).body.ignored, true);
+  assert.equal((await call('payment_webhook', notification, { method: 'GET' })).status, 405);
+});
+
+test('payment mail: durable retry after provider failure survives without another check', async () => {
+  const c = await call('create', { email: 'retry-mail@x.ru', fighter_id: 'RETRY-MAIL' });
+  pay(c.body.payment_id);
+  state.mailDown = true;
+  let first;
+  try { first = await call('check', { payment_id: c.body.payment_id, fighter_id: 'RETRY-MAIL' }); }
+  finally { state.mailDown = false; }
+  assert.equal(first.status, 200);
+  const path = 'srv_license_deliveries/' + first.body.license_key;
+  const failed = state.docs.get(path);
+  assert.equal(failed.state, 'PENDING');
+  assert.equal(failed.attempts, 1);
+  assert.ok(failed.nextAttemptAt > Date.now());
+  failed.nextAttemptAt = Date.now() - 1;
+  const before = state.emails.length;
+  await worker.scheduled({}, env);
+  assert.equal(state.docs.get(path).state, 'SENT');
+  assert.equal(state.emails.length, before + 1);
+  assert.equal(state.docs.get('srv_licenses/' + first.body.license_key).expiresAt, first.body.expires_at);
+  await worker.scheduled({}, env);
+  assert.equal(state.emails.length, before + 1, 'SENT jobs are not sent by another cron');
+});
+
+test('payment mail: a stalled provider does not delay the license response', async () => {
+  const normal = globalThis.fetch;
+  let release;
+  const gate = new Promise((resolve) => { release = resolve; });
+  globalThis.fetch = async (input, init = {}) => {
+    if (new URL(input).hostname === 'api.brevo.com') await gate;
+    return normal(input, init);
+  };
+  try {
+    const c = await call('create', { email: 'slow-mail@x.ru', fighter_id: 'SLOW-MAIL' });
+    pay(c.body.payment_id);
+    const result = await call('check', { payment_id: c.body.payment_id, fighter_id: 'SLOW-MAIL' }, { drainBackground: false });
+    assert.equal(result.status, 200);
+    assert.ok(result.body.license_key);
+    release();
+    await Promise.all(result.background);
+    assert.equal(state.docs.get('srv_license_deliveries/' + result.body.license_key).state, 'SENT');
+  } finally { release(); globalThis.fetch = normal; }
+});
+
+test('payment mail: cron recovers an invocation lost before background send and an expired lease', async () => {
+  const c = await call('create', { email: 'crash-mail@x.ru', fighter_id: 'CRASH-MAIL' });
+  pay(c.body.payment_id);
+  const result = await call('check', { payment_id: c.body.payment_id, fighter_id: 'CRASH-MAIL' }, { noBackground: true });
+  const jobPath = 'srv_license_deliveries/' + result.body.license_key;
+  const job = state.docs.get(jobPath);
+  assert.equal(job.state, 'PENDING');
+  Object.assign(job, { state: 'SENDING', leaseOwner: 'dead-invocation', nextAttemptAt: Date.now() - 1 });
+  await worker.scheduled({}, env);
+  assert.equal(state.docs.get(jobPath).state, 'SENT');
+});
+
+test('payment commit: mirror failure cannot consume a payment or lose renewal days', async () => {
+  const fighter = 'ATOMIC-MIRROR';
+  state.docs.set('srv_fighters/' + fighter, { fighterId: fighter, expiresAt: Date.now() + 10 * 86400000 });
+  const c = await call('create', { email: 'atomic@x.ru', fighter_id: fighter });
+  pay(c.body.payment_id);
+  const key = await keyForPayment(c.body.payment_id);
+  state.failFighterCommitOnce = true;
+  const failed = await call('check', { payment_id: c.body.payment_id, fighter_id: fighter });
+  assert.equal(failed.status, 503);
+  assert.equal(state.docs.has('srv_licenses/' + key), false);
+  assert.equal(state.docs.has('srv_license_deliveries/' + key), false);
+  const retried = await call('check', { payment_id: c.body.payment_id, fighter_id: fighter });
+  assert.equal(retried.status, 200);
+  assert.ok((retried.body.expires_at - Date.now()) / 86400000 > 39.9);
+  const next = await call('create', { email: 'atomic@x.ru', fighter_id: fighter });
+  pay(next.body.payment_id);
+  const renewed = await call('check', { payment_id: next.body.payment_id, fighter_id: fighter });
+  assert.ok((renewed.body.expires_at - Date.now()) / 86400000 > 69.9);
+});
+
+test('payment commit: concurrent different purchases preserve both 30 day extensions', async () => {
+  const fighter = 'CONCURRENT-PAY';
+  state.docs.set('srv_fighters/' + fighter, { fighterId: fighter, expiresAt: Date.now() + 10 * 86400000 });
+  const a = await call('create', { email: 'concurrent@x.ru', fighter_id: fighter });
+  const b = await call('create', { email: 'concurrent@x.ru', fighter_id: fighter });
+  pay(a.body.payment_id); pay(b.body.payment_id);
+  const normal = globalThis.fetch;
+  const readers = [];
+  globalThis.fetch = async (input, init = {}) => {
+    const response = await normal(input, init);
+    if (init.method === 'GET' && decodeURIComponent(new URL(input).pathname).endsWith('/srv_fighters/' + fighter) && readers.length < 2) {
+      await new Promise((resolve) => { readers.push(resolve); if (readers.length === 2) readers.forEach((release) => release()); });
+    }
+    return response;
+  };
+  try {
+    const results = await Promise.all([a, b].map((created) => call('check', { payment_id: created.body.payment_id, fighter_id: fighter })));
+    assert.ok(results.every((result) => result.status === 200));
+    assert.notEqual(results[0].body.license_key, results[1].body.license_key);
+    assert.equal(Math.abs(results[0].body.expires_at - results[1].body.expires_at), 30 * 86400000);
+    assert.ok((state.docs.get('srv_fighters/' + fighter).expiresAt - Date.now()) / 86400000 > 69.9);
+  } finally { globalThis.fetch = normal; }
+});
+
+test('web purchase: claim token authorizes check, then Android claims the unbound key', async () => {
+  const token = 'a1'.repeat(32);
+  assert.equal((await call('create', { email: 'web@x.ru', web_claim_token: token, fighter_id: 'BROWSER' })).status, 400);
+  const c = await call('create', { email: 'web@x.ru', web_claim_token: token });
+  const metadata = state.payments.get(c.body.payment_id).metadata;
+  assert.equal(metadata.web_claim_hash, createHash('sha256').update(token).digest('hex'));
+  assert.equal(metadata.web_claim_token, undefined);
+  assert.equal(metadata.fighter_id, undefined);
+  pay(c.body.payment_id);
+  assert.equal((await call('check', { payment_id: c.body.payment_id })).status, 403);
+  assert.equal((await call('check', { payment_id: c.body.payment_id, web_claim_token: 'bb'.repeat(32) })).status, 403);
+  const checked = await call('check', { payment_id: c.body.payment_id, web_claim_token: token, fighter_id: 'BROWSER' });
+  assert.equal(checked.status, 200);
+  assert.equal(state.docs.get('srv_licenses/' + checked.body.license_key).fighterId, '');
+  const status = await call('license_status', { license_key: checked.body.license_key, fighter_id: 'BROWSER' });
+  assert.deepEqual(Object.keys(status.body).sort(), ['activated_at', 'active', 'expires_at', 'ok', 'status']);
+  assert.equal(status.body.active, true);
+  assert.equal(state.docs.get('srv_licenses/' + checked.body.license_key).fighterId, '', 'status does not bind a browser');
+  assert.equal((await call('license_verify', { license_key: checked.body.license_key, fighter_id: 'ANDROID-WEB' })).status, 200);
+  assert.equal((await call('license_verify', { license_key: checked.body.license_key, fighter_id: 'OTHER-ANDROID' })).status, 403);
+  assert.equal((await call('license_status', { license_key: checked.body.license_key })).body.active, true);
+  assert.equal((await call('check', { payment_id: c.body.payment_id, web_claim_token: token })).status, 200, 'browser claim remains readable after Android activation');
+});
+
+test('reconciliation: recovers captured payments in bounded pages with a durable fixed-window cursor', async () => {
+  state.docs.delete('srv_payment_reconciliation/succeeded');
+  state.reconciliationIds = [];
+  const ids = [];
+  for (let i = 0; i < 5; i++) {
+    const c = await call('create', { email: `backfill${i}@x.ru`, fighter_id: `BACKFILL-${i}` });
+    pay(c.body.payment_id, { captured_at: new Date(Date.now() - 3 * 86400000).toISOString(), created_at: new Date(Date.now() - 90 * 86400000).toISOString() });
+    ids.push(c.body.payment_id);
+  }
+  state.reconciliationIds = ids;
+  const before = state.emails.length;
+  const requestsBefore = state.requestCount;
+  await worker.scheduled({}, env);
+  assert.ok(state.requestCount - requestsBefore < 45, 'normal full cron keeps room below 50 subrequests for OAuth, redirects and contention');
+  const firstState = { ...state.docs.get('srv_payment_reconciliation/succeeded') };
+  assert.equal(firstState.cursor, '3');
+  assert.equal(firstState.inProgress, true);
+  assert.equal(state.emails.length, before + 3, 'one shared mail batch, not a send for every fulfil plus a second batch');
+  for (const id of ids.slice(0, 3)) assert.ok(state.docs.has('srv_licenses/' + await keyForPayment(id)));
+  for (const id of ids.slice(3)) assert.equal(state.docs.has('srv_licenses/' + await keyForPayment(id)), false);
+  const firstRequest = state.listRequests.at(-1);
+  assert.equal(firstRequest.status, 'succeeded');
+  assert.equal(firstRequest.limit, '3');
+  await worker.scheduled({}, env);
+  const secondRequest = state.listRequests.at(-1);
+  assert.equal(secondRequest.cursor, '3');
+  assert.equal(secondRequest['captured_at.gte'], firstRequest['captured_at.gte']);
+  assert.equal(secondRequest['captured_at.lte'], firstRequest['captured_at.lte']);
+  assert.equal(state.emails.length, before + 5);
+  assert.equal(state.docs.get('srv_payment_reconciliation/succeeded').inProgress, false);
+  for (const id of ids) assert.ok(state.docs.has('srv_licenses/' + await keyForPayment(id)));
+  await worker.scheduled({}, env);
+  assert.equal(state.emails.length, before + 5, 'overlapping sweep is idempotent');
+  state.reconciliationIds = [];
+});
+
+test('reconciliation: a partly failed page keeps its cursor and safely retries already issued payments', async () => {
+  state.docs.delete('srv_payment_reconciliation/succeeded');
+  const ids = [];
+  for (let i = 0; i < 4; i++) {
+    const c = await call('create', { email: `partial${i}@x.ru`, fighter_id: `PARTIAL-${i}` });
+    pay(c.body.payment_id);
+    ids.push(c.body.payment_id);
+  }
+  state.reconciliationIds = ids;
+  state.failPaymentGets.add(ids[2]);
+  try { await assert.rejects(worker.scheduled({}, env)); }
+  finally { state.failPaymentGets.clear(); }
+  const partial = state.docs.get('srv_payment_reconciliation/succeeded');
+  assert.equal(partial.cursor, '');
+  assert.equal(partial.inProgress, true);
+  const firstKey = await keyForPayment(ids[0]);
+  const firstExpiry = state.docs.get('srv_licenses/' + firstKey).expiresAt;
+  await worker.scheduled({}, env);
+  assert.equal(state.docs.get('srv_payment_reconciliation/succeeded').cursor, '3');
+  assert.equal(state.docs.get('srv_licenses/' + firstKey).expiresAt, firstExpiry);
+  await worker.scheduled({}, env);
+  assert.ok(state.docs.has('srv_licenses/' + await keyForPayment(ids[3])));
+  state.reconciliationIds = [];
+});
+
+test('reconciliation: rejects unrelated products, invalid emails and wrong tariffs', async () => {
+  state.docs.delete('srv_payment_reconciliation/succeeded');
+  const ids = [];
+  for (const patch of [
+    { metadata: { product: 'other_product', email: 'other@x.ru' } },
+    { metadata: { product: 'kapterka_pro_30d', email: 'invalid' } },
+    { amount: { value: '1.00', currency: 'RUB' } }
+  ]) {
+    const c = await call('create', { email: 'reject@x.ru' });
+    pay(c.body.payment_id, patch);
+    ids.push(c.body.payment_id);
+  }
+  state.reconciliationIds = ids;
+  await worker.scheduled({}, env);
+  for (const id of ids) assert.equal(state.docs.has('srv_licenses/' + await keyForPayment(id)), false);
+  state.reconciliationIds = [];
+});
+
+test('Android first claim: concurrent installations cannot both bind a web key', async () => {
+  const token = 'c7'.repeat(32);
+  const c = await call('create', { email: 'claim-race@x.ru', web_claim_token: token });
+  pay(c.body.payment_id);
+  const checked = await call('check', { payment_id: c.body.payment_id, web_claim_token: token });
+  const normal = globalThis.fetch;
+  const readers = [];
+  globalThis.fetch = async (input, init = {}) => {
+    const response = await normal(input, init);
+    if (init.method === 'GET' && new URL(input).pathname.endsWith('/srv_licenses/' + checked.body.license_key) && readers.length < 2) {
+      await new Promise((resolve) => { readers.push(resolve); if (readers.length === 2) readers.forEach((release) => release()); });
+    }
+    return response;
+  };
+  try {
+    const results = await Promise.all(['RACE-A', 'RACE-B'].map((fighter_id) => call('license_verify', { license_key: checked.body.license_key, fighter_id })));
+    assert.deepEqual(results.map((result) => result.status).sort(), [200, 403]);
+    const winner = results.find((result) => result.status === 200).body.fighter_id;
+    assert.equal(state.docs.get('srv_licenses/' + checked.body.license_key).fighterId, winner);
+  } finally { globalThis.fetch = normal; }
+});
+
+test('license status: revoked and inactive stay inactive and payment recheck cannot reissue them', async () => {
+  const c = await call('create', { email: 'revoked@x.ru', fighter_id: 'REVOKED' });
+  pay(c.body.payment_id);
+  const checked = await call('check', { payment_id: c.body.payment_id, fighter_id: 'REVOKED' });
+  const doc = state.docs.get('srv_licenses/' + checked.body.license_key);
+  for (const inactive of ['REVOKED', 'INACTIVE']) {
+    doc.status = inactive;
+    doc.expiresAt = Date.now() + 86400000;
+    let status = await call('license_status', { license_key: checked.body.license_key });
+    assert.equal(status.body.active, false);
+    assert.equal(status.body.status, inactive);
+    const retry = await call('check', { payment_id: c.body.payment_id, fighter_id: 'REVOKED' });
+    assert.equal(retry.status, 409);
+    assert.equal(retry.body.license_key, undefined);
+    doc.expiresAt = Date.now() - 1;
+    status = await call('license_status', { license_key: checked.body.license_key });
+    assert.equal(status.body.status, inactive);
+  }
+  doc.status = 'ACTIVE';
+  const status = await call('license_status', { license_key: checked.body.license_key });
+  assert.equal(status.body.active, false);
+  assert.equal(status.body.status, 'EXPIRED');
+});
+
+test('web renewal: first Android binding stacks the paid month onto unused time only once', async () => {
+  const fighter = 'WEB-RENEWAL';
+  state.docs.set('srv_fighters/' + fighter, { fighterId: fighter, licenseKey: 'KAPT-OLDK-EY00-TEST', expiresAt: Date.now() + 10 * 86400000 });
+  const token = 'd8'.repeat(32);
+  const c = await call('create', { email: 'web-renewal@x.ru', web_claim_token: token });
+  pay(c.body.payment_id);
+  const checked = await call('check', { payment_id: c.body.payment_id, web_claim_token: token });
+  const bound = await call('license_verify', { license_key: checked.body.license_key, fighter_id: fighter });
+  assert.equal(bound.status, 200);
+  assert.ok((bound.body.expires_at - Date.now()) / 86400000 > 39.9);
+  const repeated = await call('license_verify', { license_key: checked.body.license_key, fighter_id: fighter });
+  assert.equal(repeated.body.expires_at, bound.body.expires_at);
+  const browser = await call('check', { payment_id: c.body.payment_id, web_claim_token: token });
+  assert.equal(browser.body.expires_at, bound.body.expires_at);
+  assert.equal(state.docs.get('srv_fighters/' + fighter).expiresAt, bound.body.expires_at);
+});
+
+test('web renewal: an intervening Android purchase keeps both months and updates only a pending outbox', async () => {
+  const fighter = 'WEB-AFTER-APP';
+  state.docs.set('srv_fighters/' + fighter, { fighterId: fighter, licenseKey: 'KAPT-OLDK-EY00-TEST', expiresAt: Date.now() + 10 * 86400000 });
+  const token = 'e9'.repeat(32);
+  const web = await call('create', { email: 'web-after-app@x.ru', web_claim_token: token });
+  pay(web.body.payment_id);
+  const checked = await call('check', { payment_id: web.body.payment_id, web_claim_token: token }, { noBackground: true });
+  const app = await call('create', { email: 'web-after-app@x.ru', fighter_id: fighter });
+  pay(app.body.payment_id);
+  const appChecked = await call('check', { payment_id: app.body.payment_id, fighter_id: fighter });
+  assert.ok((appChecked.body.expires_at - Date.now()) / 86400000 > 39.9);
+  const bound = await call('license_verify', { license_key: checked.body.license_key, fighter_id: fighter });
+  assert.equal(bound.status, 200);
+  assert.ok((bound.body.expires_at - Date.now()) / 86400000 > 69.9);
+  const delivery = state.docs.get('srv_license_deliveries/' + checked.body.license_key);
+  assert.equal(delivery.state, 'PENDING');
+  assert.equal(delivery.leaseOwner, '');
+  assert.equal(delivery.expiresAt, bound.body.expires_at);
+  assert.equal((await call('license_verify', { license_key: checked.body.license_key, fighter_id: fighter })).body.expires_at, bound.body.expires_at);
+  assert.equal((await call('check', { payment_id: web.body.payment_id, web_claim_token: token })).body.expires_at, bound.body.expires_at);
 });
 
 // ------------------------------------------------------------------ run

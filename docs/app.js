@@ -5,8 +5,10 @@ const KAPTERKA_WEB_BUILD = window.KAPTERKA_WEB_VERSION || 'unknown';
 
 // Global state keys for persistence
 
-// 🌐 ССЫЛКА НА GOOGLE APPS SCRIPT (Для полной автоматизации ЮKassa и Telegram)
+// Contacts and legacy notifications keep their existing Apps Script endpoint.
 window.KAPTERKA_API_URL = 'https://script.google.com/macros/s/AKfycbwuwY74vD9El1R6ZVvO3DDpJ7BkY-wX0ljRphWRSA-jgB33-duUAqEp0g03D_7oFzjqmA/exec';
+// Payments and license status are served only by the authoritative backend.
+window.KAPTERKA_PAYMENT_API_URL = 'https://kapterka-api.alex-666-881.workers.dev';
 
 const STORAGE_AUTH_USER = 'kapterka_auth_user'; // JSON of currently logged in user
 const STORAGE_USERS_DB = 'kapterka_users_db'; // Array of registered users
@@ -21,10 +23,7 @@ const STORAGE_ACTIVE_KEY = 'kapterka_active_key';
 const STORAGE_KEYS_HISTORY = 'kapterka_keys_history';
 const STORAGE_LICENSE_META = 'kapterka_license_meta_v2';
 
-// Firebase Web API key is an application identifier, not a server secret.
-// Reads below request only status/timestamps for one exact license document.
-const FIREBASE_LICENSE_API_KEY = 'AIzaSyAYyoG42TuQJFLxN0KnFIePZx-gAtizw0Q';
-const FIRESTORE_LICENSE_DOC_BASE = 'https://firestore.googleapis.com/v1/projects/kapterka-pro/databases/(default)/documents/licenses/';
+const STORAGE_PAYMENT_REQUEST = 'kapterka_payment_requests_v1';
 
 // Default initial state for clean empty inputs
 const YM_IDS = [112255061];
@@ -180,6 +179,7 @@ function quickDemoLogin() {
 }
 
 function setUserSession(user) {
+  if (paymentAccountScope() !== String(user.email || '').trim().toLowerCase()) pausePaymentChecks();
   localStorage.setItem(STORAGE_AUTH_USER, JSON.stringify(user));
   localStorage.setItem(STORAGE_USER_CALLSIGN, user.callsign);
   localStorage.setItem(STORAGE_USER_RANK, user.rank || '');
@@ -195,9 +195,11 @@ function setUserSession(user) {
 
   updateAuthUI();
   loadCabinetProfile();
+  resumePendingPaymentChecks();
 }
 
 function logoutUserSession() {
+  pausePaymentChecks();
   localStorage.removeItem(STORAGE_AUTH_USER);
   localStorage.removeItem(STORAGE_USER_CALLSIGN);
   localStorage.removeItem(STORAGE_USER_RANK);
@@ -502,7 +504,8 @@ function verifyKeyChecksum(key) {
 function classifyLicenseKey(key) {
   if (!key || typeof key !== 'string') return 'invalid';
   const clean = key.trim().toUpperCase().replace(/\s+/g, '');
-  const legacyPattern = /^(?:KAPT|KPT)-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}$/;
+  // Server payment keys contain hexadecimal 0/1; old keys used a smaller alphabet.
+  const legacyPattern = /^(?:KAPT|KPT)-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/;
   if (!legacyPattern.test(clean)) return 'invalid';
   if (clean.startsWith('KAPT-') && verifyKeyChecksum(clean)) return 'signed';
   return 'legacy_unverified';
@@ -536,68 +539,79 @@ function getLicenseMeta(key) {
   return getLicenseMetaMap()[cleanKey] || null;
 }
 
-function firestoreFieldValue(field) {
-  if (!field || typeof field !== 'object') return null;
-  if (field.integerValue != null) return Number(field.integerValue);
-  if (field.doubleValue != null) return Number(field.doubleValue);
-  if (field.timestampValue) {
-    const ms = Date.parse(field.timestampValue);
-    return Number.isFinite(ms) ? ms : null;
+function paymentErrorMessage(code) {
+  return {
+    INVALID_EMAIL: 'Проверьте Email для чека и ключа.',
+    RATE_LIMITED: 'Слишком частые запросы. Подождите немного и повторите проверку.',
+    PAYMENT_GATEWAY_AUTH: 'Сервис оплаты временно недоступен. Попробуйте позже.',
+    UPSTREAM_ERROR: 'Сервис оплаты временно недоступен. Повторите запрос.',
+    LICENSE_REGISTRY_UNAVAILABLE: 'Сервер лицензий временно недоступен. Повторите проверку.',
+    FIGHTER_MISMATCH: 'Лицензия или платёж привязаны к другому устройству. Обратитесь в поддержку.',
+    LICENSE_FIGHTER_MISMATCH: 'Лицензия привязана к другому устройству. Обратитесь в поддержку.',
+    WEB_CLAIM_REQUIRED: 'Не найдено подтверждение этого заказа в браузере. Обратитесь в поддержку.',
+    WEB_CLAIM_MISMATCH: 'Этот заказ создан в другом браузере или аккаунте. Откройте его там или обратитесь в поддержку.',
+    PAYMENT_CLAIM_MISMATCH: 'Этот заказ создан в другом браузере или аккаунте. Откройте его там или обратитесь в поддержку.',
+    INVALID_WEB_CLAIM: 'Не удалось подтвердить заказ в этом браузере. Обратитесь в поддержку.',
+    PAYMENT_AMOUNT_MISMATCH: 'Сумма платежа не соответствует тарифу. Обратитесь в поддержку.',
+    PAYMENT_PRODUCT_MISMATCH: 'Платёж относится к другому товару. Обратитесь в поддержку.',
+    LICENSE_NOT_ACTIVE: 'Ключ не найден среди активных лицензий или срок уже завершён.',
+    LICENSE_NOT_FOUND: 'Ключ не найден в реестре лицензий. Проверьте символы или обратитесь в поддержку.',
+    INVALID_LICENSE_KEY: 'Проверьте символы и дефисы в ключе.',
+    INVALID_PAYMENT_RESPONSE: 'Сервер вернул неполные данные. Повторите проверку.',
+    REQUEST_TIMEOUT: 'Сервер отвечает слишком долго. Повторите запрос: сохранённый заказ не потерян.',
+    NETWORK_ERROR: 'Не удалось связаться с сервером. Проверьте интернет и повторите запрос.'
+  }[code] || 'Не удалось подтвердить данные на сервере. Повторите запрос или обратитесь в поддержку.';
+}
+
+async function requestPaymentApi(action, payload) {
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timer = controller ? setTimeout(() => controller.abort(), 45000) : null;
+  try {
+    const response = await fetch(window.KAPTERKA_PAYMENT_API_URL + '?action=' + encodeURIComponent(action), {
+      method: 'POST',
+      cache: 'no-store',
+      credentials: 'omit',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: controller?.signal
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok || !data || data.ok !== true) {
+      const error = new Error(paymentErrorMessage(data?.error));
+      error.code = data?.error || 'INVALID_PAYMENT_RESPONSE';
+      error.paymentApi = true;
+      error.retryable = response.status === 429 || response.status >= 500 || !data;
+      throw error;
+    }
+    return data;
+  } catch (error) {
+    if (error.paymentApi) throw error;
+    const failure = new Error(paymentErrorMessage(error.name === 'AbortError' ? 'REQUEST_TIMEOUT' : 'NETWORK_ERROR'));
+    failure.code = error.name === 'AbortError' ? 'REQUEST_TIMEOUT' : 'NETWORK_ERROR';
+    failure.retryable = true;
+    throw failure;
+  } finally {
+    if (timer) clearTimeout(timer);
   }
-  if (field.stringValue != null) return String(field.stringValue);
-  if (field.booleanValue != null) return !!field.booleanValue;
-  return null;
 }
 
 async function fetchLicenseRegistryMeta(key) {
   const cleanKey = String(key || '').trim().toUpperCase();
-  if (classifyLicenseKey(cleanKey) !== 'signed') {
+  if (!/^KAPT-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(cleanKey)) {
     return { found: false, verified: false, reason: 'UNSUPPORTED_KEY_FORMAT' };
   }
-
-  const mask = [
-    'mask.fieldPaths=licenseKey',
-    'mask.fieldPaths=activatedAt',
-    'mask.fieldPaths=expiresAt',
-    'mask.fieldPaths=status'
-  ].join('&');
-  const url = FIRESTORE_LICENSE_DOC_BASE + encodeURIComponent(cleanKey) + '?' + mask + '&key=' + encodeURIComponent(FIREBASE_LICENSE_API_KEY);
-  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-  const timer = controller ? setTimeout(() => controller.abort(), 8000) : null;
-
   try {
-    const response = await fetch(url, {
-      method: 'GET',
-      cache: 'no-store',
-      headers: { 'Accept': 'application/json' },
-      signal: controller?.signal
-    });
-
-    if (response.status === 404) return { found: false, verified: false, reason: 'NOT_FOUND' };
-    if (!response.ok) return { found: false, verified: false, unavailable: true, reason: 'REGISTRY_UNAVAILABLE' };
-
-    const data = await response.json();
-    const fields = data?.fields || {};
-    const registeredKey = String(firestoreFieldValue(fields.licenseKey) || cleanKey).toUpperCase();
-    if (registeredKey !== cleanKey) return { found: false, verified: false, reason: 'KEY_MISMATCH' };
-
-    const activatedAt = Number(firestoreFieldValue(fields.activatedAt) || 0);
-    const expiresAt = Number(firestoreFieldValue(fields.expiresAt) || 0);
-    const status = String(firestoreFieldValue(fields.status) || 'ACTIVE').toUpperCase();
-    const verified = status === 'ACTIVE' && expiresAt > 0;
-
-    return {
-      found: true,
-      verified,
-      registryVerified: verified,
-      status,
-      activatedAt,
-      expiresAt
-    };
-  } catch (_) {
-    return { found: false, verified: false, unavailable: true, reason: 'NETWORK_ERROR' };
-  } finally {
-    if (timer) clearTimeout(timer);
+    // Read-only status never binds a browser to a key intended for Android.
+    const data = await requestPaymentApi('license_status', { license_key: cleanKey });
+    const expiresAt = Number(data.expires_at || 0);
+    const status = String(data.status || (data.active ? 'ACTIVE' : 'INACTIVE')).toUpperCase();
+    if (!Number.isFinite(expiresAt) || expiresAt <= 0) {
+      return { found: false, verified: false, reason: 'INVALID_PAYMENT_RESPONSE', errorMessage: paymentErrorMessage('INVALID_PAYMENT_RESPONSE') };
+    }
+    const verified = data.active === true && status === 'ACTIVE' && expiresAt > Date.now();
+    return { found: true, verified, registryVerified: true, status, expiresAt, activatedAt: Number(data.activated_at || 0) };
+  } catch (error) {
+    return { found: false, verified: false, unavailable: !!error.retryable, reason: error.code, errorMessage: error.message };
   }
 }
 
@@ -692,14 +706,17 @@ function updateCabinetLicenseStatus() {
 }
 
 async function refreshStoredLicenseStatus() {
+  const generation = paymentSessionGeneration;
+  const account = paymentAccountScope();
   const activeKey = localStorage.getItem(STORAGE_ACTIVE_KEY) || '';
-  if (!activeKey || classifyLicenseKey(activeKey) !== 'signed') {
+  if (!activeKey || classifyLicenseKey(activeKey) === 'invalid') {
     updateCabinetLicenseStatus();
     renderKeysHistory();
     return;
   }
 
   const result = await fetchLicenseRegistryMeta(activeKey);
+  if (generation !== paymentSessionGeneration || account !== paymentAccountScope() || activeKey !== localStorage.getItem(STORAGE_ACTIVE_KEY)) return;
   if (result.found) {
     saveLicenseMeta(activeKey, result);
     const history = getKeysHistory();
@@ -850,218 +867,273 @@ function fallbackCopy(text) {
   document.body.removeChild(textArea);
 }
 
-const YOOKASSA_PAYMENT_URL = 'https://yookassa.ru/my/i/apiQMG65ZHIE/l';
 let paymentRequestInFlight = false;
+let paymentCheckInFlight = false;
+let paymentPollTimer = null;
+let paymentPollAttempts = 0;
+let paymentSessionGeneration = 0;
 
-// 7. YooKassa Real Payment & Automated Verification Flow
-async function processYooKassaPayment() {
-  if (paymentRequestInFlight) {
-    showToast('Платёж уже создаётся. Подождите несколько секунд.');
+function paymentAccountScope() {
+  return String(getActiveUserSession()?.email || '').trim().toLowerCase();
+}
+
+function paymentRandomToken() {
+  if (!window.crypto?.getRandomValues) throw new Error('Браузер не поддерживает защищённую оплату. Обновите браузер и повторите.');
+  const bytes = new Uint8Array(32);
+  window.crypto.getRandomValues(bytes);
+  return Array.from(bytes, value => value.toString(16).padStart(2, '0')).join('');
+}
+
+function readPaymentRequest() {
+  try {
+    const requests = JSON.parse(localStorage.getItem(STORAGE_PAYMENT_REQUEST) || '{}');
+    const request = requests[paymentAccountScope()];
+    if (!request || request.account !== paymentAccountScope() || !/^[a-f0-9]{64}$/.test(request.webClaimToken) || !/^[a-f0-9]{64}$/.test(request.idempotenceKey)) return null;
+    return request;
+  } catch (_) { return null; }
+}
+
+function paymentRequestMap() {
+  try {
+    const requests = JSON.parse(localStorage.getItem(STORAGE_PAYMENT_REQUEST) || '{}');
+    return requests && typeof requests === 'object' && !Array.isArray(requests) ? requests : {};
+  } catch (_) { return {}; }
+}
+
+function savePaymentRequest(request) {
+  const requests = paymentRequestMap();
+  requests[request.account] = request;
+  localStorage.setItem(STORAGE_PAYMENT_REQUEST, JSON.stringify(requests));
+}
+
+function currentPaymentRequest(request) {
+  return readPaymentRequest()?.idempotenceKey === request.idempotenceKey;
+}
+
+function pendingPaymentRequest() {
+  const request = readPaymentRequest();
+  return request && /^[A-Za-z0-9-]{8,100}$/.test(request.paymentId || '') ? request : null;
+}
+
+function safePaymentConfirmationUrl(value) {
+  try {
+    const url = new URL(value);
+    const allowed = ['yoomoney.ru', 'yookassa.ru'].some(host => url.hostname === host || url.hostname.endsWith('.' + host));
+    return url.protocol === 'https:' && !url.username && !url.password && (!url.port || url.port === '443') && allowed ? url.href : '';
+  } catch (_) { return ''; }
+}
+
+function stopPaymentPolling() {
+  if (paymentPollTimer) clearTimeout(paymentPollTimer);
+  paymentPollTimer = null;
+}
+
+function setPaymentStatus(title, message) {
+  const display = document.getElementById('liveGeneratedKeyDisplay');
+  const status = document.getElementById('liveKeyStatusDisplay');
+  if (display) { display.textContent = title; display.style.color = 'var(--accent-gold)'; }
+  if (status) status.textContent = message;
+  const copy = document.getElementById('btnCopyPaidKey');
+  if (copy) { copy.setAttribute('disabled', 'true'); copy.style.display = 'none'; }
+}
+
+function showPendingPayment() {
+  const initial = document.getElementById('boxPaymentInitial');
+  const pending = document.getElementById('boxPaymentPending');
+  if (initial) initial.style.display = 'none';
+  if (pending) pending.style.display = 'block';
+  const verify = document.getElementById('btnManualVerify');
+  if (verify) verify.style.display = '';
+}
+
+function schedulePaymentCheck(delay = 5000) {
+  stopPaymentPolling();
+  if (!pendingPaymentRequest()) return;
+  if (paymentPollAttempts >= 60) {
+    const status = document.getElementById('liveKeyStatusDisplay');
+    if (status) status.textContent = 'Автоматическая проверка приостановлена. Нажмите «Я оплатил — проверить», чтобы продолжить.';
     return;
   }
+  paymentPollTimer = setTimeout(() => {
+    paymentPollTimer = null;
+    claimPaidLicenseKey({ automatic: true });
+  }, delay);
+}
 
+function forgetPendingPayment() {
+  stopPaymentPolling();
+  localStorage.removeItem('kapterka_pending_payment_id');
+  localStorage.removeItem('kapterka_pending_email');
+  localStorage.removeItem('kapterka_pending_callsign');
+  const requests = paymentRequestMap();
+  delete requests[paymentAccountScope()];
+  localStorage.setItem(STORAGE_PAYMENT_REQUEST, JSON.stringify(requests));
+}
+
+function pausePaymentChecks() {
+  stopPaymentPolling();
+  paymentSessionGeneration++;
+  paymentRequestInFlight = false;
+  paymentCheckInFlight = false;
+  const initial = document.getElementById('boxPaymentInitial');
+  const pending = document.getElementById('boxPaymentPending');
+  if (initial) initial.style.display = 'block';
+  if (pending) pending.style.display = 'none';
+  const button = document.getElementById('btnPayYooKassaMain');
+  if (button) { button.disabled = false; button.textContent = 'Оплатить 490 ₽ через ЮKassa'; }
+  const verify = document.getElementById('btnManualVerify');
+  if (verify) { verify.disabled = false; verify.textContent = 'Я оплатил — проверить'; }
+  const cabinet = document.getElementById('btnGoToCabinetAfterPay');
+  if (cabinet) cabinet.style.display = 'none';
+  setPaymentStatus('ОЖИДАНИЕ ОПЛАТЫ', 'После подтверждения оплаты ключ появится здесь.');
+}
+
+function resumePendingPaymentChecks() {
+  if (!pendingPaymentRequest()) return false;
+  showPendingPayment();
+  setPaymentStatus('ПРОВЕРКА ОПЛАТЫ', 'Проверяем сохранённый платёж на сервере.');
+  paymentPollAttempts = 0;
+  schedulePaymentCheck(0);
+  return true;
+}
+
+async function processYooKassaPayment() {
+  if (paymentRequestInFlight) return;
+  const generation = paymentSessionGeneration;
   const callsign = document.getElementById('payCallsignInput')?.value.trim() || 'Боец';
   const email = document.getElementById('payEmailInput')?.value.trim().toLowerCase() || '';
-
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 160) {
-    showToast('⚠️ Проверьте Email для получения чека и ключа.');
+    showToast('Проверьте Email для получения чека и ключа.');
     document.getElementById('payEmailInput')?.focus();
     return;
   }
-
-  const payButton = document.getElementById('btnPayYooKassaMain');
+  const button = document.getElementById('btnPayYooKassaMain');
   paymentRequestInFlight = true;
-  if (payButton) {
-    payButton.disabled = true;
-    payButton.dataset.originalText = payButton.textContent || 'Оплатить 490 ₽ через ЮKassa';
-    payButton.textContent = 'Создание платежа…';
-  }
-
-  // Открываем вкладку в момент нажатия пользователя, чтобы браузер не заблокировал ЮKassa как pop-up.
+  if (button) { button.disabled = true; button.textContent = 'Создание платежа…'; }
   let paymentWindow = null;
+  try { paymentWindow = window.open('about:blank', '_blank'); if (paymentWindow) paymentWindow.opener = null; } catch (_) {}
   try {
-    paymentWindow = window.open('about:blank', '_blank');
-    if (paymentWindow) paymentWindow.opener = null;
-  } catch (_) {}
-
-  const finishPaymentRequest = (url) => {
-    paymentRequestInFlight = false;
-    if (payButton) {
-      payButton.disabled = false;
-      payButton.textContent = payButton.dataset.originalText || 'Оплатить 490 ₽ через ЮKassa';
-      delete payButton.dataset.originalText;
+    let request = readPaymentRequest();
+    // Retain the same order after a timeout: a retry must not create a second charge.
+    if (!request || request.email !== email || request.callsign !== callsign) {
+      request = { account: paymentAccountScope(), email, callsign, webClaimToken: paymentRandomToken(), idempotenceKey: paymentRandomToken(), createdAt: Date.now() };
+      savePaymentRequest(request);
+      localStorage.removeItem('kapterka_pending_payment_id');
     }
-    if (!url) return;
-    try {
-      if (paymentWindow && !paymentWindow.closed) {
-        paymentWindow.location.replace(url);
-      } else {
-        window.location.href = url;
-      }
-    } catch (_) {
-      window.location.href = url;
+    const existingUrl = request.paymentId && safePaymentConfirmationUrl(request.confirmationUrl);
+    const data = existingUrl ? { payment_id: request.paymentId, confirmation_url: existingUrl } : await requestPaymentApi('create', {
+      email, callsign, web_claim_token: request.webClaimToken,
+      idempotence_key: request.idempotenceKey,
+      return_url: 'https://kapterka-pro.ru/?payment=check#tabPayment'
+    });
+    if (generation !== paymentSessionGeneration || !currentPaymentRequest(request)) {
+      if (paymentWindow && !paymentWindow.closed) paymentWindow.close();
+      return;
     }
-  };
-
-  // Фиксируем уникальный номер заказа
-  const paymentSessionId = 'yk_' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
-  localStorage.setItem('kapterka_pending_payment_id', paymentSessionId);
-  localStorage.setItem('kapterka_pending_callsign', callsign);
-  localStorage.setItem('kapterka_pending_email', email);
-  localStorage.setItem(STORAGE_USER_CALLSIGN, callsign);
-  localStorage.setItem(STORAGE_USER_EMAIL, email);
-
-  // Переключаем интерфейс на шаг ожидания
-  const boxInitial = document.getElementById('boxPaymentInitial');
-  const boxPending = document.getElementById('boxPaymentPending');
-  if (boxInitial) boxInitial.style.display = 'none';
-  if (boxPending) boxPending.style.display = 'block';
-
-  // Индикация в правой колонке
-  const liveDisplay = document.getElementById('liveGeneratedKeyDisplay');
-  const liveStatus = document.getElementById('liveKeyStatusDisplay');
-  const btnCopy = document.getElementById('btnCopyPaidKey');
-
-  if (liveDisplay) {
-    liveDisplay.textContent = 'ОЖИДАНИЕ ОПЛАТЫ';
-    liveDisplay.style.color = 'var(--accent-gold)';
-  }
-  if (liveStatus) {
-    liveStatus.innerHTML = `Счёт 490 ₽ выставлен. Чек 54-ФЗ и ключ направляются на <b>${escapeHtml(email)}</b> после поступления средств.`;
-  }
-  if (btnCopy) btnCopy.setAttribute('disabled', 'true');
-
-  showToast('Открытие платежного шлюза ЮKassa...');
-
-  // Telegram Alert: боец перешел к оплате
-  sendTelegramNotification(
-    `💳 <b>Новый переход к оплате (490 ₽)</b>\n\n` +
-    `👤 <b>Позывной:</b> ${escapeTelegramHtml(callsign)}\n` +
-    `📧 <b>Email:</b> ${escapeTelegramHtml(email)}\n` +
-    `🆔 <b>Номер заказа:</b> <code>${paymentSessionId}</code>\n` +
-    `🏦 <b>Магазин:</b> ЮKassa ID 1450722\n` +
-    `📅 <b>Время:</b> ${new Date().toLocaleString('ru-RU')}`
-  );
-
-  // Track Yandex Metrika goal for payment initiation
-  // Do not send Email or callsign to analytics.
-  trackYm('reachGoal', 'initiate_yookassa_payment', { plan: 'PRO_30', amount: 490 });
-  if (typeof window.gtag === 'function') {
-    try {
-      window.gtag('event', 'begin_checkout', {
-        value: 490,
-        currency: 'RUB',
-        items: [{ item_name: 'Лицензия Каптёрка Про (30 дней)', price: 490, quantity: 1 }]
-      });
-    } catch (e) {}
-  }
-
-  // Полная интеграция ЮKassa по API через Google Apps Script (JSONP CORS Bypass)
-  const API_URL = window.KAPTERKA_API_URL || '';
-  
-  if (API_URL) {
-    showToast('Создание уникального защищенного платежа...');
-    
-    // Генерируем уникальное имя функции для JSONP
-    const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
-    
-    const cleanupJsonp = () => {
-      document.getElementById(callbackName)?.remove();
-      try { delete window[callbackName]; } catch (_) { window[callbackName] = undefined; }
-    };
-
-    const requestTimeout = setTimeout(() => {
-      cleanupJsonp();
-      showToast('Сервер оплаты отвечает слишком долго. Открываю резервную страницу ЮKassa.');
-      finishPaymentRequest(YOOKASSA_PAYMENT_URL);
-    }, 15000);
-
-    // Создаем функцию глобально
-    window[callbackName] = function(data) {
-      clearTimeout(requestTimeout);
-      cleanupJsonp();
-
-      if (data && data.confirmation_url) {
-        if (data.payment_id) localStorage.setItem('kapterka_pending_payment_id', data.payment_id);
-        finishPaymentRequest(data.confirmation_url);
-      } else {
-        showToast('Не удалось создать индивидуальный платёж. Открываю резервную страницу ЮKassa.');
-        console.warn('Payment API response without confirmation URL');
-        finishPaymentRequest(YOOKASSA_PAYMENT_URL);
-      }
-    };
-
-    // Формируем URL с параметрами GET (JSONP)
-    const scriptUrl = `${API_URL}?action=pay&email=${encodeURIComponent(email)}&callsign=${encodeURIComponent(callsign)}&callback=${callbackName}`;
-
-    // Создаем тег script и добавляем на страницу
-    const script = document.createElement('script');
-    script.id = callbackName;
-    script.src = scriptUrl;
-
-    script.onerror = function() {
-      clearTimeout(requestTimeout);
-      cleanupJsonp();
-      showToast('Сбой соединения. Открываю резервную страницу ЮKassa.');
-      finishPaymentRequest(YOOKASSA_PAYMENT_URL);
-    };
-
-    document.body.appendChild(script);
-
-  } else {
-    // Резервный режим
-    finishPaymentRequest(YOOKASSA_PAYMENT_URL);
+    const confirmationUrl = safePaymentConfirmationUrl(data.confirmation_url);
+    if (!/^[A-Za-z0-9-]{8,100}$/.test(data.payment_id || '') || !confirmationUrl) throw new Error(paymentErrorMessage('INVALID_PAYMENT_RESPONSE'));
+    request = { ...request, paymentId: data.payment_id, confirmationUrl };
+    // Persist identity and order before leaving the page for the bank.
+    savePaymentRequest(request);
+    localStorage.setItem('kapterka_pending_payment_id', request.paymentId);
+    localStorage.setItem('kapterka_pending_callsign', callsign);
+    localStorage.setItem('kapterka_pending_email', email);
+    localStorage.setItem(STORAGE_USER_CALLSIGN, callsign);
+    localStorage.setItem(STORAGE_USER_EMAIL, email);
+    showPendingPayment();
+    setPaymentStatus('ОЖИДАНИЕ ОПЛАТЫ', 'Завершите оплату в ЮKassa. Ключ появится здесь после подтверждения платежа.');
+    paymentPollAttempts = 0;
+    schedulePaymentCheck(3500);
+    trackYm('reachGoal', 'initiate_yookassa_payment', { plan: 'PRO_30', amount: 490 });
+    if (typeof window.gtag === 'function') {
+      try { window.gtag('event', 'begin_checkout', { value: 490, currency: 'RUB', items: [{ item_name: 'Лицензия Каптёрка Про (30 дней)', price: 490, quantity: 1 }] }); } catch (_) {}
+    }
+    if (paymentWindow && !paymentWindow.closed) paymentWindow.location.replace(confirmationUrl);
+    else window.location.href = confirmationUrl;
+  } catch (error) {
+    if (paymentWindow && !paymentWindow.closed) paymentWindow.close();
+    if (generation !== paymentSessionGeneration) return;
+    setPaymentStatus('ПЛАТЁЖ НЕ ОТКРЫТ', error.message || paymentErrorMessage('NETWORK_ERROR'));
+    showToast(error.message || paymentErrorMessage('NETWORK_ERROR'));
+  } finally {
+    if (generation === paymentSessionGeneration) {
+      paymentRequestInFlight = false;
+      if (button) { button.disabled = false; button.textContent = 'Оплатить 490 ₽ через ЮKassa'; }
+    }
   }
 }
 
-// Завершение оплаты и получение ключа (Запрос ключа у администратора)
-async function claimPaidLicenseKey() {
-  const callsign = localStorage.getItem('kapterka_pending_callsign') || document.getElementById('payCallsignInput')?.value.trim() || 'Боец';
-  const email = localStorage.getItem('kapterka_pending_email') || document.getElementById('payEmailInput')?.value.trim() || '';
-  const btnClaim = document.getElementById('btnManualVerify');
-
-  if (btnClaim) {
-    btnClaim.setAttribute('disabled', 'true');
-    btnClaim.innerHTML = '⏳ Отправка запроса...';
+async function claimPaidLicenseKey({ automatic = false } = {}) {
+  if (paymentCheckInFlight) return;
+  const generation = paymentSessionGeneration;
+  if (!automatic) { stopPaymentPolling(); paymentPollAttempts = 0; }
+  const request = pendingPaymentRequest();
+  if (!request) {
+    if (!automatic) showToast('В этом браузере нет сохранённого счёта. Вернитесь в браузер, где начали оплату, или обратитесь в поддержку.');
+    return;
   }
-
-  // Отправляем оповещение в Telegram бот
-  await sendTelegramNotification(
-    `🎖️ <b>ОЖИДАЕТСЯ ПОДТВЕРЖДЕНИЕ ПЛАТЕЖА (490 ₽)</b>\n\n` +
-    `👤 <b>Боец:</b> ${escapeTelegramHtml(callsign)}\n` +
-    `📧 <b>Email:</b> ${escapeTelegramHtml(email || 'Не указан')}\n\n` +
-    `⚠️ <b>ВНИМАНИЕ:</b> Боец нажал кнопку "Я оплатил". Если ЮКасса не прислала уведомление вебхуком, проверьте оплату вручную и передайте ключ.`
-  );
-
-  if (btnClaim) {
-    btnClaim.style.display = 'none';
+  paymentCheckInFlight = true;
+  paymentPollAttempts++;
+  const button = document.getElementById('btnManualVerify');
+  if (button) { button.disabled = true; button.textContent = 'Проверка оплаты…'; }
+  let retry = false;
+  let retryDelay = 5000;
+  try {
+    const data = await requestPaymentApi('check', { payment_id: request.paymentId, web_claim_token: request.webClaimToken });
+    // Logout or switching accounts while a request is running cannot restore its key.
+    if (generation !== paymentSessionGeneration || !currentPaymentRequest(request) || pendingPaymentRequest()?.paymentId !== request.paymentId) return;
+    if (data.paid === true) {
+      const key = String(data.license_key || '').toUpperCase();
+      const expiresAt = Number(data.expires_at || 0);
+      if (data.status !== 'succeeded' || classifyLicenseKey(key) !== 'signed' || !Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
+        if (data.status === 'expired') {
+          setPaymentStatus('СРОК ЗАВЕРШЁН', 'Срок лицензии по этому платежу уже завершён. Для продления создайте новый платёж.');
+          forgetPendingPayment();
+          const initial = document.getElementById('boxPaymentInitial');
+          if (initial) initial.style.display = 'block';
+          return;
+        }
+        const error = new Error(paymentErrorMessage('INVALID_PAYMENT_RESPONSE'));
+        error.retryable = true;
+        throw error;
+      }
+      forgetPendingPayment();
+      applyNewPaidKey(key, request.callsign, { registryVerified: true, verified: true, status: 'ACTIVE', expiresAt, activatedAt: Number(data.activated_at || 0) });
+      const pending = document.getElementById('boxPaymentPending');
+      if (pending) pending.style.display = 'none';
+      return;
+    }
+    if (data.status === 'canceled') {
+      forgetPendingPayment();
+      setPaymentStatus('ОПЛАТА ОТМЕНЕНА', 'ЮKassa не подтвердила оплату. Можно создать новый платёж.');
+      const initial = document.getElementById('boxPaymentInitial');
+      const pending = document.getElementById('boxPaymentPending');
+      if (initial) initial.style.display = 'block';
+      if (pending) pending.style.display = 'none';
+      return;
+    }
+    retry = data.status === 'pending' || data.status === 'waiting_for_capture';
+    setPaymentStatus('ОЖИДАНИЕ БАНКА', retry
+      ? 'Оплата пока не завершена. Проверяем автоматически; можно повторить проверку этой кнопкой.'
+      : 'Платёж пока не найден или не подтверждён. Повторите проверку или обратитесь в поддержку.');
+  } catch (error) {
+    if (generation !== paymentSessionGeneration || !currentPaymentRequest(request) || pendingPaymentRequest()?.paymentId !== request.paymentId) return;
+    retry = !!error.retryable;
+    retryDelay = 15000;
+    setPaymentStatus('ОПЛАТА НЕ ПОДТВЕРЖДЕНА', error.message || paymentErrorMessage('NETWORK_ERROR'));
+    if (!automatic) showToast(error.message || paymentErrorMessage('NETWORK_ERROR'));
+  } finally {
+    if (generation === paymentSessionGeneration) {
+      paymentCheckInFlight = false;
+      if (button) { button.disabled = false; button.textContent = 'Я оплатил — проверить'; }
+      if (retry) schedulePaymentCheck(retryDelay);
+    }
   }
-  
-  // Показываем сообщение бойцу
-  const liveDisplay = document.getElementById('liveGeneratedKeyDisplay');
-  const liveStatus = document.getElementById('liveKeyStatusDisplay');
-  const btnCopy = document.getElementById('btnCopyPaidKey');
-  
-  if (liveDisplay) {
-    liveDisplay.textContent = 'ОЖИДАНИЕ БАНКА';
-    liveDisplay.style.color = 'var(--accent-gold)';
-    liveDisplay.style.fontSize = '1.2rem';
-    liveDisplay.style.letterSpacing = 'normal';
-  }
-  
-  if (liveStatus) {
-    liveStatus.innerHTML = `⏳ <b>Система ожидает подтверждения от банка.</b><br>После подтверждения платежа ключ будет направлен на <b>${escapeHtml(email || 'указанную при оплате')}</b>.<br><br>Если письмо не придёт, обратитесь в поддержку.`;
-  }
-
-  if (btnCopy) {
-    btnCopy.setAttribute('disabled', 'true');
-  }
-
-  showToast(`✓ Запрос передан. Ожидайте письмо с ключом на почту!`);
 }
 
 // Активация ключа бойцом (из письма на Email, СМС или от администратора)
 async function verifyWithManualOrderId() {
+  const generation = paymentSessionGeneration;
   const input = document.getElementById('payOrderIdInput');
   const enteredKey = input ? input.value.trim().toUpperCase().replace(/\s+/g, '') : '';
   const callsign = localStorage.getItem('kapterka_pending_callsign') || 'Боец';
@@ -1076,17 +1148,18 @@ async function verifyWithManualOrderId() {
     showToast('❌ Неверный формат ключа. Проверьте символы и дефисы.');
     return;
   }
-  if (keyKind === 'legacy_unverified') {
-    showToast('ℹ️ Это старый формат ключа. Для безопасности сайт не активирует его без подтверждения.');
+  if (enteredKey.startsWith('KPT-')) {
+    showToast('Этот старый формат ключа требует проверки поддержкой.');
     return;
   }
 
   showToast('Проверяю ключ в реестре лицензий…');
   const registry = await fetchLicenseRegistryMeta(enteredKey);
-  if (!registry.found || !registry.registryVerified || Number(registry.expiresAt || 0) <= Date.now()) {
-    showToast(registry.unavailable
+  if (generation !== paymentSessionGeneration) return;
+  if (!registry.found || !registry.verified || Number(registry.expiresAt || 0) <= Date.now()) {
+    showToast(registry.errorMessage || (registry.unavailable
       ? 'Не удалось проверить срок лицензии. Попробуйте ещё раз при стабильном интернете.'
-      : 'Ключ не найден среди активных лицензий или срок уже завершён.');
+      : 'Ключ не найден среди активных лицензий или срок уже завершён.'));
     return;
   }
 
@@ -1181,6 +1254,7 @@ function applyNewPaidKey(newKey, callsign, meta = {}) {
 
 // Ручная привязка ключа бойцом в Личном кабинете (для синхронизации с приложением на Android)
 async function linkLicenseKeyInCabinet() {
+  const generation = paymentSessionGeneration;
   const input = document.getElementById('cabManualKeyInput');
   const key = input.value.trim().toUpperCase().replace(/\s+/g, '');
 
@@ -1194,19 +1268,20 @@ async function linkLicenseKeyInCabinet() {
     showToast('❌ Неверный формат ключа. Проверьте символы и дефисы.');
     return;
   }
-  if (keyKind === 'legacy_unverified') {
-    showToast('ℹ️ Старый ключ распознан, но для безопасности не активирован. Нужна серверная проверка.');
+  if (key.startsWith('KPT-')) {
+    showToast('Этот старый формат ключа требует проверки поддержкой.');
     return;
   }
 
   const callsign = localStorage.getItem(STORAGE_USER_CALLSIGN) || 'Боец';
   showToast('Проверяю лицензию в облачном реестре…');
   const registry = await fetchLicenseRegistryMeta(key);
+  if (generation !== paymentSessionGeneration) return;
 
-  if (!registry.found || !registry.registryVerified || Number(registry.expiresAt || 0) <= Date.now()) {
-    showToast(registry.unavailable
+  if (!registry.found || !registry.verified || Number(registry.expiresAt || 0) <= Date.now()) {
+    showToast(registry.errorMessage || (registry.unavailable
       ? 'Не удалось проверить реестр. Ключ не активирован — попробуйте ещё раз при стабильном интернете.'
-      : 'Ключ не найден среди активных лицензий или срок уже завершён.');
+      : 'Ключ не найден среди активных лицензий или срок уже завершён.'));
     return;
   }
 
@@ -1403,19 +1478,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Check URL parameters (e.g. returning after payment redirect ?payment=check)
+  // A return URL only opens the status screen. Only the saved order and server
+  // confirmation can supply a key; never trust a URL's success/payment_id flags.
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.get('payment') === 'success' || urlParams.get('payment') === 'check') {
     switchMainTab('tabPayment');
-    const boxInitial = document.getElementById('boxPaymentInitial');
-    const boxPending = document.getElementById('boxPaymentPending');
-    if (boxInitial) boxInitial.style.display = 'none';
-    if (boxPending) boxPending.style.display = 'block';
-    
-    // Автоматически нажимаем кнопку выдачи ключа, так как пользователь вернулся после оплаты
-    setTimeout(() => {
-      claimPaidLicenseKey();
-    }, 1000);
+    if (!resumePendingPaymentChecks()) {
+      setPaymentStatus('НЕТ СОХРАНЁННОГО СЧЁТА', 'Откройте браузер и аккаунт, где начали оплату, или обратитесь в поддержку.');
+    }
+  } else {
+    resumePendingPaymentChecks();
   }
 
 });

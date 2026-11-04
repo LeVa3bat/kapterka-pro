@@ -908,12 +908,31 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
     }
 
     // --- LICENSE & YOOKASSA ACTIONS ---
-    private var lastPaymentId: String = ""
+    private var lastPaymentId: String = prefs.getString("last_yookassa_payment_id", "").orEmpty()
     private var paymentPollingJob: kotlinx.coroutines.Job? = null
     private var paymentActivationInProgress = false
 
     private val _issuedPaymentKey = MutableStateFlow<String?>(null)
     val issuedPaymentKey: StateFlow<String?> = _issuedPaymentKey.asStateFlow()
+
+    init {
+        startPaymentPolling()
+    }
+
+    private fun startPaymentPolling() {
+        val paymentId = lastPaymentId
+        if (paymentId.isBlank() || paymentPollingJob?.isActive == true ||
+            prefs.getString("last_activated_yookassa_payment_id", "") == paymentId) return
+
+        paymentPollingJob = viewModelScope.launch {
+            repeat(60) {
+                kotlinx.coroutines.delay(3500)
+                if (lastPaymentId != paymentId ||
+                    prefs.getString("last_activated_yookassa_payment_id", "") == paymentId) return@launch
+                confirmPaymentAndActivateLicense(showProgress = false)
+            }
+        }
+    }
 
     fun clearIssuedPaymentKey() {
         _issuedPaymentKey.value = null
@@ -940,6 +959,8 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             if (result.success && result.confirmationUrl.isNotEmpty()) {
                 lastPaymentId = result.paymentId
                 prefs.edit().putString("last_yookassa_payment_id", result.paymentId).apply()
+                paymentPollingJob?.cancel()
+                startPaymentPolling()
                 yooKassaService.openPaymentUrl(result.confirmationUrl)
                 _toastEvent.emit("Переход к оплате ЮKassa (СБП/Карта)...")
 
@@ -949,24 +970,6 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                     email = email,
                     amountRub = yooKassaService.getConfig().priceRubles
                 )
-
-                // Фоновый опрос для автоматической выдачи ключа после возврата
-                paymentPollingJob?.cancel()
-                paymentPollingJob = viewModelScope.launch {
-                    var attempts = 0
-                    while (attempts < 60) {
-                        kotlinx.coroutines.delay(3500)
-                        attempts++
-                        val verification = yooKassaService.verifyPaymentLicense(
-                            paymentId = result.paymentId,
-                            fighterId = fighterId
-                        )
-                        if (verification.success && verification.paid) {
-                            confirmPaymentAndActivateLicense()
-                            break
-                        }
-                    }
-                }
             } else {
                 _toastEvent.emit(result.errorMessage ?: "Не удалось создать счет ЮKassa")
             }
@@ -974,13 +977,16 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun confirmPaymentAndActivateLicense() {
+        confirmPaymentAndActivateLicense(showProgress = true)
+    }
+
+    private fun confirmPaymentAndActivateLicense(showProgress: Boolean) {
         if (paymentActivationInProgress) return
+        paymentActivationInProgress = true
 
         viewModelScope.launch {
-            paymentActivationInProgress = true
+            var keepPolling = true
             try {
-                paymentPollingJob?.cancel()
-
                 val profile = userProfile.filterNotNull().first()
                 val callsign = profile.callsign.ifBlank { "Боец" }
                 val email = profile.email.trim()
@@ -994,26 +1000,34 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                 }
 
                 if (paymentIdToVerify.isBlank()) {
-                    _toastEvent.emit("Счёт на оплату ещё не был сформирован. Сначала нажмите «Оплатить через ЮKassa / СБП».")
+                    keepPolling = false
+                    if (showProgress) _toastEvent.emit("Счёт на оплату ещё не был сформирован. Сначала нажмите «Оплатить через ЮKassa / СБП».")
                     return@launch
                 }
 
                 val alreadyActivatedPaymentId = prefs.getString("last_activated_yookassa_payment_id", "") ?: ""
                 if (alreadyActivatedPaymentId == paymentIdToVerify) {
+                    keepPolling = false
                     licenseManager.refreshLicenseStatus()
-                    _toastEvent.emit("Лицензия по этому платежу уже активирована.")
+                    if (showProgress) _toastEvent.emit("Лицензия по этому платежу уже активирована.")
                     return@launch
                 }
 
-                _toastEvent.emit("Проверка статуса оплаты в ЮKassa...")
+                if (showProgress) _toastEvent.emit("Проверка статуса оплаты в ЮKassa...")
 
                 val verification = yooKassaService.verifyPaymentLicense(
                     paymentId = paymentIdToVerify,
                     fighterId = licenseManager.getFighterPersonalId()
                 )
-                if (!verification.success || !verification.paid) {
+                // A newer checkout must keep its own polling and payment identity.
+                if (lastPaymentId != paymentIdToVerify) return@launch
+                if (!verification.isReadyForActivation()) {
+                    if (verification.success && verification.status in setOf("canceled", "expired")) {
+                        keepPolling = false
+                        paymentPollingJob?.cancel()
+                    }
                     val msg = verification.errorMessage ?: "Платёж ещё не подтверждён сервером."
-                    _toastEvent.emit("❌ ЛИЦЕНЗИЯ НЕ АКТИВИРОВАНА!\n$msg")
+                    if (showProgress) _toastEvent.emit("❌ ЛИЦЕНЗИЯ НЕ АКТИВИРОВАНА!\n$msg")
                     return@launch
                 }
 
@@ -1024,9 +1038,11 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                     paymentId = paymentIdToVerify
                 )
                 if (!activated) {
-                    _toastEvent.emit("❌ Сервер подтвердил оплату, но данные лицензии не прошли проверку.")
+                    if (showProgress) _toastEvent.emit("❌ Сервер подтвердил оплату, но данные лицензии не прошли проверку.")
                     return@launch
                 }
+                keepPolling = false
+                if (lastPaymentId == paymentIdToVerify) paymentPollingJob?.cancel()
 
                 val daysLeft = ((verification.expiresAt - System.currentTimeMillis()) / 86400000L)
                     .toInt()
@@ -1061,19 +1077,16 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                     days = daysLeft
                 )
 
-                if (email.isNotBlank()) {
-                    com.example.data.notification.EmailDeliveryService.sendLicenseKeyEmail(
-                        context = getApplication(),
-                        recipientEmail = email,
-                        callsign = callsign,
-                        licenseKey = newKey,
-                        days = daysLeft
-                    )
-                }
-
+                // The backend queues the purchase email independently of app activation.
                 _toastEvent.emit("🎉 Оплата подтверждена! Лицензия PRO активирована на 30 дней.")
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                android.util.Log.w("KapterkaViewModel", "Payment activation will be retried", e)
+                if (showProgress) _toastEvent.emit("Не удалось завершить проверку оплаты. Проверка продолжится автоматически.")
             } finally {
                 paymentActivationInProgress = false
+                if (showProgress && keepPolling) startPaymentPolling()
             }
         }
     }

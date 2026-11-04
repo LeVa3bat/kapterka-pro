@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.util.Log
 import com.example.BuildConfig
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -36,7 +37,12 @@ data class PaymentVerificationResult(
     val licenseKey: String = "",
     val expiresAt: Long = 0L,
     val errorMessage: String? = null
-)
+) {
+    fun isReadyForActivation(nowMillis: Long = System.currentTimeMillis()): Boolean =
+        success && paid &&
+            licenseKey.matches(Regex("^KAPT-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$")) &&
+            expiresAt > nowMillis
+}
 
 /**
  * Future-safe payment client.
@@ -88,7 +94,7 @@ class YooKassaPaymentService(private val context: Context) {
     suspend fun createPayment(
         fighterCallsign: String,
         fighterEmail: String,
-        returnUrl: String = "kapterka://payment_success",
+        returnUrl: String = "${BuildConfig.PAYMENT_CALLBACK_SCHEME}://payment_success",
         fighterId: String = ""
     ): PaymentInitResult = withContext(Dispatchers.IO) {
         if (backendBaseUrl().isBlank()) {
@@ -125,6 +131,8 @@ class YooKassaPaymentService(private val context: Context) {
                     errorMessage = backendErrorMessage(response)
                 )
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(tag, "Payment backend create error", e)
             PaymentInitResult(
@@ -217,6 +225,8 @@ class YooKassaPaymentService(private val context: Context) {
                 expiresAt = expiresAt,
                 errorMessage = if (paid) null else statusMessage(status)
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(tag, "Payment backend check error", e)
             PaymentVerificationResult(
@@ -246,7 +256,8 @@ class YooKassaPaymentService(private val context: Context) {
             doOutput = true
             doInput = true
             connectTimeout = 12000
-            readTimeout = 12000
+            // Allow the backend's 12-second upstream deadline plus registry work.
+            readTimeout = 20000
             setRequestProperty("Content-Type", "application/json; charset=utf-8")
             setRequestProperty("Accept", "application/json")
         }

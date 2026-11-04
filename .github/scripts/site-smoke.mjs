@@ -262,7 +262,8 @@ if (/applyNewPaidKey\([^\n]+legacy/i.test(app)) fail('legacy-looking keys must n
 if (/Старый ключ Каптёрка PRO принят для совместимости/i.test(app)) fail('unsafe legacy acceptance wording returned');
 else ok('legacy-looking keys are never activated client-side');
 
-if (!app.includes('fetchLicenseRegistryMeta') || !app.includes('FIRESTORE_LICENSE_DOC_BASE')) fail('license registry lookup is missing');
+if (!app.includes('fetchLicenseRegistryMeta') || !app.includes('KAPTERKA_PAYMENT_API_URL') || !app.includes('license_status')) fail('server-authoritative license status lookup is missing');
+if (app.includes('FIRESTORE_LICENSE_DOC_BASE') || app.includes('/documents/licenses/')) fail('website must not read the legacy license registry directly');
 if (!app.includes('registryVerified') || !app.includes('expiresAt')) fail('license expiry verification metadata is missing');
 if (app.includes("status: 'Активен (30 дн)'")) fail('static 30-day license status returned');
 if (!index.includes('id="cabDaysLeft"') || !index.includes('id="cabExpiryProgress"')) fail('license countdown UI is missing');
