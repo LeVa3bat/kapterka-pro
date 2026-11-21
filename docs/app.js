@@ -970,22 +970,55 @@ function forgetPendingPayment() {
   localStorage.setItem(STORAGE_PAYMENT_REQUEST, JSON.stringify(requests));
 }
 
+const PRO_PLANS = {
+  30: { days: 30, price: 490, priceText: '490', label: '30 дней', ym: 'PRO_30' },
+  90: { days: 90, price: 1190, priceText: '1 190', label: '90 дней', ym: 'PRO_90' },
+  365: { days: 365, price: 3490, priceText: '3 490', label: '365 дней', ym: 'PRO_365' }
+};
+let selectedProPlanDays = 30;
+
+function activeProPlan() {
+  return PRO_PLANS[selectedProPlanDays] || PRO_PLANS[30];
+}
+
+function selectProPlan(days) {
+  const numericDays = PRO_PLANS[days] ? Number(days) : 30;
+  selectedProPlanDays = numericDays;
+  const plan = activeProPlan();
+  document.querySelectorAll('.pro-plan-opt').forEach(btn => {
+    const active = Number(btn.getAttribute('data-plan-days')) === plan.days;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-checked', active ? 'true' : 'false');
+  });
+  const label = document.getElementById('proPlanLabelDisplay');
+  if (label) label.textContent = 'PRO • ' + plan.label;
+  const priceEl = document.getElementById('proPayPriceDisplay');
+  if (priceEl) priceEl.textContent = plan.priceText + ' ₽';
+  const button = document.getElementById('btnPayYooKassaMain');
+  if (button && !button.disabled) button.textContent = `Оплатить ${plan.priceText} ₽ через ЮKassa`;
+  const keyDisplay = document.getElementById('liveGeneratedKeyDisplay');
+  if (keyDisplay && /^Ожидание оплаты/i.test(keyDisplay.textContent || '')) {
+    keyDisplay.textContent = `Ожидание оплаты ${plan.priceText} ₽`;
+  }
+}
+
 function pausePaymentChecks() {
   stopPaymentPolling();
   paymentSessionGeneration++;
   paymentRequestInFlight = false;
   paymentCheckInFlight = false;
+  const plan = activeProPlan();
   const initial = document.getElementById('boxPaymentInitial');
   const pending = document.getElementById('boxPaymentPending');
   if (initial) initial.style.display = 'block';
   if (pending) pending.style.display = 'none';
   const button = document.getElementById('btnPayYooKassaMain');
-  if (button) { button.disabled = false; button.textContent = 'Оплатить 490 ₽ через ЮKassa'; }
+  if (button) { button.disabled = false; button.textContent = `Оплатить ${plan.priceText} ₽ через ЮKassa`; }
   const verify = document.getElementById('btnManualVerify');
   if (verify) { verify.disabled = false; verify.textContent = 'Я оплатил — проверить'; }
   const cabinet = document.getElementById('btnGoToCabinetAfterPay');
   if (cabinet) cabinet.style.display = 'none';
-  setPaymentStatus('ОЖИДАНИЕ ОПЛАТЫ', 'После подтверждения оплаты ключ появится здесь.');
+  setPaymentStatus(`ОЖИДАНИЕ ОПЛАТЫ ${plan.priceText} ₽`, 'После подтверждения оплаты ключ появится здесь.');
 }
 
 function resumePendingPaymentChecks() {
@@ -1000,6 +1033,7 @@ function resumePendingPaymentChecks() {
 async function processYooKassaPayment() {
   if (paymentRequestInFlight) return;
   const generation = paymentSessionGeneration;
+  const plan = activeProPlan();
   const callsign = document.getElementById('payCallsignInput')?.value.trim() || 'Боец';
   const email = document.getElementById('payEmailInput')?.value.trim().toLowerCase() || '';
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 160) {
@@ -1014,18 +1048,29 @@ async function processYooKassaPayment() {
   try { paymentWindow = window.open('about:blank', '_blank'); if (paymentWindow) paymentWindow.opener = null; } catch (_) {}
   try {
     let request = readPaymentRequest();
+    const requestPlanDays = Number(request?.planDays || 30);
     // Retain the same order after a timeout: a retry must not create a second charge.
-    if (!request || request.email !== email || request.callsign !== callsign) {
-      request = { account: paymentAccountScope(), email, callsign, webClaimToken: paymentRandomToken(), idempotenceKey: paymentRandomToken(), createdAt: Date.now() };
+    if (!request || request.email !== email || request.callsign !== callsign || requestPlanDays !== plan.days) {
+      request = {
+        account: paymentAccountScope(),
+        email,
+        callsign,
+        webClaimToken: paymentRandomToken(),
+        idempotenceKey: paymentRandomToken(),
+        createdAt: Date.now(),
+        ...(plan.days !== 30 ? { planDays: plan.days } : {})
+      };
       savePaymentRequest(request);
       localStorage.removeItem('kapterka_pending_payment_id');
     }
     const existingUrl = request.paymentId && safePaymentConfirmationUrl(request.confirmationUrl);
-    const data = existingUrl ? { payment_id: request.paymentId, confirmation_url: existingUrl } : await requestPaymentApi('create', {
+    const createPayload = {
       email, callsign, web_claim_token: request.webClaimToken,
       idempotence_key: request.idempotenceKey,
-      return_url: 'https://kapterka-pro.ru/?payment=check#tabPayment'
-    });
+      return_url: 'https://kapterka-pro.ru/?payment=check#tabPayment',
+      ...(plan.days !== 30 ? { plan_days: plan.days } : {})
+    };
+    const data = existingUrl ? { payment_id: request.paymentId, confirmation_url: existingUrl } : await requestPaymentApi('create', createPayload);
     if (generation !== paymentSessionGeneration || !currentPaymentRequest(request)) {
       if (paymentWindow && !paymentWindow.closed) paymentWindow.close();
       return;
@@ -1044,9 +1089,9 @@ async function processYooKassaPayment() {
     setPaymentStatus('ОЖИДАНИЕ ОПЛАТЫ', 'Завершите оплату в ЮKassa. Ключ появится здесь после подтверждения платежа.');
     paymentPollAttempts = 0;
     schedulePaymentCheck(3500);
-    trackYm('reachGoal', 'initiate_yookassa_payment', { plan: 'PRO_30', amount: 490 });
+    trackYm('reachGoal', 'initiate_yookassa_payment', { plan: plan.ym, amount: plan.price });
     if (typeof window.gtag === 'function') {
-      try { window.gtag('event', 'begin_checkout', { value: 490, currency: 'RUB', items: [{ item_name: 'Лицензия Каптёрка Про (30 дней)', price: 490, quantity: 1 }] }); } catch (_) {}
+      try { window.gtag('event', 'begin_checkout', { value: plan.price, currency: 'RUB', items: [{ item_name: 'Лицензия Каптёрка Про (' + plan.label + ')', price: plan.price, quantity: 1 }] }); } catch (_) {}
     }
     if (paymentWindow && !paymentWindow.closed) paymentWindow.location.replace(confirmationUrl);
     else window.location.href = confirmationUrl;
@@ -1058,7 +1103,7 @@ async function processYooKassaPayment() {
   } finally {
     if (generation === paymentSessionGeneration) {
       paymentRequestInFlight = false;
-      if (button) { button.disabled = false; button.textContent = 'Оплатить 490 ₽ через ЮKassa'; }
+      if (button) { button.disabled = false; button.textContent = `Оплатить ${plan.priceText} ₽ через ЮKassa`; }
     }
   }
 }
