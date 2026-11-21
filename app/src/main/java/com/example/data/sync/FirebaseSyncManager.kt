@@ -66,8 +66,31 @@ class FirebaseSyncManager(
     val isPaused: Boolean
         get() = isSyncPaused(context)
 
+    @Volatile
+    private var entitlementAllowsSync: Boolean = true
+
     private val productionCloudEnabled: Boolean
-        get() = cloudBuildEnabled && !isPaused
+        get() = cloudBuildEnabled && !isPaused && entitlementAllowsSync
+
+    private fun disabledSyncReason(): String = when {
+        !cloudBuildEnabled -> "NEXT-SAFE: рабочее облако изолировано"
+        isPaused -> PAUSED_MESSAGE
+        !entitlementAllowsSync -> "Синхронизация доступна в PRO"
+        else -> "Синхронизация отключена"
+    }
+
+    fun setEntitlementAllowed(allowed: Boolean) {
+        if (entitlementAllowsSync == allowed) return
+        entitlementAllowsSync = allowed
+        if (!allowed) {
+            stopSync()
+            _syncState.value = SyncState(
+                isOnline = false,
+                syncMessage = if (isPaused) PAUSED_MESSAGE else "Синхронизация доступна в PRO",
+                isPaused = isPaused
+            )
+        }
+    }
 
     private val firestore: FirebaseFirestore
         by lazy { FirebaseFirestore.getInstance() }
@@ -654,7 +677,7 @@ class FirebaseSyncManager(
             _syncState.value = _syncState.value.copy(
                 isSyncing = false,
                 isOnline = false,
-                syncMessage = if (isPaused) PAUSED_MESSAGE else "NEXT-SAFE: отправка в рабочее облако отключена",
+                syncMessage = disabledSyncReason(),
                 isPaused = isPaused
             )
             return
@@ -677,14 +700,15 @@ class FirebaseSyncManager(
 
     suspend fun syncAndReconcileAll(unitKey: String, callsign: String, unitName: String): Pair<Boolean, String> = withContext(Dispatchers.IO) {
         if (!productionCloudEnabled) {
+            val reason = disabledSyncReason()
             _syncState.value = SyncState(
                 isSyncing = false,
                 isOnline = false,
                 connectedDevicesCount = 1,
-                syncMessage = if (isPaused) PAUSED_MESSAGE else "NEXT-SAFE: рабочее облако изолировано",
+                syncMessage = reason,
                 isPaused = isPaused
             )
-            return@withContext Pair(false, if (isPaused) PAUSED_MESSAGE else "NEXT-SAFE: синхронизация с рабочим облаком отключена")
+            return@withContext Pair(false, reason)
         }
         val cleanKey = unitKey.trim()
         if (cleanKey.isEmpty()) return@withContext Pair(false, "Не указан код подразделения")
@@ -892,8 +916,11 @@ class FirebaseSyncManager(
      */
     suspend fun publishLocalAsReference(unitKey: String): Pair<Boolean, String> = withContext(Dispatchers.IO) {
         val cleanKey = unitKey.trim()
-        if (!productionCloudEnabled || cleanKey.isEmpty()) {
+        if (cleanKey.isEmpty()) {
             return@withContext Pair(false, "Синхронизация недоступна: не указан ключ подразделения")
+        }
+        if (!productionCloudEnabled) {
+            return@withContext Pair(false, disabledSyncReason())
         }
         try {
             val unitRef = firestore.collection("units").document(cleanKey)
@@ -984,8 +1011,11 @@ class FirebaseSyncManager(
      */
     suspend fun replaceLocalWithCloud(unitKey: String): Pair<Boolean, String> = withContext(Dispatchers.IO) {
         val cleanKey = unitKey.trim()
-        if (!productionCloudEnabled || cleanKey.isEmpty()) {
+        if (cleanKey.isEmpty()) {
             return@withContext Pair(false, "Синхронизация недоступна: не указан ключ подразделения")
+        }
+        if (!productionCloudEnabled) {
+            return@withContext Pair(false, disabledSyncReason())
         }
         try {
             val unitRef = firestore.collection("units").document(cleanKey)

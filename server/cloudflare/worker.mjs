@@ -57,10 +57,14 @@ const licenseEmailLastSentAt = new Map();
 
 export function getConfig(env = {}) {
   const amount = Number(env.PAYMENT_AMOUNT_RUB || 490);
+  const amount90 = Number(env.PAYMENT_AMOUNT_90_RUB || 1190);
+  const amount365 = Number(env.PAYMENT_AMOUNT_365_RUB || 3490);
   return {
     shopId: String(env.YOOKASSA_SHOP_ID || '1450722'),
     secretKey: String(env.YOOKASSA_SECRET_KEY || ''),
     amountRub: Number.isFinite(amount) && amount > 0 ? amount : 490,
+    amount90Rub: Number.isFinite(amount90) && amount90 > 0 ? amount90 : 1190,
+    amount365Rub: Number.isFinite(amount365) && amount365 > 0 ? amount365 : 3490,
     projectId: String(env.FIREBASE_PROJECT_ID || 'kapterka-pro'),
     serviceAccount: readServiceAccount(env),
     adminSecretSha256: String(env.ADMIN_API_SECRET_SHA256 || '').trim().toLowerCase(),
@@ -663,6 +667,31 @@ export function amountMatchesTariff(payment, amountRub) {
   return currency === 'RUB' && Math.abs(value - amountRub) < 0.001;
 }
 
+export function resolveTariffPlan(cfg, rawPlan) {
+  const key = rawPlan === undefined || rawPlan === null ? '' : String(rawPlan).trim().toLowerCase();
+  if (!key || key === '30' || key === 'kapterka_pro_30d') {
+    return { days: 30, amountRub: cfg.amountRub, product: 'kapterka_pro_30d', description: 'Каптёрка ПРО — 30 дней' };
+  }
+  if (key === '90' || key === 'kapterka_pro_90d') {
+    return { days: 90, amountRub: cfg.amount90Rub, product: 'kapterka_pro_90d', description: 'Каптёрка ПРО — 90 дней' };
+  }
+  if (key === '365' || key === 'kapterka_pro_365d') {
+    return { days: 365, amountRub: cfg.amount365Rub, product: 'kapterka_pro_365d', description: 'Каптёрка ПРО — 365 дней' };
+  }
+  return null;
+}
+
+export function tariffForPayment(cfg, payment) {
+  const product = String(payment?.metadata?.product || '').trim();
+  if (!product) {
+    return { days: 30, amountRub: cfg.amountRub, product: '' };
+  }
+  if (product === 'kapterka_pro_30d') return { days: 30, amountRub: cfg.amountRub, product };
+  if (product === 'kapterka_pro_90d') return { days: 90, amountRub: cfg.amount90Rub, product };
+  if (product === 'kapterka_pro_365d') return { days: 365, amountRub: cfg.amount365Rub, product };
+  return null;
+}
+
 function paymentTimestampMillis(payment) {
   const parsed = Date.parse(payment?.captured_at || payment?.created_at || '');
   return Number.isFinite(parsed) ? parsed : Date.now();
@@ -683,7 +712,7 @@ async function withCommitRetry(operation) {
 
 // One atomic commit both consumes this payment and advances the fighter's
 // entitlement. Retrying after a lost response never consumes it a second time.
-async function persistPaymentLicense(db, cfg, paymentId, payment, requestedFighterId, trustedWebhook, webClaimVerified) {
+async function persistPaymentLicense(db, tariff, paymentId, payment, requestedFighterId, trustedWebhook, webClaimVerified) {
   const licenseKey = await keyForPayment(paymentId);
   return withCommitRetry(async () => {
     const stored = await db.get(LICENSES, licenseKey);
@@ -706,15 +735,16 @@ async function persistPaymentLicense(db, cfg, paymentId, payment, requestedFight
     const delivery = await db.get(LICENSE_DELIVERIES, licenseKey);
     const now = Date.now();
     const activatedAt = paymentTimestampMillis(payment);
+    const durationMs = tariff.days * DAY_MS;
     const expiresAt = existing?.expiresAt > 0 ? existing.expiresAt
-      : Math.max(activatedAt, Number(fighter?.expiresAt || 0)) + LICENSE_DURATION_MS;
+      : Math.max(activatedAt, Number(fighter?.expiresAt || 0)) + durationMs;
     const email = existing?.email || cleanEmail(payment.metadata?.email);
     const callsign = existing?.callsign || cleanText(payment.metadata?.callsign || 'Пользователь', 80);
     const writes = [];
     if (!existing) {
       writes.push(db.write(LICENSES, licenseKey, {
-        licenseKey, fighterId, callsign, email, paymentId, amount: cfg.amountRub,
-        activatedAt, expiresAt, durationDays: 30, status: 'ACTIVE', source: 'YooKassa server verification'
+        licenseKey, fighterId, callsign, email, paymentId, amount: tariff.amountRub,
+        activatedAt, expiresAt, durationDays: tariff.days, status: 'ACTIVE', source: 'YooKassa server verification'
       }, null));
     }
     // Also repairs old partially delivered payments, without replacing a newer
@@ -821,8 +851,9 @@ async function reconcilePayments(env) {
       fail: (code, error, extra = {}) => Response.json({ ok: false, error, ...extra }, { status: code })
     };
     for (const payment of page.items) {
-      if (payment.metadata?.product !== 'kapterka_pro_30d' || !cleanEmail(payment.metadata?.email) ||
-          payment.status !== 'succeeded' || payment.paid !== true || !amountMatchesTariff(payment, cfg.amountRub)) continue;
+      const tariff = tariffForPayment(cfg, payment);
+      if (!tariff || !tariff.product || !cleanEmail(payment.metadata?.email) ||
+          payment.status !== 'succeeded' || payment.paid !== true || !amountMatchesTariff(payment, tariff.amountRub)) continue;
       const paymentId = String(payment.id || '');
       if (!/^[A-Za-z0-9-]{8,100}$/.test(paymentId)) throw new Error('Invalid payment ID in reconciliation');
       // Re-fetch each candidate through the same shop-authenticated path. Mail
@@ -860,11 +891,11 @@ async function processPayment(ctx, paymentId, requestedFighterId, trustedWebhook
   }
   const status = payment.status || 'unknown';
   if (!(status === 'succeeded' && payment.paid === true)) return ctx.ok({ ok: true, paid: false, status });
-  if (!amountMatchesTariff(payment, cfg.amountRub)) return ctx.fail(409, 'PAYMENT_AMOUNT_MISMATCH', { paid: false, status });
-  const product = payment.metadata?.product;
-  if ((product && product !== 'kapterka_pro_30d') || (trustedWebhook && product !== 'kapterka_pro_30d')) {
+  const tariff = tariffForPayment(cfg, payment);
+  if (!tariff || (trustedWebhook && !tariff.product)) {
     return ctx.fail(409, 'PAYMENT_PRODUCT_MISMATCH', { paid: false, status });
   }
+  if (!amountMatchesTariff(payment, tariff.amountRub)) return ctx.fail(409, 'PAYMENT_AMOUNT_MISMATCH', { paid: false, status });
   if (trustedWebhook && !cleanEmail(payment.metadata?.email)) return ctx.fail(409, 'PAYMENT_EMAIL_MISSING', { paid: false, status });
   const paymentFighterId = cleanText(payment.metadata?.fighter_id, 100);
   const webClaimHash = String(payment.metadata?.web_claim_hash || '');
@@ -882,7 +913,7 @@ async function processPayment(ctx, paymentId, requestedFighterId, trustedWebhook
   }
   let issued;
   try {
-    issued = await persistPaymentLicense(db, cfg, paymentId, payment, requestedFighterId, trustedWebhook, webClaimVerified);
+    issued = await persistPaymentLicense(db, tariff, paymentId, payment, requestedFighterId, trustedWebhook, webClaimVerified);
   } catch (error) {
     if (error?.code === 'LICENSE_FIGHTER_MISMATCH') return ctx.fail(403, error.code, { paid: false, status });
     if (error?.code === 'LICENSE_NOT_ACTIVE') return ctx.fail(409, error.code, { paid: true, status: 'inactive' });
@@ -1091,13 +1122,14 @@ const handlers = {
     const existing = normalizeFighter(await db.get(FIGHTERS, fighterId));
     if (existing) {
       const storedEmail = cleanEmail(existing.email);
+      const registeredAt = Number(existing.registeredAt || now);
       if (storedEmail && email && storedEmail === email) {
         // Profile metadata only. License fields are never accepted from a client.
         await db.patch(FIGHTERS, fighterId, { callsign, unitName, unitKey, lastSeenAt: now, deviceModel });
-        return ctx.ok({ ok: true, existing: true, profile_updated: true });
+        return ctx.ok({ ok: true, existing: true, profile_updated: true, registered_at: registeredAt });
       }
       await db.patch(FIGHTERS, fighterId, { lastSeenAt: now, deviceModel });
-      return ctx.ok({ ok: true, existing: true, profile_updated: false });
+      return ctx.ok({ ok: true, existing: true, profile_updated: false, registered_at: registeredAt });
     }
 
     let active = null;
@@ -1148,7 +1180,7 @@ const handlers = {
       '📅 <b>Время:</b> ' + escapeHtml(moscowTime(now)) + ' (МСК)\n' +
       '📱 <b>Платформа:</b> Android App (' + escapeHtml(deviceModel) + ')'
     );
-    return ctx.ok({ ok: true, existing: false });
+    return ctx.ok({ ok: true, existing: false, registered_at: now });
   },
 
   async fighter_lookup(ctx) {
@@ -1163,7 +1195,10 @@ const handlers = {
     if (!fighter || fighter.id !== fighterId) return ctx.fail(404, 'FIGHTER_NOT_FOUND');
     const storedEmail = cleanEmail(fighter.email);
     if (!storedEmail || storedEmail !== email) return ctx.fail(403, 'FIGHTER_IDENTITY_MISMATCH');
-    return ctx.ok({ ok: true, fighter: { id: fighter.id, unit_name: fighter.unitName, unit_key: fighter.unitKey } });
+    return ctx.ok({
+      ok: true,
+      fighter: { id: fighter.id, unit_name: fighter.unitName, unit_key: fighter.unitKey, registered_at: Number(fighter.registeredAt || 0) }
+    });
   },
 
   // Registration: send a 6-digit confirmation code to the e-mail.
@@ -1281,9 +1316,10 @@ const handlers = {
       if (!license.fighterId && fighterId) {
         const fighter = await db.get(FIGHTERS, fighterId);
         // A web/legacy purchase cannot know its Android fighter at checkout.
-        // Stack its paid month onto that fighter only once, at first binding.
+        // Stack its paid duration onto that fighter only once, at first binding.
+        const grantDurationMs = Math.max(1, Number(stored.durationDays || 30)) * DAY_MS;
         if (stored.paymentId && fighter?.licenseKey !== licenseKey) {
-          license.expiresAt = Math.max(license.expiresAt, Number(fighter?.expiresAt || 0) + LICENSE_DURATION_MS);
+          license.expiresAt = Math.max(license.expiresAt, Number(fighter?.expiresAt || 0) + grantDurationMs);
         }
         const writes = [db.write(LICENSES, licenseKey, { fighterId, expiresAt: license.expiresAt, boundAt: Date.now() }, stored)];
         if (license.expiresAt !== Number(stored.expiresAt)) {
@@ -1556,7 +1592,7 @@ const handlers = {
         active_legacy: legacyActive,
         expiring_7d: verified.filter((l) => l.expiresAt - now < 7 * DAY_MS).length,
         paid_month: paidThisMonth.length,
-        revenue_month_rub: paidThisMonth.length * cfg.amountRub
+        revenue_month_rub: paidThisMonth.reduce((acc, x) => acc + (Number(x.amount) > 0 ? Number(x.amount) : cfg.amountRub), 0)
       },
       registrations_14d: registrations14
     });
@@ -1633,6 +1669,10 @@ const handlers = {
     }
     if (!(await ctx.limit('create:' + ctx.ip))) return ctx.fail(429, 'RATE_LIMITED');
 
+    const rawPlan = body.plan_days ?? query.plan_days ?? body.plan ?? query.plan;
+    const tariff = resolveTariffPlan(cfg, rawPlan);
+    if (!tariff) return ctx.fail(400, 'INVALID_PLAN');
+
     const returnUrlRaw = cleanText(body.return_url || query.return_url, 300);
     const returnUrl =
       returnUrlRaw.startsWith('kapterka://payment_success') ||
@@ -1642,16 +1682,16 @@ const handlers = {
         : 'https://kapterka-pro.ru/?payment=check#tabPayment';
     const idempotenceKey = cleanText(body.idempotence_key || query.idempotence_key || crypto.randomUUID(), 64);
 
-    const metadata = { callsign, email, duration_days: '30', product: 'kapterka_pro_30d' };
+    const metadata = { callsign, email, duration_days: String(tariff.days), product: tariff.product };
     if (fighterId) metadata.fighter_id = fighterId;
     if (webClaimToken) metadata.web_claim_hash = await sha256Hex(webClaimToken);
 
     // Price comes only from server configuration, never from the client.
     const payment = await requestYooKassa(cfg, 'POST', '/v3/payments', {
-      amount: { value: cfg.amountRub.toFixed(2), currency: 'RUB' },
+      amount: { value: tariff.amountRub.toFixed(2), currency: 'RUB' },
       confirmation: { type: 'redirect', return_url: returnUrl },
       capture: true,
-      description: 'Каптёрка ПРО — 30 дней',
+      description: tariff.description,
       metadata
     }, idempotenceKey);
 
@@ -1659,13 +1699,15 @@ const handlers = {
       '💳 <b>Новый платёж «Каптёрка ПРО»</b>\n' +
       'Позывной: <b>' + escapeHtml(callsign) + '</b>\n' +
       'Email: <code>' + escapeHtml(email) + '</code>\n' +
-      'Сумма: <b>' + cfg.amountRub + ' ₽</b>\n' +
+      'Сумма: <b>' + tariff.amountRub + ' ₽ (' + tariff.days + ' дн.)</b>\n' +
       'Payment ID: <code>' + escapeHtml(payment.id || '') + '</code>'
     );
     return ctx.ok({
       ok: true,
       payment_id: payment.id || '',
-      confirmation_url: payment.confirmation?.confirmation_url || ''
+      confirmation_url: payment.confirmation?.confirmation_url || '',
+      plan_days: tariff.days,
+      amount_rub: tariff.amountRub
     });
   },
 
@@ -1711,14 +1753,14 @@ const REMOVED_ACTIONS = new Set(['send_telegram']);
 
 export default {
   async scheduled(_controller, env) {
-    // Keep recovery independent: a YooKassa outage must not stop mail retries.
-    let failure;
+    // Keep recovery independent and prevent unhandled cron rejections;
+    // reconciliation state and errors are already persisted in Firestore.
     try { await reconcilePayments(env); } catch (error) {
-      failure = error;
       console.error(JSON.stringify({ event: 'payment_reconciliation_failed', error: error?.message || 'Unknown error' }));
     }
-    await retryLicenseDeliveries(env);
-    if (failure) throw failure;
+    try { await retryLicenseDeliveries(env); } catch (error) {
+      console.error(JSON.stringify({ event: 'license_delivery_batch_failed', error: error?.message || 'Unknown error' }));
+    }
   },
 
   async fetch(request, env, execCtx) {
@@ -1731,7 +1773,12 @@ export default {
     const query = Object.fromEntries(url.searchParams.entries());
     let body = {};
     if (request.method === 'POST') {
-      const raw = await request.text();
+      let raw = '';
+      try {
+        raw = await request.text();
+      } catch (_) {
+        return json(request, 400, { ok: false, error: 'INVALID_BODY' });
+      }
       if (new TextEncoder().encode(raw).length > MAX_REQUEST_BODY_BYTES) {
         return json(request, 413, { ok: false, error: 'PAYLOAD_TOO_LARGE' });
       }

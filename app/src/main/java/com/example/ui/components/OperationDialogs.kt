@@ -397,14 +397,23 @@ fun IssueOperationDialog(
     stockRecords: List<StockRecord> = emptyList(),
     initialPointId: String,
     onDismiss: () -> Unit,
+    personOnlyMode: Boolean = false,
     onConfirm: (fromPointId: String, fromPointName: String, toPointId: String, toPointName: String, items: List<OperationItemEntry>, comment: String) -> Unit
 ) {
     var fromPoint by remember {
-        mutableStateOf(points.firstOrNull { it.id == initialPointId } ?: points.firstOrNull() ?: WarehousePoint("base", "Базовый склад"))
+        val defaultPoint = if (personOnlyMode) {
+            points.firstOrNull { it.isBase }
+                ?: points.minByOrNull { it.orderIndex }
+                ?: points.firstOrNull()
+        } else {
+            points.firstOrNull { it.id == initialPointId } ?: points.firstOrNull()
+        }
+        mutableStateOf(defaultPoint ?: WarehousePoint("base", "Базовый склад"))
     }
     var targetPoint by remember {
         mutableStateOf(points.firstOrNull { it.id != initialPointId } ?: points.firstOrNull() ?: WarehousePoint("base", "Базовый склад"))
     }
+    var recipientName by remember { mutableStateOf("") }
     var comment by remember { mutableStateOf("") }
     val draftItems = remember {
         mutableStateListOf(OperationDraftItem(selectedItem = null, quantityString = "1"))
@@ -444,7 +453,9 @@ fun IssueOperationDialog(
                     )
                 }
                 if (validItems.isNotEmpty()) {
-                    onConfirm(fromPoint.id, fromPoint.name, targetPoint.id, targetPoint.name, validItems, comment)
+                    val toId = if (personOnlyMode) "" else targetPoint.id
+                    val toName = if (personOnlyMode) recipientName.trim().ifBlank { "Выдано на руки" } else targetPoint.name
+                    onConfirm(fromPoint.id, fromPoint.name, toId, toName, validItems, comment)
                     pendingInsufficientItems = null
                     onDismiss()
                 }
@@ -484,7 +495,9 @@ fun IssueOperationDialog(
                         if (insufficient.isNotEmpty()) {
                             pendingInsufficientItems = insufficient
                         } else {
-                            onConfirm(fromPoint.id, fromPoint.name, targetPoint.id, targetPoint.name, validItems, comment)
+                            val toId = if (personOnlyMode) "" else targetPoint.id
+                            val toName = if (personOnlyMode) recipientName.trim().ifBlank { "Выдано на руки" } else targetPoint.name
+                            onConfirm(fromPoint.id, fromPoint.name, toId, toName, validItems, comment)
                             onDismiss()
                         }
                     }
@@ -496,8 +509,8 @@ fun IssueOperationDialog(
         }
     ) {
         TacticalSearchablePointDropdown(
-            label = "Откуда выдано (Точка списания)",
-            points = points,
+            label = if (personOnlyMode) "Откуда выдано (Основной склад)" else "Откуда выдано (Точка списания)",
+            points = if (personOnlyMode) listOf(fromPoint) else points,
             selectedPoint = fromPoint,
             stockRecords = stockRecords,
             catalogItems = catalogItems,
@@ -513,14 +526,23 @@ fun IssueOperationDialog(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        TacticalSearchablePointDropdown(
-            label = "Кому / Куда подняли (Точка получения)",
-            points = points,
-            selectedPoint = targetPoint,
-            stockRecords = stockRecords,
-            catalogItems = catalogItems,
-            onPointSelected = { targetPoint = it }
-        )
+        if (personOnlyMode) {
+            TacticalInputField(
+                label = "Кому выдано (Получатель)",
+                value = recipientName,
+                onValueChange = { recipientName = it },
+                placeholder = "Например: Иванов И.И. / Цех №1"
+            )
+        } else {
+            TacticalSearchablePointDropdown(
+                label = "Кому / Куда подняли (Точка получения)",
+                points = points,
+                selectedPoint = targetPoint,
+                stockRecords = stockRecords,
+                catalogItems = catalogItems,
+                onPointSelected = { targetPoint = it }
+            )
+        }
 
         Spacer(modifier = Modifier.height(14.dp))
 

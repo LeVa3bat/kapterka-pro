@@ -207,6 +207,10 @@ class KapterkaRepository(
         return triggerCloudSync()
     }
 
+    fun setCloudSyncEntitlementAllowed(allowed: Boolean) {
+        syncManager?.setEntitlementAllowed(allowed)
+    }
+
     /** Deletes this unit's data from the cloud. Sync is stopped first so nothing is re-uploaded. */
     suspend fun deleteCloudData(): Result<Unit> {
         val manager = syncManager ?: return Result.failure(IllegalStateException("Облако недоступно"))
@@ -325,7 +329,15 @@ class KapterkaRepository(
     }
 
     suspend fun addCustomInventoryItem(name: String, category: String, subCategory: String, unit: String) {
-        val i = InventoryItem(java.util.UUID.randomUUID().toString(), name, category, subCategory, unit, "Кат. 1")
+        val i = InventoryItem(
+            id = java.util.UUID.randomUUID().toString(),
+            name = name,
+            serviceCategory = category,
+            subType = subCategory,
+            unit = unit,
+            categoryClass = "Кат. 1",
+            isCustom = true
+        )
         dao.insertItem(i)
         syncManager?.pushInventoryItemAsync(getCurrentUnitKey(), i)
     }

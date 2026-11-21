@@ -86,6 +86,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.data.license.FreeTierDecision
+import com.example.data.license.FreeTierPolicy
 import com.example.data.model.WarehousePoint
 import com.example.ui.components.AddCustomItemDialog
 import com.example.ui.components.AddPointDialog
@@ -309,6 +311,30 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
         return
     }
 
+    val isProOrDemoActive = (profile?.isProActive == true) ||
+                            licenseStatus.isProActive ||
+                            ((profile?.demoDaysLeft ?: 0) > 0) ||
+                            licenseStatus.isDemoActive
+
+    val defaultItemIds = remember { com.example.data.local.InitialData.getDefaultItems().map { it.id }.toSet() }
+
+    LaunchedEffect(isProOrDemoActive) {
+        viewModel.syncEntitlementWithCloud(isProOrDemoActive)
+    }
+
+    val showProRequired: (String) -> Unit = { message ->
+        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+        showPaymentProDialog = true
+    }
+
+    val checkProAccess: (String, () -> Unit) -> Unit = { actionName, onGranted ->
+        if (isProOrDemoActive) {
+            onGranted()
+        } else {
+            showProRequired("Демо-период (3 дня) истёк. Для $actionName требуется лицензия PRO.")
+        }
+    }
+
     // MAIN SCAFFOLD WITH TACTICAL NAVIGATION BAR
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -329,8 +355,6 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            val context = LocalContext.current
-
             // TACTICAL IN-APP POPUP BANNER ("Всплывающее сообщение о проводке")
             AnimatedVisibility(
                 visible = inAppToastMessage != null,
@@ -410,23 +434,6 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                     }
                 }
             }
-            val isProOrDemoActive = (profile?.isProActive == true) || 
-                                    licenseStatus.isProActive || 
-                                    ((profile?.demoDaysLeft ?: 0) > 0) || 
-                                    licenseStatus.isDemoActive
-
-            val checkProAccess: (String, () -> Unit) -> Unit = { actionName, onGranted ->
-                if (isProOrDemoActive) {
-                    onGranted()
-                } else {
-                    Toast.makeText(
-                        context,
-                        "Демо-период (3 дня) истёк. Для $actionName требуется лицензия PRO.",
-                        Toast.LENGTH_LONG
-                    ).show()
-                    showPaymentProDialog = true
-                }
-            }
 
             // Fixed-size crossfade with a small directional slide. No SizeTransform:
             // animating the container size is what made screens twitch.
@@ -455,21 +462,45 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                             onSelectCategory = { viewModel.selectCategory(it) },
                             onSearchChange = { viewModel.setInventorySearchQuery(it) },
                             onIncomeClick = { showIncomeDialog = true },
-                            onTransferClick = { showTransferDialog = true },
+                            onTransferClick = {
+                                checkProAccess("перемещения между складами") {
+                                    showTransferDialog = true
+                                }
+                            },
                             onIssueClick = { showIssueDialog = true },
                             onExpenditureClick = {
                                 checkProAccess("списания по Форме № 8") {
                                     showExpenditureDialog = true
                                 }
                             },
-                            onAddPointClick = { showAddPointDialog = true },
-                            onEditPointClick = { editingPoint = it },
-                            onAddCustomItemClick = { showAddCustomItemDialog = true },
-                            onAdjustStock = { pointId, pointName, itemId, itemName, unit, newQty, comment ->
-                                viewModel.adjustPointStock(pointId, pointName, itemId, itemName, unit, newQty, comment)
+                            onAddPointClick = {
+                                checkProAccess("добавления нового склада") {
+                                    showAddPointDialog = true
+                                }
                             },
-                            onSyncClick = { viewModel.simulateCloudSync() },
-                            onSecondPhoneClick = { showUnitKeySyncDialog = true },
+                            onEditPointClick = { editingPoint = it },
+                            onAddCustomItemClick = {
+                                when (val d = FreeTierPolicy.checkCustomItemAdd(isProOrDemoActive, catalogItems, defaultItemIds)) {
+                                    is FreeTierDecision.Allowed -> showAddCustomItemDialog = true
+                                    is FreeTierDecision.RequirePro -> showProRequired(d.reason)
+                                }
+                            },
+                            onAdjustStock = { pointId, pointName, itemId, itemName, unit, newQty, comment ->
+                                when (val d = FreeTierPolicy.checkStockAdjust(isProOrDemoActive, points, stockRecords, pointId, itemId, newQty)) {
+                                    is FreeTierDecision.Allowed -> viewModel.adjustPointStock(pointId, pointName, itemId, itemName, unit, newQty, comment)
+                                    is FreeTierDecision.RequirePro -> showProRequired(d.reason)
+                                }
+                            },
+                            onSyncClick = {
+                                checkProAccess("облачной синхронизации") {
+                                    viewModel.simulateCloudSync()
+                                }
+                            },
+                            onSecondPhoneClick = {
+                                checkProAccess("подключения второго телефона") {
+                                    showUnitKeySyncDialog = true
+                                }
+                            },
                             onExportClick = {
                                 checkProAccess("выгрузки отчетов в Excel") {
                                     excelReportInitialTab = 0
@@ -507,14 +538,22 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                             stockRecords = stockRecords,
                             requisitions = requisitions,
                             onCreateRequisition = { pName, applicant, items, comment ->
-                                viewModel.createRequisition(pName, applicant, items, comment)
+                                checkProAccess("работы с заявками") {
+                                    viewModel.createRequisition(pName, applicant, items, comment)
+                                }
                             },
                             onUpdateStatus = { req, nextStatus ->
-                                viewModel.updateRequisitionStatus(req, nextStatus)
+                                checkProAccess("работы с заявками") {
+                                    viewModel.updateRequisitionStatus(req, nextStatus)
+                                }
                             },
                             onDeleteRequisition = { viewModel.deleteRequisition(it) },
                             parseItems = { viewModel.parseRequisitionItems(it) },
-                            onIssueRequisition = { viewModel.issueRequisition(it) }
+                            onIssueRequisition = { req ->
+                                checkProAccess("выдачи по заявке") {
+                                    viewModel.issueRequisition(req)
+                                }
+                            }
                         )
                     }
 
@@ -522,7 +561,12 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                         InventoryCatalogScreen(
                             items = catalogItems,
                             availableCategories = availableCategories,
-                            onAddNewItemClick = { showAddCustomItemDialog = true },
+                            onAddNewItemClick = {
+                                when (val d = FreeTierPolicy.checkCustomItemAdd(isProOrDemoActive, catalogItems, defaultItemIds)) {
+                                    is FreeTierDecision.Allowed -> showAddCustomItemDialog = true
+                                    is FreeTierDecision.RequirePro -> showProRequired(d.reason)
+                                }
+                            },
                             onUpdateItem = { viewModel.updateCatalogItem(it) },
                             onDeleteItem = { id, name -> viewModel.deleteCatalogItem(id, name) }
                         )
@@ -538,13 +582,29 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                             onSaveBackup = { viewModel.saveBackupTo(it) },
                             onRestoreBackup = { viewModel.restoreBackupFrom(it) },
                             lastCloudBackupAt = viewModel.lastCloudBackupAt(),
-                            onSaveCloudBackup = { viewModel.saveBackupToCloud() },
-                            onRestoreCloudBackup = { viewModel.restoreBackupFromCloud() },
+                            onSaveCloudBackup = {
+                                checkProAccess("облачной резервной копии") {
+                                    viewModel.saveBackupToCloud()
+                                }
+                            },
+                            onRestoreCloudBackup = {
+                                checkProAccess("восстановления копии из облака") {
+                                    viewModel.restoreBackupFromCloud()
+                                }
+                            },
                             onDeleteCategory = { viewModel.deleteCategory(it) },
                             onAddCategory = { viewModel.addCategory(it) },
                             onResetCategories = { viewModel.resetCategoriesToDefault() },
-                            onSyncClick = { viewModel.simulateCloudSync() },
-                            onOpenConnectCodeDialog = { showUnitKeySyncDialog = true },
+                            onSyncClick = {
+                                checkProAccess("облачной синхронизации") {
+                                    viewModel.simulateCloudSync()
+                                }
+                            },
+                            onOpenConnectCodeDialog = {
+                                checkProAccess("подключения второго телефона") {
+                                    showUnitKeySyncDialog = true
+                                }
+                            },
                             onOpenPaymentPro = { showPaymentProDialog = true },
                             onExportFullConsolidatedClick = {
                                 checkProAccess("выгрузки сводной ведомости") {
@@ -604,7 +664,10 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
             initialPointId = selectedPointId,
             onDismiss = { showIncomeDialog = false },
             onConfirm = { toPointId, toPointName, supplier, items, comment ->
-                viewModel.recordIncome(toPointId, toPointName, supplier, items, comment)
+                when (val d = FreeTierPolicy.checkIncome(isProOrDemoActive, points, stockRecords, toPointId, items.map { it.itemId })) {
+                    is FreeTierDecision.Allowed -> viewModel.recordIncome(toPointId, toPointName, supplier, items, comment)
+                    is FreeTierDecision.RequirePro -> showProRequired(d.reason)
+                }
             }
         )
     }
@@ -628,9 +691,13 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
             catalogItems = catalogItems,
             stockRecords = stockRecords,
             initialPointId = selectedPointId,
+            personOnlyMode = !isProOrDemoActive,
             onDismiss = { showIssueDialog = false },
             onConfirm = { fromPointId, fromPointName, toPointId, toPointName, items, comment ->
-                viewModel.recordIssue(fromPointId, fromPointName, toPointId, toPointName, items, comment)
+                when (val d = FreeTierPolicy.checkIssue(isProOrDemoActive, points, fromPointId, toPointId)) {
+                    is FreeTierDecision.Allowed -> viewModel.recordIssue(fromPointId, fromPointName, toPointId, toPointName, items, comment)
+                    is FreeTierDecision.RequirePro -> showProRequired(d.reason)
+                }
             }
         )
     }
@@ -676,7 +743,10 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
             availableCategories = availableCategories,
             onDismiss = { showAddCustomItemDialog = false },
             onConfirm = { name, service, subType, unit ->
-                viewModel.addCustomItem(name, service, subType, unit)
+                when (val d = FreeTierPolicy.checkCustomItemAdd(isProOrDemoActive, catalogItems, defaultItemIds)) {
+                    is FreeTierDecision.Allowed -> viewModel.addCustomItem(name, service, subType, unit)
+                    is FreeTierDecision.RequirePro -> showProRequired(d.reason)
+                }
             }
         )
     }
@@ -710,6 +780,7 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
             yooKassaConfig = viewModel.yooKassaService.getConfig(),
             issuedPaymentKey = issuedPaymentKey,
             onPayYooKassaClick = { viewModel.startYooKassaPayment() },
+            onPayYooKassaPlanClick = { planDays -> viewModel.startYooKassaPayment(planDays) },
             onActivateLicenseKey = { key -> viewModel.activateLicenseKey(key) },
             onTestPaymentConfirm = { viewModel.confirmPaymentAndActivateLicense() },
             onRestoreSavedLicense = { viewModel.restoreSavedLicenseOnDevice() },

@@ -81,6 +81,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.data.license.FighterLicenseStatus
 import com.example.data.model.UserProfile
+import com.example.data.payment.ProPlanOption
 import com.example.data.payment.YooKassaConfig
 import com.example.ui.theme.SageGreenBright
 import com.example.ui.theme.SageGreenPrimary
@@ -108,7 +109,8 @@ fun PersonalLicenseDialog(
     licenseStatus: FighterLicenseStatus,
     yooKassaConfig: YooKassaConfig,
     issuedPaymentKey: String? = null,
-    onPayYooKassaClick: () -> Unit,
+    onPayYooKassaClick: () -> Unit = {},
+    onPayYooKassaPlanClick: ((Int) -> Unit)? = null,
     onActivateLicenseKey: (String) -> Unit,
     onTestPaymentConfirm: () -> Unit,
     onRestoreSavedLicense: () -> Unit = {},
@@ -121,6 +123,7 @@ fun PersonalLicenseDialog(
     val context = LocalContext.current
     val clipboard = LocalClipboardManager.current
     val scope = rememberCoroutineScope()
+    var selectedPlan by remember { mutableStateOf(ProPlanOption.DAYS_30) }
     var paymentStarted by remember { mutableStateOf(false) }
     var verifying by remember { mutableStateOf(false) }
     var showKeyEntry by remember { mutableStateOf(false) }
@@ -133,7 +136,12 @@ fun PersonalLicenseDialog(
     val activeKey = justPaidKey ?: licenseStatus.licenseKey.takeIf { it.isNotBlank() }
     val email = profile?.email?.trim().orEmpty()
     val callsign = profile?.callsign?.trim().orEmpty()
-    val price = yooKassaConfig.priceRubles
+    fun planPrice(plan: ProPlanOption): Int =
+        if (plan == ProPlanOption.DAYS_30 && yooKassaConfig.priceRubles > 0) yooKassaConfig.priceRubles else plan.priceRubles
+    val price = planPrice(selectedPlan)
+    val startPay: () -> Unit = {
+        onPayYooKassaPlanClick?.invoke(selectedPlan.days) ?: onPayYooKassaClick()
+    }
 
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Column(
@@ -167,7 +175,7 @@ fun PersonalLicenseDialog(
                             AnimatedCheck(key = justPaidKey, color = Color.White, size = 72.dp)
                             Spacer(modifier = Modifier.height(10.dp))
                             Text("Оплата прошла!", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold)
-                            Text("PRO включена на 30 дней", color = Color.White.copy(alpha = 0.85f), fontSize = 14.sp)
+                            Text("Лицензия PRO активирована", color = Color.White.copy(alpha = 0.85f), fontSize = 14.sp)
                         }
                         isPro -> {
                             DaysRing(days = licenseStatus.daysRemaining)
@@ -180,15 +188,20 @@ fun PersonalLicenseDialog(
                             Spacer(modifier = Modifier.height(10.dp))
                             Text("Каптёрка PRO", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold)
                             Text(
-                                if (licenseStatus.isDemoActive) "Демо: осталось ${licenseStatus.demoDaysLeft} дн." else "Демо-период закончился",
-                                color = if (licenseStatus.isDemoActive) Color.White.copy(alpha = 0.85f) else Color(0xFFFFC2B3),
-                                fontSize = 14.sp
+                                if (licenseStatus.isDemoActive) {
+                                    "Демо: осталось ${licenseStatus.demoDaysLeft} дн. • далее 1 склад и 15 позиций"
+                                } else {
+                                    "Базовый режим: 1 склад, до 15 позиций"
+                                },
+                                color = if (licenseStatus.isDemoActive) Color.White.copy(alpha = 0.88f) else Color(0xFFFFC2B3),
+                                fontSize = 13.sp,
+                                textAlign = TextAlign.Center
                             )
                             Spacer(modifier = Modifier.height(12.dp))
                             Row(verticalAlignment = Alignment.Bottom) {
                                 Text("$price ₽", color = Color.White, fontSize = 40.sp, fontWeight = FontWeight.Black)
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("за 30 дней", color = Color.White.copy(alpha = 0.8f), fontSize = 14.sp, modifier = Modifier.padding(bottom = 8.dp))
+                                Text("за ${selectedPlan.title}", color = Color.White.copy(alpha = 0.8f), fontSize = 14.sp, modifier = Modifier.padding(bottom = 8.dp))
                             }
                         }
                     }
@@ -241,7 +254,59 @@ fun PersonalLicenseDialog(
 
                     Spacer(modifier = Modifier.height(16.dp))
                     if (!paymentStarted) {
-                        Text(if (isPro) "Продлить ещё на 30 дней" else "Как оплатить", color = TacticalTextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        Text("Выберите срок PRO", color = TacticalTextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            ProPlanOption.values().forEach { plan ->
+                                val isSelected = plan == selectedPlan
+                                val optPrice = planPrice(plan)
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(
+                                            if (isSelected) Color(0xFFE0A63A).copy(alpha = 0.16f) else TacticalSurfaceLight
+                                        )
+                                        .border(
+                                            width = if (isSelected) 1.5.dp else 1.dp,
+                                            color = if (isSelected) Color(0xFFE0A63A) else TacticalBorderSubtle,
+                                            shape = RoundedCornerShape(14.dp)
+                                        )
+                                        .clickable { selectedPlan = plan }
+                                        .padding(vertical = 10.dp, horizontal = 6.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text(
+                                            text = plan.title,
+                                            color = if (isSelected) TacticalGoldText else TacticalTextSecondary,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Text(
+                                            text = "$optPrice ₽",
+                                            color = TacticalTextPrimary,
+                                            fontSize = 15.sp,
+                                            fontWeight = FontWeight.ExtraBold
+                                        )
+                                        if (plan.badge.isNotEmpty()) {
+                                            Text(
+                                                text = plan.badge,
+                                                color = SageGreenBright,
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Text(if (isPro) "Продлить на ${selectedPlan.title}" else "Как оплатить", color = TacticalTextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(8.dp))
                         Step(1, "Нажмите «Оплатить» — откроется ЮKassa")
                         Step(2, "Оплатите через СБП, картой МИР или SberPay")
@@ -250,7 +315,7 @@ fun PersonalLicenseDialog(
                         Button(
                             onClick = {
                                 paymentStarted = true
-                                onPayYooKassaClick()
+                                startPay()
                             },
                             modifier = Modifier.fillMaxWidth().height(56.dp).testTag("yookassa_pay_button"),
                             shape = RoundedCornerShape(18.dp),
@@ -297,7 +362,7 @@ fun PersonalLicenseDialog(
                                     Text("Я оплатил — проверить", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
-                            TextButton(onClick = onPayYooKassaClick) {
+                            TextButton(onClick = startPay) {
                                 Text("Открыть оплату снова", color = TacticalGoldText, fontSize = 13.sp)
                             }
                         }
@@ -368,8 +433,13 @@ fun PersonalLicenseDialog(
 
 @Composable
 private fun DaysRing(days: Int) {
+    val totalDays = when {
+        days > 90 -> 365f
+        days > 30 -> 90f
+        else -> 30f
+    }
     val sweep = remember { Animatable(0f) }
-    LaunchedEffect(days) { sweep.animateTo((days.coerceIn(0, 30) / 30f), tween(1100, easing = FastOutSlowInEasing)) }
+    LaunchedEffect(days) { sweep.animateTo((days.coerceAtLeast(0) / totalDays).coerceIn(0f, 1f), tween(1100, easing = FastOutSlowInEasing)) }
     Box(modifier = Modifier.size(96.dp), contentAlignment = Alignment.Center) {
         Canvas(modifier = Modifier.size(96.dp)) {
             val stroke = 9.dp.toPx()
