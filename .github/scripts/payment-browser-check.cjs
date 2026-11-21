@@ -116,6 +116,17 @@ function savedOrder(account = '') {
       await f.close();
     });
 
+    await check('selecting 90-day PRO plan sends plan_days=90 and updates checkout UI', async () => {
+      const f = await fixture(() => created);
+      await f.page.evaluate(() => window.selectProPlan(90));
+      assert.match(await f.page.locator('#btnPayYooKassaMain').innerText(), /1\s*190/);
+      await fillAndCreate(f.page);
+      assert.equal(f.calls.length, 1);
+      assert.equal(f.calls[0].action, 'create');
+      assert.equal(f.calls[0].payload.plan_days, 90);
+      await f.close();
+    });
+
     await check('invalid email and forged success URL cannot create or activate anything', async () => {
       const f = await fixture(() => { throw new Error('No payment API expected'); }, {}, '?payment=success&payment_id=forged');
       await f.page.evaluate(() => { document.getElementById('payEmailInput').value = 'bad-email'; return processYooKassaPayment(); });
