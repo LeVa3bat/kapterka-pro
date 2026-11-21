@@ -883,11 +883,12 @@ test('reconciliation: a partly failed page keeps its cursor and safely retries a
   }
   state.reconciliationIds = ids;
   state.failPaymentGets.add(ids[2]);
-  try { await assert.rejects(worker.scheduled({}, env)); }
+  try { await worker.scheduled({}, env); }
   finally { state.failPaymentGets.clear(); }
   const partial = state.docs.get('srv_payment_reconciliation/succeeded');
   assert.equal(partial.cursor, '');
   assert.equal(partial.inProgress, true);
+  assert.equal(partial.lastError, 'RECONCILIATION_FAILED');
   const firstKey = await keyForPayment(ids[0]);
   const firstExpiry = state.docs.get('srv_licenses/' + firstKey).expiresAt;
   await worker.scheduled({}, env);
@@ -999,6 +1000,66 @@ test('web renewal: an intervening Android purchase keeps both months and updates
   assert.equal(delivery.expiresAt, bound.body.expires_at);
   assert.equal((await call('license_verify', { license_key: checked.body.license_key, fighter_id: fighter })).body.expires_at, bound.body.expires_at);
   assert.equal((await call('check', { payment_id: web.body.payment_id, web_claim_token: token })).body.expires_at, bound.body.expires_at);
+});
+
+test('multi-day plans: 90 and 365 days create exact YooKassa amounts and grant exact durations', async () => {
+  assert.equal((await call('create', { email: 'badplan@x.ru', plan_days: 7 })).status, 400);
+  assert.equal((await call('create', { email: 'badplan@x.ru', plan_days: '999' })).body.error, 'INVALID_PLAN');
+
+  const c90 = await call('create', { email: 'plan90@x.ru', fighter_id: 'PLAN-90', plan_days: 90 });
+  assert.equal(c90.status, 200);
+  assert.equal(c90.body.plan_days, 90);
+  assert.equal(c90.body.amount_rub, 1190);
+  assert.equal(state.payments.get(c90.body.payment_id).amount.value, '1190.00');
+  assert.equal(state.payments.get(c90.body.payment_id).metadata.product, 'kapterka_pro_90d');
+  pay(c90.body.payment_id);
+  const res90 = await call('check', { payment_id: c90.body.payment_id, fighter_id: 'PLAN-90' });
+  assert.equal(res90.status, 200);
+  const days90 = (res90.body.expires_at - Date.now()) / 86400000;
+  assert.ok(days90 > 89 && days90 < 91, 'expected ~90 days, got ' + days90);
+  assert.equal(state.docs.get('srv_licenses/' + res90.body.license_key).durationDays, 90);
+  assert.equal(state.docs.get('srv_licenses/' + res90.body.license_key).amount, 1190);
+
+  const c365 = await call('create', { email: 'plan365@x.ru', fighter_id: 'PLAN-365', plan_days: 365 });
+  assert.equal(c365.status, 200);
+  assert.equal(c365.body.plan_days, 365);
+  assert.equal(c365.body.amount_rub, 3490);
+  assert.equal(state.payments.get(c365.body.payment_id).amount.value, '3490.00');
+  pay(c365.body.payment_id, { amount: { value: '490.00', currency: 'RUB' } });
+  const mismatch = await call('check', { payment_id: c365.body.payment_id, fighter_id: 'PLAN-365' });
+  assert.equal(mismatch.status, 409);
+  assert.equal(mismatch.body.error, 'PAYMENT_AMOUNT_MISMATCH');
+
+  pay(c365.body.payment_id, { amount: { value: '3490.00', currency: 'RUB' } });
+  const res365 = await call('check', { payment_id: c365.body.payment_id, fighter_id: 'PLAN-365' });
+  assert.equal(res365.status, 200);
+  const days365 = (res365.body.expires_at - Date.now()) / 86400000;
+  assert.ok(days365 > 364 && days365 < 366, 'expected ~365 days, got ' + days365);
+});
+
+test('web 90-day key stacks 90 days onto Android fighter upon binding', async () => {
+  const fighter = 'WEB-90-BIND';
+  state.docs.set('srv_fighters/' + fighter, { fighterId: fighter, expiresAt: Date.now() + 10 * 86400000 });
+  const token = 'f1'.repeat(32);
+  const c = await call('create', { email: 'web90@x.ru', web_claim_token: token, plan_days: 90 });
+  pay(c.body.payment_id);
+  const checked = await call('check', { payment_id: c.body.payment_id, web_claim_token: token });
+  assert.equal(checked.status, 200);
+  const bound = await call('license_verify', { license_key: checked.body.license_key, fighter_id: fighter });
+  assert.equal(bound.status, 200);
+  const days = (bound.body.expires_at - Date.now()) / 86400000;
+  assert.ok(days > 99 && days < 101, 'expected ~100 days (10 + 90), got ' + days);
+});
+
+test('fighter_upsert and fighter_lookup return server registered_at', async () => {
+  const created = await call('fighter_upsert', { fighter_id: 'БОЕЦ-REGTS', email: 'regts@x.ru', callsign: 'Время', unit_key: 'kapt_regts_01' });
+  assert.equal(created.status, 200);
+  assert.ok(created.body.registered_at > 1700000000000);
+  const updated = await call('fighter_upsert', { fighter_id: 'БОЕЦ-REGTS', email: 'regts@x.ru', callsign: 'Время2' });
+  assert.equal(updated.body.registered_at, created.body.registered_at);
+  const lookedUp = await call('fighter_lookup', { fighter_id: 'БОЕЦ-REGTS', email: 'regts@x.ru' });
+  assert.equal(lookedUp.status, 200);
+  assert.equal(lookedUp.body.fighter.registered_at, created.body.registered_at);
 });
 
 // ------------------------------------------------------------------ run

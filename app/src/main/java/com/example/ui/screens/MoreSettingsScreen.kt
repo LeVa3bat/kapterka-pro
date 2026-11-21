@@ -838,11 +838,11 @@ fun MoreSettingsScreen(
             Spacer(modifier = Modifier.height(8.dp))
         }
 
-        // 3. COLLAPSIBLE ACCORDION: ПЕРСОНАЛЬНАЯ ЛИЦЕНЗИЯ БОЙЦА (30 ДНЕЙ)
+        // 3. COLLAPSIBLE ACCORDION: ПЕРСОНАЛЬНАЯ ЛИЦЕНЗИЯ БОЙЦА
         item {
             CollapsibleCard(
-                title = "Лицензия PRO (ЮKassa / 30 дней)",
-                subtitle = if (profile?.isProActive == true) "Активна (Осталось ${profile.proDaysLeft} дн.) • Персональный ключ" else "Требуется продление (30 дней / 490 ₽)",
+                title = "Лицензия PRO (ЮKassa / от 490 ₽)",
+                subtitle = if (profile?.isProActive == true) "Активна (Осталось ${profile.proDaysLeft} дн.) • Персональный ключ" else "Базовый режим (1 склад, до 15 позиций) • PRO от 490 ₽",
                 icon = Icons.Default.Star,
                 iconColor = TacticalGoldText,
                 isExpanded = expandedProPlan,
@@ -850,7 +850,7 @@ fun MoreSettingsScreen(
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
                     Text(
-                        text = "Персональная лицензия закрепляется за вашим аккаунтом. Срок действия — 30 дней с момента оплаты через ЮKassa (СБП, карты МИР).",
+                        text = "После 3 дней демо работают 1 основной склад и до 15 позиций без облака. Лицензия PRO снимает все ограничения: 30 дней — 490 ₽, 90 дней — 1 190 ₽, 365 дней — 3 490 ₽ (ЮKassa / СБП).",
                         color = TacticalTextSecondary,
                         fontSize = 11.sp,
                         lineHeight = 15.sp
@@ -871,7 +871,7 @@ fun MoreSettingsScreen(
                         Icon(imageVector = Icons.Default.Star, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = if (profile?.isProActive == true) "Моя лицензия / Продлить (ЮKassa)" else "Оплатить лицензию на 30 дн. (ЮKassa)",
+                            text = if (profile?.isProActive == true) "Моя лицензия / Продлить (ЮKassa)" else "Выбрать тариф PRO (ЮKassa)",
                             fontWeight = FontWeight.Bold,
                             fontSize = 12.sp
                         )

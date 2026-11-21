@@ -24,7 +24,8 @@ class FighterBackendService {
         callsign: String,
         unitName: String,
         unitKey: String,
-        email: String
+        email: String,
+        onServerRegisteredAt: (Long) -> Unit = {}
     ): Boolean = withContext(Dispatchers.IO) {
         if (fighterId.isBlank() || backendBaseUrl().isBlank()) return@withContext false
         try {
@@ -39,7 +40,12 @@ class FighterBackendService {
                     put("device_model", (Build.MANUFACTURER + " " + Build.MODEL).trim())
                 }
             )
-            response.optBoolean("ok", false)
+            val ok = response.optBoolean("ok", false)
+            if (ok) {
+                val registeredAt = response.optLong("registered_at", 0L)
+                if (registeredAt > 0L) onServerRegisteredAt(registeredAt)
+            }
+            ok
         } catch (e: Exception) {
             Log.w(tag, "Fighter upsert backend unavailable", e)
             false
@@ -66,7 +72,8 @@ class FighterBackendService {
             FighterAdminRecord(
                 id = fighter.optString("id"),
                 unitName = fighter.optString("unit_name"),
-                unitKey = fighter.optString("unit_key")
+                unitKey = fighter.optString("unit_key"),
+                registeredAtMillis = fighter.optLong("registered_at", 0L)
             )
         } catch (e: Exception) {
             Log.w(tag, "Fighter lookup backend unavailable", e)

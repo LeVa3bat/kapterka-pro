@@ -156,4 +156,19 @@ class LicenseManagerTest {
         assertNotNull(status)
         assertNotNull(status.fighterId)
     }
+
+    @Test
+    fun testSyncServerDemoStartTimePullsEarlierServerTimestamp() {
+        licenseManager.refreshLicenseStatus()
+        val prefs = context.getSharedPreferences(
+            "kapterka_fighter_license_prefs",
+            Context.MODE_PRIVATE
+        )
+        val fourDaysAgo = System.currentTimeMillis() - 4L * 24L * 60L * 60L * 1000L
+        licenseManager.syncServerDemoStartTime(fourDaysAgo)
+
+        assertEquals(fourDaysAgo, prefs.getLong("demo_first_launch_time", 0L))
+        assertFalse(licenseManager.licenseStatus.value.isDemoActive)
+        assertEquals(0, licenseManager.licenseStatus.value.demoDaysLeft)
+    }
 }

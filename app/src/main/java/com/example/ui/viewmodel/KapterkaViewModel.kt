@@ -158,11 +158,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         val syncManager = com.example.data.sync.FirebaseSyncManager(application, database.kapterkaDao(), viewModelScope)
         repository = KapterkaRepository(database.kapterkaDao(), syncManager)
         backupManager = com.example.data.backup.BackupManager(application, database.kapterkaDao())
-        viewModelScope.launch {
-            backupManager.autoBackupIfDue()
-            backupManager.cloudBackupIfDue()
-        }
-        
+
         repository.syncEvents?.let { eventsFlow ->
             viewModelScope.launch {
                 eventsFlow.collect { eventMsg ->
@@ -241,8 +237,29 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+        val initialStatus = licenseManager.licenseStatus.value
+        repository.setCloudSyncEntitlementAllowed(initialStatus.isProActive || initialStatus.isDemoActive)
+
         viewModelScope.launch {
+            val savedProf = repository.userProfile.first()
+            val hasAccess = (savedProf?.isProActive == true) ||
+                licenseManager.licenseStatus.value.let { it.isProActive || it.isDemoActive }
+            repository.setCloudSyncEntitlementAllowed(hasAccess)
             repository.ensureInitialized()
+            backupManager.autoBackupIfDue()
+            if (hasAccess) {
+                backupManager.cloudBackupIfDue()
+            }
+            if (savedProf?.isLoggedIn == true && savedProf.email.isNotBlank()) {
+                val cloudRecord = fighterRegistryManager.lookupFighter(
+                    email = savedProf.email,
+                    callsign = savedProf.callsign,
+                    fighterId = licenseManager.getFighterPersonalId()
+                )
+                if (cloudRecord != null) {
+                    licenseManager.syncServerDemoStartTime(cloudRecord.registeredAtMillis)
+                }
+            }
         }
     }
 
@@ -331,18 +348,29 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
     ) {
         viewModelScope.launch {
             val actor = userProfile.value?.callsign ?: "Старшина подразделения"
-            repository.recordIssue(fromPointId, fromPointName, toPointId, toPointName, items, comment, actor)
-            
             val summary = items.joinToString(", ") { "${it.itemName} (${it.quantity} ${it.unit})" }
-            TacticalNotificationHelper.notifyIssue(
-                context = getApplication(),
-                fromPoint = fromPointName,
-                toPoint = toPointName,
-                itemsSummary = summary,
-                baseWarehouseStockSummary = getBaseStockSummary()
-            )
-            
-            _toastEvent.emit("⬆️ ПОДНЯЛИ (ВЫДАНО):\nМаршрут: $fromPointName ➔ $toPointName\nВыдано: $summary")
+            if (toPointId.isBlank()) {
+                val recipient = toPointName.ifBlank { "Выдано на руки" }
+                repository.recordIssueToPerson(fromPointId, fromPointName, recipient, items, comment, actor)
+                TacticalNotificationHelper.notifyIssue(
+                    context = getApplication(),
+                    fromPoint = fromPointName,
+                    toPoint = recipient,
+                    itemsSummary = summary,
+                    baseWarehouseStockSummary = getBaseStockSummary()
+                )
+                _toastEvent.emit("⬆️ ВЫДАНО НА РУКИ:\n$fromPointName ➔ $recipient\nВыдано: $summary")
+            } else {
+                repository.recordIssue(fromPointId, fromPointName, toPointId, toPointName, items, comment, actor)
+                TacticalNotificationHelper.notifyIssue(
+                    context = getApplication(),
+                    fromPoint = fromPointName,
+                    toPoint = toPointName,
+                    itemsSummary = summary,
+                    baseWarehouseStockSummary = getBaseStockSummary()
+                )
+                _toastEvent.emit("⬆️ ПОДНЯЛИ (ВЫДАНО):\nМаршрут: $fromPointName ➔ $toPointName\nВыдано: $summary")
+            }
         }
     }
 
@@ -564,6 +592,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             )
 
             if (cloudRecord != null) {
+                licenseManager.syncServerDemoStartTime(cloudRecord.registeredAtMillis)
                 if (resolvedKey.isBlank() && cloudRecord.unitKey.isNotBlank()) {
                     resolvedKey = cloudRecord.unitKey
                 }
@@ -622,7 +651,8 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                 licenseKey = curLicense.licenseKey.ifEmpty { curLicense.lastSavedKey },
                 isProActive = curLicense.isProActive,
                 expiresAt = System.currentTimeMillis() + (curLicense.daysRemaining.toLong() * 86400000L),
-                role = "Старшина подразделения"
+                role = "Старшина подразделения",
+                onServerRegisteredAt = { regAt -> licenseManager.syncServerDemoStartTime(regAt) }
             )
 
             if (restored) {
@@ -711,7 +741,8 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                 email = safeProfile.email,
                 licenseKey = curLicense.licenseKey.ifEmpty { curLicense.lastSavedKey },
                 isProActive = curLicense.isProActive,
-                expiresAt = System.currentTimeMillis() + (curLicense.daysRemaining.toLong() * 86400000L)
+                expiresAt = System.currentTimeMillis() + (curLicense.daysRemaining.toLong() * 86400000L),
+                onServerRegisteredAt = { regAt -> licenseManager.syncServerDemoStartTime(regAt) }
             )
             _toastEvent.emit("Настройки профиля сохранены")
         }
@@ -810,6 +841,15 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             _toastEvent.emit("Загружаю данные подразделения из облака...")
             val (_, msg) = repository.replaceLocalWithCloud()
             _toastEvent.emit(msg)
+        }
+    }
+
+    fun syncEntitlementWithCloud(allowed: Boolean) {
+        repository.setCloudSyncEntitlementAllowed(allowed)
+        if (allowed && !userProfile.value?.unitKey.isNullOrBlank()) {
+            viewModelScope.launch {
+                repository.triggerCloudSync()
+            }
         }
     }
 
@@ -938,7 +978,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         _issuedPaymentKey.value = null
     }
 
-    fun startYooKassaPayment() {
+    fun startYooKassaPayment(planDays: Int = 30) {
         viewModelScope.launch {
             val profile = userProfile.value
             val callsign = profile?.callsign?.ifBlank { "Боец" } ?: "Боец"
@@ -949,12 +989,14 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                 return@launch
             }
 
-            _toastEvent.emit("Формирование счета ЮKassa на 30 дней...")
+            val plan = com.example.data.payment.ProPlanOption.fromDays(planDays)
+            _toastEvent.emit("Формирование счета ЮKassa на ${plan.title}...")
             val fighterId = licenseManager.getFighterPersonalId()
             val result = yooKassaService.createPayment(
                 fighterCallsign = callsign,
                 fighterEmail = email,
-                fighterId = fighterId
+                fighterId = fighterId,
+                planDays = plan.days
             )
             if (result.success && result.confirmationUrl.isNotEmpty()) {
                 lastPaymentId = result.paymentId
@@ -965,10 +1007,15 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                 _toastEvent.emit("Переход к оплате ЮKassa (СБП/Карта)...")
 
                 // Уведомление в Telegram
+                val amount = if (plan == com.example.data.payment.ProPlanOption.DAYS_30) {
+                    yooKassaService.getConfig().priceRubles
+                } else {
+                    plan.priceRubles
+                }
                 com.example.data.notification.TelegramNotifier.notifyPaymentStarted(
                     callsign = callsign,
                     email = email,
-                    amountRub = yooKassaService.getConfig().priceRubles
+                    amountRub = amount
                 )
             } else {
                 _toastEvent.emit(result.errorMessage ?: "Не удалось создать счет ЮKassa")
@@ -1078,7 +1125,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                 )
 
                 // The backend queues the purchase email independently of app activation.
-                _toastEvent.emit("🎉 Оплата подтверждена! Лицензия PRO активирована на 30 дней.")
+                _toastEvent.emit("🎉 Оплата подтверждена! Лицензия PRO активирована ($daysLeft дн.).")
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Exception) {

@@ -15,7 +15,7 @@ head_sampling_rate = 0.01
 
 # Firestore outbox retry: no Queue binding or additional credentials required.
 [triggers]
-crons = ["*/5 * * * *"]
+crons = ["0 * * * *"]
 
 # Workers rate limiting (per key, per Cloudflare location).
 [[ratelimits]]

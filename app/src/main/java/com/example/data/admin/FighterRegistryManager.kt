@@ -165,7 +165,8 @@ class FighterRegistryManager(
         licenseKey: String = "",
         isProActive: Boolean = false,
         expiresAt: Long = 0L,
-        role: String = "Старшина склада"
+        role: String = "Старшина склада",
+        onServerRegisteredAt: (Long) -> Unit = {}
     ) {
         val now = System.currentTimeMillis()
         val sdf = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
@@ -216,7 +217,8 @@ class FighterRegistryManager(
                 callsign = callsign,
                 unitName = unitName,
                 unitKey = unitKey,
-                email = email
+                email = email,
+                onServerRegisteredAt = onServerRegisteredAt
             )
             if (!ok) {
                 Log.w(tag, "Fighter server upsert deferred; local profile remains intact")

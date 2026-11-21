@@ -16,6 +16,22 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.util.UUID
 
+enum class ProPlanOption(
+    val days: Int,
+    val priceRubles: Int,
+    val title: String,
+    val badge: String = ""
+) {
+    DAYS_30(30, 490, "30 дней"),
+    DAYS_90(90, 1190, "90 дней", "−19%"),
+    DAYS_365(365, 3490, "365 дней", "−41%");
+
+    companion object {
+        fun fromDays(days: Int): ProPlanOption =
+            values().firstOrNull { it.days == days } ?: DAYS_30
+    }
+}
+
 data class YooKassaConfig(
     val shopId: String = "",
     val secretKey: String = "",
@@ -95,7 +111,8 @@ class YooKassaPaymentService(private val context: Context) {
         fighterCallsign: String,
         fighterEmail: String,
         returnUrl: String = "${BuildConfig.PAYMENT_CALLBACK_SCHEME}://payment_success",
-        fighterId: String = ""
+        fighterId: String = "",
+        planDays: Int = 30
     ): PaymentInitResult = withContext(Dispatchers.IO) {
         if (backendBaseUrl().isBlank()) {
             return@withContext PaymentInitResult(
@@ -104,6 +121,7 @@ class YooKassaPaymentService(private val context: Context) {
             )
         }
 
+        val plan = ProPlanOption.fromDays(planDays)
         try {
             val response = requestBackend(
                 action = "create",
@@ -111,6 +129,7 @@ class YooKassaPaymentService(private val context: Context) {
                     put("callsign", fighterCallsign)
                     put("email", fighterEmail.trim())
                     put("fighter_id", fighterId.trim())
+                    put("plan_days", plan.days)
                     put("return_url", returnUrl)
                     put("idempotence_key", UUID.randomUUID().toString())
                 }

@@ -223,7 +223,7 @@ class LicenseManager(
                 daysRemaining = days,
                 expiresAtDateFormatted = sdf.format(Date(expiresAt)),
                 fighterId = fighterId,
-                activationSource = "Персональная лицензия ПРО (30 дн.)",
+                activationSource = "Персональная лицензия ПРО ($days дн.)",
                 lastSavedKey = key,
                 savedKeys = allSaved,
                 isDemoActive = false,
@@ -317,6 +317,20 @@ class LicenseManager(
             true,
             "Лицензия восстановлена сервером: ${result.licenseKey} (ещё $daysLeft дн.)"
         )
+    }
+
+    /**
+     * Aligns local demo start timestamp with the server registration timestamp
+     * so reinstalling or logging in again cannot restart the 72-hour trial.
+     */
+    fun syncServerDemoStartTime(serverRegisteredAtMillis: Long) {
+        if (serverRegisteredAtMillis <= 1_700_000_000_000L) return
+        val sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val localStart = sp.getLong("demo_first_launch_time", 0L)
+        if (localStart <= 0L || serverRegisteredAtMillis < localStart) {
+            sp.edit().putLong("demo_first_launch_time", serverRegisteredAtMillis).apply()
+            refreshLicenseStatus()
+        }
     }
 
     /**
