@@ -39,19 +39,19 @@ private val LightColorScheme = lightColorScheme(
 
 private val DarkColorScheme = darkColorScheme(
     primary = DarkTacticalColors.sageGreenPrimary,
-    onPrimary = DarkTacticalColors.greenBtnText,
+    onPrimary = Color.White,
     primaryContainer = DarkTacticalColors.sageGreenDark,
     onPrimaryContainer = DarkTacticalColors.sageGreenBright,
     secondary = DarkTacticalColors.teal,
-    onSecondary = Color.Black,
+    onSecondary = Color.White,
     secondaryContainer = DarkTacticalColors.tealDark,
     onSecondaryContainer = DarkTacticalColors.tealText,
     tertiary = DarkTacticalColors.gold,
-    onTertiary = Color.Black,
+    onTertiary = Color(0xFF1A1002),
     tertiaryContainer = DarkTacticalColors.goldDark,
     onTertiaryContainer = DarkTacticalColors.goldText,
     error = DarkTacticalColors.red,
-    onError = Color.Black,
+    onError = Color.White,
     errorContainer = DarkTacticalColors.redDark,
     onErrorContainer = DarkTacticalColors.redText,
     background = DarkTacticalColors.bg,
@@ -65,16 +65,16 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 private val AppShapes = Shapes(
-    extraSmall = RoundedCornerShape(8.dp),
-    small = RoundedCornerShape(12.dp),
-    medium = RoundedCornerShape(16.dp),
-    large = RoundedCornerShape(22.dp),
-    extraLarge = RoundedCornerShape(28.dp)
+    extraSmall = RoundedCornerShape(10.dp),
+    small = RoundedCornerShape(14.dp),
+    medium = RoundedCornerShape(18.dp),
+    large = RoundedCornerShape(24.dp),
+    extraLarge = RoundedCornerShape(30.dp)
 )
 
 @Composable
 fun MyApplicationTheme(
-    darkTheme: Boolean = false,
+    darkTheme: Boolean = true,
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {

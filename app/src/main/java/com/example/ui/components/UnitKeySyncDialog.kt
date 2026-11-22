@@ -71,7 +71,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.data.model.UserProfile
+import com.example.ui.theme.HeroGradientEnd
+import com.example.ui.theme.HeroGradientStart
 import com.example.ui.theme.SageGreenBright
+import com.example.ui.theme.SageGreenDark
 import com.example.ui.theme.SageGreenPrimary
 import com.example.ui.theme.TacticalBorderSubtle
 import com.example.ui.theme.TacticalGold
@@ -269,7 +272,7 @@ fun UnitKeySyncDialog(
                     onClick = { onForceSync(); onDismiss() },
                     modifier = Modifier.fillMaxWidth().height(46.dp),
                     shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E3D2B), contentColor = SageGreenBright)
+                    colors = ButtonDefaults.buttonColors(containerColor = SageGreenDark, contentColor = SageGreenBright)
                 ) {
                     Icon(Icons.Rounded.Sync, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(6.dp))
@@ -376,7 +379,7 @@ private fun UnitQrCard(unitKey: String, unitName: String) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(22.dp))
-            .background(Brush.linearGradient(listOf(Color(0xFF1F7A57), Color(0xFF0F766E))))
+            .background(Brush.linearGradient(listOf(HeroGradientStart, HeroGradientEnd)))
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {

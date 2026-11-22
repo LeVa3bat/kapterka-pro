@@ -258,6 +258,8 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
     val licenseStatus by viewModel.licenseStatus.collectAsState()
     val allFighters by viewModel.allFighters.collectAsState()
     val issuedPaymentKey by viewModel.issuedPaymentKey.collectAsState()
+    val workspaceProfileMode by viewModel.workspaceProfileMode.collectAsState()
+    val needsProfileSelection by viewModel.needsProfileSelection.collectAsState()
 
     // Dialog Control States
     var showIncomeDialog by remember { mutableStateOf(false) }
@@ -311,12 +313,23 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
         return
     }
 
+    // PATH A: STARTER PROFILE PICKER (only for genuine first launch, never for existing upgrading DBs)
+    if (needsProfileSelection) {
+        com.example.ui.screens.ProfileSelectionScreen(
+            initialSelection = com.example.data.model.WorkspaceProfileMode.CIVILIAN,
+            onConfirmProfile = { mode ->
+                viewModel.selectStarterProfile(mode)
+            }
+        )
+        return
+    }
+
     val isProOrDemoActive = (profile?.isProActive == true) ||
                             licenseStatus.isProActive ||
                             ((profile?.demoDaysLeft ?: 0) > 0) ||
                             licenseStatus.isDemoActive
 
-    val defaultItemIds = remember { com.example.data.local.InitialData.getDefaultItems().map { it.id }.toSet() }
+    val defaultItemIds = remember { com.example.data.local.InitialData.getAllStarterItemIds() }
 
     LaunchedEffect(isProOrDemoActive) {
         viewModel.syncEntitlementWithCloud(isProOrDemoActive)
@@ -512,6 +525,7 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                             onHelpClick = { showUserManualDialog = true },
                             isDarkTheme = isDarkTheme,
                             onToggleTheme = { viewModel.toggleTheme() },
+                            profileMode = workspaceProfileMode,
                             onReorderPoints = { viewModel.reorderWarehousePoints(it) },
                             onDeletePoint = { viewModel.deleteWarehousePoint(it) }
                         )
@@ -561,6 +575,8 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                         InventoryCatalogScreen(
                             items = catalogItems,
                             availableCategories = availableCategories,
+                            stockRecords = stockRecords,
+                            profileMode = workspaceProfileMode,
                             onAddNewItemClick = {
                                 when (val d = FreeTierPolicy.checkCustomItemAdd(isProOrDemoActive, catalogItems, defaultItemIds)) {
                                     is FreeTierDecision.Allowed -> showAddCustomItemDialog = true
@@ -646,7 +662,10 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                             onOpenManualClick = { showUserManualDialog = true },
                             onOpenDeveloperBackdoor = { showDevAuthPrompt = true },
                             isDarkTheme = isDarkTheme,
-                            onToggleTheme = { viewModel.toggleTheme() }
+                            onToggleTheme = { viewModel.toggleTheme() },
+                            workspaceProfileMode = workspaceProfileMode,
+                            onSwitchProfileMode = { viewModel.switchWorkspaceProfileMode(it) },
+                            onImportTemplateCatalog = { viewModel.importTemplateCatalog(it) }
                         )
                     }
                 }
@@ -662,6 +681,7 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
             catalogItems = catalogItems,
             stockRecords = stockRecords,
             initialPointId = selectedPointId,
+            profileMode = workspaceProfileMode,
             onDismiss = { showIncomeDialog = false },
             onConfirm = { toPointId, toPointName, supplier, items, comment ->
                 when (val d = FreeTierPolicy.checkIncome(isProOrDemoActive, points, stockRecords, toPointId, items.map { it.itemId })) {
@@ -692,6 +712,7 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
             stockRecords = stockRecords,
             initialPointId = selectedPointId,
             personOnlyMode = !isProOrDemoActive,
+            profileMode = workspaceProfileMode,
             onDismiss = { showIssueDialog = false },
             onConfirm = { fromPointId, fromPointName, toPointId, toPointName, items, comment ->
                 when (val d = FreeTierPolicy.checkIssue(isProOrDemoActive, points, fromPointId, toPointId)) {
@@ -884,9 +905,11 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
             points = points,
             catalogItems = catalogItems,
             requisitions = requisitions,
-            unitName = profile?.unitName ?: "1-е Подразделение",
+            unitName = profile?.unitName?.ifBlank { if (workspaceProfileMode.isMilitary) "1-е Подразделение" else "Основной склад" } ?: "Основной склад",
             initialFormIndex = excelReportInitialTab,
             parseItems = { viewModel.parseOperationItems(it) },
+            profileMode = workspaceProfileMode,
+            responsiblePerson = profile?.callsign.orEmpty(),
             onDismiss = { showExcelReportDialog = false }
         )
     }

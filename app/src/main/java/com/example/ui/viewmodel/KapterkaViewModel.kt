@@ -60,15 +60,36 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
 
     private val prefs = application.getSharedPreferences("kapterka_app_prefs", android.content.Context.MODE_PRIVATE)
 
-    private val _availableCategories = MutableStateFlow<List<String>>(loadCategoriesFromPrefs())
+    // Path A Workspace Profile (MILITARY / CIVILIAN / EMPTY)
+    private val _workspaceProfileMode = MutableStateFlow(
+        com.example.data.model.WorkspaceProfileMode.fromCode(prefs.getString("workspace_profile_mode", null))
+    )
+    val workspaceProfileMode: StateFlow<com.example.data.model.WorkspaceProfileMode> = _workspaceProfileMode.asStateFlow()
+
+    private val _needsProfileSelection = MutableStateFlow(!prefs.getBoolean("workspace_profile_chosen", false))
+    val needsProfileSelection: StateFlow<Boolean> = _needsProfileSelection.asStateFlow()
+
+    private val _availableCategories = MutableStateFlow<List<String>>(loadCategoriesFromPrefs(_workspaceProfileMode.value))
     val availableCategories: StateFlow<List<String>> = _availableCategories.asStateFlow()
 
-    private fun loadCategoriesFromPrefs(): List<String> {
-        val saved = prefs.getStringSet("saved_categories", null)
-        val defaultOrder = com.example.data.local.InitialData.getDefaultCategories()
-        return if (saved != null && saved.isNotEmpty()) {
-            val list = defaultOrder.toMutableList() // Always include default categories (to force new ones)
-            saved.filter { it !in defaultOrder }.forEach { list.add(it) }
+    private fun loadCategoriesFromPrefs(mode: com.example.data.model.WorkspaceProfileMode): List<String> {
+        val orderedJson = prefs.getString("saved_categories_ordered", null)
+        if (orderedJson != null) {
+            return runCatching {
+                val arr = org.json.JSONArray(orderedJson)
+                buildList {
+                    for (i in 0 until arr.length()) {
+                        val value = arr.optString(i).trim()
+                        if (value.isNotEmpty() && value !in this) add(value)
+                    }
+                }
+            }.getOrElse { com.example.data.local.InitialData.getCategoriesFor(mode) }
+        }
+        val legacySaved = prefs.getStringSet("saved_categories", null)
+        val defaultOrder = com.example.data.local.InitialData.getCategoriesFor(mode)
+        return if (legacySaved != null && legacySaved.isNotEmpty()) {
+            val list = defaultOrder.toMutableList()
+            legacySaved.filter { it !in defaultOrder }.forEach { list.add(it) }
             list
         } else {
             defaultOrder
@@ -76,8 +97,67 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
     }
 
     private fun saveCategoriesToPrefs(list: List<String>) {
-        prefs.edit().putStringSet("saved_categories", list.toSet()).apply()
-        _availableCategories.value = list
+        val clean = list.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+        val arr = org.json.JSONArray()
+        clean.forEach { arr.put(it) }
+        prefs.edit()
+            .putString("saved_categories_ordered", arr.toString())
+            .putStringSet("saved_categories", clean.toSet())
+            .apply()
+        _availableCategories.value = clean
+    }
+
+    fun selectStarterProfile(mode: com.example.data.model.WorkspaceProfileMode) {
+        viewModelScope.launch {
+            _workspaceProfileMode.value = mode
+            _needsProfileSelection.value = false
+            prefs.edit()
+                .putString("workspace_profile_mode", mode.code)
+                .putBoolean("workspace_profile_chosen", true)
+                .apply()
+
+            val applied = repository.applyStarterProfile(mode)
+            if (applied) {
+                saveCategoriesToPrefs(com.example.data.local.InitialData.getCategoriesFor(mode))
+                _selectedCategory.value = "Все виды"
+                _selectedPointId.value = "base_sklad"
+                val msg = when (mode) {
+                    com.example.data.model.WorkspaceProfileMode.CIVILIAN ->
+                        "Профиль «Мастерская / Склад» готов: загружен справочник и бланки М-11 / МБ-7"
+                    com.example.data.model.WorkspaceProfileMode.MILITARY ->
+                        "Профиль «Воинский учёт» готов: службы, точки и Формы № 8 / № 18"
+                    com.example.data.model.WorkspaceProfileMode.EMPTY ->
+                        "Создан чистый «Основной склад» — добавляйте свои категории и позиции"
+                }
+                _toastEvent.emit(msg)
+            } else {
+                _toastEvent.emit("Режим «${mode.titleRu}» включён без изменения существующих данных")
+            }
+        }
+    }
+
+    fun switchWorkspaceProfileMode(mode: com.example.data.model.WorkspaceProfileMode) {
+        viewModelScope.launch {
+            _workspaceProfileMode.value = mode
+            _needsProfileSelection.value = false
+            prefs.edit()
+                .putString("workspace_profile_mode", mode.code)
+                .putBoolean("workspace_profile_chosen", true)
+                .apply()
+            _toastEvent.emit("Профиль учёта и бланков: ${mode.titleRu}")
+        }
+    }
+
+    fun importTemplateCatalog(mode: com.example.data.model.WorkspaceProfileMode) {
+        viewModelScope.launch {
+            val added = repository.seedTemplateCatalog(mode)
+            val mergedCategories = (_availableCategories.value + com.example.data.local.InitialData.getCategoriesFor(mode)).distinct()
+            saveCategoriesToPrefs(mergedCategories)
+            _toastEvent.emit(
+                if (added > 0) "Добавлено типовых позиций: $added (существующие не затронуты)"
+                else "Все позиции выбранного шаблона уже есть в справочнике"
+            )
+        }
     }
 
     fun addCategory(categoryName: String) {
@@ -88,7 +168,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             current.add(clean)
             saveCategoriesToPrefs(current)
             viewModelScope.launch {
-                _toastEvent.emit("Группа «$clean» добавлена")
+                _toastEvent.emit("Категория «$clean» добавлена")
             }
         }
     }
@@ -102,19 +182,23 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         }
         viewModelScope.launch {
             repository.deleteCategory(categoryName, deleteItems)
-            _toastEvent.emit("Группа «$categoryName» удалена")
+            _toastEvent.emit("Категория «$categoryName» удалена")
         }
     }
 
     fun resetCategoriesToDefault() {
-        saveCategoriesToPrefs(com.example.data.local.InitialData.getDefaultCategories())
+        val defaults = com.example.data.local.InitialData.getCategoriesFor(_workspaceProfileMode.value)
+        saveCategoriesToPrefs(defaults)
         viewModelScope.launch {
-            _toastEvent.emit("Штатные группы восстановлены по умолчанию")
+            _toastEvent.emit(
+                if (defaults.isEmpty()) "Список категорий очищен для свободного склада"
+                else "Базовые категории профиля восстановлены"
+            )
         }
     }
 
     // Theme Mode (Light / Dark)
-    private val _isDarkTheme = MutableStateFlow(prefs.getBoolean("is_dark_theme", false))
+    private val _isDarkTheme = MutableStateFlow(prefs.getBoolean("is_dark_theme", true))
     val isDarkTheme: StateFlow<Boolean> = _isDarkTheme.asStateFlow()
 
     fun toggleTheme() {
@@ -245,7 +329,27 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             val hasAccess = (savedProf?.isProActive == true) ||
                 licenseManager.licenseStatus.value.let { it.isProActive || it.isDemoActive }
             repository.setCloudSyncEntitlementAllowed(hasAccess)
-            repository.ensureInitialized()
+
+            val profileAlreadyChosen = prefs.getBoolean("workspace_profile_chosen", false)
+            if (!profileAlreadyChosen) {
+                val isExistingInstall = repository.hasExistingInstallData()
+                if (isExistingInstall) {
+                    // Existing v3.x installation upgrading in place: preserve data untouched.
+                    _workspaceProfileMode.value = com.example.data.model.WorkspaceProfileMode.MILITARY
+                    _needsProfileSelection.value = false
+                    prefs.edit()
+                        .putString("workspace_profile_mode", com.example.data.model.WorkspaceProfileMode.MILITARY.code)
+                        .putBoolean("workspace_profile_chosen", true)
+                        .apply()
+                    repository.ensureInitialized(com.example.data.model.WorkspaceProfileMode.MILITARY)
+                } else {
+                    // Brand-new install: initialize base empty profile without forcing military catalog yet.
+                    repository.ensureInitialized(com.example.data.model.WorkspaceProfileMode.EMPTY)
+                }
+            } else {
+                repository.ensureInitialized(_workspaceProfileMode.value)
+            }
+
             backupManager.autoBackupIfDue()
             if (hasAccess) {
                 backupManager.cloudBackupIfDue()
@@ -428,9 +532,14 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
 
     // Custom Nomenclature Item
     fun addCustomItem(name: String, serviceCategory: String, subType: String, unit: String) {
+        val cleanCategory = serviceCategory.trim().ifBlank { "Основное" }
+        val currentCats = _availableCategories.value
+        if (cleanCategory !in currentCats) {
+            saveCategoriesToPrefs(currentCats + cleanCategory)
+        }
         viewModelScope.launch {
-            repository.addCustomInventoryItem(name, serviceCategory, subType, unit)
-            _toastEvent.emit("Позиция «$name» внесена в номенклатуру")
+            repository.addCustomInventoryItem(name.trim(), cleanCategory, subType.trim(), unit.trim().ifBlank { "шт." })
+            _toastEvent.emit("Позиция «${name.trim()}» внесена в номенклатуру")
         }
     }
 

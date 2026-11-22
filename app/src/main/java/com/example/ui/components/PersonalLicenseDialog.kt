@@ -157,8 +157,8 @@ fun PersonalLicenseDialog(
                     .fillMaxWidth()
                     .background(
                         Brush.linearGradient(
-                            if (isPro || justPaidKey != null) listOf(Color(0xFF1F7A57), Color(0xFF0F766E))
-                            else listOf(Color(0xFF3B2A0E), Color(0xFF5A3D0A))
+                            if (isPro || justPaidKey != null) listOf(Color(0xFF0E6E52), Color(0xFF0F766E))
+                            else listOf(Color(0xFF0D4234), Color(0xFF0F5E56))
                         )
                     )
                     .padding(20.dp)
@@ -247,10 +247,10 @@ fun PersonalLicenseDialog(
                     // What PRO gives
                     Text("Что даёт PRO", color = TacticalTextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(8.dp))
-                    Benefit(Icons.Rounded.Description, "Списание и отчёты Excel", "формы 8 и 18, сводные ведомости")
-                    Benefit(Icons.Rounded.Sync, "Все функции без ограничений", "склады, операции, заявки, синхронизация")
-                    Benefit(Icons.Rounded.Shield, "Лицензия на сервере", "не пропадёт при переустановке и смене телефона")
-                    Benefit(Icons.Rounded.MarkEmailRead, "Ключ на почту", "и чек об оплате по 54-ФЗ")
+                    Benefit(Icons.Rounded.Description, "Отчёты Excel (.xlsx)", "Формы № 8 и № 18, М-11, МБ-7, МБ-8 и сводные")
+                    Benefit(Icons.Rounded.Sync, "Безлимит складов и синхронизация", "неограниченно точек, позиций, заявок и QR-подключение")
+                    Benefit(Icons.Rounded.Shield, "Лицензия хранится на сервере", "не пропадёт при переустановке и смене телефона")
+                    Benefit(Icons.Rounded.MarkEmailRead, "Ключ на Email • самозанятый (НПД)", "оплата через ЮKassa (СБП / МИР), чек «Мой налог»")
 
                     Spacer(modifier = Modifier.height(16.dp))
                     if (!paymentStarted) {

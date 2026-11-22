@@ -106,11 +106,12 @@ fun IncomeOperationDialog(
     catalogItems: List<InventoryItem>,
     stockRecords: List<StockRecord> = emptyList(),
     initialPointId: String,
+    profileMode: com.example.data.model.WorkspaceProfileMode = com.example.data.model.WorkspaceProfileMode.MILITARY,
     onDismiss: () -> Unit,
     onConfirm: (toPointId: String, toPointName: String, supplier: String, items: List<OperationItemEntry>, comment: String) -> Unit
 ) {
     var selectedPoint by remember {
-        mutableStateOf(points.firstOrNull { it.id == initialPointId } ?: points.firstOrNull() ?: WarehousePoint("base", "Базовый склад"))
+        mutableStateOf(points.firstOrNull { it.id == initialPointId } ?: points.firstOrNull() ?: WarehousePoint("base", "Основной склад"))
     }
     var supplier by remember { mutableStateOf("") }
     var comment by remember { mutableStateOf("") }
@@ -118,30 +119,43 @@ fun IncomeOperationDialog(
         mutableStateListOf(OperationDraftItem(selectedItem = null, quantityString = "1"))
     }
 
-    val supplierSuggestions = listOf(
-        "Служба РАВ / Тыл",
-        "Волонтёрская помощь",
-        "Командование бригады",
-        "Центральная база хранения",
-        "Соседнее подразделение",
-        "Трофейное имущество"
-    )
+    val supplierSuggestions = remember(profileMode) {
+        if (profileMode.isMilitary) {
+            listOf(
+                "Служба РАВ / Тыл",
+                "Волонтёрская помощь",
+                "Командование бригады",
+                "Центральная база хранения",
+                "Соседнее подразделение",
+                "Трофейное имущество"
+            )
+        } else {
+            listOf(
+                "Поставщик / Оптовая база",
+                "Магазин инструмента",
+                "Строительная база",
+                "Закупка по счёту",
+                "Возврат с объекта"
+            )
+        }
+    }
 
     TacticalOperationModalLayout(
         title = "Приход",
-        titleColor = SageGreenBright,
-        badgeColor = SageGreenDark,
+        titleColor = com.example.ui.theme.TacticalEmeraldText,
+        badgeColor = com.example.ui.theme.TacticalEmeraldDark,
         onDismiss = onDismiss,
         footer = {
             TacticalFitButton(
                 text = "Сохранить приход",
                 icon = Icons.Default.Add,
-                containerColor = SageGreenPrimary,
+                containerColor = com.example.ui.theme.TacticalEmerald,
                 contentColor = Color.White,
                 onClick = {
                     val validItems = draftItems.mapNotNull { draft ->
                         val item = draft.selectedItem ?: return@mapNotNull null
-                        val qty = draft.quantityString.toIntOrNull() ?: 1
+                        val qty = (draft.quantityString.toIntOrNull() ?: 0).coerceAtLeast(0)
+                        if (qty <= 0) return@mapNotNull null
                         OperationItemEntry(
                             itemId = item.id,
                             itemName = item.name,
@@ -220,6 +234,7 @@ fun TransferOperationDialog(
         mutableStateOf(points.firstOrNull { it.id != fromPoint.id } ?: points.firstOrNull() ?: WarehousePoint("op_skala", "ОП «Скала»"))
     }
     var comment by remember { mutableStateOf("") }
+    var samePointError by remember { mutableStateOf<String?>(null) }
     val draftItems = remember {
         mutableStateListOf(OperationDraftItem(selectedItem = null, quantityString = "1"))
     }
@@ -285,9 +300,15 @@ fun TransferOperationDialog(
                 containerColor = TacticalTeal,
                 contentColor = Color.White,
                 onClick = {
+                    if (fromPoint.id == toPoint.id) {
+                        samePointError = "Склад отправления и склад назначения должны отличаться."
+                        return@TacticalFitButton
+                    }
+                    samePointError = null
                     val validItems = draftItems.mapNotNull { draft ->
                         val item = draft.selectedItem ?: return@mapNotNull null
-                        val qty = draft.quantityString.toIntOrNull() ?: 1
+                        val qty = (draft.quantityString.toIntOrNull() ?: 0).coerceAtLeast(0)
+                        if (qty <= 0) return@mapNotNull null
                         OperationItemEntry(
                             itemId = item.id,
                             itemName = item.name,
@@ -345,8 +366,21 @@ fun TransferOperationDialog(
             selectedPoint = toPoint,
             stockRecords = stockRecords,
             catalogItems = catalogItems,
-            onPointSelected = { toPoint = it }
+            onPointSelected = {
+                toPoint = it
+                samePointError = null
+            }
         )
+
+        if (samePointError != null) {
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = samePointError!!,
+                color = TacticalRedText,
+                fontSize = 11.5.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
 
         Spacer(modifier = Modifier.height(14.dp))
 
@@ -389,7 +423,7 @@ fun TransferOperationDialog(
     }
 }
 
-// DIALOG: «Подняли» (Issue)
+// DIALOG: «Подняли» (Issue — на точку или на руки получателю)
 @Composable
 fun IssueOperationDialog(
     points: List<WarehousePoint>,
@@ -398,6 +432,7 @@ fun IssueOperationDialog(
     initialPointId: String,
     onDismiss: () -> Unit,
     personOnlyMode: Boolean = false,
+    profileMode: com.example.data.model.WorkspaceProfileMode = com.example.data.model.WorkspaceProfileMode.MILITARY,
     onConfirm: (fromPointId: String, fromPointName: String, toPointId: String, toPointName: String, items: List<OperationItemEntry>, comment: String) -> Unit
 ) {
     var fromPoint by remember {
@@ -408,13 +443,17 @@ fun IssueOperationDialog(
         } else {
             points.firstOrNull { it.id == initialPointId } ?: points.firstOrNull()
         }
-        mutableStateOf(defaultPoint ?: WarehousePoint("base", "Базовый склад"))
+        mutableStateOf(defaultPoint ?: WarehousePoint("base", "Основной склад"))
     }
     var targetPoint by remember {
-        mutableStateOf(points.firstOrNull { it.id != initialPointId } ?: points.firstOrNull() ?: WarehousePoint("base", "Базовый склад"))
+        mutableStateOf(points.firstOrNull { it.id != fromPoint.id } ?: points.firstOrNull() ?: WarehousePoint("base", "Основной склад"))
+    }
+    var issueToPerson by remember(personOnlyMode, points.size) {
+        mutableStateOf(personOnlyMode || points.size <= 1)
     }
     var recipientName by remember { mutableStateOf("") }
     var comment by remember { mutableStateOf("") }
+    var validationError by remember { mutableStateOf<String?>(null) }
     val draftItems = remember {
         mutableStateListOf(OperationDraftItem(selectedItem = null, quantityString = "1"))
     }
@@ -435,6 +474,13 @@ fun IssueOperationDialog(
         stockRecords.filter { it.pointId == fromPoint.id }.associate { it.itemId to it.quantity }
     }
 
+    fun resolveDestination(): Pair<String, String> =
+        if (personOnlyMode || issueToPerson) {
+            "" to recipientName.trim().ifBlank { "Выдано на руки" }
+        } else {
+            targetPoint.id to targetPoint.name
+        }
+
     if (pendingInsufficientItems != null) {
         InsufficientStockAlertDialog(
             pointName = fromPoint.name,
@@ -443,7 +489,8 @@ fun IssueOperationDialog(
             onProceedAnyway = {
                 val validItems = draftItems.mapNotNull { draft ->
                     val item = draft.selectedItem ?: return@mapNotNull null
-                    val qty = draft.quantityString.toIntOrNull() ?: 1
+                    val qty = (draft.quantityString.toIntOrNull() ?: 0).coerceAtLeast(0)
+                    if (qty <= 0) return@mapNotNull null
                     OperationItemEntry(
                         itemId = item.id,
                         itemName = item.name,
@@ -453,8 +500,7 @@ fun IssueOperationDialog(
                     )
                 }
                 if (validItems.isNotEmpty()) {
-                    val toId = if (personOnlyMode) "" else targetPoint.id
-                    val toName = if (personOnlyMode) recipientName.trim().ifBlank { "Выдано на руки" } else targetPoint.name
+                    val (toId, toName) = resolveDestination()
                     onConfirm(fromPoint.id, fromPoint.name, toId, toName, validItems, comment)
                     pendingInsufficientItems = null
                     onDismiss()
@@ -476,7 +522,8 @@ fun IssueOperationDialog(
                 onClick = {
                     val validItems = draftItems.mapNotNull { draft ->
                         val item = draft.selectedItem ?: return@mapNotNull null
-                        val qty = draft.quantityString.toIntOrNull() ?: 1
+                        val qty = (draft.quantityString.toIntOrNull() ?: 0).coerceAtLeast(0)
+                        if (qty <= 0) return@mapNotNull null
                         OperationItemEntry(
                             itemId = item.id,
                             itemName = item.name,
@@ -485,6 +532,11 @@ fun IssueOperationDialog(
                             categoryClass = item.categoryClass
                         )
                     }
+                    if (!personOnlyMode && !issueToPerson && targetPoint.id == fromPoint.id) {
+                        validationError = "Выберите другой склад получения или переключитесь на «На руки (ФИО)»."
+                        return@TacticalFitButton
+                    }
+                    validationError = null
                     if (validItems.isNotEmpty()) {
                         val insufficient = validItems.mapNotNull { entry ->
                             val available = stocksMapForFromPoint[entry.itemId] ?: 0
@@ -495,8 +547,7 @@ fun IssueOperationDialog(
                         if (insufficient.isNotEmpty()) {
                             pendingInsufficientItems = insufficient
                         } else {
-                            val toId = if (personOnlyMode) "" else targetPoint.id
-                            val toName = if (personOnlyMode) recipientName.trim().ifBlank { "Выдано на руки" } else targetPoint.name
+                            val (toId, toName) = resolveDestination()
                             onConfirm(fromPoint.id, fromPoint.name, toId, toName, validItems, comment)
                             onDismiss()
                         }
@@ -508,14 +559,54 @@ fun IssueOperationDialog(
             )
         }
     ) {
+        if (!personOnlyMode && points.size > 1) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(TacticalSurfaceLight)
+                    .padding(3.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                listOf(false to "На точку / склад", true to "На руки (ФИО)").forEach { (toPerson, label) ->
+                    val active = issueToPerson == toPerson
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(if (active) TacticalGold else Color.Transparent)
+                            .clickable {
+                                issueToPerson = toPerson
+                                validationError = null
+                            }
+                            .padding(vertical = 8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = label,
+                            color = if (active) Color.White else TacticalTextSecondary,
+                            fontSize = 12.sp,
+                            fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
+                            maxLines = 1
+                        )
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(10.dp))
+        }
+
         TacticalSearchablePointDropdown(
-            label = if (personOnlyMode) "Откуда выдано (Основной склад)" else "Откуда выдано (Точка списания)",
+            label = if (personOnlyMode) "Откуда выдано (Основной склад)" else "Откуда выдано (Склад / точка)",
             points = if (personOnlyMode) listOf(fromPoint) else points,
             selectedPoint = fromPoint,
             stockRecords = stockRecords,
             catalogItems = catalogItems,
-            onPointSelected = { 
+            onPointSelected = {
                 fromPoint = it
+                validationError = null
+                if (targetPoint.id == it.id) {
+                    points.firstOrNull { p -> p.id != it.id }?.let { alt -> targetPoint = alt }
+                }
                 draftItems.forEach { draft ->
                     if (draft.selectedItem != null && draft.selectedItem!!.id !in stockRecords.filter { s -> s.pointId == it.id && s.quantity > 0 }.map { s -> s.itemId }) {
                         draft.selectedItem = null
@@ -526,21 +617,34 @@ fun IssueOperationDialog(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        if (personOnlyMode) {
+        if (personOnlyMode || issueToPerson) {
             TacticalInputField(
-                label = "Кому выдано (Получатель)",
+                label = if (profileMode.isMilitary) "Кому выдано (Звание, ФИО / позывной)" else "Кому выдано (ФИО / бригада)",
                 value = recipientName,
                 onValueChange = { recipientName = it },
-                placeholder = "Например: Иванов И.И. / Цех №1"
+                placeholder = if (profileMode.isMilitary) "Например: ряд. Иванов И.И. / Сокол" else "Например: Петров А.С. / Бригада № 2"
             )
         } else {
             TacticalSearchablePointDropdown(
-                label = "Кому / Куда подняли (Точка получения)",
+                label = if (profileMode.isMilitary) "Куда выдано (Точка получения)" else "На какой склад / участок",
                 points = points,
                 selectedPoint = targetPoint,
                 stockRecords = stockRecords,
                 catalogItems = catalogItems,
-                onPointSelected = { targetPoint = it }
+                onPointSelected = {
+                    targetPoint = it
+                    validationError = null
+                }
+            )
+        }
+
+        if (validationError != null) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = validationError!!,
+                color = TacticalRedText,
+                fontSize = 11.5.sp,
+                fontWeight = FontWeight.SemiBold
             )
         }
 

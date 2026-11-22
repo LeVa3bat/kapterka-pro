@@ -76,6 +76,8 @@ import com.example.ui.theme.TacticalTextSecondary
 fun InventoryCatalogScreen(
     items: List<InventoryItem>,
     availableCategories: List<String> = emptyList(),
+    stockRecords: List<com.example.data.model.StockRecord> = emptyList(),
+    profileMode: com.example.data.model.WorkspaceProfileMode = com.example.data.model.WorkspaceProfileMode.MILITARY,
     onAddNewItemClick: () -> Unit,
     onUpdateItem: (InventoryItem) -> Unit = {},
     onDeleteItem: (String, String) -> Unit = { _, _ -> }
@@ -85,24 +87,18 @@ fun InventoryCatalogScreen(
     val expandedCategoriesMap = remember { mutableStateMapOf<String, Boolean>() }
     var editingItem by remember { mutableStateOf<InventoryItem?>(null) }
 
-    val services = remember(availableCategories) {
-        if (availableCategories.isNotEmpty()) {
-            listOf("Все категории") + availableCategories
+    val totalStockByItemId = remember(stockRecords) {
+        stockRecords.groupBy { it.itemId }.mapValues { (_, list) -> list.sumOf { it.quantity } }
+    }
+
+    val services = remember(availableCategories, items, profileMode) {
+        val fromItems = items.map { it.serviceCategory }.filter { it.isNotBlank() }.distinct()
+        val combined = (availableCategories + fromItems).distinct()
+        if (combined.isNotEmpty()) {
+            listOf("Все категории") + combined
         } else {
-            listOf(
-                "Все категории",
-                "Служба РАВ",
-                "Служба БПЛА и робототехники",
-                "Служба связи и РЭБ",
-                "Вещевая служба и СИБЗ",
-                "Медицинская служба",
-                "Инженерная служба",
-                "Служба ГСМ",
-                "Продовольственная служба",
-                "Автомобильная и БТ служба",
-                "Служба РХБЗ",
-                "Топографическая и штабная"
-            )
+            val defaults = com.example.data.local.InitialData.getCategoriesFor(profileMode)
+            if (defaults.isEmpty()) listOf("Все категории") else listOf("Все категории") + defaults
         }
     }
 
@@ -244,9 +240,10 @@ fun InventoryCatalogScreen(
                     ) {
                         Text(
                             text = "$srv ($count)",
-                            color = if (isSelected) Color(0xFF0F1B14) else TacticalTextSecondary,
-                            fontSize = 11.sp,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                            color = if (isSelected) Color.White else TacticalTextSecondary,
+                            fontSize = 11.5.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                            maxLines = 1
                         )
                     }
                 }
@@ -319,11 +316,26 @@ fun InventoryCatalogScreen(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "В выбранной категории позиции не найдены",
+                        text = if (items.isEmpty()) "Каталог пуст — добавьте свою первую позицию" else "В выбранной категории позиции не найдены",
                         color = TacticalTextMuted,
                         fontSize = 13.sp,
                         textAlign = TextAlign.Center
                     )
+                    if (items.isEmpty()) {
+                        Spacer(modifier = Modifier.height(14.dp))
+                        androidx.compose.material3.Button(
+                            onClick = onAddNewItemClick,
+                            shape = RoundedCornerShape(14.dp),
+                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                containerColor = SageGreenPrimary,
+                                contentColor = Color.White
+                            )
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Добавить позицию", fontWeight = FontWeight.Bold)
+                        }
+                    }
                 }
             }
         } else {
@@ -437,6 +449,25 @@ fun InventoryCatalogScreen(
                                                         text = "• ${item.unit}",
                                                         color = TacticalTextSecondary,
                                                         fontSize = 10.5.sp
+                                                    )
+                                                }
+                                            }
+
+                                            val currentQty = totalStockByItemId[item.id] ?: 0
+                                            if (currentQty > 0) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .padding(end = 6.dp)
+                                                        .clip(RoundedCornerShape(8.dp))
+                                                        .background(com.example.ui.theme.TacticalEmeraldDark)
+                                                        .padding(horizontal = 7.dp, vertical = 3.dp)
+                                                ) {
+                                                    Text(
+                                                        text = "$currentQty ${item.unit}",
+                                                        color = com.example.ui.theme.TacticalEmeraldText,
+                                                        fontSize = 10.5.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        fontFamily = FontFamily.Monospace
                                                     )
                                                 }
                                             }

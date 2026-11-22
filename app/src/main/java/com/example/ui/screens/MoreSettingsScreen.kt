@@ -131,8 +131,11 @@ fun MoreSettingsScreen(
     lastCloudBackupAt: Long = 0L,
     onSaveCloudBackup: () -> Unit = {},
     onRestoreCloudBackup: () -> Unit = {},
-    isDarkTheme: Boolean = false,
-    onToggleTheme: () -> Unit = {}
+    isDarkTheme: Boolean = true,
+    onToggleTheme: () -> Unit = {},
+    workspaceProfileMode: com.example.data.model.WorkspaceProfileMode = com.example.data.model.WorkspaceProfileMode.MILITARY,
+    onSwitchProfileMode: (com.example.data.model.WorkspaceProfileMode) -> Unit = {},
+    onImportTemplateCatalog: (com.example.data.model.WorkspaceProfileMode) -> Unit = {}
 ) {
     val context = LocalContext.current
     val unitKey = profile?.unitKey?.trim().orEmpty()
@@ -141,6 +144,7 @@ fun MoreSettingsScreen(
     var devTapWindowStartedAt by remember { androidx.compose.runtime.mutableLongStateOf(0L) }
 
     // Accordions state: all collapsed by default to save space as requested
+    var expandedProfileMode by remember { mutableStateOf(false) }
     var expandedProfile by remember { mutableStateOf(false) }
     var expandedConnectCode by remember { mutableStateOf(false) }
     var expandedBackup by remember { mutableStateOf(false) }
@@ -533,14 +537,104 @@ fun MoreSettingsScreen(
                         checked = isDarkTheme,
                         onCheckedChange = { onToggleTheme() },
                         colors = SwitchDefaults.colors(
-                            checkedThumbColor = SageGreenPrimary,
-                            checkedTrackColor = SageGreenDark,
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = SageGreenPrimary,
                             uncheckedThumbColor = TacticalTextMuted,
                             uncheckedTrackColor = TacticalSurfaceLight
                         )
                     )
                 }
             }
+        }
+
+        // 0b. WORKSPACE PROFILE MODE (Гражданский / Военный / Пустой склад)
+        item {
+            CollapsibleCard(
+                title = "Профиль учёта и бланков",
+                subtitle = "${workspaceProfileMode.titleRu} • ${if (workspaceProfileMode.isMilitary) "Ф-8 и Ф-18" else "М-11, МБ-7, МБ-8"}",
+                icon = Icons.Default.Settings,
+                iconColor = SageGreenPrimary,
+                isExpanded = expandedProfileMode,
+                onToggle = { expandedProfileMode = !expandedProfileMode }
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "Переключение профиля меняет набор бланков Excel и подсказки без удаления ваших складов, остатков и журнала.",
+                        color = TacticalTextSecondary,
+                        fontSize = 11.sp,
+                        lineHeight = 15.sp
+                    )
+                    com.example.data.model.WorkspaceProfileMode.values().forEach { mode ->
+                        val active = mode == workspaceProfileMode
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(if (active) SageGreenDark else TacticalSurface)
+                                .border(
+                                    width = if (active) 1.5.dp else 1.dp,
+                                    color = if (active) SageGreenPrimary else TacticalBorderSubtle,
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+                                .clickable { onSwitchProfileMode(mode) }
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = mode.titleRu,
+                                    color = if (active) SageGreenBright else TacticalTextPrimary,
+                                    fontSize = 12.5.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = mode.subtitleRu,
+                                    color = TacticalTextMuted,
+                                    fontSize = 10.5.sp,
+                                    lineHeight = 14.sp
+                                )
+                            }
+                            if (active) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = "Активно",
+                                    tint = SageGreenPrimary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = { onImportTemplateCatalog(com.example.data.model.WorkspaceProfileMode.CIVILIAN) },
+                            modifier = Modifier.weight(1f).height(38.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, TacticalBorder),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = TacticalTextPrimary)
+                        ) {
+                            Text("+ Каталог Мастерской", fontSize = 10.5.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                        }
+                        OutlinedButton(
+                            onClick = { onImportTemplateCatalog(com.example.data.model.WorkspaceProfileMode.MILITARY) },
+                            modifier = Modifier.weight(1f).height(38.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, TacticalBorder),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = TacticalTextPrimary)
+                        ) {
+                            Text("+ Каталог Служб", fontSize = 10.5.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                        }
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
         }
 
         // 1. COLLAPSIBLE ACCORDION: ПРОФИЛЬ ПОДРАЗДЕЛЕНИЯ
@@ -592,7 +686,7 @@ fun MoreSettingsScreen(
 
                     // Cloud info box
                     Surface(
-                        color = Color(0xFF131C16),
+                        color = TacticalBg,
                         shape = RoundedCornerShape(14.dp),
                         border = BorderStroke(1.dp, TacticalBorderSubtle),
                         modifier = Modifier.fillMaxWidth()
@@ -881,13 +975,17 @@ fun MoreSettingsScreen(
             Spacer(modifier = Modifier.height(8.dp))
         }
 
-        // 4. COLLAPSIBLE ACCORDION: АРМЕЙСКАЯ ОТЧЕТНОСТЬ И ВЕДОМОСТИ
+        // 4. COLLAPSIBLE ACCORDION: ОТЧЁТНОСТЬ И ВЕДОМОСТИ (Военные / Гражданские)
         item {
             CollapsibleCard(
-                title = "Отчёты и ведомости",
-                subtitle = "Форма № 8, Форма № 18, Сводные отчеты в Excel",
+                title = "Отчёты и ведомости Excel",
+                subtitle = if (workspaceProfileMode.isMilitary) {
+                    "Форма № 8 (ОКУД 6002203), Форма № 18, Сводные в Excel"
+                } else {
+                    "Накладная М-11 / ТОРГ-13, МБ-7, МБ-8, Оборотная ТМЦ"
+                },
                 icon = Icons.Default.TableChart,
-                iconColor = SageGreenBright,
+                iconColor = com.example.ui.theme.TacticalEmerald,
                 isExpanded = expandedReports,
                 onToggle = { expandedReports = !expandedReports }
             ) {
@@ -896,23 +994,23 @@ fun MoreSettingsScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     ReportCompactRow(
-                        title = "Полная сводная ведомость (Все позиции)",
+                        title = if (workspaceProfileMode.isMilitary) "Сводная ведомость МТО (Все позиции)" else "Оборотная ведомость остатков ТМЦ",
                         docType = "Все склады и категории",
                         onClick = onExportFullConsolidatedClick
                     )
                     ReportCompactRow(
-                        title = "Ведомости остатков по точкам",
-                        docType = "Что есть, расход, приход",
+                        title = if (workspaceProfileMode.isMilitary) "Ведомости остатков по точкам" else "Ведомости остатков по складам",
+                        docType = "Приход, расход и фактический остаток",
                         onClick = onExportPointSummaryClick
                     )
                     ReportCompactRow(
-                        title = "Форма № 8 (Акт списания / расхода)",
-                        docType = "Акт расхода РАВ",
+                        title = if (workspaceProfileMode.isMilitary) "Форма № 8 (ОКУД 6002203 • Раздаточная)" else "Накладная М-11 / ТОРГ-13 (Перемещения)",
+                        docType = if (workspaceProfileMode.isMilitary) "Приказ МО РФ № 139" else "Внутреннее перемещение ТМЦ",
                         onClick = onExportForm8Click
                     )
                     ReportCompactRow(
-                        title = "Форма № 18 (Книга учета движения)",
-                        docType = "Ведомость движения",
+                        title = if (workspaceProfileMode.isMilitary) "Форма № 18 (ОКУД 0504042 • Книга учёта)" else "Ведомость выдачи на руки (МБ-7)",
+                        docType = if (workspaceProfileMode.isMilitary) "Наличие и движение по наименованиям" else "Выдача инструмента и возврат",
                         onClick = onExportForm18Click
                     )
                 }
@@ -1399,11 +1497,16 @@ private fun ReportCompactRow(
 
         Box(
             modifier = Modifier
-                .clip(RoundedCornerShape(4.dp))
-                .background(Color(0xFF1B3D2B))
-                .padding(horizontal = 8.dp, vertical = 4.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(com.example.ui.theme.TacticalEmeraldDark)
+                .padding(horizontal = 9.dp, vertical = 4.dp)
         ) {
-            Text(text = "Excel", color = SageGreenBright, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            Text(
+                text = "Excel",
+                color = com.example.ui.theme.TacticalEmeraldText,
+                fontSize = 10.5.sp,
+                fontWeight = FontWeight.Bold
+            )
         }
     }
 }

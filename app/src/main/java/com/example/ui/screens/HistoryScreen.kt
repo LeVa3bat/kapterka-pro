@@ -286,16 +286,10 @@ fun HistoryScreen(
             val countIssue = remember(operations) { operations.count { it.type == OperationType.ISSUE } }
             val countExpenditure = remember(operations) { operations.count { it.type == OperationType.EXPENDITURE } }
 
-            val serviceChips = listOf(
-                "Служба РАВ",
-                "Служба БПЛА и робототехники",
-                "Вещевая служба",
-                "Медицинская служба",
-                "Продовольственная служба",
-                "ГСМ / Техническая служба",
-                "Служба связи",
-                "Прочее имущество"
-            )
+            val serviceChips = remember(availableCategories, catalogItems) {
+                val fromCatalog = catalogItems.map { it.serviceCategory }.filter { it.isNotBlank() }.distinct()
+                (availableCategories + fromCatalog).distinct()
+            }
 
             Row(
                 modifier = Modifier
@@ -352,39 +346,38 @@ fun HistoryScreen(
                         .background(TacticalBorderSubtle)
                 )
 
-                // Services
+                // Services / Categories
                 serviceChips.forEach { cat ->
                     val isSel = selectedCategoryFilter == cat
-                    val emoji = getCategoryEmoji(cat)
                     val shortName = when (cat) {
                         "Служба РАВ" -> "РАВ"
                         "Служба БПЛА и робототехники" -> "БПЛА"
-                        "Вещевая служба" -> "Вещевая"
+                        "Вещевая служба", "Вещевая служба и СИБЗ" -> "Вещевая"
                         "Медицинская служба" -> "Мед"
                         "Продовольственная служба" -> "Прод"
-                        "ГСМ / Техническая служба" -> "ГСМ"
-                        "Служба связи" -> "Связь"
-                        else -> "Прочее"
+                        "ГСМ / Техническая служба", "Служба ГСМ" -> "ГСМ"
+                        "Служба связи", "Служба связи и РЭБ" -> "Связь"
+                        else -> cat
                     }
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(12.dp))
-                            .background(if (isSel) SageGreenDark else TacticalSurfaceLight)
+                            .background(if (isSel) SageGreenPrimary else TacticalSurface)
                             .border(
                                 1.dp,
-                                if (isSel) SageGreenBright else TacticalBorder,
+                                if (isSel) SageGreenPrimary else TacticalBorder,
                                 RoundedCornerShape(12.dp)
                             )
                             .clickable {
                                 selectedCategoryFilter = if (selectedCategoryFilter == cat) "Все категории" else cat
                             }
-                            .padding(horizontal = 9.dp, vertical = 6.dp)
+                            .padding(horizontal = 10.dp, vertical = 6.dp)
                     ) {
                         Text(
-                            text = "$emoji $shortName",
-                            color = if (isSel) SageGreenBright else TacticalTextSecondary,
-                            fontSize = 12.sp,
-                            fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal,
+                            text = shortName,
+                            color = if (isSel) Color.White else TacticalTextSecondary,
+                            fontSize = 11.5.sp,
+                            fontWeight = if (isSel) FontWeight.Bold else FontWeight.Medium,
                             maxLines = 1,
                             softWrap = false
                         )
@@ -656,7 +649,7 @@ private fun OperationAccordionCard(
     val items = remember(operation.itemsJson) { parseItems(operation.itemsJson) }
 
     val (badgeBg, badgeText, badgeTitle) = when (operation.type) {
-        OperationType.INCOME -> Triple(SageGreenDark, SageGreenBright, "ПРИХОД")
+        OperationType.INCOME -> Triple(com.example.ui.theme.TacticalEmeraldDark, com.example.ui.theme.TacticalEmeraldText, "ПРИХОД")
         OperationType.TRANSFER -> Triple(TacticalTealDark, TacticalTealText, "ПЕРЕМЕЩЕНИЕ")
         OperationType.ISSUE -> Triple(TacticalGoldDark, TacticalGoldText, "ВЫДАЧА")
         OperationType.EXPENDITURE -> Triple(TacticalRedDark, TacticalRedText, "СПИСАНИЕ")
@@ -711,11 +704,14 @@ private fun OperationAccordionCard(
                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                         ) {
                             Text(
-                                text = "Акт № " + operation.docNumber.trim().removePrefix("№").trim(),
+                                text = "№ " + operation.docNumber.trim().removePrefix("№").trim(),
                                 color = TacticalTextPrimary,
-                                fontSize = 11.sp,
+                                fontSize = 10.5.sp,
                                 fontWeight = FontWeight.Bold,
-                                fontFamily = FontFamily.Monospace
+                                fontFamily = FontFamily.Monospace,
+                                maxLines = 1,
+                                softWrap = false,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }

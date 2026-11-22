@@ -95,7 +95,7 @@ fun SplashScreen(
             SplashFeature(Icons.Rounded.Warehouse, "Остатки по складам", "сколько чего и где — в одной таблице"),
             SplashFeature(Icons.Rounded.SwapHoriz, "Приход, выдача, списание", "каждая операция попадает в журнал"),
             SplashFeature(Icons.Rounded.Sync, "Общие данные подразделения", "телефоны с одним ключом видят одно и то же"),
-            SplashFeature(Icons.Rounded.Description, "Отчёты Ф-8 и Ф-18", "книга учёта и ведомость в Excel за минуту")
+            SplashFeature(Icons.Rounded.Description, "Отчёты Ф-8, Ф-18, М-11", "военные и гражданские ведомости в Excel за минуту")
         )
     }
     val featureAnims = remember { List(4) { Animatable(0f) } }

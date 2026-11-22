@@ -684,8 +684,11 @@ fun AddCustomItemDialog(
     onDismiss: () -> Unit,
     onConfirm: (name: String, serviceCategory: String, subType: String, unit: String) -> Unit
 ) {
+    val cleanCategories = remember(availableCategories) {
+        availableCategories.filter { it.isNotBlank() && it != "Все виды" }
+    }
     var name by remember { mutableStateOf("") }
-    var serviceCategory by remember { mutableStateOf(availableCategories.firstOrNull { it != "Все виды" } ?: "Служба РАВ") }
+    var serviceCategory by remember { mutableStateOf(cleanCategories.firstOrNull().orEmpty()) }
     var subType by remember { mutableStateOf("") }
     var unit by remember { mutableStateOf("шт.") }
 
@@ -715,8 +718,8 @@ fun AddCustomItemDialog(
                     Text(
                         text = "Добавить позицию",
                         color = SageGreenBright,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.ExtraBold
                     )
 
                     IconButton(
@@ -734,19 +737,19 @@ fun AddCustomItemDialog(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 TacticalInputField(
-                    label = "Наименование имущества",
+                    label = "Наименование позиции",
                     value = name,
                     onValueChange = { name = it },
-                    placeholder = "например: Мина 120-мм ОФ-843Б"
+                    placeholder = "Например: Перфоратор, Масло 5W-40 или Радиостанция"
                 )
 
                 Spacer(modifier = Modifier.height(10.dp))
                 TacticalSearchableTextDropdown(
-                    label = "Служба обеспечения",
+                    label = "Категория / служба",
                     value = serviceCategory,
                     onValueChange = { serviceCategory = it },
-                    suggestions = availableCategories.filter { it != "Все виды" },
-                    placeholder = "Выберите или введите..."
+                    suggestions = cleanCategories,
+                    placeholder = if (cleanCategories.isEmpty()) "Введите название своей категории..." else "Выберите или введите свою..."
                 )
                 Spacer(modifier = Modifier.height(10.dp))
 
@@ -758,14 +761,14 @@ fun AddCustomItemDialog(
                         label = "Вид / Группа",
                         value = subType,
                         onValueChange = { subType = it },
-                        placeholder = "Мины / Патроны",
+                        placeholder = "Инструмент / Расходники",
                         modifier = Modifier.weight(1.3f)
                     )
                     TacticalInputField(
                         label = "Ед. изм.",
                         value = unit,
                         onValueChange = { unit = it },
-                        placeholder = "шт./ящ.",
+                        placeholder = "шт./уп./л.",
                         modifier = Modifier.weight(0.7f)
                     )
                 }
@@ -775,13 +778,18 @@ fun AddCustomItemDialog(
                 Button(
                     onClick = {
                         if (name.isNotBlank()) {
-                            onConfirm(name, serviceCategory, subType, unit)
+                            onConfirm(
+                                name.trim(),
+                                serviceCategory.trim().ifBlank { "Общая категория" },
+                                subType.trim(),
+                                unit.trim().ifBlank { "шт." }
+                            )
                             onDismiss()
                         }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(46.dp)
+                        .height(48.dp)
                         .testTag("submit_custom_item_button"),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = SageGreenPrimary,
@@ -801,28 +809,22 @@ fun EditCatalogItemDialog(
     item: com.example.data.model.InventoryItem,
     onDismiss: () -> Unit,
     onSave: (com.example.data.model.InventoryItem) -> Unit,
-    onDelete: (String, String) -> Unit
+    onDelete: (String, String) -> Unit,
+    availableCategories: List<String> = emptyList()
 ) {
     var name by remember { mutableStateOf(item.name) }
     var serviceCategory by remember { mutableStateOf(item.serviceCategory) }
     var subType by remember { mutableStateOf(item.subType) }
     var unit by remember { mutableStateOf(item.unit) }
     var standardCode by remember { mutableStateOf(item.standardCode) }
-    var catExpanded by remember { mutableStateOf(false) }
 
-    val categories = listOf(
-        "Служба РАВ",
-        "Служба БПЛА и робототехники",
-        "Служба связи и РЭБ",
-        "Вещевая служба и СИБЗ",
-        "Медицинская служба",
-        "Инженерная служба",
-        "Служба ГСМ",
-        "Продовольственная служба",
-        "Автомобильная и БТ служба",
-        "Служба РХБЗ",
-        "Топографическая и штабная"
-    )
+    val categories = remember(availableCategories, item.serviceCategory) {
+        (availableCategories + listOf(item.serviceCategory) +
+            com.example.data.local.InitialData.getCivilianCategories() +
+            com.example.data.local.InitialData.getDefaultCategories())
+            .filter { it.isNotBlank() && it != "Все виды" }
+            .distinct()
+    }
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -836,6 +838,7 @@ fun EditCatalogItemDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
                     .padding(16.dp)
             ) {
                 Row(
@@ -854,8 +857,8 @@ fun EditCatalogItemDialog(
                         Text(
                             text = "Редактировать позицию",
                             color = SageGreenBright,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.ExtraBold
                         )
                     }
 
@@ -881,59 +884,13 @@ fun EditCatalogItemDialog(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Text(
-                    text = "Служба обеспечения",
-                    color = TacticalTextSecondary,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium
+                TacticalSearchableTextDropdown(
+                    label = "Категория / служба",
+                    value = serviceCategory,
+                    onValueChange = { serviceCategory = it },
+                    suggestions = categories,
+                    placeholder = "Выберите или введите категорию..."
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                Box {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(TacticalSurfaceLight)
-                            .border(1.dp, TacticalBorder, RoundedCornerShape(14.dp))
-                            .clickable { catExpanded = true }
-                            .padding(horizontal = 12.dp, vertical = 10.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = serviceCategory,
-                                color = TacticalTextPrimary,
-                                fontSize = 13.sp
-                            )
-                            Icon(
-                                imageVector = Icons.Default.ArrowDropDown,
-                                contentDescription = null,
-                                tint = SageGreenPrimary
-                            )
-                        }
-                    }
-
-                    DropdownMenu(
-                        expanded = catExpanded,
-                        onDismissRequest = { catExpanded = false },
-                        modifier = Modifier
-                            .background(TacticalSurface)
-                            .border(1.dp, TacticalBorder)
-                    ) {
-                        categories.forEach { cat ->
-                            DropdownMenuItem(
-                                text = { Text(cat, color = TacticalTextPrimary, fontSize = 12.sp) },
-                                onClick = {
-                                    serviceCategory = cat
-                                    catExpanded = false
-                                }
-                            )
-                        }
-                    }
-                }
 
                 Spacer(modifier = Modifier.height(8.dp))
 

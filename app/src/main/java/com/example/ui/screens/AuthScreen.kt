@@ -141,43 +141,64 @@ fun AuthScreen(
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Emblem and Title
+            // Modern Cobalt Brand Header
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
             ) {
                 Box(
                     modifier = Modifier
-                        .size(38.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(SageGreenDark)
-                        .border(1.dp, SageGreenPrimary, RoundedCornerShape(8.dp)),
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(15.dp))
+                        .background(
+                            androidx.compose.ui.graphics.Brush.linearGradient(
+                                listOf(
+                                    com.example.ui.theme.HeroGradientStart,
+                                    com.example.ui.theme.HeroGradientEnd
+                                )
+                            )
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.MilitaryTech,
                         contentDescription = null,
-                        tint = SageGreenBright,
-                        modifier = Modifier.size(24.dp)
+                        tint = Color.White,
+                        modifier = Modifier.size(28.dp)
                     )
                 }
-                Spacer(modifier = Modifier.width(10.dp))
+                Spacer(modifier = Modifier.width(12.dp))
                 Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "КАПТЁРКА",
+                            color = TacticalTextPrimary,
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = (-0.5).sp
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(com.example.ui.theme.TacticalGold)
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = "PRO",
+                                color = Color.White,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.ExtraBold
+                            )
+                        }
+                    }
                     Text(
-                        text = "КАПТЁРКА",
-                        color = TacticalTextPrimary,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 1.sp
-                    )
-                    Text(
-                        text = "Учёт склада, имущества и снабжения",
+                        text = "Вход только по Email • без Google-аккаунта",
                         color = TacticalTextSecondary,
-                        fontSize = 11.sp
+                        fontSize = 11.5.sp
                     )
-                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "v${com.example.BuildConfig.VERSION_NAME} PRO (Сборка ${com.example.BuildConfig.VERSION_CODE})",
+                        text = "v${com.example.BuildConfig.VERSION_NAME} • сборка ${com.example.BuildConfig.VERSION_CODE}",
                         color = SageGreenBright,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
@@ -191,9 +212,10 @@ fun AuthScreen(
             // Main Card
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(22.dp),
                 colors = CardDefaults.cardColors(containerColor = TacticalSurface),
-                border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorder)
+                border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorderSubtle),
+                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
             ) {
                 Column(
                     modifier = Modifier
@@ -404,40 +426,34 @@ fun AuthScreen(
                                 fontWeight = FontWeight.SemiBold
                             )
                             Spacer(modifier = Modifier.height(3.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "Политику конфиденциальности",
-                                    color = SageGreenBright,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    textDecoration = TextDecoration.Underline,
-                                    modifier = Modifier.clickable {
-                                        legalDialogTab = LegalDocumentTab.PRIVACY
-                                        showLegalDialog = true
-                                    }
-                                )
-                                Text(text = "•", color = TacticalTextMuted, fontSize = 11.sp)
-                                Text(
-                                    text = "Соглашение",
-                                    color = SageGreenBright,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    textDecoration = TextDecoration.Underline,
-                                    modifier = Modifier.clickable {
-                                        legalDialogTab = LegalDocumentTab.TERMS
-                                        showLegalDialog = true
-                                    }
-                                )
-                            }
+                            Text(
+                                text = "Политику конфиденциальности",
+                                color = SageGreenBright,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium,
+                                textDecoration = TextDecoration.Underline,
+                                modifier = Modifier.clickable {
+                                    legalDialogTab = LegalDocumentTab.PRIVACY
+                                    showLegalDialog = true
+                                }
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Пользовательское соглашение",
+                                color = SageGreenBright,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium,
+                                textDecoration = TextDecoration.Underline,
+                                modifier = Modifier.clickable {
+                                    legalDialogTab = LegalDocumentTab.TERMS
+                                    showLegalDialog = true
+                                }
+                            )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
                                 text = "Согласие на обработку данных (152-ФЗ)",
                                 color = SageGreenBright,
-                                fontSize = 10.5.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Medium,
                                 textDecoration = TextDecoration.Underline,
                                 modifier = Modifier.clickable {
@@ -506,9 +522,10 @@ fun AuthScreen(
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(
-                            text = if (selectedTab == 0) "Зарегистрироваться и создать ключ" else "Войти",
+                            text = if (selectedTab == 0) "Создать аккаунт" else "Войти",
                             fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp
+                            fontSize = 14.sp,
+                            maxLines = 1
                         )
                     }
 

@@ -28,7 +28,12 @@ data class ExcelReportData(
     val colWidthsChars: List<Double> = emptyList(),
     val rows: List<List<String>>,
     val totalRow: List<String>? = null,
-    val signers: List<Triple<String, String, String>> = emptyList()
+    val signers: List<Triple<String, String, String>> = emptyList(),
+    val approvalLines: List<String> = emptyList(),
+    val formCodeRows: List<Pair<String, String>> = emptyList(),
+    val sectionRowIndices: Set<Int> = emptySet(),
+    val extraFooterRows: List<List<String>> = emptyList(),
+    val showColumnNumbers: Boolean = true
 )
 
 object ExcelExportHelper {
@@ -40,32 +45,26 @@ object ExcelExportHelper {
     fun generateXlsxBytes(data: ExcelReportData): ByteArray {
         val bos = ByteArrayOutputStream()
         ZipOutputStream(bos).use { zip ->
-            // 1. [Content_Types].xml
             zip.putNextEntry(ZipEntry("[Content_Types].xml"))
             zip.write(contentTypesXml.toByteArray(StandardCharsets.UTF_8))
             zip.closeEntry()
 
-            // 2. _rels/.rels
             zip.putNextEntry(ZipEntry("_rels/.rels"))
             zip.write(rootRelsXml.toByteArray(StandardCharsets.UTF_8))
             zip.closeEntry()
 
-            // 3. xl/workbook.xml
             zip.putNextEntry(ZipEntry("xl/workbook.xml"))
             zip.write(workbookXml(data.sheetName).toByteArray(StandardCharsets.UTF_8))
             zip.closeEntry()
 
-            // 4. xl/_rels/workbook.xml.rels
             zip.putNextEntry(ZipEntry("xl/_rels/workbook.xml.rels"))
             zip.write(workbookRelsXml.toByteArray(StandardCharsets.UTF_8))
             zip.closeEntry()
 
-            // 5. xl/styles.xml
             zip.putNextEntry(ZipEntry("xl/styles.xml"))
             zip.write(stylesXml.toByteArray(StandardCharsets.UTF_8))
             zip.closeEntry()
 
-            // 6. xl/worksheets/sheet1.xml
             zip.putNextEntry(ZipEntry("xl/worksheets/sheet1.xml"))
             zip.write(sheetXml(data).toByteArray(StandardCharsets.UTF_8))
             zip.closeEntry()
@@ -79,6 +78,15 @@ object ExcelExportHelper {
             .replace(">", "&gt;")
             .replace("\"", "&quot;")
             .replace("'", "&apos;")
+    }
+
+    /** Prevents spreadsheet formula injection while preserving plain text and punctuation. */
+    private fun safeInlineText(raw: String): String {
+        val trimmed = raw.trimStart()
+        val needsGuard = trimmed.startsWith("=") || trimmed.startsWith("@") ||
+            (trimmed.startsWith("+") && trimmed.toDoubleOrNull() == null) ||
+            (trimmed.startsWith("-") && trimmed.length > 1 && trimmed.toDoubleOrNull() == null && trimmed != "-")
+        return escapeXml(if (needsGuard) "'$raw" else raw)
     }
 
     private fun colLetter(colIdx: Int): String {
@@ -106,7 +114,9 @@ object ExcelExportHelper {
 </Relationships>""".trimIndent()
 
     private fun workbookXml(sheetName: String): String {
-        val safeName = escapeXml(sheetName.take(31))
+        val safeName = escapeXml(
+            sheetName.replace("[/\\\\?*\\]\\[:]".toRegex(), " ").trim().take(31).ifBlank { "Ведомость" }
+        )
         return """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <sheets>
@@ -116,7 +126,7 @@ object ExcelExportHelper {
     }
 
     private val workbookRelsXml = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
   <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
 </Relationships>""".trimIndent()
@@ -124,34 +134,40 @@ object ExcelExportHelper {
     /**
      * Styles:
      * 0: Normal
-     * 1: Title (Bold 14pt, Centered)
+     * 1: Title (Bold 13pt, Centered)
      * 2: Subtitle (Bold 10pt, Centered)
-     * 3: Header cell (Bold 9pt, Centered, Gray fill #E2E6E2, thin border)
-     * 4: Subheader / Col Numbers (8pt, Centered, #F2F2F2 fill, thin border)
+     * 3: Header cell (Bold 9pt, Centered, Soft blue-gray fill #DCE6F2, thin border)
+     * 4: Subheader / Col Numbers (8pt, Centered, #F1F5F9 fill, thin border)
      * 5: Data Text Left (9pt, Left align, thin border)
      * 6: Data Text Center (9pt, Center align, thin border)
      * 7: Data Text Right (9pt, Right align, thin border)
-     * 8: Total Row Left (Bold 9pt, Left, #EDEDED fill, thin border)
-     * 9: Total Row Right (Bold 9pt, Right, #EDEDED fill, thin border)
+     * 8: Total Row Left (Bold 9pt, Left, #E8EEF7 fill, thin border)
+     * 9: Total Row Right (Bold 9pt, Right, #E8EEF7 fill, thin border)
      * 10: Details label (Bold 9pt, Left)
      * 11: Details value (9pt, Left)
-     * 12: Signature label (Bold 9pt, Left)
+     * 12: Signature title (Bold 9pt, Left)
      * 13: Signature underline (9pt, Center, bottom border)
+     * 14: Section Row (Bold 9pt, Left, #EEF4FF fill, thin border)
+     * 15: Approval / Stamp right-aligned (9pt, Right)
+     * 16: Form Code cell (Bold 8.5pt, Center, #F8FAFC fill, thin border)
      */
     private val stylesXml = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-  <fonts count="4">
+  <fonts count="5">
     <font><sz val="9"/><name val="Calibri"/></font>
-    <font><b/><sz val="14"/><name val="Calibri"/></font>
+    <font><b/><sz val="13"/><name val="Calibri"/></font>
     <font><b/><sz val="10"/><name val="Calibri"/></font>
     <font><b/><sz val="9"/><name val="Calibri"/></font>
+    <font><b/><sz val="8.5"/><name val="Calibri"/></font>
   </fonts>
-  <fills count="5">
+  <fills count="7">
     <fill><patternFill patternType="none"/></fill>
     <fill><patternFill patternType="gray125"/></fill>
-    <fill><patternFill patternType="solid"><fgColor rgb="FFE2E6E2"/></patternFill></fill>
-    <fill><patternFill patternType="solid"><fgColor rgb="FFF2F2F2"/></patternFill></fill>
-    <fill><patternFill patternType="solid"><fgColor rgb="FFEDEDED"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFDCE6F2"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFF1F5F9"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFE8EEF7"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFEEF4FF"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFF8FAFC"/></patternFill></fill>
   </fills>
   <borders count="3">
     <border><left/><right/><top/><bottom/></border>
@@ -169,36 +185,44 @@ object ExcelExportHelper {
   <cellStyleXfs count="1">
     <xf numFmtId="0" fontId="0" fillId="0" borderId="0"/>
   </cellStyleXfs>
-  <cellXfs count="14">
+  <cellXfs count="17">
     <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
-    <xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0"><alignment horizontal="center" vertical="center"/></xf>
-    <xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0"><alignment horizontal="center" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+    <xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
     <xf numFmtId="0" fontId="3" fillId="2" borderId="1" xfId="0"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
     <xf numFmtId="0" fontId="0" fillId="3" borderId="1" xfId="0"><alignment horizontal="center" vertical="center"/></xf>
     <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>
-    <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0"><alignment horizontal="center" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
     <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0"><alignment horizontal="right" vertical="center"/></xf>
-    <xf numFmtId="0" fontId="3" fillId="4" borderId="1" xfId="0"><alignment horizontal="left" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="3" fillId="4" borderId="1" xfId="0"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>
     <xf numFmtId="0" fontId="3" fillId="4" borderId="1" xfId="0"><alignment horizontal="right" vertical="center"/></xf>
     <xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0"><alignment horizontal="left" vertical="center"/></xf>
-    <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"><alignment horizontal="left" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>
     <xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0"><alignment horizontal="left" vertical="center"/></xf>
     <xf numFmtId="0" fontId="0" fillId="0" borderId="2" xfId="0"><alignment horizontal="center" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="3" fillId="5" borderId="1" xfId="0"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"><alignment horizontal="right" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="4" fillId="6" borderId="1" xfId="0"><alignment horizontal="center" vertical="center"/></xf>
   </cellXfs>
 </styleSheet>""".trimIndent()
 
     private fun sheetXml(data: ExcelReportData): String {
         val sb = StringBuilder()
+        val merges = mutableListOf<String>()
         sb.append("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>""")
         sb.append("""<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">""")
+        sb.append("""<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>""")
 
-        val colCount = maxOf(data.headers.size, 1)
+        val colCount = maxOf(data.headers.size, 3)
+        val lastColLetter = colLetter(colCount - 1)
+        val rightBlockStartIdx = (colCount - 2).coerceAtLeast(1)
+        val rightBlockStartLetter = colLetter(rightBlockStartIdx)
 
         // Column widths
         sb.append("<cols>")
         for (i in 0 until colCount) {
             val width = if (i < data.colWidthsChars.size) data.colWidthsChars[i] else 16.0
-            val clampedWidth = width.coerceIn(8.0, 50.0)
+            val clampedWidth = width.coerceIn(7.0, 52.0)
             sb.append("""<col min="${i + 1}" max="${i + 1}" width="$clampedWidth" customWidth="1"/>""")
         }
         sb.append("</cols>")
@@ -206,28 +230,56 @@ object ExcelExportHelper {
         sb.append("<sheetData>")
         var rowNum = 1
 
+        // 0. Optional Top-Right OKUD Code table & Approval Block
+        val topRowsCount = maxOf(data.formCodeRows.size, data.approvalLines.size)
+        if (topRowsCount > 0) {
+            for (i in 0 until topRowsCount) {
+                sb.append("""<row r="$rowNum" ht="16" customHeight="1">""")
+                if (i < data.approvalLines.size) {
+                    val approvalStyle = if (i == 0) 10 else 11
+                    sb.append("""<c r="A$rowNum" s="$approvalStyle" t="inlineStr"><is><t>${safeInlineText(data.approvalLines[i])}</t></is></c>""")
+                    if (rightBlockStartIdx > 1) {
+                        merges.add("A$rowNum:${colLetter(rightBlockStartIdx - 1)}$rowNum")
+                    }
+                }
+                if (i < data.formCodeRows.size) {
+                    val (codeLabel, codeValue) = data.formCodeRows[i]
+                    sb.append("""<c r="${rightBlockStartLetter}$rowNum" s="16" t="inlineStr"><is><t>${safeInlineText(codeLabel)}</t></is></c>""")
+                    sb.append("""<c r="${lastColLetter}$rowNum" s="16" t="inlineStr"><is><t>${safeInlineText(codeValue)}</t></is></c>""")
+                }
+                sb.append("</row>")
+                rowNum++
+            }
+            rowNum++ // Blank line before title
+        }
+
         // 1. Title Row
         sb.append("""<row r="$rowNum" ht="26" customHeight="1">""")
-        sb.append("""<c r="A$rowNum" s="1" t="inlineStr"><is><t>${escapeXml(data.title)}</t></is></c>""")
+        sb.append("""<c r="A$rowNum" s="1" t="inlineStr"><is><t>${safeInlineText(data.title)}</t></is></c>""")
         sb.append("</row>")
+        merges.add("A$rowNum:${lastColLetter}$rowNum")
         rowNum++
 
         // 2. Subtitle Row
         if (data.subtitle.isNotBlank()) {
-            sb.append("""<row r="$rowNum" ht="18" customHeight="1">""")
-            sb.append("""<c r="A$rowNum" s="2" t="inlineStr"><is><t>${escapeXml(data.subtitle)}</t></is></c>""")
+            sb.append("""<row r="$rowNum" ht="20" customHeight="1">""")
+            sb.append("""<c r="A$rowNum" s="2" t="inlineStr"><is><t>${safeInlineText(data.subtitle)}</t></is></c>""")
             sb.append("</row>")
+            merges.add("A$rowNum:${lastColLetter}$rowNum")
             rowNum++
         }
 
-        // 3. Details (Основание, Комиссия, Период)
+        // 3. Details (Воинская часть / Организация, Подразделение, МОЛ, Период)
         if (data.details.isNotEmpty()) {
-            rowNum++ // Blank line
+            rowNum++
             for (d in data.details) {
-                sb.append("""<row r="$rowNum">""")
-                sb.append("""<c r="A$rowNum" s="10" t="inlineStr"><is><t>${escapeXml(d.first)}</t></is></c>""")
-                sb.append("""<c r="B$rowNum" s="11" t="inlineStr"><is><t>${escapeXml(d.second)}</t></is></c>""")
+                sb.append("""<row r="$rowNum" ht="18" customHeight="1">""")
+                sb.append("""<c r="A$rowNum" s="10" t="inlineStr"><is><t>${safeInlineText(d.first)}</t></is></c>""")
+                sb.append("""<c r="B$rowNum" s="11" t="inlineStr"><is><t>${safeInlineText(d.second)}</t></is></c>""")
                 sb.append("</row>")
+                if (colCount > 2) {
+                    merges.add("B$rowNum:${lastColLetter}$rowNum")
+                }
                 rowNum++
             }
         }
@@ -236,46 +288,51 @@ object ExcelExportHelper {
         rowNum++
 
         // 4. Headers
-        sb.append("""<row r="$rowNum" ht="28" customHeight="1">""")
+        sb.append("""<row r="$rowNum" ht="34" customHeight="1">""")
         for ((cIdx, h) in data.headers.withIndex()) {
             val ref = "${colLetter(cIdx)}$rowNum"
-            sb.append("""<c r="$ref" s="3" t="inlineStr"><is><t>${escapeXml(h)}</t></is></c>""")
+            sb.append("""<c r="$ref" s="3" t="inlineStr"><is><t>${safeInlineText(h)}</t></is></c>""")
         }
         sb.append("</row>")
         rowNum++
 
         // 5. Header column numbers (1, 2, 3...)
-        sb.append("""<row r="$rowNum" ht="16" customHeight="1">""")
-        for (cIdx in data.headers.indices) {
-            val ref = "${colLetter(cIdx)}$rowNum"
-            sb.append("""<c r="$ref" s="4" t="inlineStr"><is><t>${cIdx + 1}</t></is></c>""")
+        if (data.showColumnNumbers) {
+            sb.append("""<row r="$rowNum" ht="16" customHeight="1">""")
+            for (cIdx in data.headers.indices) {
+                val ref = "${colLetter(cIdx)}$rowNum"
+                sb.append("""<c r="$ref" s="4"><v>${cIdx + 1}</v></c>""")
+            }
+            sb.append("</row>")
+            rowNum++
         }
-        sb.append("</row>")
-        rowNum++
 
         // 6. Data rows
-        for (r in data.rows) {
-            sb.append("""<row r="$rowNum" ht="20" customHeight="1">""")
-            for (cIdx in 0 until colCount) {
+        for ((rowIdx, r) in data.rows.withIndex()) {
+            val isSection = rowIdx in data.sectionRowIndices
+            val rowHt = if (isSection) 22 else 20
+            sb.append("""<row r="$rowNum" ht="$rowHt" customHeight="1">""")
+            for (cIdx in 0 until data.headers.size) {
                 val cellVal = if (cIdx < r.size) r[cIdx] else ""
                 val ref = "${colLetter(cIdx)}$rowNum"
 
-                // Alignment: numbers on right, units/num on center, names on left
-                val styleId = when {
-                    cIdx == 0 -> 6 // №
-                    cIdx == 1 -> 5 // Наименование
-                    cIdx == 2 -> 6 // Ед. изм / Категория
-                    cellVal.toDoubleOrNull() != null -> 7 // Number
-                    cellVal == "-" -> 6
-                    else -> 5
-                }
-
-                // If numeric, write as number
-                val numVal = cellVal.replace(" ", "").replace(",", ".").toDoubleOrNull()
-                if (numVal != null && cIdx > 1) {
-                    sb.append("""<c r="$ref" s="$styleId"><v>$numVal</v></c>""")
+                if (isSection) {
+                    sb.append("""<c r="$ref" s="14" t="inlineStr"><is><t>${safeInlineText(cellVal)}</t></is></c>""")
                 } else {
-                    sb.append("""<c r="$ref" s="$styleId" t="inlineStr"><is><t>${escapeXml(cellVal)}</t></is></c>""")
+                    val cleanNumStr = cellVal.replace(" ", "").replace("\u00A0", "").replace(",", ".")
+                    val numVal = if (cleanNumStr.matches(Regex("^-?\\d+(?:\\.\\d+)?$"))) cleanNumStr.toDoubleOrNull() else null
+                    val styleId = when {
+                        cIdx == 0 -> 6
+                        cIdx == 1 -> 5
+                        numVal != null -> 7
+                        cellVal == "-" || cellVal == "—" -> 6
+                        else -> 5
+                    }
+                    if (numVal != null && cIdx > 0) {
+                        sb.append("""<c r="$ref" s="$styleId"><v>$numVal</v></c>""")
+                    } else {
+                        sb.append("""<c r="$ref" s="$styleId" t="inlineStr"><is><t>${safeInlineText(cellVal)}</t></is></c>""")
+                    }
                 }
             }
             sb.append("</row>")
@@ -285,17 +342,31 @@ object ExcelExportHelper {
         // 7. Total row
         if (data.totalRow != null) {
             sb.append("""<row r="$rowNum" ht="22" customHeight="1">""")
-            for (cIdx in 0 until colCount) {
+            for (cIdx in 0 until data.headers.size) {
                 val cellVal = if (cIdx < data.totalRow.size) data.totalRow[cIdx] else ""
                 val ref = "${colLetter(cIdx)}$rowNum"
-                val styleId = if (cIdx <= 1) 8 else 9
+                val cleanNumStr = cellVal.replace(" ", "").replace("\u00A0", "").replace(",", ".")
+                val numVal = if (cleanNumStr.matches(Regex("^-?\\d+(?:\\.\\d+)?$"))) cleanNumStr.toDoubleOrNull() else null
+                val styleId = if (cIdx <= 1 || numVal == null) 8 else 9
 
-                val numVal = cellVal.replace(" ", "").replace(",", ".").toDoubleOrNull()
                 if (numVal != null && cIdx > 1) {
                     sb.append("""<c r="$ref" s="$styleId"><v>$numVal</v></c>""")
                 } else {
-                    sb.append("""<c r="$ref" s="$styleId" t="inlineStr"><is><t>${escapeXml(cellVal)}</t></is></c>""")
+                    sb.append("""<c r="$ref" s="$styleId" t="inlineStr"><is><t>${safeInlineText(cellVal)}</t></is></c>""")
                 }
+            }
+            sb.append("</row>")
+            rowNum++
+        }
+
+        // 7b. Extra footer rows (e.g. Price & Amount rows on Form 8)
+        for (extraRow in data.extraFooterRows) {
+            sb.append("""<row r="$rowNum" ht="20" customHeight="1">""")
+            for (cIdx in 0 until data.headers.size) {
+                val cellVal = if (cIdx < extraRow.size) extraRow[cIdx] else ""
+                val ref = "${colLetter(cIdx)}$rowNum"
+                val styleId = if (cIdx <= 1) 8 else 6
+                sb.append("""<c r="$ref" s="$styleId" t="inlineStr"><is><t>${safeInlineText(cellVal)}</t></is></c>""")
             }
             sb.append("</row>")
             rowNum++
@@ -303,18 +374,18 @@ object ExcelExportHelper {
 
         // 8. Signatures
         if (data.signers.isNotEmpty()) {
-            rowNum++ // Blank line
-            sb.append("""<row r="$rowNum">""")
+            rowNum++
+            sb.append("""<row r="$rowNum" ht="18" customHeight="1">""")
             sb.append("""<c r="A$rowNum" s="12" t="inlineStr"><is><t>Подписи должностных лиц:</t></is></c>""")
             sb.append("</row>")
             rowNum++
 
             for (s in data.signers) {
                 sb.append("""<row r="$rowNum" ht="20" customHeight="1">""")
-                sb.append("""<c r="A$rowNum" s="10" t="inlineStr"><is><t>${escapeXml(s.first)}</t></is></c>""")
-                sb.append("""<c r="B$rowNum" s="13" t="inlineStr"><is><t>${escapeXml(s.second.ifBlank { "________" })}</t></is></c>""")
+                sb.append("""<c r="A$rowNum" s="10" t="inlineStr"><is><t>${safeInlineText(s.first)}</t></is></c>""")
+                sb.append("""<c r="B$rowNum" s="13" t="inlineStr"><is><t>${safeInlineText(s.second.ifBlank { "________" })}</t></is></c>""")
                 val thirdCol = if (colCount >= 3) colLetter(2) else "C"
-                sb.append("""<c r="$thirdCol$rowNum" s="11" t="inlineStr"><is><t>${escapeXml(s.third)}</t></is></c>""")
+                sb.append("""<c r="$thirdCol$rowNum" s="11" t="inlineStr"><is><t>${safeInlineText(s.third)}</t></is></c>""")
                 sb.append("</row>")
                 rowNum++
             }
@@ -322,15 +393,13 @@ object ExcelExportHelper {
 
         sb.append("</sheetData>")
 
-        // Merges for titles
-        val lastColLetter = colLetter(maxOf(colCount - 1, 1))
-        sb.append("<mergeCells count=\"2\">")
-        sb.append("""<mergeCell ref="A1:${lastColLetter}1"/>""")
-        if (data.subtitle.isNotBlank()) {
-            sb.append("""<mergeCell ref="A2:${lastColLetter}2"/>""")
+        if (merges.isNotEmpty()) {
+            sb.append("""<mergeCells count="${merges.size}">""")
+            merges.forEach { ref -> sb.append("""<mergeCell ref="$ref"/>""") }
+            sb.append("</mergeCells>")
         }
-        sb.append("</mergeCells>")
 
+        sb.append("""<pageSetup orientation="landscape" paperSize="9" fitToWidth="1" fitToHeight="0"/>""")
         sb.append("</worksheet>")
         return sb.toString()
     }
@@ -361,7 +430,6 @@ object ExcelExportHelper {
                 }
             }
 
-            // Also save locally in app cache / files directory so FileProvider can immediately open/share it
             val exportDir = File(context.cacheDir, "exports").apply { mkdirs() }
             val localFile = File(exportDir, fileName)
             cachedFile = localFile

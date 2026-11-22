@@ -59,7 +59,9 @@ class KapterkaRepository(
         }
     }
 
-    suspend fun ensureInitialized() {
+    suspend fun ensureInitialized(
+        profileMode: com.example.data.model.WorkspaceProfileMode = com.example.data.model.WorkspaceProfileMode.MILITARY
+    ) {
         val currentProfile = dao.getUserProfile().first()
         val activeProfile = if (currentProfile == null) {
             val defaultProfile = UserProfile(
@@ -86,19 +88,62 @@ class KapterkaRepository(
             syncManager?.syncAndReconcileAll(activeProfile.unitKey, activeProfile.callsign, activeProfile.unitName)
         }
 
-        // Add newly introduced standard items without overwriting existing user-edited rows.
-        dao.insertItemsIfMissing(InitialData.getDefaultItems())
+        // Add starter items according to active profile without overwriting existing user-edited rows.
+        // In EMPTY mode nothing is ever forced into the user's catalog.
+        val starterItems = InitialData.getItemsFor(profileMode)
+        if (starterItems.isNotEmpty()) {
+            dao.insertItemsIfMissing(starterItems)
+        }
 
         val currentPoints = dao.getAllPoints().first()
-
         if (currentPoints.isEmpty()) {
-            val defaults = InitialData.getDefaultPoints()
+            val defaults = InitialData.getPointsFor(profileMode)
             dao.insertPoints(defaults)
-            dao.insertItemsIfMissing(InitialData.getDefaultItems())
             if (activeProfile.unitKey.isNotBlank()) {
                 defaults.forEach { p -> syncManager?.pushWarehousePointAsync(activeProfile.unitKey, p) }
             }
         }
+    }
+
+    /**
+     * Applies the chosen starter profile on first launch ONLY when there is no working unit data yet.
+     * Existing installations upgrading from 3.x are never modified.
+     */
+    suspend fun applyStarterProfile(mode: com.example.data.model.WorkspaceProfileMode): Boolean {
+        if (hasLocalUnitData()) return false
+        dao.clearAllItems()
+        dao.clearAllPoints()
+        val starterPoints = InitialData.getPointsFor(mode)
+        val starterItems = InitialData.getItemsFor(mode)
+        if (starterPoints.isNotEmpty()) {
+            dao.insertPoints(starterPoints)
+        }
+        if (starterItems.isNotEmpty()) {
+            dao.insertItemsIfMissing(starterItems)
+        }
+        val unitKey = getCurrentUnitKey()
+        if (unitKey.isNotBlank()) {
+            starterPoints.forEach { p -> syncManager?.pushWarehousePointAsync(unitKey, p) }
+        }
+        return true
+    }
+
+    /**
+     * Non-destructive template import: adds missing starter positions without overwriting existing rows.
+     */
+    suspend fun seedTemplateCatalog(mode: com.example.data.model.WorkspaceProfileMode): Int {
+        val items = InitialData.getItemsFor(mode)
+        if (items.isEmpty()) return 0
+        val before = dao.getAllItems().first().map { it.id }.toSet()
+        dao.insertItemsIfMissing(items)
+        val after = dao.getAllItems().first().map { it.id }.toSet()
+        return (after - before).size
+    }
+
+    suspend fun hasExistingInstallData(): Boolean {
+        val profile = dao.getUserProfile().first()
+        if (profile?.isLoggedIn == true) return true
+        return hasLocalUnitData()
     }
     
 
@@ -182,7 +227,7 @@ class KapterkaRepository(
         if (dao.getAllOperations().first().isNotEmpty()) return true
         if (dao.getAllRequisitions().first().isNotEmpty()) return true
 
-        val defaultPointIds = InitialData.getDefaultPoints().map { it.id }.toSet()
+        val defaultPointIds = InitialData.getAllStarterPointIds()
         if (dao.getAllPoints().first().any { it.id !in defaultPointIds }) return true
 
         if (dao.getAllItems().first().any { it.isCustom }) return true

@@ -7,37 +7,26 @@ import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FileDownload
-import androidx.compose.material.icons.filled.HelpOutline
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.QrCode
-import androidx.compose.material.icons.filled.Sync
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.rounded.DarkMode
+import androidx.compose.material.icons.rounded.Description
+import androidx.compose.material.icons.rounded.HelpOutline
+import androidx.compose.material.icons.rounded.LightMode
+import androidx.compose.material.icons.rounded.Pause
+import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.QrCode2
+import androidx.compose.material.icons.rounded.Sync
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -45,21 +34,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.UserProfile
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
+import com.example.data.model.WorkspaceProfileMode
 import com.example.data.sync.SyncState
-import com.example.ui.theme.TacticalRed
-import com.example.ui.theme.SageGreenBright
-import com.example.ui.theme.SageGreenDark
-import com.example.ui.theme.SageGreenPrimary
-import com.example.ui.theme.TacticalBg
-import com.example.ui.theme.TacticalBorderSubtle
-import com.example.ui.theme.TacticalGold
-import com.example.ui.theme.TacticalSurface
-import com.example.ui.theme.TacticalSurfaceLight
-import com.example.ui.theme.TacticalTextMuted
-import com.example.ui.theme.TacticalTextPrimary
-import com.example.ui.theme.TacticalTextSecondary
+import com.example.ui.theme.*
 
 @Composable
 fun TacticalHeader(
@@ -70,9 +47,10 @@ fun TacticalHeader(
     onProfileClick: () -> Unit,
     onHelpClick: () -> Unit = {},
     onBannerClick: () -> Unit = {},
-    isDarkTheme: Boolean = false,
+    isDarkTheme: Boolean = true,
     onToggleTheme: () -> Unit = {},
     syncState: SyncState = SyncState(),
+    profileMode: WorkspaceProfileMode = WorkspaceProfileMode.MILITARY,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -89,85 +67,130 @@ fun TacticalHeader(
             .background(TacticalBg)
             .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 6.dp)
     ) {
-        // Row 1: unit (what I'm working with) + profile/licence pill.
+        // Row 1: Workspace title + Profile badge + Theme toggle + User/PRO pill
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = workspaceName,
-                    color = TacticalTextPrimary,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = (-0.3).sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
                     Text(
-                        text = "Каптёрка ПРО",
-                        color = TacticalTextMuted,
-                        fontSize = 11.5.sp
+                        text = workspaceName,
+                        color = TacticalTextPrimary,
+                        fontSize = 21.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = (-0.4).sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
                     )
+                }
+                Spacer(modifier = Modifier.height(2.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(SageGreenDark)
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = profileMode.shortBadge,
+                            color = SageGreenBright,
+                            fontSize = 9.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1
+                        )
+                    }
                     if (unitKey.isNotBlank()) {
                         Text(
-                            text = "  •  $unitKey",
-                            color = TacticalTextSecondary,
-                            fontSize = 11.5.sp,
-                            fontWeight = FontWeight.SemiBold,
+                            text = unitKey,
+                            color = TacticalTextMuted,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
                             maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                             modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
+                                .clip(RoundedCornerShape(6.dp))
                                 .clickable {
                                     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                                     clipboard.setPrimaryClip(ClipData.newPlainText("workspace_code", unitKey))
-                                    Toast.makeText(context, "Ключ подразделения скопирован", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "Код группы скопирован", Toast.LENGTH_SHORT).show()
                                 }
                         )
                     }
                 }
             }
 
+            Spacer(modifier = Modifier.width(6.dp))
+
+            // Quick Light/Dark theme switch button
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(TacticalSurface)
+                    .border(1.dp, TacticalBorderSubtle, CircleShape)
+                    .clickable { onToggleTheme() }
+                    .testTag("header_theme_toggle"),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = if (isDarkTheme) Icons.Rounded.LightMode else Icons.Rounded.DarkMode,
+                    contentDescription = if (isDarkTheme) "Светлая тема" else "Тёмная тема",
+                    tint = if (isDarkTheme) TacticalGold else SageGreenPrimary,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.width(6.dp))
+
+            // Profile / License Pill
             Row(
                 modifier = Modifier
+                    .widthIn(max = 164.dp)
                     .clip(RoundedCornerShape(20.dp))
                     .background(TacticalSurface)
                     .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(20.dp))
                     .clickable { if (isPro) onProfileClick() else onBannerClick() }
-                    .padding(start = 10.dp, end = 5.dp, top = 5.dp, bottom = 5.dp),
+                    .padding(start = 10.dp, end = 5.dp, top = 4.dp, bottom = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
                         text = userName,
                         color = TacticalTextPrimary,
-                        fontSize = 11.5.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
                         text = licenseText,
-                        color = if (isPro) SageGreenPrimary else TacticalGold,
+                        color = if (isPro) TacticalEmeraldText else TacticalGoldText,
                         fontSize = 9.5.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Bold,
                         maxLines = 1
                     )
                 }
                 Spacer(modifier = Modifier.width(6.dp))
                 Box(
                     modifier = Modifier
-                        .size(30.dp)
+                        .size(28.dp)
                         .clip(CircleShape)
                         .background(SageGreenDark),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Person,
+                        imageVector = Icons.Rounded.Person,
                         contentDescription = "Профиль",
                         tint = SageGreenPrimary,
-                        modifier = Modifier.size(17.dp)
+                        modifier = Modifier.size(16.dp)
                     )
                 }
             }
@@ -175,9 +198,8 @@ fun TacticalHeader(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // Row 2: service actions. Sync shows its own state under the label.
+        // Row 2: 4 crisp uniform service action cards (zero wrapping!)
         val syncBadge = rememberSyncBadge(syncState, unitKey.isNotBlank(), onSyncClick)
-        // IntrinsicSize.Min + fillMaxHeight: all four tiles are as tall as the tallest one.
         val syncPaused = unitKey.isNotBlank() && syncState.isPaused
         Row(
             modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
@@ -185,7 +207,7 @@ fun TacticalHeader(
         ) {
             ModernHeaderAction(
                 label = "Синхр.",
-                icon = if (syncPaused) Icons.Default.Pause else Icons.Default.Sync,
+                icon = if (syncPaused) Icons.Rounded.Pause else Icons.Rounded.Sync,
                 onClick = onSyncClick,
                 modifier = Modifier.weight(1f).fillMaxHeight().testTag("header_sync_button"),
                 subLabel = syncBadge.text,
@@ -193,47 +215,47 @@ fun TacticalHeader(
                 statusDot = if (unitKey.isNotBlank()) syncBadge.color else null
             )
             ModernHeaderAction(
-                label = "Подключить",
-                icon = Icons.Default.QrCode,
+                label = "QR-код",
+                icon = Icons.Rounded.QrCode2,
                 onClick = onSecondPhoneClick,
+                accent = TacticalTeal,
+                subLabel = "2-й тел.",
                 modifier = Modifier.weight(1f).fillMaxHeight()
             )
             ModernHeaderAction(
                 label = "Отчёты",
-                icon = Icons.Default.FileDownload,
+                icon = Icons.Rounded.Description,
                 onClick = onExportClick,
+                accent = TacticalEmerald,
+                subLabel = if (profileMode.isMilitary) "Ф-8 / Ф-18" else "Excel",
                 modifier = Modifier.weight(1f).fillMaxHeight().testTag("header_export_button")
             )
             ModernHeaderAction(
                 label = "Помощь",
-                icon = Icons.Default.HelpOutline,
+                icon = Icons.Rounded.HelpOutline,
                 onClick = onHelpClick,
+                accent = SageGreenPrimary,
+                subLabel = "Гид",
                 modifier = Modifier.weight(1f).fillMaxHeight()
             )
         }
-
     }
 }
 
 private class SyncBadge(val text: String, val color: Color)
 
-/**
- * Короткий статус для кнопки «Синхр.»: можно ли доверять цифрам. Следит за интернетом
- * напрямую; когда связь возвращается, сразу запускает синхронизацию.
- */
 @Composable
 private fun rememberSyncBadge(syncState: SyncState, hasUnit: Boolean, onRetry: () -> Unit): SyncBadge {
     val context = LocalContext.current
-    var hasNetwork by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(isNetworkAvailable(context)) }
-    val currentRetry by androidx.compose.runtime.rememberUpdatedState(onRetry)
-    val syncEnabled by androidx.compose.runtime.rememberUpdatedState(hasUnit && !syncState.isPaused)
-    androidx.compose.runtime.DisposableEffect(Unit) {
+    var hasNetwork by remember { mutableStateOf(isNetworkAvailable(context)) }
+    val currentRetry by rememberUpdatedState(onRetry)
+    val syncEnabled by rememberUpdatedState(hasUnit && !syncState.isPaused)
+    DisposableEffect(Unit) {
         val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager
         val callback = object : android.net.ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: android.net.Network) {
                 val wasOffline = !hasNetwork
                 hasNetwork = true
-                // Связь вернулась: сразу отправляем накопленное.
                 if (wasOffline && syncEnabled) currentRetry()
             }
 
@@ -252,39 +274,39 @@ private fun rememberSyncBadge(syncState: SyncState, hasUnit: Boolean, onRetry: (
             }
         }
     }
-    var now by androidx.compose.runtime.remember { androidx.compose.runtime.mutableLongStateOf(System.currentTimeMillis()) }
-    androidx.compose.runtime.LaunchedEffect(Unit) {
+    var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(Unit) {
         while (true) {
             kotlinx.coroutines.delay(30_000)
             now = System.currentTimeMillis()
         }
     }
     return when {
-        hasUnit && syncState.isPaused -> SyncBadge("на паузе", TacticalGold)
-        !hasNetwork -> SyncBadge("нет сети", TacticalRed)
-        !hasUnit -> SyncBadge("не подключено", TacticalTextSecondary)
-        syncState.isSyncing -> SyncBadge("идёт…", TacticalGold)
-        !syncState.isOnline -> SyncBadge("нет связи", TacticalRed)
+        hasUnit && syncState.isPaused -> SyncBadge("пауза", TacticalGold)
+        !hasNetwork -> SyncBadge("офлайн", TacticalRed)
+        !hasUnit -> SyncBadge("локально", TacticalTextMuted)
+        syncState.isSyncing -> SyncBadge("обмен…", TacticalGold)
+        !syncState.isOnline -> SyncBadge("нет сети", TacticalRed)
         syncState.lastSyncTime > 0L -> {
             val minutes = ((now - syncState.lastSyncTime) / 60_000L).coerceAtLeast(0L)
             SyncBadge(
                 when {
-                    minutes < 1L -> "только что"
-                    minutes < 60L -> "$minutes мин назад"
-                    minutes < 24L * 60L -> "${minutes / 60L} ч назад"
-                    else -> "${minutes / (24L * 60L)} дн. назад"
+                    minutes < 1L -> "в сети"
+                    minutes < 60L -> "$minutes мин"
+                    minutes < 24L * 60L -> "${minutes / 60L} ч"
+                    else -> "${minutes / (24L * 60L)} дн"
                 },
-                SageGreenBright
+                TacticalEmerald
             )
         }
-        else -> SyncBadge("подключено", TacticalTextSecondary)
+        else -> SyncBadge("в сети", TacticalEmerald)
     }
 }
 
 @Composable
 private fun ModernHeaderAction(
     label: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     subLabel: String? = null,
@@ -293,10 +315,11 @@ private fun ModernHeaderAction(
 ) {
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(13.dp))
-            .background(TacticalSurfaceLight)
+            .clip(RoundedCornerShape(14.dp))
+            .background(TacticalSurface)
+            .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(14.dp))
             .clickable { onClick() }
-            .heightIn(min = 62.dp)
+            .heightIn(min = 60.dp)
     ) {
         Column(
             modifier = Modifier
@@ -312,13 +335,15 @@ private fun ModernHeaderAction(
                 tint = accent,
                 modifier = Modifier.size(18.dp)
             )
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(3.dp))
             Text(
                 text = label,
-                color = TacticalTextSecondary,
-                fontSize = 9.5.sp,
-                fontWeight = FontWeight.Medium,
-                maxLines = 1
+                color = TacticalTextPrimary,
+                fontSize = 10.5.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis
             )
             if (subLabel != null) {
                 Text(
@@ -326,7 +351,9 @@ private fun ModernHeaderAction(
                     color = accent,
                     fontSize = 8.5.sp,
                     fontWeight = FontWeight.Bold,
-                    maxLines = 1
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
@@ -334,7 +361,7 @@ private fun ModernHeaderAction(
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(top = 7.dp, end = 7.dp)
+                    .padding(top = 6.dp, end = 6.dp)
                     .size(7.dp)
                     .clip(CircleShape)
                     .background(statusDot)
