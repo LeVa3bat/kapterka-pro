@@ -175,13 +175,17 @@ fun MainDashboardScreen(
     var pointMenuFor by remember { mutableStateOf<WarehousePoint?>(null) }
     val context = androidx.compose.ui.platform.LocalContext.current
 
-    val categories = remember(availableCategories, profileMode) {
+    val categories = remember(availableCategories, catalogItems, profileMode) {
         val baseCats = if (availableCategories.isNotEmpty()) {
             availableCategories
         } else {
             com.example.data.local.InitialData.getCategoriesFor(profileMode)
         }
-        if (baseCats.isEmpty()) listOf("Все виды") else listOf("Все виды") + baseCats
+        val syncedCustomCats = catalogItems
+            .filter { it.isCustom && it.serviceCategory.isNotBlank() && it.serviceCategory != "Все виды" }
+            .map { it.serviceCategory.trim() }
+        val merged = (baseCats + syncedCustomCats).distinct()
+        if (merged.isEmpty()) listOf("Все виды") else listOf("Все виды") + merged
     }
 
     // Helper map of stock per point
@@ -228,7 +232,8 @@ fun MainDashboardScreen(
             val existing = catalogMap[st.itemId]
             // If item is missing or is just a placeholder "Имущество (id)"
             if (existing == null || existing.name.startsWith("Имущество (") || existing.name.isBlank()) {
-                val defaultItem = com.example.data.local.InitialData.getDefaultItems().find { it.id == st.itemId }
+                val defaultItem = (com.example.data.local.InitialData.getCivilianItems() +
+                    com.example.data.local.InitialData.getDefaultItems()).find { it.id == st.itemId }
                 if (defaultItem != null) {
                     catalogMap[st.itemId] = defaultItem
                 } else {
@@ -624,7 +629,7 @@ fun MainDashboardScreen(
                                                     .padding(horizontal = 5.dp, vertical = 2.dp)
                                             ) {
                                                 Text(
-                                                    text = "Базовый склад",
+                                                    text = if (profileMode.isMilitary) "Базовый склад" else "Основной склад",
                                                     color = TacticalGoldText,
                                                     fontSize = 9.sp,
                                                     fontWeight = FontWeight.Bold
@@ -805,8 +810,9 @@ fun MainDashboardScreen(
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis
                                         )
+                                        val basePrefix = if (profileMode.isMilitary) "Базовый · " else "Основной · "
                                         Text(
-                                            text = (if (point.isBase) "Базовый · " else "") + pointUnitBreakdown,
+                                            text = (if (point.isBase) basePrefix else "") + pointUnitBreakdown,
                                             color = if (point.isBase) TacticalGoldText else TacticalTextMuted,
                                             fontSize = 11.sp,
                                             maxLines = 1,
@@ -910,9 +916,17 @@ fun MainDashboardScreen(
     // LONG-PRESS ACTIONS FOR A POINT
     pointMenuFor?.let { menuPoint ->
         val index = points.indexOfFirst { it.id == menuPoint.id }
+        val menuRows = rowsByPoint[menuPoint.id].orEmpty().filter { it.quantity > 0 }
+        val menuSummary = com.example.ui.components.formatUnitBreakdown(
+            unitQuantities = menuRows.map { it.item.unit to it.quantity },
+            maxUnits = 3,
+            emptyLabel = "остатков нет"
+        )
         PointActionsSheet(
             point = menuPoint,
-            stockUnits = rowsByPoint[menuPoint.id].orEmpty().sumOf { it.quantity },
+            stockSummary = if (menuRows.isNotEmpty()) "на остатке: $menuSummary" else menuSummary,
+            hasStock = menuRows.isNotEmpty(),
+            isMilitary = profileMode.isMilitary,
             canMoveUp = index > 0,
             canMoveDown = index in 0 until points.lastIndex,
             onMove = { delta ->

@@ -234,7 +234,7 @@ fun SplashScreen(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp),
+                .padding(start = 24.dp, end = 24.dp, bottom = 64.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // 3D ANIMATED ISOMETRIC WAREHOUSE CUBE HERO STAGE

@@ -277,6 +277,7 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
     val needsProfileSelection by viewModel.needsProfileSelection.collectAsState()
     val showProfilePickerOverlay by viewModel.showProfilePickerOverlay.collectAsState()
     val paymentAwaitingConfirmation by viewModel.paymentAwaitingConfirmation.collectAsState()
+    val paymentCreatingInProgress by viewModel.paymentCreatingInProgress.collectAsState()
 
     // Dialog Control States
     var showIncomeDialog by remember { mutableStateOf(false) }
@@ -862,9 +863,11 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
             yooKassaConfig = viewModel.yooKassaService.getConfig(),
             issuedPaymentKey = issuedPaymentKey,
             paymentAwaitingConfirmation = paymentAwaitingConfirmation,
+            paymentCreatingInProgress = paymentCreatingInProgress,
             onResetPendingPayment = { viewModel.clearIssuedPaymentKey() },
             onPayYooKassaClick = { viewModel.startYooKassaPayment() },
             onPayYooKassaPlanClick = { planDays -> viewModel.startYooKassaPayment(planDays) },
+            onPayYooKassaWithEmailClick = { planDays, customEmail -> viewModel.startYooKassaPayment(planDays, customEmail) },
             onActivateLicenseKey = { key -> viewModel.activateLicenseKey(key) },
             onTestPaymentConfirm = { viewModel.confirmPaymentAndActivateLicense() },
             onRestoreSavedLicense = { viewModel.restoreSavedLicenseOnDevice() },

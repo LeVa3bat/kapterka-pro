@@ -6,6 +6,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.down
 import androidx.compose.ui.test.up
@@ -333,5 +334,70 @@ class UiCrashAndSyncRegressionTest {
         assertEquals(1, issueClicks)
         assertEquals(1, returnClicks)
         assertEquals(1, expClicks)
+    }
+
+    @Test
+    fun paymentDialogInlineEmailInputWorksWhenProfileEmailIsEmpty() {
+        var capturedDays = -1
+        var capturedEmail = ""
+        composeRule.setContent {
+            MyApplicationTheme(darkTheme = true) {
+                PersonalLicenseDialog(
+                    profile = sampleProfile.copy(email = ""),
+                    licenseStatus = demoLicense,
+                    yooKassaConfig = YooKassaConfig(priceRubles = 490),
+                    onPayYooKassaWithEmailClick = { days, email ->
+                        capturedDays = days
+                        capturedEmail = email
+                    },
+                    onActivateLicenseKey = {},
+                    onTestPaymentConfirm = {},
+                    onDismiss = {},
+                    profileMode = WorkspaceProfileMode.CIVILIAN
+                )
+            }
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("checkout_email_input").assertIsDisplayed()
+        composeRule.onNodeWithTag("yookassa_pay_button").assertIsDisplayed()
+        composeRule.onNodeWithTag("checkout_email_input").performTextInput("buyer@kapterka.ru")
+        composeRule.onNodeWithText("365 дней").performClick()
+        composeRule.onNodeWithTag("yookassa_pay_button").performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(365, capturedDays)
+        assertEquals("buyer@kapterka.ru", capturedEmail)
+    }
+
+    @Test
+    fun incomeDialogSearchableDropdownInsideVerticalScrollNeverCrashes() {
+        val points = InitialData.getCivilianPoints()
+        val items = InitialData.getCivilianItems()
+        composeRule.setContent {
+            MyApplicationTheme(darkTheme = true) {
+                com.example.ui.components.IncomeOperationDialog(
+                    profile = sampleProfile,
+                    points = points,
+                    catalogItems = items,
+                    stockRecords = listOf(
+                        com.example.data.model.StockRecord(points.first().id, items[0].id, 12, 12, 0),
+                        com.example.data.model.StockRecord(points.first().id, items[6].id, 25, 25, 0)
+                    ),
+                    initialPointId = points.first().id,
+                    profileMode = WorkspaceProfileMode.CIVILIAN,
+                    onDismiss = {},
+                    onConfirm = { _, _, _, _, _ -> }
+                )
+            }
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText("Приход").assertIsDisplayed()
+        // Expand point dropdown & item dropdown inside verticalScroll without any infinite-height crash
+        composeRule.onNodeWithText(points.first().name).performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Введите название").performClick()
+        composeRule.waitForIdle()
     }
 }

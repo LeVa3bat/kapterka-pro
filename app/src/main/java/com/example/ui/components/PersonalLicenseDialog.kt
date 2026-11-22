@@ -110,9 +110,11 @@ fun PersonalLicenseDialog(
     yooKassaConfig: YooKassaConfig,
     issuedPaymentKey: String? = null,
     paymentAwaitingConfirmation: Boolean = false,
+    paymentCreatingInProgress: Boolean = false,
     onResetPendingPayment: () -> Unit = {},
     onPayYooKassaClick: () -> Unit = {},
     onPayYooKassaPlanClick: ((Int) -> Unit)? = null,
+    onPayYooKassaWithEmailClick: ((Int, String) -> Unit)? = null,
     onActivateLicenseKey: (String) -> Unit,
     onTestPaymentConfirm: () -> Unit,
     onRestoreSavedLicense: () -> Unit = {},
@@ -138,13 +140,20 @@ fun PersonalLicenseDialog(
     val isPro = licenseStatus.isProActive
     val justPaidKey = issuedPaymentKey?.takeIf { it.isNotBlank() }
     val activeKey = justPaidKey ?: licenseStatus.licenseKey.takeIf { it.isNotBlank() }
-    val email = profile?.email?.trim().orEmpty()
+    val profileEmail = profile?.email?.trim().orEmpty()
+    var checkoutEmail by remember(profileEmail) { mutableStateOf(profileEmail) }
+    val email = checkoutEmail.trim().ifBlank { profileEmail }
+    val isEmailValid = email.isNotBlank() && android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
     val callsign = profile?.callsign?.trim().orEmpty()
     fun planPrice(plan: ProPlanOption): Int =
         if (plan == ProPlanOption.DAYS_30 && yooKassaConfig.priceRubles > 0) yooKassaConfig.priceRubles else plan.priceRubles
     val price = planPrice(selectedPlan)
     val startPay: () -> Unit = {
-        onPayYooKassaPlanClick?.invoke(selectedPlan.days) ?: onPayYooKassaClick()
+        when {
+            onPayYooKassaWithEmailClick != null -> onPayYooKassaWithEmailClick(selectedPlan.days, email)
+            onPayYooKassaPlanClick != null -> onPayYooKassaPlanClick(selectedPlan.days)
+            else -> onPayYooKassaClick()
+        }
     }
 
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
@@ -253,25 +262,6 @@ fun PersonalLicenseDialog(
                         colors = ButtonDefaults.buttonColors(containerColor = SageGreenPrimary, contentColor = Color.White)
                     ) { Text("Начать работу с PRO", fontSize = 16.sp, fontWeight = FontWeight.Bold) }
                 } else {
-                    // What PRO gives
-                    Text("Что даёт PRO", color = TacticalTextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Benefit(
-                        Icons.Rounded.Description,
-                        "Отчёты Excel (.xlsx)",
-                        if (profileMode.isMilitary) "Формы № 8 и № 18, акт списания и сводные"
-                        else "Оборотная ТМЦ, М-11 / ТОРГ-13, МБ-7 и акт МБ-8"
-                    )
-                    Benefit(
-                        Icons.Rounded.Sync,
-                        "Безлимит складов и синхронизация",
-                        if (profileMode.isMilitary) "неограниченно точек, позиций, заявок и QR-подключение"
-                        else "неограниченно складов, позиций, заявок и QR-подключение"
-                    )
-                    Benefit(Icons.Rounded.Shield, "Лицензия хранится на сервере", "не пропадёт при переустановке и смене телефона")
-                    Benefit(Icons.Rounded.MarkEmailRead, "Ключ на Email • самозанятый (НПД)", "оплата через ЮKassa (СБП / МИР), чек «Мой налог»")
-
-                    Spacer(modifier = Modifier.height(16.dp))
                     if (!paymentStarted) {
                         Text("Выберите срок PRO", color = TacticalTextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(8.dp))
@@ -335,25 +325,34 @@ fun PersonalLicenseDialog(
                                 }
                             }
                         }
-                        Spacer(modifier = Modifier.height(14.dp))
-                        Text(if (isPro) "Продлить на ${selectedPlan.title}" else "Как оплатить", color = TacticalTextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Step(1, "Нажмите «Оплатить» — откроется ЮKassa")
-                        Step(2, "Оплатите через СБП, картой МИР или SberPay")
-                        Step(3, "Вернитесь сюда и нажмите «Я оплатил»")
-                        Spacer(modifier = Modifier.height(14.dp))
-                        if (email.isBlank() || !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        if (profileEmail.isBlank() || !android.util.Patterns.EMAIL_ADDRESS.matcher(profileEmail).matches()) {
                             Text(
-                                "Перед оплатой укажите корректный Email в разделе «Ещё → Профиль → Изменить данные» — туда придёт ключ лицензии.",
-                                color = TacticalRedText,
-                                fontSize = 11.5.sp,
-                                lineHeight = 15.sp,
-                                modifier = Modifier.padding(bottom = 10.dp)
+                                "Укажите Email для получения и восстановления ключа PRO:",
+                                color = TacticalTextSecondary,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(bottom = 6.dp)
+                            )
+                            OutlinedTextField(
+                                value = checkoutEmail,
+                                onValueChange = { checkoutEmail = it.trim() },
+                                placeholder = { Text("example@mail.ru", color = TacticalTextMuted) },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp).testTag("checkout_email_input"),
+                                shape = RoundedCornerShape(14.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = SageGreenBright,
+                                    unfocusedBorderColor = if (checkoutEmail.isNotBlank() && !isEmailValid) TacticalRedText else TacticalBorderSubtle,
+                                    focusedTextColor = TacticalTextPrimary,
+                                    unfocusedTextColor = TacticalTextPrimary
+                                )
                             )
                         }
                         Volumetric3DButton(
-                            text = "Оплатить $price ₽",
-                            onClick = { startPay() },
+                            text = if (paymentCreatingInProgress) "Создаём счёт ЮKassa…" else "Оплатить $price ₽",
+                            onClick = { if (!paymentCreatingInProgress) startPay() },
+                            enabled = !paymentCreatingInProgress,
                             modifier = Modifier.fillMaxWidth().testTag("yookassa_pay_button"),
                             height = 56.dp,
                             cornerRadius = 18.dp,
@@ -415,12 +414,38 @@ fun PersonalLicenseDialog(
                         }
                     }
                     Text(
-                        "Платёж обрабатывает ЮKassa. Данные карты приложение не видит.",
+                        "Платёж обрабатывает ЮKassa (СБП / МИР / SberPay). Данные карты приложение не видит.",
                         color = TacticalTextMuted,
                         fontSize = 11.sp,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
                     )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    // What PRO gives
+                    Text("Что даёт PRO", color = TacticalTextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Benefit(
+                        Icons.Rounded.Description,
+                        "Отчёты Excel (.xlsx)",
+                        if (profileMode.isMilitary) "Формы № 8 и № 18, акт списания и сводные"
+                        else "Оборотная ТМЦ, М-11 / ТОРГ-13, МБ-7 и акт МБ-8"
+                    )
+                    Benefit(
+                        Icons.Rounded.Sync,
+                        "Безлимит складов и синхронизация",
+                        if (profileMode.isMilitary) "неограниченно точек, позиций, заявок и QR-подключение"
+                        else "неограниченно складов, позиций, заявок и QR-подключение"
+                    )
+                    Benefit(Icons.Rounded.Shield, "Лицензия хранится на сервере", "не пропадёт при переустановке и смене телефона")
+                    Benefit(Icons.Rounded.MarkEmailRead, "Ключ на Email • самозанятый (НПД)", "оплата через ЮKassa (СБП / МИР), чек «Мой налог»")
+
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Text(if (isPro) "Продлить на ${selectedPlan.title}" else "Как оплатить", color = TacticalTextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Step(1, "Нажмите «Оплатить» — откроется ЮKassa")
+                    Step(2, "Оплатите через СБП, картой МИР или SberPay")
+                    Step(3, "Вернитесь сюда и нажмите «Я оплатил»")
                 }
 
                 Spacer(modifier = Modifier.height(14.dp))

@@ -555,8 +555,50 @@ class KapterkaRepository(
             itemsJson
         )
         dao.insertRequisition(r)
-        syncManager?.pushRequisitionAsync(getCurrentUnitKey(), r)
+        val unitKey = getCurrentUnitKey()
+        if (unitKey.isNotBlank()) {
+            val catalog = dao.getAllItems().first()
+            for (reqItem in items) {
+                val matched = catalog.firstOrNull { it.name.equals(reqItem.itemName, ignoreCase = true) }
+                if (matched != null) {
+                    syncManager?.pushInventoryItemAsync(unitKey, matched)
+                }
+            }
+        }
+        syncManager?.pushRequisitionAsync(unitKey, r)
         return r
+    }
+
+    suspend fun ensureCatalogItemByName(
+        itemName: String,
+        unit: String,
+        isMilitary: Boolean
+    ): InventoryItem {
+        val cleanName = itemName.trim()
+        val existing = dao.getAllItems().first().firstOrNull { it.name.equals(cleanName, ignoreCase = true) }
+        if (existing != null) return existing
+
+        val starterPool = if (isMilitary) {
+            InitialData.getDefaultItems() + InitialData.getCivilianItems()
+        } else {
+            InitialData.getCivilianItems() + InitialData.getDefaultItems()
+        }
+        val starterMatch = starterPool.firstOrNull { it.name.equals(cleanName, ignoreCase = true) }
+        val created = starterMatch ?: InventoryItem(
+            id = java.util.UUID.randomUUID().toString(),
+            name = cleanName.ifBlank { "Позиция по заявке" },
+            serviceCategory = if (isMilitary) "Прочее имущество" else "Основное",
+            subType = "По заявке",
+            unit = unit.trim().ifBlank { "шт." },
+            categoryClass = "Кат. 1",
+            isCustom = true
+        )
+        dao.insertItem(created)
+        val unitKey = getCurrentUnitKey()
+        if (unitKey.isNotBlank()) {
+            syncManager?.pushInventoryItemAsync(unitKey, created)
+        }
+        return created
     }
     
     suspend fun updateRequisitionStatus(id: String, st: RequestStatus) {

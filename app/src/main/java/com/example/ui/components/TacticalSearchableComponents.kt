@@ -163,7 +163,7 @@ fun TacticalSearchableItemDropdown(
                             )
                             if (currentStock != null) {
                                 Text(
-                                    text = " • На точке: $currentStock ${selectedItem.unit}",
+                                    text = " • В наличии: $currentStock ${selectedItem.unit}",
                                     color = if (currentStock > 0) SageGreenBright else TacticalRedText,
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold
@@ -407,8 +407,14 @@ fun TacticalSearchablePointDropdown(
         if (selectedPoint == null) emptyList()
         else stockRecords.filter { it.pointId == selectedPoint.id && it.quantity > 0 }
     }
-    val totalPointUnits = remember(pointStocks) { pointStocks.sumOf { it.quantity } }
     val itemsMap = remember(catalogItems) { catalogItems.associateBy { it.id } }
+    val selectedPointBreakdown = remember(pointStocks, itemsMap) {
+        formatUnitBreakdown(
+            unitQuantities = pointStocks.map { (itemsMap[it.itemId]?.unit ?: "шт.") to it.quantity },
+            maxUnits = 3,
+            emptyLabel = "пусто"
+        )
+    }
 
     Column(modifier = modifier.fillMaxWidth()) {
         if (label.isNotEmpty()) {
@@ -495,7 +501,7 @@ fun TacticalSearchablePointDropdown(
                         }
                     } else {
                         Text(
-                            text = "На складе: ${pointStocks.size} поз. • $totalPointUnits ед.",
+                            text = "На складе: ${pointStocks.size} поз. • $selectedPointBreakdown",
                             color = SageGreenBright,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold
@@ -519,11 +525,19 @@ fun TacticalSearchablePointDropdown(
                     color = TacticalSurfaceElevated,
                     shadowElevation = 8.dp
                 ) {
-                        LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 220.dp)
+                        ) {
                             items(filteredPoints, key = { it.id }) { pt ->
                                 val isSelected = selectedPoint?.id == pt.id
                                 val ptStocks = stockRecords.filter { it.pointId == pt.id && it.quantity > 0 }
-                                val ptUnits = ptStocks.sumOf { it.quantity }
+                                val ptBreakdown = formatUnitBreakdown(
+                                    unitQuantities = ptStocks.map { (itemsMap[it.itemId]?.unit ?: "шт.") to it.quantity },
+                                    maxUnits = 2,
+                                    emptyLabel = "пусто"
+                                )
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -556,13 +570,13 @@ fun TacticalSearchablePointDropdown(
                                         Box(
                                             modifier = Modifier
                                                 .clip(RoundedCornerShape(12.dp))
-                                                .background(if (ptUnits > 0) SageGreenDark else TacticalSurfaceLight)
-                                                .border(0.5.dp, if (ptUnits > 0) SageGreenPrimary else TacticalBorderSubtle, RoundedCornerShape(12.dp))
+                                                .background(if (ptStocks.isNotEmpty()) SageGreenDark else TacticalSurfaceLight)
+                                                .border(0.5.dp, if (ptStocks.isNotEmpty()) SageGreenPrimary else TacticalBorderSubtle, RoundedCornerShape(12.dp))
                                                 .padding(horizontal = 6.dp, vertical = 3.dp)
                                         ) {
                                             Text(
-                                                text = if (ptUnits > 0) "$ptUnits ед. (${ptStocks.size} поз.)" else "0 ед.",
-                                                color = if (ptUnits > 0) SageGreenBright else TacticalTextMuted,
+                                                text = if (ptStocks.isNotEmpty()) "${ptStocks.size} поз. · $ptBreakdown" else "пусто",
+                                                color = if (ptStocks.isNotEmpty()) SageGreenBright else TacticalTextMuted,
                                                 fontSize = 10.sp,
                                                 fontFamily = FontFamily.Monospace,
                                                 fontWeight = FontWeight.Bold
@@ -664,7 +678,11 @@ fun TacticalSearchableTextDropdown(
                     color = TacticalSurfaceElevated,
                     shadowElevation = 6.dp
                 ) {
-                    LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 190.dp)
+                    ) {
                         items(filteredSuggestions) { item ->
                             val isSelected = value.equals(item, ignoreCase = true)
                             Row(

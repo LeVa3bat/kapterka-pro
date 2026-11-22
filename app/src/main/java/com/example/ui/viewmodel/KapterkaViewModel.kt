@@ -75,6 +75,9 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
     private val _paymentAwaitingConfirmation = MutableStateFlow(false)
     val paymentAwaitingConfirmation: StateFlow<Boolean> = _paymentAwaitingConfirmation.asStateFlow()
 
+    private val _paymentCreatingInProgress = MutableStateFlow(false)
+    val paymentCreatingInProgress: StateFlow<Boolean> = _paymentCreatingInProgress.asStateFlow()
+
     fun openProfileSelectionScreen() {
         _showProfilePickerOverlay.value = true
     }
@@ -362,6 +365,23 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
 
         allCatalogItems = repository.allItems
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+        // Keep local category list in sync when custom items arrive from another phone via cloud sync.
+        viewModelScope.launch {
+            repository.allItems.collect { items ->
+                val syncedCustomCats = items
+                    .filter { it.isCustom && it.serviceCategory.isNotBlank() && it.serviceCategory != "Все виды" }
+                    .map { it.serviceCategory.trim() }
+                    .distinct()
+                if (syncedCustomCats.isNotEmpty()) {
+                    val current = _availableCategories.value
+                    val missing = syncedCustomCats.filter { it !in current }
+                    if (missing.isNotEmpty()) {
+                        saveCategoriesToPrefs(current + missing)
+                    }
+                }
+            }
+        }
 
         allStockRecords = repository.allStockRecords
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -703,22 +723,29 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                 _toastEvent.emit("Не удалось выдать: склад «${req.pointName}» не найден")
                 return@launch
             }
+            val isMil = _workspaceProfileMode.value.isMilitary
             val catalog = allCatalogItems.value
             val wanted = parseRequisitionItems(req.itemsJson).ifEmpty {
-                // Old requests store only a summary line.
                 emptyList()
             }
             val matched = wanted.mapNotNull { w ->
-                val item = catalog.firstOrNull { it.name.equals(w.itemName, ignoreCase = true) } ?: return@mapNotNull null
-                OperationItemEntry(item.id, item.name, item.unit.ifBlank { w.unit }, w.quantity, item.categoryClass.ifBlank { "Кат. 1" })
+                if (w.itemName.isBlank()) return@mapNotNull null
+                val item = catalog.firstOrNull { it.name.equals(w.itemName, ignoreCase = true) }
+                    ?: repository.ensureCatalogItemByName(w.itemName, w.unit, isMil)
+                OperationItemEntry(
+                    item.id,
+                    item.name,
+                    item.unit.ifBlank { w.unit.ifBlank { "шт." } },
+                    w.quantity.coerceAtLeast(1),
+                    item.categoryClass.ifBlank { "Кат. 1" }
+                )
             }
-            val skipped = wanted.size - matched.size
             if (matched.isEmpty()) {
-                _toastEvent.emit("Не удалось выдать: позиции заявки не найдены в каталоге. Статус не изменён.")
+                _toastEvent.emit("Не удалось выдать: в заявке не указаны позиции для списания.")
                 return@launch
             }
             val actor = userProfile.value?.callsign?.ifBlank { null }
-                ?: if (_workspaceProfileMode.value.isMilitary) "Старшина подразделения" else "Кладовщик"
+                ?: if (isMil) "Старшина подразделения" else "Кладовщик"
             val comment = "По заявке от ${req.applicantName}" + if (req.comment.isNotBlank()) " • ${req.comment}" else ""
             val target = points.firstOrNull { it.name == req.applicantName && it.id != source.id }
             if (target != null) {
@@ -729,8 +756,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             repository.updateRequisitionStatus(req.id, RequestStatus.ISSUED)
             TacticalNotificationHelper.notifyRequisitionStatus(getApplication(), req, RequestStatus.ISSUED)
             _toastEvent.emit(
-                "Заявка выдана: ${matched.size} поз. со склада «${source.name}» → ${req.applicantName}" +
-                    if (skipped > 0) ". Не найдено в каталоге: $skipped поз. — выдайте их вручную" else ""
+                "Заявка выдана: ${matched.size} поз. со склада «${source.name}» → ${req.applicantName}"
             )
         }
     }
@@ -993,7 +1019,8 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                         isProActive = true,
                         proDaysLeft = daysLeft,
                         demoDaysLeft = 0
-                    )
+                    ),
+                    syncNow = false
                 )
             }
             _toastEvent.emit(msg)
@@ -1215,21 +1242,31 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
     fun clearIssuedPaymentKey() {
         _issuedPaymentKey.value = null
         _paymentAwaitingConfirmation.value = false
+        _paymentCreatingInProgress.value = false
     }
 
-    fun startYooKassaPayment(planDays: Int = 30) {
+    fun startYooKassaPayment(planDays: Int = 30, customEmail: String? = null) {
+        if (_paymentCreatingInProgress.value) return
+        _paymentCreatingInProgress.value = true
         viewModelScope.launch {
             try {
                 val profile = userProfile.value
                 val isMil = _workspaceProfileMode.value.isMilitary
                 val callsign = profile?.callsign?.ifBlank { if (isMil) "Боец" else "Пользователь" } ?: if (isMil) "Боец" else "Пользователь"
-                val email = profile?.email?.trim()?.lowercase().orEmpty()
+                val candidateEmail = customEmail?.trim()?.lowercase()?.takeIf { it.isNotEmpty() }
+                    ?: profile?.email?.trim()?.lowercase().orEmpty()
 
-                if (email.isBlank() || !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                if (candidateEmail.isBlank() || !android.util.Patterns.EMAIL_ADDRESS.matcher(candidateEmail).matches()) {
                     _paymentAwaitingConfirmation.value = false
-                    _toastEvent.emit("Для оплаты укажите корректный Email в профиле. На него придёт информация о лицензии.")
+                    _toastEvent.emit("Для оплаты укажите корректный Email (например: user@mail.ru) — туда придёт ключ лицензии.")
                     return@launch
                 }
+
+                // Persist newly provided email directly into profile so user doesn't have to leave the payment dialog
+                if (profile != null && !profile.email.trim().equals(candidateEmail, ignoreCase = true)) {
+                    repository.saveUserProfile(profile.copy(email = candidateEmail), syncNow = false)
+                }
+                val email = candidateEmail
 
                 val plan = com.example.data.payment.ProPlanOption.fromDays(planDays)
                 _toastEvent.emit("Формирование счета ЮKassa на ${plan.title}...")
@@ -1274,6 +1311,8 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                 android.util.Log.e("KapterkaViewModel", "startYooKassaPayment failed", t)
                 _paymentAwaitingConfirmation.value = false
                 _toastEvent.emit("Не удалось открыть оплату. Проверьте интернет и попробуйте снова.")
+            } finally {
+                _paymentCreatingInProgress.value = false
             }
         }
     }
@@ -1360,7 +1399,8 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
 
                 // Локальный профиль отражает только уже подтверждённую сервером лицензию.
                 repository.saveUserProfile(
-                    profile.copy(isProActive = true, proDaysLeft = daysLeft, demoDaysLeft = 0)
+                    profile.copy(isProActive = true, proDaysLeft = daysLeft, demoDaysLeft = 0),
+                    syncNow = false
                 )
 
                 // Заносим пользователя в реестр без фиктивного unit key.
@@ -1437,7 +1477,8 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                         isProActive = true,
                         proDaysLeft = daysLeft,
                         demoDaysLeft = 0
-                    )
+                    ),
+                    syncNow = false
                 )
                 fighterRegistryManager.registerOrUpdateFighter(
                     fighterId = licenseManager.getFighterPersonalId(),
@@ -1475,7 +1516,8 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                         isProActive = true,
                         proDaysLeft = daysLeft,
                         demoDaysLeft = 0
-                    )
+                    ),
+                    syncNow = false
                 )
             }
             _toastEvent.emit(msg)
@@ -1493,7 +1535,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             prefs.edit().remove("last_yookassa_payment_id").apply()
             licenseManager.resetLicense()
             val curProfile = userProfile.value ?: UserProfile()
-            repository.saveUserProfile(curProfile.copy(isProActive = false, proDaysLeft = 0))
+            repository.saveUserProfile(curProfile.copy(isProActive = false, proDaysLeft = 0), syncNow = false)
             licenseManager.refreshLicenseStatus()
             val demoLeft = licenseManager.licenseStatus.value.demoDaysLeft
             _toastEvent.emit(

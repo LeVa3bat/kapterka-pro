@@ -293,8 +293,8 @@ fun MoreSettingsScreen(
 
     if (showResetDataConfirmDialog) {
         val requiredUnitKey = profile?.unitKey?.trim().orEmpty()
-        val isResetConfirmed = requiredUnitKey.isNotBlank() &&
-            resetDataConfirmKey.trim().equals(requiredUnitKey, ignoreCase = true)
+        val expectedToken = requiredUnitKey.ifBlank { "УДАЛИТЬ" }
+        val isResetConfirmed = resetDataConfirmKey.trim().equals(expectedToken, ignoreCase = true)
 
         AlertDialog(
             onDismissRequest = {
@@ -319,7 +319,11 @@ fun MoreSettingsScreen(
                     )
                     Spacer(modifier = Modifier.height(10.dp))
                     Text(
-                        text = "Для подтверждения введите текущий код подключения:",
+                        text = if (requiredUnitKey.isNotBlank()) {
+                            "Для подтверждения введите текущий код подключения:"
+                        } else {
+                            "Для подтверждения введите слово УДАЛИТЬ:"
+                        },
                         color = TacticalTextMuted,
                         fontSize = 11.sp
                     )
@@ -328,7 +332,7 @@ fun MoreSettingsScreen(
                         value = resetDataConfirmKey,
                         onValueChange = { resetDataConfirmKey = it },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text(requiredUnitKey.ifBlank { "kapt_..." }, color = TacticalTextMuted) },
+                        placeholder = { Text(expectedToken, color = TacticalTextMuted) },
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = TacticalRedText,

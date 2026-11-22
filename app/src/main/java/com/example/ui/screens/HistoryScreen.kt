@@ -807,12 +807,18 @@ private fun OperationAccordionCard(
                     )
                 }
 
-                val totalUnits = remember(items) { items.sumOf { it.quantity } }
-                val countSummary = if (items.isNotEmpty()) {
-                    "${items.size} наим. • $totalUnits ед."
-                } else if (operation.itemsSummary.isNotBlank()) {
-                    operation.itemsSummary.take(20)
-                } else ""
+                val countSummary = remember(items, operation.itemsSummary) {
+                    if (items.isNotEmpty()) {
+                        val breakdown = com.example.ui.components.formatUnitBreakdown(
+                            unitQuantities = items.map { it.unit to it.quantity },
+                            maxUnits = 2,
+                            emptyLabel = "${items.size} поз."
+                        )
+                        "${items.size} поз. • $breakdown"
+                    } else if (operation.itemsSummary.isNotBlank()) {
+                        operation.itemsSummary.take(24)
+                    } else ""
+                }
 
                 if (countSummary.isNotBlank()) {
                     Spacer(modifier = Modifier.width(6.dp))
@@ -918,7 +924,11 @@ private fun OperationAccordionCard(
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             groupedByCategory.forEach { (categoryName, categoryItems) ->
                                 val emoji = getCategoryEmoji(categoryName)
-                                val totalUnits = categoryItems.sumOf { it.quantity }
+                                val categoryBreakdown = com.example.ui.components.formatUnitBreakdown(
+                                    unitQuantities = categoryItems.map { it.unit to it.quantity },
+                                    maxUnits = 2,
+                                    emptyLabel = "${categoryItems.size} поз."
+                                )
 
                                 Column(
                                     modifier = Modifier
@@ -950,7 +960,7 @@ private fun OperationAccordionCard(
                                             )
                                         }
                                         Text(
-                                            text = "$totalUnits ед.",
+                                            text = categoryBreakdown,
                                             color = SageGreenBright,
                                             fontSize = 11.5.sp,
                                             fontWeight = FontWeight.Bold,

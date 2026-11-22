@@ -33,6 +33,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.util.UUID
@@ -122,8 +124,29 @@ class FirebaseSyncManager(
     private val unitAccess: UnitAccessService by lazy { UnitAccessService() }
     private var listeners = mutableListOf<ListenerRegistration>()
     private var presenceHeartbeatJob: Job? = null
+    private val reconcileMutex = Mutex()
     private val reqUpdatedAt = ConcurrentHashMap<String, Long>()
     private val knownReqStatuses = ConcurrentHashMap<String, RequestStatus>()
+
+    private fun getPersistedReqUpdatedAt(reqId: String): Long {
+        reqUpdatedAt[reqId]?.let { if (it > 0L) return it }
+        val saved = context.getSharedPreferences(SYNC_PREFS, Context.MODE_PRIVATE)
+            .getLong("req_upd_$reqId", 0L)
+        if (saved > 0L) reqUpdatedAt[reqId] = saved
+        return saved
+    }
+
+    private fun persistReqUpdatedAt(reqId: String, ts: Long) {
+        reqUpdatedAt[reqId] = ts
+        context.getSharedPreferences(SYNC_PREFS, Context.MODE_PRIVATE)
+            .edit().putLong("req_upd_$reqId", ts).apply()
+    }
+
+    private fun clearPersistedReqUpdatedAt(reqId: String) {
+        reqUpdatedAt.remove(reqId)
+        context.getSharedPreferences(SYNC_PREFS, Context.MODE_PRIVATE)
+            .edit().remove("req_upd_$reqId").apply()
+    }
 
     private companion object {
         const val ACTIVE_DEVICE_WINDOW_MS = 15 * 60 * 1000L
@@ -326,10 +349,10 @@ class FirebaseSyncManager(
         if (isTombstoned(unitKey, TOMBSTONE_REQUISITION, cloudReq.id)) return false
 
         val local = dao.getAllRequisitions().first().firstOrNull { it.id == cloudReq.id }
-        val localUpdatedAt = reqUpdatedAt[cloudReq.id] ?: 0L
+        val localUpdatedAt = getPersistedReqUpdatedAt(cloudReq.id)
         if (RequisitionConflictResolver.cloudMayReplaceLocal(local, cloudReq, localUpdatedAt, cloudUpdatedAt)) {
             dao.insertRequisition(cloudReq)
-            reqUpdatedAt[cloudReq.id] = maxOf(cloudUpdatedAt, cloudReq.timestamp)
+            persistReqUpdatedAt(cloudReq.id, maxOf(cloudUpdatedAt, cloudReq.timestamp))
             return true
         }
 
@@ -406,7 +429,7 @@ class FirebaseSyncManager(
     ): Boolean {
         val cleanKey = unitKey.trim()
         if (cleanKey.isEmpty()) return false
-        reqUpdatedAt[r.id] = updatedAt
+        persistReqUpdatedAt(r.id, updatedAt)
         knownReqStatuses[r.id] = r.status
         return executeCloudWrite(cleanKey, "requisition/${r.id}", "Заявка синхронизирована") {
             firestore.collection("units").document(cleanKey)
@@ -862,6 +885,7 @@ class FirebaseSyncManager(
     }
 
     suspend fun syncAndReconcileAll(unitKey: String, callsign: String, unitName: String): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        reconcileMutex.withLock {
         if (!productionCloudEnabled) {
             val reason = disabledSyncReason()
             _syncState.value = SyncState(
@@ -871,10 +895,10 @@ class FirebaseSyncManager(
                 syncMessage = reason,
                 isPaused = isPaused
             )
-            return@withContext Pair(false, reason)
+                return@withLock Pair(false, reason)
         }
         val cleanKey = unitKey.trim()
-        if (cleanKey.isEmpty()) return@withContext Pair(false, "Не указан код общего склада")
+        if (cleanKey.isEmpty()) return@withLock Pair(false, "Не указан код общего склада")
         lastCallsign = callsign
 
         _syncState.value = _syncState.value.copy(isSyncing = true, syncMessage = "Синхронизация базы [$cleanKey]...")
@@ -889,7 +913,7 @@ class FirebaseSyncManager(
                     isOnline = false,
                     syncMessage = access.reason
                 )
-                return@withContext Pair(false, access.reason)
+                return@withLock Pair(false, access.reason)
             }
 
             val db = firestore
@@ -1131,6 +1155,7 @@ class FirebaseSyncManager(
             // listeners still deliver every change from other devices.
             startSyncForUnit(cleanKey, callsign, unitName)
             Pair(false, cloudErrorText(e))
+        }
         }
     }
 
@@ -1499,7 +1524,7 @@ class FirebaseSyncManager(
         val cleanKey = unitKey.trim()
         if (!productionCloudEnabled || cleanKey.isEmpty()) return
         val now = System.currentTimeMillis()
-        reqUpdatedAt[r.id] = now
+        persistReqUpdatedAt(r.id, now)
         knownReqStatuses[r.id] = r.status
         scope.launch(Dispatchers.IO) {
             pushRequisitionNow(cleanKey, r, now)
@@ -1508,9 +1533,9 @@ class FirebaseSyncManager(
 
     fun deleteRequisitionAsync(unitKey: String, reqId: String) {
         val cleanKey = unitKey.trim()
-        if (!productionCloudEnabled || cleanKey.isEmpty()) return
         knownReqStatuses.remove(reqId)
-        reqUpdatedAt.remove(reqId)
+        clearPersistedReqUpdatedAt(reqId)
+        if (!productionCloudEnabled || cleanKey.isEmpty()) return
         scope.launch(Dispatchers.IO) {
             executeCloudWrite(cleanKey, "delete_requisition/$reqId") {
                 firestore.collection("units").document(cleanKey)
