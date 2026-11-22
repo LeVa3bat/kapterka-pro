@@ -192,7 +192,7 @@ class LicenseManager(
                 now
             } else it
         }
-        val demoElapsed = now - demoStartTime
+        val demoElapsed = (now - demoStartTime).coerceAtLeast(0L)
         val demoTotalMillis = 3L * 24L * 60L * 60L * 1000L // 3 суток
         val demoRemainingMillis = (demoTotalMillis - demoElapsed).coerceAtLeast(0L)
         val isDemoActive = demoRemainingMillis > 0L
@@ -202,20 +202,39 @@ class LicenseManager(
             0
         }
 
-        // Обновляем количество демо-дней в локальном профиле БД
+        val isCurrentlyPro = expiresAt > now && key.isNotBlank()
+        val calculatedProDays = if (isCurrentlyPro) {
+            ((expiresAt - now) / (1000L * 60 * 60 * 24)).toInt().coerceAtLeast(1)
+        } else {
+            0
+        }
+
+        // Синхронизируем статус PRO и демо-дни в локальный профиль БД (включая сброс при истечении PRO)
         scope.launch(Dispatchers.IO) {
             try {
                 val currentProf = dao.getUserProfile().first()
-                if (currentProf != null && currentProf.demoDaysLeft != calculatedDemoDays) {
-                    dao.saveUserProfile(currentProf.copy(demoDaysLeft = calculatedDemoDays))
+                if (currentProf != null) {
+                    val targetDemoDays = if (isCurrentlyPro) 0 else calculatedDemoDays
+                    if (currentProf.isProActive != isCurrentlyPro ||
+                        currentProf.proDaysLeft != calculatedProDays ||
+                        currentProf.demoDaysLeft != targetDemoDays
+                    ) {
+                        dao.saveUserProfile(
+                            currentProf.copy(
+                                isProActive = isCurrentlyPro,
+                                proDaysLeft = calculatedProDays,
+                                demoDaysLeft = targetDemoDays
+                            )
+                        )
+                    }
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error syncing demo days to user profile", e)
+                Log.e(TAG, "Error syncing license status to user profile", e)
             }
         }
 
-        if (expiresAt > now && key.isNotBlank()) {
-            val days = ((expiresAt - now) / (1000L * 60 * 60 * 24)).toInt().coerceAtLeast(1)
+        if (isCurrentlyPro) {
+            val days = calculatedProDays
             val sdf = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
             _licenseStatus.value = FighterLicenseStatus(
                 licenseKey = key,

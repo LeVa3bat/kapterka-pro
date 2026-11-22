@@ -8,6 +8,8 @@ import com.example.data.model.RequisitionRequest
 import com.example.data.model.StockRecord
 import com.example.data.model.WarehousePoint
 import com.example.data.model.WorkspaceProfileMode
+import com.example.data.model.isReturnOperation
+import com.example.data.model.returnSenderName
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -327,6 +329,8 @@ object ReportBuilders {
             add("X")
         }
 
+        val issueSources = issues.map { it.fromPointName }.filter { it.isNotBlank() }.distinct().joinToString(", ")
+
         return StructuredReport(
             sheetName = "Форма 8 (ОКУД 6002203)",
             fileBaseName = "Форма_8_ОКУД_6002203_${safeFileToken(unitName)}",
@@ -347,6 +351,7 @@ object ReportBuilders {
             details = listOf(
                 "Воинская часть:" to "________________________ (условное / действительное наименование)",
                 "Структурное подразделение:" to unitName.ifBlank { "Подразделение" },
+                "Склад / точка выдачи:" to issueSources.ifBlank { "Базовый склад" },
                 "Материально ответственное лицо:" to mol,
                 "Ведомость действительна по:" to "«__» ____________ 20__ г."
             ),
@@ -492,17 +497,60 @@ object ReportBuilders {
                     )
                 )
             } else {
-                moves.forEachIndexed { idx, (op, entry) ->
+                // Pre-calculate net movement so Form 18 reconciles with actual multi-warehouse stock
+                // even when initial stock existed before the operation log began.
+                val recs = stockByItemId[meta.itemId].orEmpty()
+                val actualQty = recs.sumOf { it.quantity }
+                val netMoves = moves.sumOf { (op, entry) ->
+                    val isInternalIssue = op.type == OperationType.ISSUE &&
+                        isInternalPointDestination(op.toPointName, points)
+                    when {
+                        op.type == OperationType.INCOME -> entry.quantity
+                        op.type == OperationType.TRANSFER || isInternalIssue -> 0
+                        else -> -entry.quantity
+                    }
+                }
+                val openingBalance = (actualQty - netMoves).coerceAtLeast(0)
+                var lineNo = 1
+                if (openingBalance > 0) {
+                    balance = openingBalance
+                    incomingPairs.add(meta.unit to openingBalance)
+                    rows.add(
+                        listOf(
+                            (lineNo++).toString(),
+                            periodFrom,
+                            "Остаток на начало периода",
+                            "Входящий остаток по учёту",
+                            openingBalance.toString(),
+                            "",
+                            balance.toString(),
+                            "Все склады",
+                            ""
+                        )
+                    )
+                }
+
+                moves.forEach { (op, entry) ->
                     val qty = entry.quantity
                     val docDate = df.format(Date(op.timestamp))
                     val docNum = op.docNumber.trim().removePrefix("№").trim()
-                    val docTitle = "${militaryDocumentName(op.type)} от $docDate" +
-                        if (docNum.isNotBlank()) " № $docNum" else ""
+                    val isReturn = op.isReturnOperation()
+                    val docTitle = when {
+                        isReturn -> "Накладная на возврат от $docDate"
+                        else -> "${militaryDocumentName(op.type)} от $docDate" +
+                            if (docNum.isNotBlank()) " № $docNum" else ""
+                    }
 
                     val isInternalIssue = op.type == OperationType.ISSUE &&
                         isInternalPointDestination(op.toPointName, points)
 
                     val (inc, out, party, location) = when {
+                        isReturn -> Quad(
+                            qty,
+                            0,
+                            "Возврат: ${op.returnSenderName()} → ${op.toPointName.ifBlank { "Базовый склад" }}",
+                            op.toPointName.ifBlank { "Базовый склад" }
+                        )
                         op.type == OperationType.INCOME -> Quad(
                             qty,
                             0,
@@ -541,7 +589,7 @@ object ReportBuilders {
 
                     rows.add(
                         listOf(
-                            (idx + 1).toString(),
+                            (lineNo++).toString(),
                             docDate,
                             docTitle,
                             party,
@@ -849,7 +897,38 @@ object ReportBuilders {
         val df = dateFmt()
         val today = df.format(Date())
         val issues = operations.filter { it.type == OperationType.ISSUE }.sortedBy { it.timestamp }
-        val periodFrom = issues.firstOrNull()?.let { df.format(Date(it.timestamp)) } ?: today
+        val returns = operations.filter { it.isReturnOperation() }.sortedBy { it.timestamp }
+        val periodFrom = issues.firstOrNull()?.let { df.format(Date(it.timestamp)) }
+            ?: returns.firstOrNull()?.let { df.format(Date(it.timestamp)) }
+            ?: today
+
+        data class ReturnPoolEntry(
+            val senderKey: String,
+            val itemKey: String,
+            val date: String,
+            val unit: String,
+            var remainingQty: Int
+        )
+
+        val returnPool = mutableListOf<ReturnPoolEntry>()
+        val returnedPairs = mutableListOf<Pair<String, Int>>()
+        for (retOp in returns) {
+            val retDate = df.format(Date(retOp.timestamp))
+            val senderNorm = retOp.returnSenderName().lowercase(ruLocale)
+            for (entry in resolveOperationEntries(retOp, catalogItems, parseItems)) {
+                if (entry.quantity <= 0) continue
+                returnPool.add(
+                    ReturnPoolEntry(
+                        senderKey = senderNorm,
+                        itemKey = entry.key,
+                        date = retDate,
+                        unit = entry.unit,
+                        remainingQty = entry.quantity
+                    )
+                )
+                returnedPairs.add(entry.unit to entry.quantity)
+            }
+        }
 
         val headers = listOf(
             "№\nп/п",
@@ -862,7 +941,7 @@ object ReportBuilders {
             "Подпись в\nполучении",
             "Возврат\n(дата / подпись)"
         )
-        val widths = listOf(34, 128, 152, 66, 44, 54, 74, 82, 98)
+        val widths = listOf(34, 128, 152, 66, 44, 54, 74, 82, 118)
         val aligns = listOf(
             ReportColAlign.CENTER, ReportColAlign.START, ReportColAlign.START, ReportColAlign.CENTER,
             ReportColAlign.CENTER, ReportColAlign.END, ReportColAlign.CENTER, ReportColAlign.CENTER,
@@ -875,7 +954,31 @@ object ReportBuilders {
         for (op in issues) {
             val d = df.format(Date(op.timestamp))
             val recipient = op.toPointName.ifBlank { "Получатель" }
+            val recipientNorm = recipient.trim().lowercase(ruLocale)
             for (entry in resolveOperationEntries(op, catalogItems, parseItems)) {
+                var needToMatch = entry.quantity
+                var matchedQty = 0
+                var lastReturnDate = ""
+                for (pool in returnPool) {
+                    if (needToMatch <= 0) break
+                    if (pool.remainingQty <= 0) continue
+                    val sameItem = pool.itemKey == entry.key
+                    val sameSender = pool.senderKey == recipientNorm ||
+                        pool.senderKey.contains(recipientNorm) ||
+                        recipientNorm.contains(pool.senderKey)
+                    if (sameItem && sameSender) {
+                        val take = minOf(needToMatch, pool.remainingQty)
+                        pool.remainingQty -= take
+                        needToMatch -= take
+                        matchedQty += take
+                        lastReturnDate = pool.date
+                    }
+                }
+                val returnCell = when {
+                    matchedQty <= 0 -> ""
+                    matchedQty >= entry.quantity -> "$lastReturnDate (возврат $matchedQty ${entry.unit})"
+                    else -> "$lastReturnDate ($matchedQty из ${entry.quantity} ${entry.unit})"
+                }
                 rows.add(
                     listOf(
                         (n++).toString(),
@@ -886,7 +989,7 @@ object ReportBuilders {
                         entry.quantity.toString(),
                         d,
                         "",
-                        ""
+                        returnCell
                     )
                 )
                 qtyPairs.add(entry.unit to entry.quantity)
@@ -896,6 +999,7 @@ object ReportBuilders {
             rows.add(List(headers.size) { if (it == 2) "Выдач инструмента и ТМЦ на руки за период нет" else "" })
         }
 
+        val returnedSummary = if (returnedPairs.isEmpty()) "" else "Возврат: ${formatUnitSafeTotals(returnedPairs)}"
         val totalRow = listOf(
             "",
             "ИТОГО выдано:",
@@ -905,7 +1009,7 @@ object ReportBuilders {
             formatUnitSafeTotals(qtyPairs),
             "",
             "",
-            ""
+            returnedSummary
         )
 
         return StructuredReport(
@@ -926,7 +1030,7 @@ object ReportBuilders {
             details = listOf(
                 "Организация / склад:" to unitName.ifBlank { "Основной склад" },
                 "Кладовщик (МОЛ):" to responsiblePerson.ifBlank { "________________________" },
-                "Всего выдач:" to qtyPairs.size.toString()
+                "Всего выдач / возвратов:" to "${qtyPairs.size} / ${returnedPairs.size}"
             ),
             headers = headers,
             colWidthsDp = widths,
@@ -1063,17 +1167,21 @@ object ReportBuilders {
         val catalogMap = catalogItems.associateBy { it.id }
         val pointMap = points.associateBy { it.id }
 
-        // Точный внешний приход и внешний расход из журнала (без завышения внутренними перемещениями)
+        // Точный внешний приход, возврат и внешний расход из журнала (без завышения перемещениями и возвратами)
         val externalInByItem = mutableMapOf<String, Int>()
         val externalOutByItem = mutableMapOf<String, Int>()
+        val returnsByItem = mutableMapOf<String, Int>()
         val opMetaByItem = mutableMapOf<String, ResolvedReportItem>()
 
         for (op in operations) {
             val isInternalIssue = op.type == OperationType.ISSUE && isInternalPointDestination(op.toPointName, points)
+            val isReturn = op.isReturnOperation()
             for (entry in resolveOperationEntries(op, catalogItems, parseItems)) {
                 val idKey = entry.itemId.ifBlank { entry.key }
                 opMetaByItem.putIfAbsent(idKey, entry)
                 when {
+                    isReturn ->
+                        returnsByItem[idKey] = (returnsByItem[idKey] ?: 0) + entry.quantity
                     op.type == OperationType.INCOME ->
                         externalInByItem[idKey] = (externalInByItem[idKey] ?: 0) + entry.quantity
                     op.type == OperationType.EXPENDITURE || (op.type == OperationType.ISSUE && !isInternalIssue) ->
@@ -1084,7 +1192,12 @@ object ReportBuilders {
         }
 
         val stockByItem = stockRecords.groupBy { it.itemId }
-        val allItemKeys = (stockByItem.keys + opMetaByItem.keys).distinct()
+        val allItemKeys = (stockByItem.keys + opMetaByItem.keys).distinct().sortedWith(
+            compareBy<String>(
+                { (catalogMap[it]?.serviceCategory ?: opMetaByItem[it]?.category ?: "Прочее").lowercase(ruLocale) },
+                { (catalogMap[it]?.name ?: opMetaByItem[it]?.name ?: it).lowercase(ruLocale) }
+            )
+        )
 
         val headers = listOf(
             "№\nп/п",
@@ -1117,9 +1230,16 @@ object ReportBuilders {
             val category = cat?.serviceCategory ?: opMeta?.category ?: "Прочее"
             val unit = cat?.unit ?: opMeta?.unit ?: "шт."
 
-            val hasExternalOps = externalInByItem.containsKey(itemKey) || externalOutByItem.containsKey(itemKey)
+            val hasExternalOps = externalInByItem.containsKey(itemKey) ||
+                externalOutByItem.containsKey(itemKey) ||
+                returnsByItem.containsKey(itemKey)
+            val returned = returnsByItem[itemKey] ?: 0
             val inc = if (hasExternalOps) externalInByItem[itemKey] ?: 0 else recs.sumOf { it.incomeTotal }
-            val exp = if (hasExternalOps) externalOutByItem[itemKey] ?: 0 else recs.sumOf { it.expenseTotal }
+            val exp = if (hasExternalOps) {
+                ((externalOutByItem[itemKey] ?: 0) - returned).coerceAtLeast(0)
+            } else {
+                recs.sumOf { it.expenseTotal }
+            }
             val rem = recs.sumOf { it.quantity }
 
             if (inc == 0 && exp == 0 && rem == 0) continue
@@ -1251,7 +1371,14 @@ object ReportBuilders {
         val remPairs = mutableListOf<Pair<String, Int>>()
         var idx = 1
 
-        for (r in stockRecords) {
+        val sortedRecords = stockRecords.sortedWith(
+            compareBy<StockRecord>(
+                { (catalogMap[it.itemId]?.serviceCategory ?: opMetaMap[it.itemId]?.category ?: "Прочее").lowercase(ruLocale) },
+                { (catalogMap[it.itemId]?.name ?: opMetaMap[it.itemId]?.name ?: it.itemId).lowercase(ruLocale) }
+            )
+        )
+
+        for (r in sortedRecords) {
             if (r.quantity == 0 && r.incomeTotal == 0 && r.expenseTotal == 0) continue
             val cat = catalogMap[r.itemId]
             val opMeta = opMetaMap[r.itemId]

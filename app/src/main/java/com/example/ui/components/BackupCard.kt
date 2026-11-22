@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.theme.SageGreenBright
 import com.example.ui.theme.SageGreenPrimary
+import com.example.ui.theme.TacticalBg
 import com.example.ui.theme.TacticalBorderSubtle
 import com.example.ui.theme.TacticalGold
 import com.example.ui.theme.TacticalTextMuted
@@ -117,7 +118,7 @@ fun BackupAndDiagnosticsCard(
         if (crashText != null) {
             Spacer(Modifier.height(10.dp))
             Surface(
-                color = Color(0xFF131C16),
+                color = TacticalBg,
                 shape = RoundedCornerShape(14.dp),
                 border = BorderStroke(1.dp, TacticalGold.copy(alpha = 0.35f)),
                 modifier = Modifier.fillMaxWidth()
@@ -208,7 +209,7 @@ private fun BackupSection(
     onSecondary: () -> Unit
 ) {
     Surface(
-        color = Color(0xFF131C16),
+        color = TacticalBg,
         shape = RoundedCornerShape(14.dp),
         border = BorderStroke(1.dp, TacticalBorderSubtle),
         modifier = Modifier.fillMaxWidth()

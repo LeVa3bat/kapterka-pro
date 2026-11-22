@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.AddBox
 import androidx.compose.material.icons.rounded.Build
 import androidx.compose.material.icons.rounded.CheckCircle
@@ -33,9 +34,14 @@ import com.example.ui.theme.*
 @Composable
 fun ProfileSelectionScreen(
     initialSelection: WorkspaceProfileMode = WorkspaceProfileMode.CIVILIAN,
-    onConfirmProfile: (WorkspaceProfileMode) -> Unit
+    onConfirmProfile: (WorkspaceProfileMode) -> Unit,
+    isReconfigureMode: Boolean = false,
+    hasExistingData: Boolean = false,
+    onCancel: (() -> Unit)? = null,
+    onConfirmReconfigure: ((WorkspaceProfileMode, Boolean) -> Unit)? = null
 ) {
-    var selected by remember { mutableStateOf(initialSelection) }
+    var selected by remember(initialSelection) { mutableStateOf(initialSelection) }
+    var applyStarterSet by remember(isReconfigureMode) { mutableStateOf(true) }
 
     Column(
         modifier = Modifier
@@ -47,32 +53,62 @@ fun ProfileSelectionScreen(
     ) {
         Spacer(modifier = Modifier.height(6.dp))
 
-        // Top badge
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(999.dp))
-                .background(SageGreenDark)
-                .border(1.dp, SageGreenPrimary.copy(alpha = 0.3f), RoundedCornerShape(999.dp))
-                .padding(horizontal = 12.dp, vertical = 5.dp)
+        // Top badge + optional back button in reconfigure mode
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "ПЕРВЫЙ ЗАПУСК • ВЫБОР ПРОФИЛЯ",
-                color = SageGreenBright,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.ExtraBold,
-                letterSpacing = 0.5.sp
-            )
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(999.dp))
+                    .background(SageGreenDark)
+                    .border(1.dp, SageGreenPrimary.copy(alpha = 0.3f), RoundedCornerShape(999.dp))
+                    .padding(horizontal = 12.dp, vertical = 5.dp)
+            ) {
+                Text(
+                    text = if (isReconfigureMode) "СМЕНА ПРОФИЛЯ И СКЛАДОВ" else "ПЕРВЫЙ ЗАПУСК • ВЫБОР ПРОФИЛЯ",
+                    color = SageGreenBright,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 0.5.sp
+                )
+            }
+            if (isReconfigureMode && onCancel != null) {
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(TacticalSurfaceLight)
+                        .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(12.dp))
+                        .clickable(onClick = onCancel)
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                        contentDescription = "Назад",
+                        tint = TacticalTextPrimary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Назад", color = TacticalTextPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+            }
         }
 
         Text(
-            text = "Как вы будете вести склад?",
+            text = if (isReconfigureMode) "Выберите профиль склада" else "Как вы будете вести склад?",
             color = TacticalTextPrimary,
             fontSize = 26.sp,
             fontWeight = FontWeight.ExtraBold,
             lineHeight = 31.sp
         )
         Text(
-            text = "Подберём готовый справочник, стартовые склады и нужные бланки отчётов Excel. Профиль можно переключить позже в настройках.",
+            text = if (isReconfigureMode) {
+                "Выберите режим учёта — подстроим склады, кнопки операций, справочник и формы Excel."
+            } else {
+                "Подберём готовый справочник, стартовые склады и нужные бланки отчётов Excel. Профиль можно переключить позже в настройках."
+            },
             color = TacticalTextSecondary,
             fontSize = 13.5.sp,
             lineHeight = 19.sp
@@ -122,35 +158,82 @@ fun ProfileSelectionScreen(
             testTag = "profile_option_empty"
         )
 
-        // Upgrade safety note
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(14.dp))
-                .background(TacticalSurfaceLight)
-                .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(14.dp))
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Shield,
-                contentDescription = null,
-                tint = SageGreenPrimary,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.width(10.dp))
-            Text(
-                text = "При обновлении уже установленной версии старые склады, остатки и журнал никогда не меняются.",
-                color = TacticalTextSecondary,
-                fontSize = 11.5.sp,
-                lineHeight = 16.sp
-            )
+        if (isReconfigureMode) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(TacticalSurface)
+                    .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(14.dp))
+                    .clickable { applyStarterSet = !applyStarterSet }
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Применить стартовые склады и каталог",
+                        color = TacticalTextPrimary,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = if (hasExistingData) {
+                            "Ваши остатки, операции и заявки сохранятся — обновятся только стартовые шаблоны"
+                        } else {
+                            "Сразу загрузит склады, категории и справочник выбранного профиля"
+                        },
+                        color = TacticalTextMuted,
+                        fontSize = 11.sp,
+                        lineHeight = 15.sp
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Switch(
+                    checked = applyStarterSet,
+                    onCheckedChange = { applyStarterSet = it },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = SageGreenPrimary
+                    )
+                )
+            }
+        } else {
+            // Upgrade safety note
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(TacticalSurfaceLight)
+                    .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(14.dp))
+                    .padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Shield,
+                    contentDescription = null,
+                    tint = SageGreenPrimary,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = "При обновлении уже установленной версии старые склады, остатки и журнал никогда не меняются.",
+                    color = TacticalTextSecondary,
+                    fontSize = 11.5.sp,
+                    lineHeight = 16.sp
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(4.dp))
 
         Button(
-            onClick = { onConfirmProfile(selected) },
+            onClick = {
+                if (isReconfigureMode && onConfirmReconfigure != null) {
+                    onConfirmReconfigure(selected, applyStarterSet)
+                } else {
+                    onConfirmProfile(selected)
+                }
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(54.dp)
@@ -162,7 +245,7 @@ fun ProfileSelectionScreen(
             )
         ) {
             Text(
-                text = "Начать работу",
+                text = if (isReconfigureMode) "Применить профиль" else "Начать работу",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.ExtraBold
             )

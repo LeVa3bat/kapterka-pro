@@ -135,7 +135,9 @@ fun MoreSettingsScreen(
     onToggleTheme: () -> Unit = {},
     workspaceProfileMode: com.example.data.model.WorkspaceProfileMode = com.example.data.model.WorkspaceProfileMode.MILITARY,
     onSwitchProfileMode: (com.example.data.model.WorkspaceProfileMode) -> Unit = {},
-    onImportTemplateCatalog: (com.example.data.model.WorkspaceProfileMode) -> Unit = {}
+    onImportTemplateCatalog: (com.example.data.model.WorkspaceProfileMode) -> Unit = {},
+    onOpenProfileSelection: () -> Unit = {},
+    onExportWriteOffActClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val unitKey = profile?.unitKey?.trim().orEmpty()
@@ -562,11 +564,29 @@ fun MoreSettingsScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "Переключение профиля меняет набор бланков Excel и подсказки без удаления ваших складов, остатков и журнала.",
+                        text = "Переключение профиля меняет набор бланков Excel, кнопки и подсказки. Чтобы выбрать профиль со стартовыми складами, откройте экран выбора.",
                         color = TacticalTextSecondary,
                         fontSize = 11.sp,
                         lineHeight = 15.sp
                     )
+                    Button(
+                        onClick = onOpenProfileSelection,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(42.dp)
+                            .testTag("open_profile_selection_button"),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = SageGreenPrimary,
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Text(
+                            text = "Открыть выбор профиля и складов",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                     com.example.data.model.WorkspaceProfileMode.values().forEach { mode ->
                         val active = mode == workspaceProfileMode
                         Row(
@@ -609,27 +629,25 @@ fun MoreSettingsScreen(
                         }
                     }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = { onImportTemplateCatalog(com.example.data.model.WorkspaceProfileMode.CIVILIAN) },
-                            modifier = Modifier.weight(1f).height(38.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            border = BorderStroke(1.dp, TacticalBorder),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = TacticalTextPrimary)
-                        ) {
-                            Text("+ Каталог Мастерской", fontSize = 10.5.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-                        }
+                    if (workspaceProfileMode == com.example.data.model.WorkspaceProfileMode.MILITARY) {
                         OutlinedButton(
                             onClick = { onImportTemplateCatalog(com.example.data.model.WorkspaceProfileMode.MILITARY) },
-                            modifier = Modifier.weight(1f).height(38.dp),
+                            modifier = Modifier.fillMaxWidth().height(38.dp),
                             shape = RoundedCornerShape(12.dp),
                             border = BorderStroke(1.dp, TacticalBorder),
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = TacticalTextPrimary)
                         ) {
-                            Text("+ Каталог Служб", fontSize = 10.5.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                            Text("+ Дополнить каталог служб", fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                        }
+                    } else if (workspaceProfileMode == com.example.data.model.WorkspaceProfileMode.CIVILIAN) {
+                        OutlinedButton(
+                            onClick = { onImportTemplateCatalog(com.example.data.model.WorkspaceProfileMode.CIVILIAN) },
+                            modifier = Modifier.fillMaxWidth().height(38.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, TacticalBorder),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = TacticalTextPrimary)
+                        ) {
+                            Text("+ Дополнить каталог Мастерской", fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                         }
                     }
                 }
@@ -667,15 +685,22 @@ fun MoreSettingsScreen(
                             )
                         }
 
+                        val (syncPillText, syncPillBg, syncPillFg) = when {
+                            unitKey.isBlank() -> Triple("ЛОКАЛЬНО", TacticalSurfaceLight, TacticalTextMuted)
+                            syncState.isPaused -> Triple("ПАУЗА", TacticalGoldDark, TacticalGoldText)
+                            syncState.isSyncing -> Triple("СИНХРОНИЗАЦИЯ...", TacticalGold.copy(alpha = 0.2f), TacticalGold)
+                            !syncState.isOnline -> Triple("ОФЛАЙН", TacticalRedDark, TacticalRedText)
+                            else -> Triple("В СЕТИ", SageGreenDark, SageGreenBright)
+                        }
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(4.dp))
-                                .background(if (syncState.isSyncing) TacticalGold.copy(alpha = 0.2f) else SageGreenDark)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(syncPillBg)
                                 .padding(horizontal = 8.dp, vertical = 4.dp)
                         ) {
                             Text(
-                                text = if (syncState.isSyncing) "СИНХРОНИЗАЦИЯ..." else "ОНЛАЙН СИНХР.",
-                                color = if (syncState.isSyncing) TacticalGold else SageGreenBright,
+                                text = syncPillText,
+                                color = syncPillFg,
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -698,12 +723,12 @@ fun MoreSettingsScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "База Firestore:",
+                                    text = "Режим хранения:",
                                     fontSize = 11.sp,
                                     color = TacticalTextMuted
                                 )
                                 Text(
-                                    text = "kapterka-pro",
+                                    text = if (unitKey.isNotBlank() && !syncState.isPaused) "Облако + телефон" else "Только телефон",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = TacticalTextPrimary
@@ -1013,6 +1038,11 @@ fun MoreSettingsScreen(
                         docType = if (workspaceProfileMode.isMilitary) "Наличие и движение по наименованиям" else "Выдача инструмента и возврат",
                         onClick = onExportForm18Click
                     )
+                    ReportCompactRow(
+                        title = if (workspaceProfileMode.isMilitary) "Акт списания (расхода) МЦ" else "Акт списания ТМЦ (МБ-8 / ТОРГ-16)",
+                        docType = if (workspaceProfileMode.isMilitary) "Комиссионное списание по акту" else "Износ, поломка и расход ТМЦ",
+                        onClick = onExportWriteOffActClick
+                    )
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
@@ -1157,8 +1187,12 @@ fun MoreSettingsScreen(
                         a = "Передайте коллегам код группы учёта. На другом телефоне при запуске выберите «Подключиться по коду» и введите этот код. Склады, остатки и каталог будут доступны после синхронизации."
                     )
                     GuideItem(
-                        q = "2. Списание и акты расхода (Форма 8)",
-                        a = "Нажмите «Списание» на главном экране, выберите склад или точку, количество и причину (например, «Списание по акту» или «Выдача в эксплуатацию»). При необходимости запись можно использовать для Формы № 8."
+                        q = if (workspaceProfileMode.isMilitary) "2. Списание и акты расхода (Форма 8)" else "2. Возврат и списание ТМЦ (МБ-7 / МБ-8)",
+                        a = if (workspaceProfileMode.isMilitary) {
+                            "Нажмите «Списание» на главном экране, выберите склад или точку, количество и причину. Запись попадёт в журнал, Акт списания и Форму № 18."
+                        } else {
+                            "Кнопка «Возврат» возвращает выданный инструмент на склад и отмечает возврат в ведомости МБ-7. «Списание» формирует Акт списания ТМЦ (МБ-8 / ТОРГ-16)."
+                        }
                     )
                     GuideItem(
                         q = "3. Автономный режим 100% без интернета",
@@ -1297,9 +1331,25 @@ fun MoreSettingsScreen(
             Spacer(modifier = Modifier.height(14.dp))
         }
 
-        // LOGOUT / SWITCH CALLSIGN BUTTON
+        // CHANGE PROFILE & LOGOUT BUTTONS
         item {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    onClick = onOpenProfileSelection,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(44.dp)
+                        .testTag("change_workspace_profile_button"),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = SageGreenDark,
+                        contentColor = SageGreenBright
+                    ),
+                    shape = RoundedCornerShape(14.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, SageGreenPrimary.copy(alpha = 0.5f))
+                ) {
+                    Text("Изменить профиль и склады", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                }
+
                 Button(
                     onClick = onLogoutClick,
                     modifier = Modifier
@@ -1313,10 +1363,8 @@ fun MoreSettingsScreen(
                     shape = RoundedCornerShape(14.dp),
                     border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorder)
                 ) {
-                    Text("Изменить профиль / Выйти из группы", fontSize = 12.sp)
+                    Text("Выйти из аккаунта / Сменить пользователя", fontSize = 12.sp)
                 }
-
-
             }
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -1354,7 +1402,11 @@ fun MoreSettingsScreen(
                 )
                 Spacer(modifier = Modifier.height(3.dp))
                 Text(
-                    text = "Версия программы: v${com.example.BuildConfig.VERSION_NAME} PRO (Tactical Edition)",
+                    text = if (workspaceProfileMode.isMilitary) {
+                        "Версия программы: v${com.example.BuildConfig.VERSION_NAME} PRO (Воинский учёт)"
+                    } else {
+                        "Версия программы: v${com.example.BuildConfig.VERSION_NAME} PRO"
+                    },
                     color = TacticalTextMuted,
                     fontSize = 11.sp,
                     fontFamily = FontFamily.Monospace,

@@ -83,12 +83,7 @@ class KapterkaRepository(
             currentProfile
         }
 
-        // Launch online synchronization for this unit if unitKey is configured
-        if (activeProfile.unitKey.isNotBlank()) {
-            syncManager?.syncAndReconcileAll(activeProfile.unitKey, activeProfile.callsign, activeProfile.unitName)
-        }
-
-        // Add starter items according to active profile without overwriting existing user-edited rows.
+        // Add starter items and default warehouses locally FIRST so poor network never blocks startup.
         // In EMPTY mode nothing is ever forced into the user's catalog.
         val starterItems = InitialData.getItemsFor(profileMode)
         if (starterItems.isNotEmpty()) {
@@ -99,9 +94,11 @@ class KapterkaRepository(
         if (currentPoints.isEmpty()) {
             val defaults = InitialData.getPointsFor(profileMode)
             dao.insertPoints(defaults)
-            if (activeProfile.unitKey.isNotBlank()) {
-                defaults.forEach { p -> syncManager?.pushWarehousePointAsync(activeProfile.unitKey, p) }
-            }
+        }
+
+        // Launch online synchronization for this unit if unitKey is configured
+        if (activeProfile.unitKey.isNotBlank()) {
+            syncManager?.syncAndReconcileAll(activeProfile.unitKey, activeProfile.callsign, activeProfile.unitName)
         }
     }
 
@@ -126,6 +123,89 @@ class KapterkaRepository(
             starterPoints.forEach { p -> syncManager?.pushWarehousePointAsync(unitKey, p) }
         }
         return true
+    }
+
+    /**
+     * Explicit user-triggered profile change from Settings -> «Изменить профиль».
+     * - On a clean DB with [updateWarehousesAndCatalog] = true, switches starter warehouses & catalog cleanly.
+     * - When working stock/history already exists, NEVER deletes user stock, operations, requisitions,
+     *   custom items or non-empty points; replaces only unreferenced unused starter items/empty starter points
+     *   with the newly chosen profile's starter set.
+     */
+    suspend fun reconfigureProfile(
+        mode: com.example.data.model.WorkspaceProfileMode,
+        updateWarehousesAndCatalog: Boolean
+    ): Pair<Boolean, Boolean> {
+        if (!updateWarehousesAndCatalog) return Pair(false, hasLocalUnitData())
+        if (!hasLocalUnitData()) {
+            applyStarterProfile(mode)
+            return Pair(true, false)
+        }
+
+        // Existing data present: protect every referenced item and non-empty / custom warehouse!
+        val allStocks = dao.getAllStockRecords().first()
+        val allOps = dao.getAllOperations().first()
+        val referencedItemIds = buildSet {
+            allStocks.forEach { if (it.quantity != 0 || it.incomeTotal != 0 || it.expenseTotal != 0) add(it.itemId) }
+            allOps.forEach { op ->
+                parseOperationItems(op.itemsJson).forEach { entry ->
+                    if (entry.itemId.isNotBlank()) add(entry.itemId)
+                }
+            }
+        }
+        val starterItemIds = InitialData.getAllStarterItemIds()
+        val targetStarterItems = InitialData.getItemsFor(mode)
+        val targetStarterItemIds = targetStarterItems.map { it.id }.toSet()
+
+        // Remove only UNREFERENCED starter items that do not belong to the new profile
+        val currentItems = dao.getAllItems().first()
+        for (item in currentItems) {
+            if (!item.isCustom &&
+                item.id in starterItemIds &&
+                item.id !in targetStarterItemIds &&
+                item.id !in referencedItemIds
+            ) {
+                dao.deleteItem(item.id)
+            }
+        }
+        if (targetStarterItems.isNotEmpty()) {
+            dao.insertItemsIfMissing(targetStarterItems)
+        }
+
+        // Update starter warehouses safely: never drop points that have stock or custom points
+        val stockPointIds = allStocks.filter { it.quantity != 0 || it.incomeTotal != 0 || it.expenseTotal != 0 }
+            .map { it.pointId }.toSet()
+        val allStarterPointIds = InitialData.getAllStarterPointIds()
+        val targetPoints = InitialData.getPointsFor(mode)
+        val targetPointIds = targetPoints.map { it.id }.toSet()
+        val defaultBaseNames = setOf("Базовый склад (КЗ)", "Основной склад")
+
+        val currentPoints = dao.getAllPoints().first()
+        for (pt in currentPoints) {
+            if (!pt.isBase &&
+                pt.id in allStarterPointIds &&
+                pt.id !in targetPointIds &&
+                pt.id !in stockPointIds
+            ) {
+                dao.deletePoint(pt.id)
+            }
+        }
+        val remainingPointIds = dao.getAllPoints().first().map { it.id }.toSet()
+        val unitKey = getCurrentUnitKey()
+        for (targetPt in targetPoints) {
+            if (targetPt.id !in remainingPointIds) {
+                dao.insertPoint(targetPt)
+                if (unitKey.isNotBlank()) syncManager?.pushWarehousePointAsync(unitKey, targetPt)
+            } else if (targetPt.isBase) {
+                val existingBase = currentPoints.firstOrNull { it.id == targetPt.id }
+                if (existingBase != null && existingBase.name in defaultBaseNames) {
+                    val renamed = existingBase.copy(name = targetPt.name, description = targetPt.description)
+                    dao.updatePoint(renamed)
+                    if (unitKey.isNotBlank()) syncManager?.pushWarehousePointAsync(unitKey, renamed)
+                }
+            }
+        }
+        return Pair(true, true)
     }
 
     /**
@@ -265,12 +345,59 @@ class KapterkaRepository(
         return manager.deleteUnitCloudData(key)
     }
 
-    suspend fun recordIncome(toPointId: String, toPointName: String, supplier: String, items: List<OperationItemEntry>, comment: String, actor: String) {
+    suspend fun recordIncome(
+        toPointId: String,
+        toPointName: String,
+        supplier: String,
+        items: List<OperationItemEntry>,
+        comment: String,
+        actor: String,
+        isMilitary: Boolean = true
+    ) {
         val summary = items.joinToString(", ") { "${it.itemName} - ${it.quantity} ${it.unit}" }
         val itemsJson = serializeOperationItems(items)
-        val src = supplier.ifBlank { "Служба снабжения / Тыл" }
-        val dest = toPointName.ifBlank { "Базовый склад" }
+        val src = supplier.ifBlank { if (isMilitary) "Служба снабжения / Тыл" else "Поставщик" }
+        val dest = toPointName.ifBlank { if (isMilitary) "Базовый склад" else "Основной склад" }
         val op = OperationRecord(java.util.UUID.randomUUID().toString(), OperationType.INCOME, src, dest, "", actor, comment, System.currentTimeMillis(), summary, itemsJson)
+        val stagedStocks = linkedMapOf<String, StockRecord>()
+        for (item in items) {
+            stageAdjustedStock(stagedStocks, toPointId, item.itemId, item.quantity, isIncome = true)
+        }
+        val updatedStocks = stagedStocks.values.toList()
+        dao.commitOperationAndStocks(op, updatedStocks)
+        syncManager?.pushOperationAsync(getCurrentUnitKey(), op, updatedStocks)
+    }
+
+    /**
+     * Records a return of previously issued tools/goods back to a warehouse.
+     * Stored as OperationType.INCOME with RETURN_DOC_MARKER so Room v3 and
+     * Firestore cross-device sync remain 100% backward compatible.
+     */
+    suspend fun recordReturn(
+        toPointId: String,
+        toPointName: String,
+        returnedBy: String,
+        items: List<OperationItemEntry>,
+        comment: String,
+        actor: String
+    ) {
+        val summary = items.joinToString(", ") { "${it.itemName} - ${it.quantity} ${it.unit}" }
+        val itemsJson = serializeOperationItems(items)
+        val sender = returnedBy.trim().ifBlank { "Сотрудник / объект" }
+        val src = "${com.example.data.model.RETURN_FROM_PREFIX}$sender"
+        val dest = toPointName.ifBlank { "Основной склад" }
+        val op = OperationRecord(
+            id = java.util.UUID.randomUUID().toString(),
+            type = OperationType.INCOME,
+            fromPointName = src,
+            toPointName = dest,
+            docNumber = com.example.data.model.RETURN_DOC_MARKER,
+            responsiblePerson = actor,
+            comment = comment,
+            timestamp = System.currentTimeMillis(),
+            itemsSummary = summary,
+            itemsJson = itemsJson
+        )
         val stagedStocks = linkedMapOf<String, StockRecord>()
         for (item in items) {
             stageAdjustedStock(stagedStocks, toPointId, item.itemId, item.quantity, isIncome = true)
@@ -328,10 +455,19 @@ class KapterkaRepository(
         syncManager?.pushOperationAsync(getCurrentUnitKey(), op, updatedStocks)
     }
 
-    suspend fun recordExpenditure(fromPointId: String, pointName: String, docNumber: String, responsiblePerson: String, items: List<OperationItemEntry>, comment: String) {
+    suspend fun recordExpenditure(
+        fromPointId: String,
+        pointName: String,
+        docNumber: String,
+        responsiblePerson: String,
+        items: List<OperationItemEntry>,
+        comment: String,
+        isMilitary: Boolean = true
+    ) {
         val summary = items.joinToString(", ") { "${it.itemName} - ${it.quantity} ${it.unit}" }
         val itemsJson = serializeOperationItems(items)
-        val op = OperationRecord(java.util.UUID.randomUUID().toString(), OperationType.EXPENDITURE, pointName, "Списание (ф. 8)", docNumber, responsiblePerson, comment, System.currentTimeMillis(), summary, itemsJson)
+        val destLabel = if (isMilitary) "Списание (ф. 8)" else "Списание (МБ-8)"
+        val op = OperationRecord(java.util.UUID.randomUUID().toString(), OperationType.EXPENDITURE, pointName, destLabel, docNumber, responsiblePerson, comment, System.currentTimeMillis(), summary, itemsJson)
         val stagedStocks = linkedMapOf<String, StockRecord>()
         for (item in items) {
             stageAdjustedStock(stagedStocks, fromPointId, item.itemId, -item.quantity, isIncome = false)

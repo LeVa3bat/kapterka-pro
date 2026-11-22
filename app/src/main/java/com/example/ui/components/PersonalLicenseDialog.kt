@@ -21,10 +21,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -109,6 +112,8 @@ fun PersonalLicenseDialog(
     licenseStatus: FighterLicenseStatus,
     yooKassaConfig: YooKassaConfig,
     issuedPaymentKey: String? = null,
+    paymentAwaitingConfirmation: Boolean = false,
+    onResetPendingPayment: () -> Unit = {},
     onPayYooKassaClick: () -> Unit = {},
     onPayYooKassaPlanClick: ((Int) -> Unit)? = null,
     onActivateLicenseKey: (String) -> Unit,
@@ -124,7 +129,8 @@ fun PersonalLicenseDialog(
     val clipboard = LocalClipboardManager.current
     val scope = rememberCoroutineScope()
     var selectedPlan by remember { mutableStateOf(ProPlanOption.DAYS_30) }
-    var paymentStarted by remember { mutableStateOf(false) }
+    var paymentStartedLocal by remember(paymentAwaitingConfirmation) { mutableStateOf(paymentAwaitingConfirmation) }
+    val paymentStarted = paymentAwaitingConfirmation || paymentStartedLocal
     var verifying by remember { mutableStateOf(false) }
     var showKeyEntry by remember { mutableStateOf(false) }
     var showRestore by remember { mutableStateOf(false) }
@@ -257,15 +263,21 @@ fun PersonalLicenseDialog(
                         Text("Выберите срок PRO", color = TacticalTextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(IntrinsicSize.Max),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             ProPlanOption.values().forEach { plan ->
                                 val isSelected = plan == selectedPlan
                                 val optPrice = planPrice(plan)
+                                val formattedPrice = "%,d ₽".format(java.util.Locale("ru"), optPrice).replace(',', ' ')
+                                val subBadge = plan.badge.ifEmpty { "${(optPrice / plan.days).coerceAtLeast(1)} ₽/день" }
                                 Box(
                                     modifier = Modifier
                                         .weight(1f)
+                                        .fillMaxHeight()
+                                        .heightIn(min = 86.dp)
                                         .clip(RoundedCornerShape(14.dp))
                                         .background(
                                             if (isSelected) Color(0xFFE0A63A).copy(alpha = 0.16f) else TacticalSurfaceLight
@@ -276,31 +288,39 @@ fun PersonalLicenseDialog(
                                             shape = RoundedCornerShape(14.dp)
                                         )
                                         .clickable { selectedPlan = plan }
-                                        .padding(vertical = 10.dp, horizontal = 6.dp),
+                                        .padding(vertical = 10.dp, horizontal = 4.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.Center
+                                    ) {
                                         Text(
                                             text = plan.title,
                                             color = if (isSelected) TacticalGoldText else TacticalTextSecondary,
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.Bold
+                                            fontSize = 11.5.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 1,
+                                            softWrap = false
                                         )
-                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Spacer(modifier = Modifier.height(3.dp))
                                         Text(
-                                            text = "$optPrice ₽",
+                                            text = formattedPrice,
                                             color = TacticalTextPrimary,
                                             fontSize = 15.sp,
-                                            fontWeight = FontWeight.ExtraBold
+                                            fontWeight = FontWeight.ExtraBold,
+                                            maxLines = 1,
+                                            softWrap = false
                                         )
-                                        if (plan.badge.isNotEmpty()) {
-                                            Text(
-                                                text = plan.badge,
-                                                color = SageGreenBright,
-                                                fontSize = 10.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
+                                        Spacer(modifier = Modifier.height(3.dp))
+                                        Text(
+                                            text = subBadge,
+                                            color = if (plan.badge.isNotEmpty()) SageGreenBright else TacticalTextMuted,
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 1,
+                                            softWrap = false
+                                        )
                                     }
                                 }
                             }
@@ -312,10 +332,23 @@ fun PersonalLicenseDialog(
                         Step(2, "Оплатите через СБП, картой МИР или SberPay")
                         Step(3, "Вернитесь сюда и нажмите «Я оплатил»")
                         Spacer(modifier = Modifier.height(14.dp))
+                        if (email.isBlank() || !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                            Text(
+                                "Перед оплатой укажите корректный Email в разделе «Ещё → Профиль → Изменить данные» — туда придёт ключ лицензии.",
+                                color = TacticalRedText,
+                                fontSize = 11.5.sp,
+                                lineHeight = 15.sp,
+                                modifier = Modifier.padding(bottom = 10.dp)
+                            )
+                        }
                         Button(
                             onClick = {
-                                paymentStarted = true
-                                startPay()
+                                if (email.isNotBlank() && android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                                    // ViewModel sets paymentAwaitingConfirmation = true only once checkout URL is created
+                                    startPay()
+                                } else {
+                                    startPay()
+                                }
                             },
                             modifier = Modifier.fillMaxWidth().height(56.dp).testTag("yookassa_pay_button"),
                             shape = RoundedCornerShape(18.dp),
@@ -362,8 +395,16 @@ fun PersonalLicenseDialog(
                                     Text("Я оплатил — проверить", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
-                            TextButton(onClick = startPay) {
-                                Text("Открыть оплату снова", color = TacticalGoldText, fontSize = 13.sp)
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                TextButton(onClick = startPay) {
+                                    Text("Открыть оплату снова", color = TacticalGoldText, fontSize = 12.5.sp)
+                                }
+                                TextButton(onClick = {
+                                    paymentStartedLocal = false
+                                    onResetPendingPayment()
+                                }) {
+                                    Text("Выбрать другой срок", color = TacticalTextMuted, fontSize = 12.5.sp)
+                                }
                             }
                         }
                     }

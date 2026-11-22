@@ -51,6 +51,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.filled.TableChart
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Undo
 import androidx.compose.material.icons.filled.Warehouse
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -162,7 +163,8 @@ fun MainDashboardScreen(
     syncState: com.example.data.sync.SyncState = com.example.data.sync.SyncState(),
     profileMode: com.example.data.model.WorkspaceProfileMode = com.example.data.model.WorkspaceProfileMode.MILITARY,
     onReorderPoints: (List<WarehousePoint>) -> Unit = {},
-    onDeletePoint: (String) -> Unit = {}
+    onDeletePoint: (String) -> Unit = {},
+    onReturnClick: () -> Unit = {}
 ) {
     var selectedPointFilterId by remember { mutableStateOf<String?>(null) } // null = Все склады
     var adjustingStock by remember { mutableStateOf<PendingAdjustStock?>(null) }
@@ -254,7 +256,7 @@ fun MainDashboardScreen(
                         friendlyName.contains("Мина", ignoreCase = true) || friendlyName.contains("Снаряд", ignoreCase = true) || friendlyName.contains("Патрон", ignoreCase = true) -> "Служба РАВ"
                         friendlyName.contains("Дизель", ignoreCase = true) || friendlyName.contains("Бензин", ignoreCase = true) || friendlyName.contains("Масло", ignoreCase = true) -> "Служба ГСМ"
                         friendlyName.contains("Аптечка", ignoreCase = true) || friendlyName.contains("Бинт", ignoreCase = true) || friendlyName.contains("Жгут", ignoreCase = true) -> "Медицинская служба"
-                        else -> "Служба РАВ"
+                        else -> if (profileMode.isMilitary) "Служба РАВ" else "Прочее"
                     }
                     val unit = fromOp?.unit?.takeIf { it.isNotBlank() }
                         ?: existing?.unit?.takeIf { it.isNotBlank() }
@@ -432,14 +434,25 @@ fun MainDashboardScreen(
                     onClick = onIssueClick,
                     modifier = Modifier.weight(1f).testTag("op_issue_button")
                 )
-                SleekOperationTile(
-                    title = "Перенос",
-                    icon = Icons.Default.LocalShipping,
-                    accentColor = TacticalTeal,
-                    accentBg = TacticalTealDark,
-                    onClick = onTransferClick,
-                    modifier = Modifier.weight(1f).testTag("op_transfer_button")
-                )
+                if (profileMode.isMilitary) {
+                    SleekOperationTile(
+                        title = "Перенос",
+                        icon = Icons.Default.LocalShipping,
+                        accentColor = TacticalTeal,
+                        accentBg = TacticalTealDark,
+                        onClick = onTransferClick,
+                        modifier = Modifier.weight(1f).testTag("op_transfer_button")
+                    )
+                } else {
+                    SleekOperationTile(
+                        title = "Возврат",
+                        icon = Icons.Default.Undo,
+                        accentColor = TacticalTeal,
+                        accentBg = TacticalTealDark,
+                        onClick = onReturnClick,
+                        modifier = Modifier.weight(1f).testTag("op_return_button")
+                    )
+                }
                 SleekOperationTile(
                     title = "Списание",
                     icon = Icons.Default.DeleteSweep,
@@ -532,7 +545,7 @@ fun MainDashboardScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Склады и точки",
+                    text = if (profileMode.isMilitary) "Склады и точки" else "Склады и участки",
                     color = TacticalTextPrimary,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold
@@ -650,7 +663,7 @@ fun MainDashboardScreen(
 
                                 Column(horizontalAlignment = Alignment.End) {
                                     Text(
-                                        text = "Остаток на точке",
+                                        text = if (profileMode.isMilitary) "Остаток на точке" else "Остаток на складе",
                                         color = TacticalTextMuted,
                                         fontSize = 9.5.sp,
                                         fontWeight = FontWeight.Bold,

@@ -59,7 +59,17 @@ fun TacticalHeader(
     val userName = profile?.callsign?.takeIf { it.isNotBlank() } ?: "Пользователь"
 
     val isPro = profile?.isProActive == true
-    val licenseText = if (isPro) "PRO • ${profile?.proDaysLeft ?: 0} дн." else "Демо"
+    val demoDays = profile?.demoDaysLeft ?: 0
+    val licenseText = when {
+        isPro -> "PRO • ${profile?.proDaysLeft ?: 0} дн."
+        demoDays > 0 -> "Демо • $demoDays дн."
+        else -> "Базовый"
+    }
+    val licenseColor = when {
+        isPro -> TacticalEmeraldText
+        demoDays > 0 -> TacticalGoldText
+        else -> TacticalRedText
+    }
 
     Column(
         modifier = modifier
@@ -172,7 +182,7 @@ fun TacticalHeader(
                     )
                     Text(
                         text = licenseText,
-                        color = if (isPro) TacticalEmeraldText else TacticalGoldText,
+                        color = licenseColor,
                         fontSize = 9.5.sp,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1

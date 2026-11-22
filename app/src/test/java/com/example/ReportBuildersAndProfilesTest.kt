@@ -468,4 +468,177 @@ class ReportBuildersAndProfilesTest {
         assertFalse("Unescaped formula tag must not appear", sheetXml.contains("<t>=HYPERLINK"))
         assertTrue("Landscape A4 print setup must be present", sheetXml.contains("""orientation="landscape""""))
     }
+
+    // -------------------------------------------------------------------------
+    // 5. Returns (Возврат), Multi-Warehouse Reconciliation & Profile Reconfigure
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun returnOperation_populatesMb7ReturnColumnAndDoesNotInflateTurnover() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val db = Room.inMemoryDatabaseBuilder(context, KapterkaDatabase::class.java)
+            .allowMainThreadQueries()
+            .build()
+        try {
+            val dao = db.kapterkaDao()
+            val repo = KapterkaRepository(dao, null)
+            repo.ensureInitialized(WorkspaceProfileMode.CIVILIAN)
+
+            val points = dao.getAllPoints().first()
+            val base = points.first { it.isBase }
+            val workshop = points.first { !it.isBase }
+            val drill = dao.getAllItems().first().first { it.name.contains("Перфоратор") || it.unit == "шт." }
+
+            // 1. Purchase 10 pcs on Base
+            repo.recordIncome(
+                toPointId = base.id,
+                toPointName = base.name,
+                supplier = "ООО Инструмент",
+                items = listOf(OperationItemEntry(drill.id, drill.name, drill.unit, 10)),
+                comment = "УПД 100",
+                actor = "Алексей",
+                isMilitary = false
+            )
+            // 2. Transfer 4 pcs Base -> Workshop
+            repo.recordTransfer(
+                fromPointId = base.id,
+                fromPointName = base.name,
+                toPointId = workshop.id,
+                toPointName = workshop.name,
+                items = listOf(OperationItemEntry(drill.id, drill.name, drill.unit, 4)),
+                comment = "На объект",
+                actor = "Алексей"
+            )
+            // 3. Issue 3 pcs from Base to Петров А.С.
+            repo.recordIssueToPerson(
+                fromPointId = base.id,
+                fromPointName = base.name,
+                recipient = "Петров А.С.",
+                items = listOf(OperationItemEntry(drill.id, drill.name, drill.unit, 3)),
+                comment = "Бригада 1",
+                actor = "Алексей"
+            )
+            // 4. Return 2 pcs from Петров А.С. back to Base
+            repo.recordReturn(
+                toPointId = base.id,
+                toPointName = base.name,
+                returnedBy = "Петров А.С.",
+                items = listOf(OperationItemEntry(drill.id, drill.name, drill.unit, 2)),
+                comment = "Исправен",
+                actor = "Алексей"
+            )
+
+            val ops = dao.getAllOperations().first()
+            val stocks = dao.getAllStockRecords().first()
+            val items = dao.getAllItems().first()
+
+            // Base stock = 10 - 4 - 3 + 2 = 5; Workshop stock = 4; Total across ALL warehouses = 9!
+            val baseReport = ReportBuilders.buildSinglePointReport(
+                profileMode = WorkspaceProfileMode.CIVILIAN,
+                point = base,
+                catalogItems = items,
+                stockRecords = stocks.filter { it.pointId == base.id },
+                operations = ops,
+                unitName = "Мастерская",
+                parseItems = parseOps
+            )
+            val workshopReport = ReportBuilders.buildSinglePointReport(
+                profileMode = WorkspaceProfileMode.CIVILIAN,
+                point = workshop,
+                catalogItems = items,
+                stockRecords = stocks.filter { it.pointId == workshop.id },
+                operations = ops,
+                unitName = "Мастерская",
+                parseItems = parseOps
+            )
+            assertEquals("5", baseReport.rows.single()[6])
+            assertEquals("4", workshopReport.rows.single()[6])
+
+            // Turnover report: external income MUST remain 10 (not 12!), net issued = 3 - 2 = 1, total stock = 9!
+            val turnover = ReportBuilders.buildConsolidatedTurnoverReport(
+                profileMode = WorkspaceProfileMode.CIVILIAN,
+                catalogItems = items,
+                stockRecords = stocks,
+                operations = ops,
+                points = points,
+                unitName = "Мастерская",
+                parseItems = parseOps
+            )
+            val drillRow = turnover.rows.single()
+            assertEquals("10", drillRow[4]) // External income
+            assertEquals("1", drillRow[5])  // Net outgoing (3 issued - 2 returned)
+            assertEquals("9", drillRow[7])  // Exact sum of Base (5) + Workshop (4)
+            assertTrue(drillRow[6].contains("${base.name}: 5"))
+            assertTrue(drillRow[6].contains("${workshop.name}: 4"))
+
+            // MB-7 must match Петров А.С.'s return in column 9!
+            val mb7 = ReportBuilders.buildCivilianIssueRegisterMB7(
+                operations = ops,
+                catalogItems = items,
+                unitName = "Мастерская",
+                parseItems = parseOps
+            )
+            assertEquals(1, mb7.rows.size)
+            assertTrue(
+                "MB-7 column 9 must record partial return 2 of 3 (was: '${mb7.rows[0][8]}')",
+                mb7.rows[0][8].contains("2 из 3")
+            )
+
+            // Form 18 must also reconcile ending balance to exact 9 across all warehouses
+            val form18 = ReportBuilders.buildMilitaryForm18(
+                operations = ops,
+                stockRecords = stocks,
+                points = points,
+                catalogItems = items,
+                unitName = "Мастерская",
+                parseItems = parseOps
+            )
+            assertEquals("9", form18.totalRow!![6])
+        } finally {
+            db.close()
+        }
+    }
+
+    @Test
+    fun reconfigureProfile_switchesCleanlyAndProtectsActiveStock() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val db = Room.inMemoryDatabaseBuilder(context, KapterkaDatabase::class.java)
+            .allowMainThreadQueries()
+            .build()
+        try {
+            val dao = db.kapterkaDao()
+            val repo = KapterkaRepository(dao, null)
+
+            // Start in Military mode (clean)
+            repo.ensureInitialized(WorkspaceProfileMode.MILITARY)
+            assertTrue(dao.getAllItems().first().any { it.id.startsWith("rav_") })
+
+            // Reconfigure to Civilian on clean DB -> switches cleanly to Civilian catalog & warehouses
+            val (changedClean, hadDataClean) = repo.reconfigureProfile(WorkspaceProfileMode.CIVILIAN, true)
+            assertTrue(changedClean)
+            assertFalse(hadDataClean)
+            assertFalse(dao.getAllItems().first().any { it.id.startsWith("rav_") })
+            assertEquals(InitialData.getCivilianItems().size, dao.getAllItems().first().size)
+
+            // Record real stock on Base
+            val base = dao.getAllPoints().first().first { it.isBase }
+            val civItem = dao.getAllItems().first().first()
+            repo.recordIncome(
+                base.id, base.name, "Поставщик",
+                listOf(OperationItemEntry(civItem.id, civItem.name, civItem.unit, 7)),
+                "", "Алексей", isMilitary = false
+            )
+
+            // Reconfigure to EMPTY with existing data -> keeps the stocked item & stock, drops unused starter clutter
+            val (changedWithData, hadData) = repo.reconfigureProfile(WorkspaceProfileMode.EMPTY, true)
+            assertTrue(changedWithData)
+            assertTrue(hadData)
+            val remainingItems = dao.getAllItems().first()
+            assertEquals(1, remainingItems.size)
+            assertEquals(civItem.id, remainingItems.single().id)
+            assertEquals(7, dao.getAllStockRecords().first().single().quantity)
+        } finally {
+            db.close()
+        }
+    }
 }

@@ -154,6 +154,7 @@ interface KapterkaDao {
         operations: List<OperationRecord>,
         requisitions: List<RequisitionRequest>
     ) {
+        clearAllSyncTombstones()
         clearAllStockRecords()
         clearAllOperations()
         clearAllRequisitions()
@@ -169,6 +170,9 @@ interface KapterkaDao {
     // Explicit sync deletion markers
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertSyncTombstone(tombstone: SyncTombstone)
+
+    @Query("DELETE FROM sync_tombstones")
+    suspend fun clearAllSyncTombstones()
 
     @Query("SELECT * FROM sync_tombstones WHERE unitKey = :unitKey")
     suspend fun getSyncTombstonesForUnit(unitKey: String): List<SyncTombstone>

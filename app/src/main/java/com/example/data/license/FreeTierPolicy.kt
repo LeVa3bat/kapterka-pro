@@ -58,11 +58,16 @@ object FreeTierPolicy {
             )
         }
 
-        val currentActive = activeItemIds(stockRecords)
+        val primaryRecords = if (primaryId != null) {
+            stockRecords.filter { it.pointId == primaryId }
+        } else {
+            stockRecords
+        }
+        val currentActive = activeItemIds(primaryRecords)
         val resultingActiveCount = (currentActive + itemIds).size
         if (resultingActiveCount > MAX_FREE_ACTIVE_ITEMS) {
             return FreeTierDecision.RequirePro(
-                "Бесплатный лимит: до $MAX_FREE_ACTIVE_ITEMS активных позиций на остатках (сейчас получится $resultingActiveCount). Откройте PRO для безлимитного учёта."
+                "Бесплатный лимит: до $MAX_FREE_ACTIVE_ITEMS активных позиций на основном складе (сейчас получится $resultingActiveCount). Откройте PRO для безлимитного учёта."
             )
         }
 
@@ -111,7 +116,12 @@ object FreeTierPolicy {
         }
 
         val currentQty = stockRecords.firstOrNull { it.pointId == pointId && it.itemId == itemId }?.quantity ?: 0
-        val currentActive = activeItemIds(stockRecords)
+        val primaryRecords = if (primaryId != null) {
+            stockRecords.filter { it.pointId == primaryId }
+        } else {
+            stockRecords
+        }
+        val currentActive = activeItemIds(primaryRecords)
         val resultingActiveCount = if (newQuantity > 0) {
             (currentActive + itemId).size
         } else {

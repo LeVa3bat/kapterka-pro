@@ -101,6 +101,7 @@ import com.example.ui.components.ExpenditureOperationDialog
 import com.example.ui.components.IncomeOperationDialog
 import com.example.ui.components.IssueOperationDialog
 import com.example.ui.components.PersonalLicenseDialog
+import com.example.ui.components.ReturnOperationDialog
 import com.example.ui.components.TransferOperationDialog
 import com.example.ui.components.UnitKeySyncDialog
 import com.example.ui.components.UserManualDialog
@@ -226,8 +227,10 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
     var currentDestination by remember { mutableStateOf(AppDestination.HOME) }
     val context = LocalContext.current
 
-    // Request notification permission for Android 13+
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+    // Request notification permission for Android 13+ only when system notifications are enabled
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+        TacticalNotificationHelper.isSystemNotificationEnabled
+    ) {
         val permissionLauncher = rememberLauncherForActivityResult(
             contract = ActivityResultContracts.RequestPermission()
         ) { _ -> }
@@ -239,6 +242,18 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                 android.util.Log.w("MainActivity", "Notification permission request skipped on emulator: ${e.message}")
             }
         }
+    }
+
+    // Refresh license status & check pending YooKassa payments whenever returning to the app
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                viewModel.onAppResumed()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     // State Collection
@@ -260,10 +275,13 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
     val issuedPaymentKey by viewModel.issuedPaymentKey.collectAsState()
     val workspaceProfileMode by viewModel.workspaceProfileMode.collectAsState()
     val needsProfileSelection by viewModel.needsProfileSelection.collectAsState()
+    val showProfilePickerOverlay by viewModel.showProfilePickerOverlay.collectAsState()
+    val paymentAwaitingConfirmation by viewModel.paymentAwaitingConfirmation.collectAsState()
 
     // Dialog Control States
     var showIncomeDialog by remember { mutableStateOf(false) }
     var showTransferDialog by remember { mutableStateOf(false) }
+    var showReturnDialog by remember { mutableStateOf(false) }
     var showIssueDialog by remember { mutableStateOf(false) }
     var showExpenditureDialog by remember { mutableStateOf(false) }
     var showAddPointDialog by remember { mutableStateOf(false) }
@@ -313,12 +331,22 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
         return
     }
 
-    // PATH A: STARTER PROFILE PICKER (only for genuine first launch, never for existing upgrading DBs)
-    if (needsProfileSelection) {
+    // PATH A: STARTER PROFILE PICKER (first launch OR reopened explicitly from Settings -> «Изменить профиль и склады»)
+    if (needsProfileSelection || showProfilePickerOverlay) {
+        val isReconfigure = showProfilePickerOverlay && !needsProfileSelection
+        val hasWorkingData = stockRecords.isNotEmpty() || operations.isNotEmpty() || requisitions.isNotEmpty()
         com.example.ui.screens.ProfileSelectionScreen(
-            initialSelection = com.example.data.model.WorkspaceProfileMode.CIVILIAN,
+            initialSelection = if (isReconfigure) workspaceProfileMode else com.example.data.model.WorkspaceProfileMode.CIVILIAN,
             onConfirmProfile = { mode ->
                 viewModel.selectStarterProfile(mode)
+                currentDestination = AppDestination.HOME
+            },
+            isReconfigureMode = isReconfigure,
+            hasExistingData = hasWorkingData,
+            onCancel = if (isReconfigure) ({ viewModel.closeProfileSelectionScreen() }) else null,
+            onConfirmReconfigure = { mode, applyStarterSet ->
+                viewModel.reconfigureWorkspaceProfile(mode, applyStarterSet)
+                currentDestination = AppDestination.HOME
             }
         )
         return
@@ -482,7 +510,7 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                             },
                             onIssueClick = { showIssueDialog = true },
                             onExpenditureClick = {
-                                checkProAccess("списания по Форме № 8") {
+                                checkProAccess(if (workspaceProfileMode.isMilitary) "списания по Форме № 8" else "списания ТМЦ (МБ-8)") {
                                     showExpenditureDialog = true
                                 }
                             },
@@ -527,7 +555,8 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                             onToggleTheme = { viewModel.toggleTheme() },
                             profileMode = workspaceProfileMode,
                             onReorderPoints = { viewModel.reorderWarehousePoints(it) },
-                            onDeletePoint = { viewModel.deleteWarehousePoint(it) }
+                            onDeletePoint = { viewModel.deleteWarehousePoint(it) },
+                            onReturnClick = { showReturnDialog = true }
                         )
                     }
 
@@ -540,7 +569,8 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                             availableCategories = availableCategories,
                             onFilterChange = { viewModel.setHistoryFilterType(it) },
                             onSearchChange = { viewModel.setHistorySearchQuery(it) },
-                            parseItems = { viewModel.parseOperationItems(it) }
+                            parseItems = { viewModel.parseOperationItems(it) },
+                            profileMode = workspaceProfileMode
                         )
                     }
 
@@ -567,7 +597,8 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                                 checkProAccess("выдачи по заявке") {
                                     viewModel.issueRequisition(req)
                                 }
-                            }
+                            },
+                            profileMode = workspaceProfileMode
                         )
                     }
 
@@ -665,7 +696,14 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                             onToggleTheme = { viewModel.toggleTheme() },
                             workspaceProfileMode = workspaceProfileMode,
                             onSwitchProfileMode = { viewModel.switchWorkspaceProfileMode(it) },
-                            onImportTemplateCatalog = { viewModel.importTemplateCatalog(it) }
+                            onImportTemplateCatalog = { viewModel.importTemplateCatalog(it) },
+                            onOpenProfileSelection = { viewModel.openProfileSelectionScreen() },
+                            onExportWriteOffActClick = {
+                                checkProAccess(if (workspaceProfileMode.isMilitary) "выгрузки Акта списания" else "выгрузки Акта МБ-8") {
+                                    excelReportInitialTab = points.size + 3
+                                    showExcelReportDialog = true
+                                }
+                            }
                         )
                     }
                 }
@@ -692,12 +730,31 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
         )
     }
 
+    if (showReturnDialog) {
+        ReturnOperationDialog(
+            points = points,
+            catalogItems = catalogItems,
+            stockRecords = stockRecords,
+            operations = operations,
+            initialPointId = selectedPointId,
+            profileMode = workspaceProfileMode,
+            onDismiss = { showReturnDialog = false },
+            onConfirm = { toPointId, toPointName, returnedBy, items, comment ->
+                when (val d = FreeTierPolicy.checkIncome(isProOrDemoActive, points, stockRecords, toPointId, items.map { it.itemId })) {
+                    is FreeTierDecision.Allowed -> viewModel.recordReturn(toPointId, toPointName, returnedBy, items, comment)
+                    is FreeTierDecision.RequirePro -> showProRequired(d.reason)
+                }
+            }
+        )
+    }
+
     if (showTransferDialog) {
         TransferOperationDialog(
             points = points,
             catalogItems = catalogItems,
             stockRecords = stockRecords,
             initialPointId = selectedPointId,
+            profileMode = workspaceProfileMode,
             onDismiss = { showTransferDialog = false },
             onConfirm = { fromPointId, fromPointName, toPointId, toPointName, items, comment ->
                 viewModel.recordTransfer(fromPointId, fromPointName, toPointId, toPointName, items, comment)
@@ -730,6 +787,7 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
             catalogItems = catalogItems,
             stockRecords = stockRecords,
             initialPointId = selectedPointId,
+            profileMode = workspaceProfileMode,
             onDismiss = { showExpenditureDialog = false },
             onConfirm = { fromPointId, pointName, docNumber, responsiblePerson, items, comment ->
                 viewModel.recordExpenditure(fromPointId, pointName, docNumber, responsiblePerson, items, comment)
@@ -739,6 +797,7 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
 
     if (showAddPointDialog) {
         AddPointDialog(
+            profileMode = workspaceProfileMode,
             onDismiss = { showAddPointDialog = false },
             onConfirm = { name, desc ->
                 viewModel.addWarehousePoint(name, desc)
@@ -749,6 +808,7 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
     editingPoint?.let { pt ->
         EditPointDialog(
             point = pt,
+            profileMode = workspaceProfileMode,
             onDismiss = { editingPoint = null },
             onSave = { updated ->
                 viewModel.updateWarehousePoint(updated)
@@ -800,6 +860,8 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
             licenseStatus = licenseStatus,
             yooKassaConfig = viewModel.yooKassaService.getConfig(),
             issuedPaymentKey = issuedPaymentKey,
+            paymentAwaitingConfirmation = paymentAwaitingConfirmation,
+            onResetPendingPayment = { viewModel.clearIssuedPaymentKey() },
             onPayYooKassaClick = { viewModel.startYooKassaPayment() },
             onPayYooKassaPlanClick = { planDays -> viewModel.startYooKassaPayment(planDays) },
             onActivateLicenseKey = { key -> viewModel.activateLicenseKey(key) },

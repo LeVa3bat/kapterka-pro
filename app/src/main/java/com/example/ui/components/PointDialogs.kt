@@ -71,6 +71,7 @@ import com.example.ui.theme.TacticalTextSecondary
 
 @Composable
 fun AddPointDialog(
+    profileMode: com.example.data.model.WorkspaceProfileMode = com.example.data.model.WorkspaceProfileMode.MILITARY,
     onDismiss: () -> Unit,
     onConfirm: (name: String, description: String) -> Unit
 ) {
@@ -105,7 +106,7 @@ fun AddPointDialog(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Новый склад / точка",
+                            text = if (profileMode.isMilitary) "Новый склад / точка" else "Новый склад / участок",
                             color = SageGreenBright,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold
@@ -127,10 +128,10 @@ fun AddPointDialog(
                 Spacer(modifier = Modifier.height(14.dp))
 
                 TacticalInputField(
-                    label = "Название точки / позиции",
+                    label = if (profileMode.isMilitary) "Название точки / позиции" else "Название склада / участка",
                     value = name,
                     onValueChange = { name = it },
-                    placeholder = "например: ОП «Тайфун» / НП «Север»"
+                    placeholder = if (profileMode.isMilitary) "например: ОП «Тайфун» / НП «Север»" else "например: Цех № 2 / Бригада / Объект"
                 )
 
                 Spacer(modifier = Modifier.height(10.dp))
@@ -139,7 +140,7 @@ fun AddPointDialog(
                     label = "Описание / Назначение",
                     value = description,
                     onValueChange = { description = it },
-                    placeholder = "например: Передовой склад боепитания 2-го взвода"
+                    placeholder = if (profileMode.isMilitary) "например: Передовой склад боепитания 2-го взвода" else "например: Инструментальная, объект или авто"
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -161,7 +162,7 @@ fun AddPointDialog(
                     ),
                     shape = RoundedCornerShape(14.dp)
                 ) {
-                    Text("Создать точку", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text(if (profileMode.isMilitary) "Создать точку" else "Создать склад", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
             }
         }
@@ -171,6 +172,7 @@ fun AddPointDialog(
 @Composable
 fun EditPointDialog(
     point: WarehousePoint,
+    profileMode: com.example.data.model.WorkspaceProfileMode = com.example.data.model.WorkspaceProfileMode.MILITARY,
     onDismiss: () -> Unit,
     onSave: (WarehousePoint) -> Unit,
     onDelete: (String) -> Unit
@@ -206,7 +208,7 @@ fun EditPointDialog(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "РЕДАКТИРОВАНИЕ ТОЧКИ",
+                            text = if (profileMode.isMilitary) "РЕДАКТИРОВАНИЕ ТОЧКИ" else "РЕДАКТИРОВАНИЕ СКЛАДА",
                             color = SageGreenBright,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold
@@ -228,7 +230,7 @@ fun EditPointDialog(
                 Spacer(modifier = Modifier.height(14.dp))
 
                 TacticalInputField(
-                    label = "Название точки",
+                    label = if (profileMode.isMilitary) "Название точки" else "Название склада",
                     value = name,
                     onValueChange = { name = it }
                 )

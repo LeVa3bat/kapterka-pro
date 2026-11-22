@@ -14,6 +14,7 @@ import com.example.data.model.RequestStatus
 import com.example.data.model.StockRecord
 import com.example.data.model.SyncTombstone
 import com.example.data.model.WarehousePoint
+import com.example.data.model.isReturnOperation
 import com.google.firebase.firestore.DocumentChange
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -584,13 +585,17 @@ class FirebaseSyncManager(
                         dao.insertOperation(op)
                         extractAndRegisterItemsFromOperation(unitKey, op)
                         if (!isFirstOpLoad && dc.type == DocumentChange.Type.ADDED) {
-                            val typeName = when (op.type) {
-                                OperationType.INCOME -> "📥 Поставка на «${op.toPointName.ifBlank { "склад" }}»"
-                                OperationType.TRANSFER -> "🔄 Перемещение: ${op.fromPointName.ifBlank { "Склад" }} ➔ ${op.toPointName}"
-                                OperationType.ISSUE -> "🎯 Выдача на «${op.toPointName}»"
-                                OperationType.EXPENDITURE -> "💥 Списание ф. 8 на «${op.fromPointName.ifBlank { op.toPointName }}»"
+                            val typeName = when {
+                                op.isReturnOperation() -> "↩️ Возврат на «${op.toPointName.ifBlank { "склад" }}»"
+                                op.type == OperationType.INCOME -> "📥 Поставка на «${op.toPointName.ifBlank { "склад" }}»"
+                                op.type == OperationType.TRANSFER -> "🔄 Перемещение: ${op.fromPointName.ifBlank { "Склад" }} ➔ ${op.toPointName}"
+                                op.type == OperationType.ISSUE -> "🎯 Выдача на «${op.toPointName}»"
+                                else -> "🗑️ Списание на «${op.fromPointName.ifBlank { op.toPointName }}»"
                             }
-                            val docPart = if (op.docNumber.isNotBlank() && !op.docNumber.trim().equals("документ", ignoreCase = true)) " • Акт № ${op.docNumber}" else ""
+                            val docPart = if (op.docNumber.isNotBlank() &&
+                                !op.docNumber.trim().equals("документ", ignoreCase = true) &&
+                                !op.docNumber.trim().equals(com.example.data.model.RETURN_DOC_MARKER, ignoreCase = true)
+                            ) " • № ${op.docNumber}" else ""
                             val summaryPart = if (op.itemsSummary.isNotBlank()) ": ${op.itemsSummary}" else ""
                             _syncEvents.emit("Синхронизация: $typeName$docPart$summaryPart")
                         }
@@ -664,8 +669,7 @@ class FirebaseSyncManager(
             "timestampMillis" to System.currentTimeMillis()
         )
         unitRef.collection("devices").document(deviceId).set(data, SetOptions.merge())
-        val uData = hashMapOf(
-            "unitKey" to unitKey,
+        val uData = hashMapOf<String, Any>(
             "unitName" to unitName,
             "lastActivity" to FieldValue.serverTimestamp()
         )
@@ -715,6 +719,19 @@ class FirebaseSyncManager(
 
         _syncState.value = _syncState.value.copy(isSyncing = true, syncMessage = "Синхронизация базы [$cleanKey]...")
         try {
+            // Ensure device membership before Firestore reads (required for strict.rules).
+            val access = runCatching {
+                unitAccess.ensureMembership(cleanKey, fighterId(), callsign, deviceId)
+            }.getOrNull()
+            if (access is UnitAccessResult.Denied) {
+                _syncState.value = _syncState.value.copy(
+                    isSyncing = false,
+                    isOnline = false,
+                    syncMessage = access.reason
+                )
+                return@withContext Pair(false, access.reason)
+            }
+
             val db = firestore
             val unitRef = db.collection("units").document(cleanKey)
 
@@ -867,7 +884,9 @@ class FirebaseSyncManager(
 
             // 6. Reconcile Custom Items
             val cloudItemsSnap = unitRef.collection("inventory_items").get(Source.SERVER).await()
+            val cloudItemIds = mutableSetOf<String>()
             for (doc in cloudItemsSnap.documents) {
+                cloudItemIds.add(doc.id)
                 val item = InventoryItem(
                     id = doc.id,
                     name = doc.getString("name") ?: "",
@@ -880,6 +899,42 @@ class FirebaseSyncManager(
                 )
                 if (!isTombstoned(cleanKey, TOMBSTONE_ITEM, item.id)) {
                     dao.insertItem(item)
+                }
+            }
+
+            // 6b. Push any offline/paused local rows that are still absent from cloud
+            val cloudOpIds = cloudOpsSnap.documents.map { it.id }.toSet()
+            val cloudReqIds = cloudReqSnap.documents.map { it.id }.toSet()
+            val cloudStockIds = cloudStocksSnap.documents.map { doc ->
+                val p = doc.getString("pointId") ?: doc.id.substringBefore("___", "")
+                val i = doc.getString("itemId") ?: doc.id.substringAfter("___", "")
+                "${p}:::${i}"
+            }.toSet()
+
+            for (pt in dao.getAllPoints().first()) {
+                if (pt.id !in existingPointsMap && !isTombstoned(cleanKey, TOMBSTONE_POINT, pt.id)) {
+                    pushWarehousePointAsync(cleanKey, pt)
+                }
+            }
+            for (item in dao.getAllItems().first()) {
+                if (item.isCustom && item.id !in cloudItemIds && !isTombstoned(cleanKey, TOMBSTONE_ITEM, item.id)) {
+                    pushInventoryItemAsync(cleanKey, item)
+                }
+            }
+            for (st in dao.getAllStockRecords().first()) {
+                val key = "${st.pointId}:::${st.itemId}"
+                if (key !in cloudStockIds && shouldAcceptStockRecord(cleanKey, st)) {
+                    pushStockRecordAsync(cleanKey, st)
+                }
+            }
+            for (op in dao.getAllOperations().first()) {
+                if (op.id !in cloudOpIds && !isTombstoned(cleanKey, TOMBSTONE_OPERATION, op.id)) {
+                    pushOperationAsync(cleanKey, op, emptyList())
+                }
+            }
+            for (req in dao.getAllRequisitions().first()) {
+                if (req.id !in cloudReqIds && !isTombstoned(cleanKey, TOMBSTONE_REQUISITION, req.id)) {
+                    pushRequisitionAsync(cleanKey, req)
                 }
             }
 

@@ -1,0 +1,1361 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Каптёрка PRO — Концепт будущего главного экрана (3D Style)</title>
+<style>
+  :root {
+    --stage-bg: radial-gradient(circle at 20% 18%, #103329 0%, #070d0c 52%, #040707 100%);
+    --phone-bg: #080f0e;
+    --surface: rgba(18, 29, 27, 0.78);
+    --surface-solid: #111c1a;
+    --surface-elev: rgba(25, 40, 37, 0.88);
+    --border: rgba(255, 255, 255, 0.09);
+    --border-hi: rgba(16, 185, 129, 0.45);
+    --text: #f3faf7;
+    --text-2: #a9c2ba;
+    --text-muted: #6e8b82;
+    --emerald: #10b981;
+    --emerald-hi: #34d399;
+    --gold: #f59e0b;
+    --gold-hi: #fbbf24;
+    --teal: #06b6d4;
+    --teal-hi: #22d3ee;
+    --red: #ef4444;
+    --red-hi: #f87171;
+    --card-shadow: 0 18px 36px -14px rgba(0, 0, 0, 0.72), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    --tile-depth: 0 7px 0;
+  }
+
+  body.light {
+    --stage-bg: radial-gradient(circle at 18% 14%, #dcfce7 0%, #e7f0ec 50%, #d4e0db 100%);
+    --phone-bg: #eef4f1;
+    --surface: rgba(255, 255, 255, 0.82);
+    --surface-solid: #ffffff;
+    --surface-elev: rgba(255, 255, 255, 0.96);
+    --border: rgba(15, 42, 34, 0.10);
+    --border-hi: rgba(5, 150, 105, 0.45);
+    --text: #0c1f19;
+    --text-2: #38544b;
+    --text-muted: #647f76;
+    --card-shadow: 0 18px 34px -16px rgba(10, 42, 32, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+    background: var(--stage-bg);
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 28px 20px;
+    gap: 44px;
+    flex-wrap: wrap;
+    overflow-x: hidden;
+    transition: background 0.5s ease, color 0.4s ease;
+  }
+
+  /* Ambient volumetric light orbs */
+  .stage-orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(90px);
+    opacity: 0.36;
+    pointer-events: none;
+    z-index: 0;
+    animation: floatOrb 10s ease-in-out infinite alternate;
+  }
+  .orb-1 { width: 380px; height: 380px; background: #10b981; top: -80px; left: -60px; }
+  .orb-2 { width: 340px; height: 340px; background: #06b6d4; bottom: -100px; right: 5%; animation-delay: -4s; }
+  .orb-3 { width: 240px; height: 240px; background: #f59e0b; top: 40%; right: 32%; opacity: 0.16; animation-delay: -7s; }
+  @keyframes floatOrb {
+    from { transform: translate(0, 0) scale(1); }
+    to { transform: translate(24px, -28px) scale(1.12); }
+  }
+
+  /* Side showcase panel */
+  .showcase-panel {
+    position: relative;
+    z-index: 2;
+    max-width: 390px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .concept-tag {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: rgba(16, 185, 129, 0.16);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    color: var(--emerald-hi);
+  }
+  .showcase-panel h1 {
+    font-size: 32px;
+    line-height: 1.12;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+  }
+  .showcase-panel p {
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--text-2);
+  }
+  .demo-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 4px;
+  }
+  .ctrl-btn {
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    backdrop-filter: blur(18px);
+    color: var(--text);
+    padding: 12px 14px;
+    border-radius: 16px;
+    font-size: 12.5px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 10px 22px -12px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    transition: transform 0.2s cubic-bezier(.22,1.4,.36,1), border-color 0.2s ease;
+  }
+  .ctrl-btn:hover { transform: translateY(-2px); border-color: var(--border-hi); }
+  .ctrl-btn:active { transform: translateY(1px) scale(0.98); }
+  .ctrl-btn.full { grid-column: span 2; justify-content: center; background: linear-gradient(135deg, #059669, #0d9488); color: #fff; border-color: rgba(255,255,255,0.22); }
+  .feature-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px;
+    border-radius: 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(18px);
+    font-size: 12.5px;
+    color: var(--text-2);
+  }
+  .feature-list div { display: flex; align-items: flex-start; gap: 9px; line-height: 1.45; }
+  .feature-list .fl-ic { flex-shrink: 0; font-size: 15px; margin-top: 1px; }
+
+  /* Realistic 3D Phone Frame */
+  .phone-wrap {
+    position: relative;
+    z-index: 2;
+    perspective: 1400px;
+  }
+  .phone {
+    width: 392px;
+    height: 824px;
+    border-radius: 50px;
+    padding: 11px;
+    background: linear-gradient(155deg, #2f433d 0%, #101917 45%, #243631 100%);
+    box-shadow:
+      0 42px 90px -20px rgba(0, 0, 0, 0.78),
+      0 0 0 1px rgba(255, 255, 255, 0.18),
+      inset 0 2px 3px rgba(255, 255, 255, 0.28);
+    position: relative;
+  }
+  body.light .phone {
+    background: linear-gradient(155deg, #dce5e1 0%, #9ab0a7 45%, #ced9d5 100%);
+    box-shadow: 0 38px 80px -22px rgba(10, 42, 32, 0.34), 0 0 0 1px rgba(255,255,255,0.65);
+  }
+
+  .screen {
+    width: 100%;
+    height: 100%;
+    border-radius: 40px;
+    background: var(--phone-bg);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: background 0.4s ease;
+  }
+
+  /* Dynamic background glow inside phone */
+  .screen-glow {
+    position: absolute;
+    width: 320px;
+    height: 280px;
+    top: -60px;
+    right: -80px;
+    background: radial-gradient(circle, rgba(16, 185, 129, 0.28) 0%, rgba(6, 182, 212, 0.08) 45%, transparent 72%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Top status bar + island */
+  .status-bar {
+    height: 36px;
+    padding: 10px 24px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 700;
+    z-index: 4;
+    position: relative;
+  }
+  .island {
+    width: 96px;
+    height: 22px;
+    border-radius: 999px;
+    background: #000;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 7px;
+  }
+  .island-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #34d399, #065f46);
+    box-shadow: 0 0 8px #10b981;
+  }
+
+  /* Scrollable Main Screen Area */
+  .scroll-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 16px 96px;
+    position: relative;
+    z-index: 2;
+    scrollbar-width: none;
+  }
+  .scroll-area::-webkit-scrollbar { display: none; }
+
+  /* Header */
+  .app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .brand-title {
+    font-size: 21px;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .brand-sub {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 2px;
+  }
+  .mode-pill {
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(16, 185, 129, 0.18);
+    color: var(--emerald-hi);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+  }
+  body.light .mode-pill { color: #047857; background: rgba(16, 185, 129, 0.14); }
+  .sync-live {
+    font-size: 10.5px;
+    color: var(--text-muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: 600;
+  }
+  .pulse-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    animation: pulseRing 2s infinite;
+  }
+  @keyframes pulseRing {
+    0% { box-shadow: 0 0 0 0 rgba(16,185,129,0.7); }
+    70% { box-shadow: 0 0 0 7px rgba(16,185,129,0); }
+    100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+  }
+
+  .header-right { display: flex; align-items: center; gap: 7px; }
+  .icon-orb-btn {
+    width: 36px; height: 36px; border-radius: 13px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    backdrop-filter: blur(12px);
+    color: var(--text);
+    display: grid; place-items: center;
+    cursor: pointer;
+    box-shadow: 0 6px 14px -8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.16);
+    transition: transform 0.2s cubic-bezier(.22,1.5,.36,1);
+    font-size: 15px;
+  }
+  .icon-orb-btn:active { transform: scale(0.9); }
+
+  .pro-chip {
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 10px 5px 8px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.24), rgba(217, 119, 6, 0.14));
+    border: 1px solid rgba(251, 191, 36, 0.45);
+    color: var(--gold-hi);
+    font-size: 11px;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 8px 18px -10px rgba(245, 158, 11, 0.55);
+  }
+  body.light .pro-chip { color: #b45309; background: rgba(254, 243, 199, 0.9); }
+
+  /* 3D HERO KPI STAGE WITH INTERACTIVE TILT & ROTATING 3D CUBE */
+  .hero-perspective {
+    perspective: 900px;
+    margin-bottom: 14px;
+  }
+  .hero-3d {
+    position: relative;
+    border-radius: 26px;
+    padding: 18px 16px 16px;
+    background: linear-gradient(135deg, #0b5a44 0%, #0d7a64 50%, #0a4d5c 100%);
+    color: #fff;
+    box-shadow:
+      0 22px 42px -14px rgba(5, 120, 92, 0.65),
+      0 8px 0 -2px #06382b,
+      inset 0 1.5px 1px rgba(255, 255, 255, 0.38);
+    transform-style: preserve-3d;
+    transition: transform 0.18s ease-out, box-shadow 0.25s ease;
+    overflow: hidden;
+  }
+  .hero-sheen {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at var(--mx, 30%) var(--my, 20%), rgba(255,255,255,0.28), transparent 55%);
+    pointer-events: none;
+  }
+  .hero-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    z-index: 2;
+    transform: translateZ(18px);
+  }
+  .hero-kicker {
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.78);
+  }
+  .hero-big-num {
+    font-size: 36px;
+    font-weight: 900;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    margin-top: 2px;
+    text-shadow: 0 6px 16px rgba(0,0,0,0.32);
+  }
+  .hero-big-sub {
+    font-size: 12px;
+    color: rgba(255,255,255,0.82);
+    margin-top: 2px;
+  }
+
+  /* Real CSS 3D Isometric Warehouse Cube */
+  .cube-stage {
+    width: 68px;
+    height: 68px;
+    perspective: 360px;
+    display: grid;
+    place-items: center;
+    transform: translateZ(26px);
+  }
+  .cube-3d {
+    width: 44px;
+    height: 44px;
+    position: relative;
+    transform-style: preserve-3d;
+    animation: spinCube 11s linear infinite;
+  }
+  .cube-3d.boost { animation-duration: 1.2s; }
+  @keyframes spinCube {
+    0% { transform: rotateX(-24deg) rotateY(0deg); }
+    100% { transform: rotateX(-24deg) rotateY(360deg); }
+  }
+  .cube-face {
+    position: absolute;
+    width: 44px;
+    height: 44px;
+    border-radius: 9px;
+    border: 1.5px solid rgba(255,255,255,0.52);
+    background: linear-gradient(145deg, rgba(167, 243, 208, 0.42), rgba(16, 185, 129, 0.22));
+    backdrop-filter: blur(6px);
+    box-shadow: inset 0 0 14px rgba(255,255,255,0.22);
+    display: grid;
+    place-items: center;
+    font-size: 16px;
+  }
+  .f-front  { transform: rotateY(0deg) translateZ(22px); }
+  .f-back   { transform: rotateY(180deg) translateZ(22px); }
+  .f-right  { transform: rotateY(90deg) translateZ(22px); }
+  .f-left   { transform: rotateY(-90deg) translateZ(22px); }
+  .f-top    { transform: rotateX(90deg) translateZ(22px); background: rgba(236, 253, 245, 0.55); }
+  .f-bottom { transform: rotateX(-90deg) translateZ(22px); background: rgba(6, 78, 59, 0.55); }
+
+  .hero-metrics {
+    margin-top: 14px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    position: relative;
+    z-index: 2;
+    transform: translateZ(14px);
+  }
+  .hero-pill {
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    backdrop-filter: blur(8px);
+    border-radius: 14px;
+    padding: 8px 6px;
+    text-align: center;
+  }
+  .hero-pill strong { display: block; font-size: 16px; font-weight: 900; }
+  .hero-pill span { font-size: 10px; color: rgba(255,255,255,0.82); }
+
+  /* 4 VOLUMETRIC 3D ACTION BUTTONS (Equal size, tactile extrusion) */
+  .actions-3d {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 9px;
+    margin-bottom: 14px;
+  }
+  .tile-3d {
+    position: relative;
+    border: none;
+    cursor: pointer;
+    border-radius: 20px;
+    padding: 12px 4px 11px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: #fff;
+    font-family: inherit;
+    transition: transform 0.16s cubic-bezier(.22,1.5,.36,1), box-shadow 0.16s ease;
+  }
+  .tile-3d .ic-3d {
+    width: 38px;
+    height: 38px;
+    border-radius: 13px;
+    display: grid;
+    place-items: center;
+    background: rgba(255,255,255,0.22);
+    box-shadow: inset 0 1.5px 1px rgba(255,255,255,0.45), 0 6px 12px -4px rgba(0,0,0,0.3);
+    font-size: 18px;
+    transform: translateZ(8px);
+  }
+  .tile-3d span {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+  }
+  .tile-income {
+    background: linear-gradient(160deg, #10b981, #047857);
+    box-shadow: 0 5px 0 #065f46, 0 14px 20px -8px rgba(16, 185, 129, 0.6), inset 0 1.5px 0 rgba(255,255,255,0.38);
+  }
+  .tile-issue {
+    background: linear-gradient(160deg, #f59e0b, #b45309);
+    box-shadow: 0 5px 0 #92400e, 0 14px 20px -8px rgba(245, 158, 11, 0.55), inset 0 1.5px 0 rgba(255,255,255,0.38);
+  }
+  .tile-return {
+    background: linear-gradient(160deg, #06b6d4, #0e7490);
+    box-shadow: 0 5px 0 #155e75, 0 14px 20px -8px rgba(6, 182, 212, 0.55), inset 0 1.5px 0 rgba(255,255,255,0.38);
+  }
+  .tile-writeoff {
+    background: linear-gradient(160deg, #ef4444, #b91c1c);
+    box-shadow: 0 5px 0 #991b1b, 0 14px 20px -8px rgba(239, 68, 68, 0.55), inset 0 1.5px 0 rgba(255,255,255,0.38);
+  }
+  .tile-3d:hover { transform: translateY(-3px); }
+  .tile-3d:active {
+    transform: translateY(4px);
+    box-shadow: 0 1px 0 rgba(0,0,0,0.4), 0 4px 10px -4px rgba(0,0,0,0.45);
+  }
+
+  /* Search Glass Bar */
+  .search-3d {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(14px);
+    border-radius: 16px;
+    padding: 10px 13px;
+    margin-bottom: 12px;
+    box-shadow: var(--card-shadow);
+  }
+  .search-3d input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--text);
+    font-size: 13.5px;
+    font-family: inherit;
+  }
+  .search-3d input::placeholder { color: var(--text-muted); }
+
+  /* Section Header */
+  .sec-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 4px 2px 10px;
+  }
+  .sec-title { font-size: 15px; font-weight: 800; display: flex; align-items: center; gap: 6px; }
+  .sec-count {
+    font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px;
+    background: rgba(16, 185, 129, 0.16); color: var(--emerald-hi);
+  }
+  body.light .sec-count { color: #047857; }
+  .add-mini-3d {
+    cursor: pointer;
+    border: 1px solid rgba(16, 185, 129, 0.45);
+    background: linear-gradient(135deg, rgba(16,185,129,0.22), rgba(6,182,212,0.16));
+    color: var(--emerald-hi);
+    font-size: 11.5px;
+    font-weight: 800;
+    padding: 6px 11px;
+    border-radius: 12px;
+    box-shadow: 0 6px 14px -8px rgba(16,185,129,0.55);
+    transition: transform 0.18s cubic-bezier(.22,1.5,.36,1);
+  }
+  body.light .add-mini-3d { color: #047857; }
+  .add-mini-3d:active { transform: scale(0.92); }
+
+  /* 3D WAREHOUSE CARDS WITH APPEAR & DELETE ANIMATIONS */
+  .wh-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    perspective: 800px;
+  }
+  .wh-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(18px);
+    border-radius: 22px;
+    box-shadow: var(--card-shadow);
+    overflow: hidden;
+    transform-origin: center top;
+    transition: transform 0.32s cubic-bezier(.22,1.25,.36,1), border-color 0.25s ease, box-shadow 0.25s ease, opacity 0.28s ease;
+  }
+  .wh-card.expanded {
+    border-color: var(--border-hi);
+    transform: translateY(-2px) scale(1.01);
+    box-shadow: 0 22px 38px -16px rgba(16, 185, 129, 0.28), inset 0 1px 0 rgba(255,255,255,0.18);
+  }
+  .wh-card.entering {
+    animation: card3DEnter 0.56s cubic-bezier(.18,1.35,.32,1) forwards;
+  }
+  @keyframes card3DEnter {
+    0% { opacity: 0; transform: perspective(700px) rotateX(-34deg) translateY(28px) scale(0.84); filter: blur(4px); }
+    65% { opacity: 1; transform: perspective(700px) rotateX(5deg) translateY(-3px) scale(1.02); filter: blur(0); }
+    100% { opacity: 1; transform: perspective(700px) rotateX(0deg) translateY(0) scale(1); }
+  }
+  .wh-card.deleting {
+    animation: card3DDelete 0.48s cubic-bezier(.55,.06,.68,.19) forwards;
+    pointer-events: none;
+  }
+  @keyframes card3DDelete {
+    0% { opacity: 1; transform: perspective(700px) rotateY(0deg) scale(1); max-height: 260px; margin-bottom: 10px; }
+    45% { opacity: 0.7; transform: perspective(700px) rotateY(-18deg) translateX(-40px) scale(0.92); background: rgba(239, 68, 68, 0.24); border-color: rgba(239,68,68,0.7); }
+    100% { opacity: 0; transform: perspective(700px) rotateY(-42deg) translateX(-115%) scale(0.72); max-height: 0; padding: 0; margin-bottom: -10px; border-width: 0; }
+  }
+
+  .wh-head {
+    padding: 13px 13px;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    cursor: pointer;
+  }
+  .wh-icon-3d {
+    width: 42px;
+    height: 42px;
+    border-radius: 15px;
+    display: grid;
+    place-items: center;
+    font-size: 19px;
+    flex-shrink: 0;
+    box-shadow: inset 0 1.5px 1px rgba(255,255,255,0.35), 0 8px 16px -8px rgba(0,0,0,0.45);
+  }
+  .wh-icon-base { background: linear-gradient(145deg, #f59e0b, #b45309); }
+  .wh-icon-em   { background: linear-gradient(145deg, #10b981, #047857); }
+  .wh-icon-teal { background: linear-gradient(145deg, #06b6d4, #0e7490); }
+  .wh-meta { flex: 1; min-width: 0; }
+  .wh-name { font-size: 14.5px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wh-desc { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .wh-right { display: flex; align-items: center; gap: 7px; }
+  .wh-qty-pill {
+    font-size: 12.5px;
+    font-weight: 900;
+    padding: 5px 9px;
+    border-radius: 11px;
+    background: rgba(16, 185, 129, 0.16);
+    color: var(--emerald-hi);
+    font-variant-numeric: tabular-nums;
+  }
+  body.light .wh-qty-pill { color: #047857; }
+  .del-btn {
+    width: 30px; height: 30px; border-radius: 10px;
+    border: 1px solid rgba(239, 68, 68, 0.28);
+    background: rgba(239, 68, 68, 0.12);
+    color: var(--red-hi);
+    cursor: pointer;
+    display: grid; place-items: center;
+    font-size: 13px;
+    transition: transform 0.15s ease, background 0.15s ease;
+  }
+  .del-btn:hover { background: rgba(239, 68, 68, 0.28); transform: scale(1.08); }
+
+  /* Expandable items inside warehouse */
+  .wh-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.36s cubic-bezier(.22,1,.36,1), padding 0.3s ease;
+    padding: 0 13px;
+  }
+  .wh-card.expanded .wh-body {
+    max-height: 360px;
+    padding: 0 13px 13px;
+  }
+  .item-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 9px 10px;
+    margin-top: 6px;
+    border-radius: 14px;
+    background: rgba(128, 160, 150, 0.08);
+    border: 1px solid var(--border);
+    transition: transform 0.25s ease, opacity 0.25s ease;
+  }
+  .item-row.entering { animation: card3DEnter 0.45s cubic-bezier(.18,1.35,.32,1) forwards; }
+  .item-row.deleting { animation: itemSwipeOut 0.42s ease forwards; }
+  @keyframes itemSwipeOut {
+    to { opacity: 0; transform: translateX(-100%) rotateZ(-4deg) scale(0.85); max-height: 0; padding: 0; margin: 0; border-width: 0; }
+  }
+  .item-title { font-size: 12.5px; font-weight: 700; }
+  .item-cat { font-size: 10.5px; color: var(--text-muted); }
+  .item-qty { font-size: 13px; font-weight: 900; color: var(--emerald-hi); font-variant-numeric: tabular-nums; }
+  body.light .item-qty { color: #059669; }
+
+  /* 3D Floating Bottom Dock */
+  .bottom-dock {
+    position: absolute;
+    left: 14px; right: 14px; bottom: 14px;
+    height: 62px;
+    border-radius: 24px;
+    background: var(--surface-elev);
+    backdrop-filter: blur(22px);
+    border: 1px solid var(--border);
+    box-shadow: 0 18px 34px -10px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.18);
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    align-items: center;
+    padding: 0 6px;
+    z-index: 6;
+  }
+  .dock-item {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    font-size: 9.5px; font-weight: 700; color: var(--text-muted);
+    cursor: pointer; padding: 6px 2px; border-radius: 16px;
+    transition: transform 0.2s cubic-bezier(.22,1.5,.36,1), color 0.2s ease;
+  }
+  .dock-item.active {
+    color: var(--emerald-hi);
+    background: rgba(16, 185, 129, 0.14);
+    transform: translateY(-2px);
+  }
+  body.light .dock-item.active { color: #047857; }
+  .dock-item span.d-ic { font-size: 17px; }
+
+  /* 3D Floating Top Toast Notification */
+  .toast-3d {
+    position: absolute;
+    top: 42px;
+    left: 14px;
+    right: 14px;
+    z-index: 25;
+    border-radius: 20px;
+    padding: 12px 14px;
+    background: var(--surface-elev);
+    backdrop-filter: blur(22px);
+    border: 1px solid rgba(16, 185, 129, 0.55);
+    box-shadow: 0 22px 42px -12px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255,255,255,0.22);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    opacity: 0;
+    pointer-events: none;
+    transform: perspective(600px) translateY(-30px) rotateX(-22deg) scale(0.92);
+    transition: all 0.4s cubic-bezier(.18,1.35,.32,1);
+  }
+  .toast-3d.show {
+    opacity: 1;
+    pointer-events: auto;
+    transform: perspective(600px) translateY(0) rotateX(0deg) scale(1);
+  }
+  .toast-badge {
+    width: 34px; height: 34px; border-radius: 12px;
+    background: linear-gradient(145deg, #10b981, #047857);
+    display: grid; place-items: center; color: #fff; font-size: 16px; font-weight: 900;
+    box-shadow: 0 6px 14px -4px rgba(16, 185, 129, 0.65);
+    flex-shrink: 0;
+  }
+  .toast-title { font-size: 11px; font-weight: 900; color: var(--emerald-hi); letter-spacing: 0.04em; }
+  body.light .toast-title { color: #047857; }
+  .toast-msg { font-size: 12px; color: var(--text); margin-top: 1px; line-height: 1.3; }
+
+  /* Floating 3D Undo Snackbar after Delete */
+  .undo-bar {
+    position: absolute;
+    left: 16px; right: 16px; bottom: 86px;
+    z-index: 24;
+    border-radius: 18px;
+    padding: 11px 14px;
+    background: linear-gradient(135deg, #1e293b, #0f172a);
+    color: #fff;
+    border: 1px solid rgba(248, 113, 113, 0.5);
+    box-shadow: 0 18px 34px -10px rgba(0,0,0,0.75);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(24px) scale(0.92);
+    transition: all 0.34s cubic-bezier(.18,1.35,.32,1);
+  }
+  .undo-bar.show { opacity: 1; pointer-events: auto; transform: translateY(0) scale(1); }
+  .undo-btn {
+    cursor: pointer; border: none; border-radius: 11px;
+    padding: 7px 12px; font-size: 12px; font-weight: 800;
+    background: linear-gradient(135deg, #10b981, #059669); color: #fff;
+    box-shadow: 0 4px 12px rgba(16,185,129,0.5);
+  }
+
+  /* 3D GLASS POPUP MODAL SHEET */
+  .modal-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    background: rgba(3, 8, 7, 0.62);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 14px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.26s ease;
+  }
+  .modal-backdrop.open { opacity: 1; pointer-events: auto; }
+  .modal-3d {
+    width: 100%;
+    border-radius: 28px;
+    background: var(--surface-solid);
+    border: 1px solid var(--border);
+    box-shadow: 0 32px 60px -16px rgba(0, 0, 0, 0.8), inset 0 1.5px 0 rgba(255, 255, 255, 0.2);
+    overflow: hidden;
+    transform: perspective(800px) translateY(48px) rotateX(14deg) scale(0.92);
+    transition: transform 0.38s cubic-bezier(.18,1.32,.32,1);
+  }
+  .modal-backdrop.open .modal-3d {
+    transform: perspective(800px) translateY(0) rotateX(0deg) scale(1);
+  }
+  .modal-head {
+    padding: 16px 16px 14px;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(6, 182, 212, 0.08));
+    border-bottom: 1px solid var(--border);
+  }
+  .modal-head.gold { background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), transparent); }
+  .modal-head.teal { background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), transparent); }
+  .modal-head.red  { background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), transparent); }
+  .modal-body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 11px; }
+  .m-label { font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+  .m-input, .m-select {
+    width: 100%;
+    padding: 11px 13px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: rgba(128, 160, 150, 0.09);
+    color: var(--text);
+    font-size: 13.5px;
+    font-weight: 600;
+    font-family: inherit;
+    outline: none;
+  }
+  .m-select option { background: #111c1a; color: #f3faf7; }
+  .stepper-row { display: flex; align-items: center; gap: 8px; }
+  .step-btn {
+    width: 44px; height: 44px; border-radius: 14px; border: 1px solid var(--border);
+    background: rgba(16, 185, 129, 0.16); color: var(--emerald-hi);
+    font-size: 20px; font-weight: 900; cursor: pointer;
+  }
+  .m-submit {
+    margin-top: 4px;
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 16px;
+    font-size: 14.5px;
+    font-weight: 900;
+    color: #fff;
+    cursor: pointer;
+    background: linear-gradient(135deg, #10b981, #059669);
+    box-shadow: 0 5px 0 #065f46, 0 14px 24px -10px rgba(16,185,129,0.65);
+    transition: transform 0.15s ease;
+  }
+  .m-submit:active { transform: translateY(3px); }
+</style>
+</head>
+<body>
+  <div class="stage-orb orb-1"></div>
+  <div class="stage-orb orb-2"></div>
+  <div class="stage-orb orb-3"></div>
+
+  <!-- Interactive Presentation Controls -->
+  <div class="showcase-panel">
+    <span class="concept-tag">✦ Концепт v5.0 • Только главный экран</span>
+    <h1>Современный 3D-интерфейс «Каптёрка PRO»</h1>
+    <p>Интерактивный прототип будущего главного экрана: объёмная 3D-геометрия, интерактивная карточка остатков с 3D-наклоном и кубом склада, ровные 3D-кнопки, анимации появления и удаления с отменой (Undo) и стеклянные 3D-окна.</p>
+
+    <div class="demo-controls">
+      <button class="ctrl-btn" onclick="openModal('income')">📥 Окно «Приход»</button>
+      <button class="ctrl-btn" onclick="openModal('return')">↩️ Окно «Возврат»</button>
+      <button class="ctrl-btn" onclick="addDemoWarehouse()">✨ Появление 3D</button>
+      <button class="ctrl-btn" onclick="triggerDemoDelete()">🗑️ Удаление 3D</button>
+      <button class="ctrl-btn full" onclick="toggleTheme()">☀️ / 🌙 Переключить 3D-тему (Тёмная / Светлая)</button>
+    </div>
+
+    <div class="feature-list">
+      <div><span class="fl-ic">🧊</span><span><strong>3D-геометрия:</strong> наведите мышь на верхнюю зелёную карточку — работает 3D-наклон и блик.</span></div>
+      <div><span class="fl-ic">🪟</span><span><strong>Всплывающие 3D-окна:</strong> нажмите любую из 4 объёмных кнопок на экране телефона.</span></div>
+      <div><span class="fl-ic">🗑️</span><span><strong>Удаление + отмена:</strong> нажмите корзину у склада или позиции — карточка улетает в 3D и появляется кнопка «Вернуть».</span></div>
+      <div><span class="fl-ic">✨</span><span><strong>Появление:</strong> добавление склада или позиции плавно раскрывается с пружинной 3D-физикой.</span></div>
+    </div>
+  </div>
+
+  <!-- Phone Mockup (MAIN SCREEN ONLY) -->
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="screen" id="screen">
+        <div class="screen-glow"></div>
+
+        <!-- Status bar -->
+        <div class="status-bar">
+          <span>20:30</span>
+          <div class="island"><div class="island-dot"></div></div>
+          <span>5G 🔋 94%</span>
+        </div>
+
+        <!-- Top 3D Toast -->
+        <div class="toast-3d" id="toast3d">
+          <div class="toast-badge" id="toastBadge">✓</div>
+          <div>
+            <div class="toast-title" id="toastTitle">ГОТОВО</div>
+            <div class="toast-msg" id="toastMsg">Операция успешно проведена</div>
+          </div>
+        </div>
+
+        <!-- Main Scrollable Home Content -->
+        <div class="scroll-area">
+          <!-- Header -->
+          <div class="app-header">
+            <div>
+              <div class="brand-title">Мастерская № 1</div>
+              <div class="brand-sub">
+                <span class="mode-pill">Гражданский склад</span>
+                <span class="sync-live"><span class="pulse-dot"></span>в сети</span>
+              </div>
+            </div>
+            <div class="header-right">
+              <button class="icon-orb-btn" title="Тема" onclick="toggleTheme()" id="themeBtn">☀️</button>
+              <button class="icon-orb-btn" title="Отчёты Excel" onclick="showToast('📊 ОТЧЁТЫ EXCEL', 'М-11, МБ-7, МБ-8 и оборотная готовы к выгрузке')">📊</button>
+              <div class="pro-chip" onclick="showToast('⭐ КАПТЁРКА PRO', 'Лицензия активна • осталось 87 дн.')">★ PRO</div>
+            </div>
+          </div>
+
+          <!-- 3D Hero KPI Card with interactive tilt + floating 3D warehouse cube -->
+          <div class="hero-perspective">
+            <div class="hero-3d" id="heroCard">
+              <div class="hero-sheen"></div>
+              <div class="hero-top">
+                <div>
+                  <div class="hero-kicker">Живой баланс склада</div>
+                  <div class="hero-big-num" id="kpiTotal">142 ед.</div>
+                  <div class="hero-big-sub">Синхронизировано • 2 устройства</div>
+                </div>
+                <div class="cube-stage">
+                  <div class="cube-3d" id="cube3d">
+                    <div class="cube-face f-front">📦</div>
+                    <div class="cube-face f-back">🛠️</div>
+                    <div class="cube-face f-right">⚡</div>
+                    <div class="cube-face f-left">✓</div>
+                    <div class="cube-face f-top"></div>
+                    <div class="cube-face f-bottom"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="hero-metrics">
+                <div class="hero-pill"><strong id="kpiPositions">7</strong><span>позиций</span></div>
+                <div class="hero-pill"><strong id="kpiWarehouses">3</strong><span>склада</span></div>
+                <div class="hero-pill"><strong id="kpiOnHands">4</strong><span>на руках</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4 Equal Volumetric 3D Action Tiles -->
+          <div class="actions-3d">
+            <button class="tile-3d tile-income" onclick="openModal('income')">
+              <div class="ic-3d">📥</div>
+              <span>Приход</span>
+            </button>
+            <button class="tile-3d tile-issue" onclick="openModal('issue')">
+              <div class="ic-3d">🛠️</div>
+              <span>Выдача</span>
+            </button>
+            <button class="tile-3d tile-return" onclick="openModal('return')">
+              <div class="ic-3d">↩️</div>
+              <span>Возврат</span>
+            </button>
+            <button class="tile-3d tile-writeoff" onclick="openModal('writeoff')">
+              <div class="ic-3d">🗑️</div>
+              <span>Списание</span>
+            </button>
+          </div>
+
+          <!-- Search Bar -->
+          <div class="search-3d">
+            <span>🔍</span>
+            <input type="text" id="searchInput" placeholder="Поиск по складам и позициям..." oninput="renderWarehouses()" />
+          </div>
+
+          <!-- Warehouses Header -->
+          <div class="sec-row">
+            <div class="sec-title">
+              <span>Склады и участки</span>
+              <span class="sec-count" id="whCountBadge">3</span>
+            </div>
+            <button class="add-mini-3d" onclick="addDemoWarehouse()">＋ Склад</button>
+          </div>
+
+          <!-- Dynamic 3D Warehouse Cards -->
+          <div class="wh-list" id="whList"></div>
+        </div>
+
+        <!-- Floating 3D Undo Bar -->
+        <div class="undo-bar" id="undoBar">
+          <span id="undoText" style="font-size:12px;font-weight:700;">Удалено</span>
+          <button class="undo-btn" onclick="undoDelete()">Вернуть</button>
+        </div>
+
+        <!-- Bottom 3D Glass Dock -->
+        <div class="bottom-dock">
+          <div class="dock-item active"><span class="d-ic">🏠</span>Главная</div>
+          <div class="dock-item" onclick="showToast('📋 ЖУРНАЛ ОПЕРАЦИЙ', 'Концепт показывает только Главный экран')"><span class="d-ic">📋</span>Операции</div>
+          <div class="dock-item" onclick="showToast('📝 ЗАЯВКИ', 'Концепт показывает только Главный экран')"><span class="d-ic">📝</span>Заявки</div>
+          <div class="dock-item" onclick="showToast('📦 ИМУЩЕСТВО', 'Концепт показывает только Главный экран')"><span class="d-ic">📦</span>Каталог</div>
+          <div class="dock-item" onclick="showToast('⚙️ НАСТРОЙКИ', 'Концепт показывает только Главный экран')"><span class="d-ic">⚙️</span>Ещё</div>
+        </div>
+
+        <!-- 3D Glass Popup Modal Sheet -->
+        <div class="modal-backdrop" id="modalBackdrop" onclick="if(event.target===this) closeModal()">
+          <div class="modal-3d">
+            <div class="modal-head" id="modalHead">
+              <div class="wh-icon-3d wh-icon-em" id="modalIcon">📥</div>
+              <div style="flex:1">
+                <div style="font-size:18px;font-weight:900" id="modalTitle">Приход</div>
+                <div style="font-size:11.5px;color:var(--text-muted)" id="modalSub">Поступление ТМЦ на склад</div>
+              </div>
+              <button class="icon-orb-btn" onclick="closeModal()">✕</button>
+            </div>
+            <div class="modal-body">
+              <div>
+                <div class="m-label" id="modalWhLabel">Склад назначения</div>
+                <select class="m-select" id="modalWarehouse"></select>
+              </div>
+              <div>
+                <div class="m-label" id="modalPartyLabel">Поставщик / От кого</div>
+                <input class="m-input" id="modalParty" placeholder="ООО Инструмент / Оптовая база" />
+              </div>
+              <div>
+                <div class="m-label">Позиция</div>
+                <input class="m-input" id="modalItem" value="Перфоратор Bosch GBH 2-26" />
+              </div>
+              <div>
+                <div class="m-label">Количество (шт.)</div>
+                <div class="stepper-row">
+                  <button class="step-btn" onclick="stepQty(-1)">−</button>
+                  <input class="m-input" id="modalQty" value="2" style="text-align:center;font-size:18px;font-weight:900" />
+                  <button class="step-btn" onclick="stepQty(1)">+</button>
+                </div>
+              </div>
+              <button class="m-submit" id="modalSubmitBtn" onclick="submitModal()">Сохранить операцию</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  let warehouses = [
+    {
+      id: 'base',
+      name: 'Основной склад',
+      desc: 'Базовый склад • Инструмент и ТМЦ',
+      icon: '🏭',
+      iconClass: 'wh-icon-base',
+      isBase: true,
+      expanded: true,
+      items: [
+        { id: 'i1', name: 'Перфоратор Bosch GBH 2-26', cat: 'Электроинструмент', qty: 6, unit: 'шт.' },
+        { id: 'i2', name: 'Шуруповёрт Makita 18V', cat: 'Электроинструмент', qty: 12, unit: 'шт.' },
+        { id: 'i3', name: 'Масло 5W-40 синтетика', cat: 'ГСМ и химия', qty: 40, unit: 'л.' }
+      ]
+    },
+    {
+      id: 'shop',
+      name: 'Цех / Мастерская',
+      desc: 'Рабочая зона и выдача на смены',
+      icon: '🔧',
+      iconClass: 'wh-icon-em',
+      isBase: false,
+      expanded: false,
+      items: [
+        { id: 'i4', name: 'УШМ (Болгарка) 125 мм', cat: 'Электроинструмент', qty: 5, unit: 'шт.' },
+        { id: 'i5', name: 'Диск отрезной 125×1.2', cat: 'Расходники', qty: 64, unit: 'шт.' }
+      ]
+    },
+    {
+      id: 'site',
+      name: 'Объект № 1 (Бригада)',
+      desc: 'Выездной комплект бригады № 2',
+      icon: '🚐',
+      iconClass: 'wh-icon-teal',
+      isBase: false,
+      expanded: false,
+      items: [
+        { id: 'i6', name: 'Лазерный уровень 360°', cat: 'Измерительный', qty: 3, unit: 'шт.' },
+        { id: 'i7', name: 'Каска защитная белая', cat: 'СИЗ и спецодежда', qty: 12, unit: 'шт.' }
+      ]
+    }
+  ];
+
+  let onHandsCount = 4;
+  let extraCounter = 2;
+  let lastDeleted = null;
+  let undoTimer = null;
+  let toastTimer = null;
+  let activeModalMode = 'income';
+
+  function updateKPIs(boostCube = false) {
+    const totalUnits = warehouses.reduce((s, w) => s + w.items.reduce((a, i) => a + i.qty, 0), 0);
+    const totalItems = warehouses.reduce((s, w) => s + w.items.length, 0);
+    document.getElementById('kpiTotal').textContent = `${totalUnits} ед.`;
+    document.getElementById('kpiPositions').textContent = totalItems;
+    document.getElementById('kpiWarehouses').textContent = warehouses.length;
+    document.getElementById('kpiOnHands').textContent = onHandsCount;
+    document.getElementById('whCountBadge').textContent = warehouses.length;
+    if (boostCube) {
+      const c = document.getElementById('cube3d');
+      c.classList.add('boost');
+      setTimeout(() => c.classList.remove('boost'), 1000);
+    }
+  }
+
+  function renderWarehouses(newId = null) {
+    const q = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+    const list = document.getElementById('whList');
+    list.innerHTML = '';
+
+    warehouses.forEach(w => {
+      const matchedItems = q
+        ? w.items.filter(it => it.name.toLowerCase().includes(q) || it.cat.toLowerCase().includes(q) || w.name.toLowerCase().includes(q))
+        : w.items;
+      if (q && matchedItems.length === 0 && !w.name.toLowerCase().includes(q)) return;
+
+      const sum = w.items.reduce((s, it) => s + it.qty, 0);
+      const card = document.createElement('div');
+      card.className = 'wh-card' + (w.expanded || q ? ' expanded' : '') + (newId === w.id ? ' entering' : '');
+      card.id = 'wh_' + w.id;
+
+      card.innerHTML = `
+        <div class="wh-head" onclick="toggleWh('${w.id}')">
+          <div class="wh-icon-3d ${w.iconClass}">${w.icon}</div>
+          <div class="wh-meta">
+            <div class="wh-name">${w.name}</div>
+            <div class="wh-desc">${w.desc}</div>
+          </div>
+          <div class="wh-right">
+            <span class="wh-qty-pill">${sum} ед.</span>
+            ${!w.isBase ? `<button class="del-btn" title="Удалить склад" onclick="event.stopPropagation(); deleteWarehouse('${w.id}')">🗑️</button>` : ''}
+          </div>
+        </div>
+        <div class="wh-body">
+          ${matchedItems.map(it => `
+            <div class="item-row ${newId === it.id ? 'entering' : ''}" id="it_${it.id}">
+              <div>
+                <div class="item-title">${it.name}</div>
+                <div class="item-cat">${it.cat}</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="item-qty">${it.qty} ${it.unit}</span>
+                <button class="del-btn" title="Удалить позицию" onclick="deleteItem('${w.id}','${it.id}')">✕</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+      list.appendChild(card);
+    });
+    updateKPIs();
+  }
+
+  function toggleWh(id) {
+    const w = warehouses.find(x => x.id === id);
+    if (!w) return;
+    w.expanded = !w.expanded;
+    renderWarehouses();
+  }
+
+  function addDemoWarehouse() {
+    const id = 'wh_new_' + Date.now();
+    const num = extraCounter++;
+    warehouses.push({
+      id,
+      name: `Объект № ${num} (Монтаж)`,
+      desc: 'Новый участок • добавлен в 1 касание',
+      icon: '🏗️',
+      iconClass: 'wh-icon-em',
+      isBase: false,
+      expanded: true,
+      items: [
+        { id: 'it_' + Date.now(), name: 'Сварочный инвертор 220А', cat: 'Оборудование', qty: 2, unit: 'шт.' }
+      ]
+    });
+    renderWarehouses(id);
+    updateKPIs(true);
+    showToast('✨ НОВЫЙ СКЛАД', `Добавлен «Объект № ${num} (Монтаж)»`);
+  }
+
+  function deleteWarehouse(id) {
+    const idx = warehouses.findIndex(w => w.id === id);
+    if (idx < 0) return;
+    const el = document.getElementById('wh_' + id);
+    const removed = warehouses[idx];
+    if (el) el.classList.add('deleting');
+    setTimeout(() => {
+      warehouses.splice(idx, 1);
+      lastDeleted = { kind: 'warehouse', data: removed, index: idx };
+      renderWarehouses();
+      updateKPIs(true);
+      showUndo(`Склад «${removed.name}» удалён`);
+    }, 440);
+  }
+
+  function deleteItem(whId, itemId) {
+    const wh = warehouses.find(w => w.id === whId);
+    if (!wh) return;
+    const idx = wh.items.findIndex(i => i.id === itemId);
+    if (idx < 0) return;
+    const el = document.getElementById('it_' + itemId);
+    const removed = wh.items[idx];
+    if (el) el.classList.add('deleting');
+    setTimeout(() => {
+      wh.items.splice(idx, 1);
+      lastDeleted = { kind: 'item', whId, data: removed, index: idx };
+      renderWarehouses();
+      updateKPIs(true);
+      showUndo(`Позиция «${removed.name}» удалена`);
+    }, 390);
+  }
+
+  function triggerDemoDelete() {
+    const removable = warehouses.find(w => !w.isBase);
+    if (removable) {
+      deleteWarehouse(removable.id);
+    } else if (warehouses[0] && warehouses[0].items.length > 0) {
+      warehouses[0].expanded = true;
+      renderWarehouses();
+      setTimeout(() => deleteItem(warehouses[0].id, warehouses[0].items[warehouses[0].items.length - 1].id), 120);
+    }
+  }
+
+  function showUndo(text) {
+    const bar = document.getElementById('undoBar');
+    document.getElementById('undoText').textContent = text;
+    bar.classList.add('show');
+    clearTimeout(undoTimer);
+    undoTimer = setTimeout(() => bar.classList.remove('show'), 5500);
+  }
+
+  function undoDelete() {
+    if (!lastDeleted) return;
+    document.getElementById('undoBar').classList.remove('show');
+    if (lastDeleted.kind === 'warehouse') {
+      warehouses.splice(lastDeleted.index, 0, lastDeleted.data);
+      renderWarehouses(lastDeleted.data.id);
+      showToast('↩️ ВОССТАНОВЛЕНО', `Склад «${lastDeleted.data.name}» возвращён`);
+    } else {
+      const wh = warehouses.find(w => w.id === lastDeleted.whId);
+      if (wh) {
+        wh.expanded = true;
+        wh.items.splice(lastDeleted.index, 0, lastDeleted.data);
+        renderWarehouses(lastDeleted.data.id);
+        showToast('↩️ ВОССТАНОВЛЕНО', `Позиция «${lastDeleted.data.name}» возвращена`);
+      }
+    }
+    updateKPIs(true);
+    lastDeleted = null;
+  }
+
+  function openModal(mode) {
+    activeModalMode = mode;
+    const cfg = {
+      income:   { title: 'Приход',   sub: 'Поступление ТМЦ на склад', ic: '📥', head: '', icCls: 'wh-icon-em', wh: 'На какой склад', party: 'Поставщик / Откуда', ph: 'ООО Инструмент / База', btn: 'Сохранить приход', grad: 'linear-gradient(135deg,#10b981,#059669)' },
+      issue:    { title: 'Выдача',   sub: 'Передача на руки (МБ-7)', ic: '🛠️', head: 'gold', icCls: 'wh-icon-base', wh: 'С какого склада', party: 'Кому (ФИО / бригада)', ph: 'Петров А.С. / Бригада № 2', btn: 'Оформить выдачу', grad: 'linear-gradient(135deg,#f59e0b,#d97706)' },
+      return:   { title: 'Возврат',  sub: 'Возврат инструмента на склад', ic: '↩️', head: 'teal', icCls: 'wh-icon-teal', wh: 'На какой склад вернуть', party: 'Кто возвращает (ФИО)', ph: 'Петров А.С. / Бригада № 2', btn: 'Оформить возврат', grad: 'linear-gradient(135deg,#06b6d4,#0891b2)' },
+      writeoff: { title: 'Списание', sub: 'Акт списания ТМЦ (МБ-8)', ic: '🗑️', head: 'red', icCls: 'wh-icon-base', wh: 'Склад списания', party: 'Причина списания', ph: 'Износ / производственный расход', btn: 'Провести списание', grad: 'linear-gradient(135deg,#ef4444,#dc2626)' }
+    }[mode];
+
+    const head = document.getElementById('modalHead');
+    head.className = 'modal-head ' + cfg.head;
+    document.getElementById('modalIcon').className = 'wh-icon-3d ' + cfg.icCls;
+    document.getElementById('modalIcon').textContent = cfg.ic;
+    document.getElementById('modalTitle').textContent = cfg.title;
+    document.getElementById('modalSub').textContent = cfg.sub;
+    document.getElementById('modalWhLabel').textContent = cfg.wh;
+    document.getElementById('modalPartyLabel').textContent = cfg.party;
+    document.getElementById('modalParty').placeholder = cfg.ph;
+    document.getElementById('modalParty').value = '';
+    const btn = document.getElementById('modalSubmitBtn');
+    btn.textContent = cfg.btn;
+    btn.style.background = cfg.grad;
+
+    const sel = document.getElementById('modalWarehouse');
+    sel.innerHTML = warehouses.map(w => `<option value="${w.id}">${w.name}</option>`).join('');
+    document.getElementById('modalBackdrop').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('modalBackdrop').classList.remove('open');
+  }
+
+  function stepQty(d) {
+    const el = document.getElementById('modalQty');
+    el.value = Math.max(1, (parseInt(el.value, 10) || 1) + d);
+  }
+
+  function submitModal() {
+    const whId = document.getElementById('modalWarehouse').value;
+    const itemName = (document.getElementById('modalItem').value || 'Инструмент').trim();
+    const party = (document.getElementById('modalParty').value || 'Петров А.С.').trim();
+    const qty = Math.max(1, parseInt(document.getElementById('modalQty').value, 10) || 1);
+    const wh = warehouses.find(w => w.id === whId) || warehouses[0];
+    if (!wh) return;
+
+    const existing = wh.items.find(i => i.name.toLowerCase() === itemName.toLowerCase());
+    let highlightId = null;
+
+    if (activeModalMode === 'income' || activeModalMode === 'return') {
+      if (existing) {
+        existing.qty += qty;
+        highlightId = existing.id;
+      } else {
+        highlightId = 'it_' + Date.now();
+        wh.items.unshift({ id: highlightId, name: itemName, cat: 'Складской учёт', qty, unit: 'шт.' });
+      }
+      if (activeModalMode === 'return') onHandsCount = Math.max(0, onHandsCount - qty);
+      wh.expanded = true;
+      showToast(
+        activeModalMode === 'return' ? '↩️ ВОЗВРАТ ОФОРМЛЕН' : '📥 ПРИХОД ПРОВЕДЁН',
+        `${itemName} (+${qty} шт.) → ${wh.name} (${party})`
+      );
+    } else {
+      if (existing) {
+        existing.qty = Math.max(0, existing.qty - qty);
+        highlightId = existing.id;
+      }
+      if (activeModalMode === 'issue') onHandsCount += qty;
+      wh.expanded = true;
+      showToast(
+        activeModalMode === 'issue' ? '🛠️ ВЫДАНО НА РУКИ' : '🗑️ СПИСАНИЕ (МБ-8)',
+        `${itemName} (−${qty} шт.) • ${party}`
+      );
+    }
+    closeModal();
+    renderWarehouses(highlightId);
+    updateKPIs(true);
+  }
+
+  function showToast(title, msg) {
+    document.getElementById('toastTitle').textContent = title;
+    document.getElementById('toastMsg').textContent = msg;
+    const t = document.getElementById('toast3d');
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 3600);
+  }
+
+  function toggleTheme() {
+    document.body.classList.toggle('light');
+    const isLight = document.body.classList.contains('light');
+    document.getElementById('themeBtn').textContent = isLight ? '🌙' : '☀️';
+  }
+
+  // Interactive 3D tilt on Hero Card
+  const hero = document.getElementById('heroCard');
+  hero.addEventListener('mousemove', (e) => {
+    const r = hero.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width;
+    const y = (e.clientY - r.top) / r.height;
+    const rx = (0.5 - y) * 14;
+    const ry = (x - 0.5) * 16;
+    hero.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`;
+    hero.style.setProperty('--mx', (x * 100) + '%');
+    hero.style.setProperty('--my', (y * 100) + '%');
+  });
+  hero.addEventListener('mouseleave', () => {
+    hero.style.transform = 'rotateX(0deg) rotateY(0deg)';
+  });
+
+  renderWarehouses();
+</script>
+</body>
+</html>

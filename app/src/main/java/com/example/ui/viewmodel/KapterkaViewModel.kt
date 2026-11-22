@@ -69,6 +69,29 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
     private val _needsProfileSelection = MutableStateFlow(!prefs.getBoolean("workspace_profile_chosen", false))
     val needsProfileSelection: StateFlow<Boolean> = _needsProfileSelection.asStateFlow()
 
+    private val _showProfilePickerOverlay = MutableStateFlow(false)
+    val showProfilePickerOverlay: StateFlow<Boolean> = _showProfilePickerOverlay.asStateFlow()
+
+    private val _paymentAwaitingConfirmation = MutableStateFlow(false)
+    val paymentAwaitingConfirmation: StateFlow<Boolean> = _paymentAwaitingConfirmation.asStateFlow()
+
+    fun openProfileSelectionScreen() {
+        _showProfilePickerOverlay.value = true
+    }
+
+    fun closeProfileSelectionScreen() {
+        _showProfilePickerOverlay.value = false
+    }
+
+    fun onAppResumed() {
+        licenseManager.refreshLicenseStatus()
+        if (lastPaymentId.isNotBlank() &&
+            prefs.getString("last_activated_yookassa_payment_id", "") != lastPaymentId
+        ) {
+            confirmPaymentAndActivateLicense(showProgress = false)
+        }
+    }
+
     private val _availableCategories = MutableStateFlow<List<String>>(loadCategoriesFromPrefs(_workspaceProfileMode.value))
     val availableCategories: StateFlow<List<String>> = _availableCategories.asStateFlow()
 
@@ -137,14 +160,57 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun switchWorkspaceProfileMode(mode: com.example.data.model.WorkspaceProfileMode) {
+        reconfigureWorkspaceProfile(mode, updateWarehousesAndCatalog = false)
+    }
+
+    fun reconfigureWorkspaceProfile(
+        mode: com.example.data.model.WorkspaceProfileMode,
+        updateWarehousesAndCatalog: Boolean
+    ) {
         viewModelScope.launch {
             _workspaceProfileMode.value = mode
             _needsProfileSelection.value = false
+            _showProfilePickerOverlay.value = false
             prefs.edit()
                 .putString("workspace_profile_mode", mode.code)
                 .putBoolean("workspace_profile_chosen", true)
                 .apply()
-            _toastEvent.emit("Профиль учёта и бланков: ${mode.titleRu}")
+
+            val (reconfigured, hadUserData) = repository.reconfigureProfile(mode, updateWarehousesAndCatalog)
+
+            // Sync category chips cleanly to the selected profile (+ any category with active stock/items)
+            val profileDefaults = com.example.data.local.InitialData.getCategoriesFor(mode)
+            val stockItemIds = repository.allStockRecords.first()
+                .filter { it.quantity > 0 || it.incomeTotal > 0 || it.expenseTotal > 0 }
+                .map { it.itemId }
+                .toSet()
+            val activeItemCategories = repository.allItems.first()
+                .filter { it.isCustom || it.id in stockItemIds }
+                .map { it.serviceCategory.trim() }
+                .filter { it.isNotEmpty() }
+                .distinct()
+            saveCategoriesToPrefs((profileDefaults + activeItemCategories).distinct())
+            _selectedCategory.value = "Все виды"
+            val updatedPoints = repository.allPoints.first()
+            _selectedPointId.value = updatedPoints.firstOrNull { it.isBase }?.id
+                ?: updatedPoints.firstOrNull()?.id
+                ?: "base_sklad"
+
+            val msg = when {
+                reconfigured && !hadUserData -> when (mode) {
+                    com.example.data.model.WorkspaceProfileMode.CIVILIAN ->
+                        "Профиль изменён: «Гражданский склад» — загружены 3 склада, 64 позиции и бланки М-11 / МБ-7"
+                    com.example.data.model.WorkspaceProfileMode.MILITARY ->
+                        "Профиль изменён: «Воинский учёт» — службы МТО, точки и Формы № 8 / № 18"
+                    com.example.data.model.WorkspaceProfileMode.EMPTY ->
+                        "Профиль изменён: «Пустой склад» — чистый «Основной склад» без лишних позиций"
+                }
+                reconfigured && hadUserData ->
+                    "Профиль «${mode.titleRu}» применён. Ваши остатки и журнал сохранены, стартовые склады и каталог обновлены."
+                else ->
+                    "Профиль учёта и бланков: ${mode.titleRu}"
+            }
+            _toastEvent.emit(msg)
         }
     }
 
@@ -404,10 +470,11 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         comment: String
     ) {
         viewModelScope.launch {
-            val actor = userProfile.value?.callsign ?: "Ответственный"
-            repository.recordIncome(toPointId, toPointName, supplier, items, comment, actor)
+            val isMil = _workspaceProfileMode.value.isMilitary
+            val actor = userProfile.value?.callsign?.ifBlank { null } ?: if (isMil) "Старшина подразделения" else "Кладовщик"
+            repository.recordIncome(toPointId, toPointName, supplier, items, comment, actor, isMilitary = isMil)
             val summary = items.joinToString(", ") { "${it.itemName} (${it.quantity} ${it.unit})" }
-            val src = supplier.ifBlank { "Служба снабжения / Тыл" }
+            val src = supplier.ifBlank { if (isMil) "Служба снабжения / Тыл" else "Поставщик" }
             TacticalNotificationHelper.notifyIncome(
                 context = getApplication(),
                 toPoint = toPointName,
@@ -415,7 +482,27 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                 itemsSummary = summary,
                 baseWarehouseStockSummary = getBaseStockSummary()
             )
-            _toastEvent.emit("📥 ПРИВЕЗЛИ на $toPointName\nОткуда: $src\nПринято: $summary")
+            if (isMil) {
+                _toastEvent.emit("📥 ПРИВЕЗЛИ на $toPointName\nОткуда: $src\nПринято: $summary")
+            } else {
+                _toastEvent.emit("📥 ПРИХОД на «$toPointName»\nПоставщик: $src\nПринято: $summary")
+            }
+        }
+    }
+
+    fun recordReturn(
+        toPointId: String,
+        toPointName: String,
+        returnedBy: String,
+        items: List<OperationItemEntry>,
+        comment: String
+    ) {
+        viewModelScope.launch {
+            val actor = userProfile.value?.callsign?.ifBlank { null } ?: "Кладовщик"
+            val sender = returnedBy.trim().ifBlank { "Сотрудник / объект" }
+            repository.recordReturn(toPointId, toPointName, sender, items, comment, actor)
+            val summary = items.joinToString(", ") { "${it.itemName} (${it.quantity} ${it.unit})" }
+            _toastEvent.emit("↩️ ВОЗВРАТ на «$toPointName»\nОт кого: $sender\nПринято обратно: $summary")
         }
     }
 
@@ -428,7 +515,8 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         comment: String
     ) {
         viewModelScope.launch {
-            val actor = userProfile.value?.callsign ?: "Ответственный"
+            val isMil = _workspaceProfileMode.value.isMilitary
+            val actor = userProfile.value?.callsign?.ifBlank { null } ?: if (isMil) "Старшина подразделения" else "Кладовщик"
             repository.recordTransfer(fromPointId, fromPointName, toPointId, toPointName, items, comment, actor)
             val summary = items.joinToString(", ") { "${it.itemName} (${it.quantity} ${it.unit})" }
             TacticalNotificationHelper.notifyTransfer(
@@ -451,7 +539,8 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         comment: String
     ) {
         viewModelScope.launch {
-            val actor = userProfile.value?.callsign ?: "Старшина подразделения"
+            val isMil = _workspaceProfileMode.value.isMilitary
+            val actor = userProfile.value?.callsign?.ifBlank { null } ?: if (isMil) "Старшина подразделения" else "Кладовщик"
             val summary = items.joinToString(", ") { "${it.itemName} (${it.quantity} ${it.unit})" }
             if (toPointId.isBlank()) {
                 val recipient = toPointName.ifBlank { "Выдано на руки" }
@@ -473,7 +562,11 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                     itemsSummary = summary,
                     baseWarehouseStockSummary = getBaseStockSummary()
                 )
-                _toastEvent.emit("⬆️ ПОДНЯЛИ (ВЫДАНО):\nМаршрут: $fromPointName ➔ $toPointName\nВыдано: $summary")
+                if (isMil) {
+                    _toastEvent.emit("⬆️ ПОДНЯЛИ (ВЫДАНО):\nМаршрут: $fromPointName ➔ $toPointName\nВыдано: $summary")
+                } else {
+                    _toastEvent.emit("⬆️ ВЫДАНО на участок / склад:\nМаршрут: $fromPointName ➔ $toPointName\nВыдано: $summary")
+                }
             }
         }
     }
@@ -487,7 +580,8 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         comment: String
     ) {
         viewModelScope.launch {
-            repository.recordExpenditure(fromPointId, pointName, docNumber, responsiblePerson, items, comment)
+            val isMil = _workspaceProfileMode.value.isMilitary
+            repository.recordExpenditure(fromPointId, pointName, docNumber, responsiblePerson, items, comment, isMilitary = isMil)
             val summary = items.joinToString(", ") { "${it.itemName} (${it.quantity} ${it.unit})" }
             TacticalNotificationHelper.notifyExpenditure(
                 context = getApplication(),
@@ -497,7 +591,11 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                 reason = comment
             )
             val docLabel = if (docNumber.isNotBlank()) " (Акт № $docNumber)" else ""
-            _toastEvent.emit("💥 РАСХОД (Ф. 8)$docLabel:\nТочка: $pointName\nСписано: $summary")
+            if (isMil) {
+                _toastEvent.emit("💥 РАСХОД (Ф. 8)$docLabel:\nТочка: $pointName\nСписано: $summary")
+            } else {
+                _toastEvent.emit("🗑️ СПИСАНИЕ (МБ-8)$docLabel:\nСклад: $pointName\nСписано: $summary")
+            }
         }
     }
 
@@ -1085,15 +1183,18 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
 
     fun clearIssuedPaymentKey() {
         _issuedPaymentKey.value = null
+        _paymentAwaitingConfirmation.value = false
     }
 
     fun startYooKassaPayment(planDays: Int = 30) {
         viewModelScope.launch {
             val profile = userProfile.value
-            val callsign = profile?.callsign?.ifBlank { "Боец" } ?: "Боец"
+            val isMil = _workspaceProfileMode.value.isMilitary
+            val callsign = profile?.callsign?.ifBlank { if (isMil) "Боец" else "Пользователь" } ?: if (isMil) "Боец" else "Пользователь"
             val email = profile?.email?.trim()?.lowercase().orEmpty()
 
             if (email.isBlank() || !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                _paymentAwaitingConfirmation.value = false
                 _toastEvent.emit("Для оплаты укажите корректный Email в профиле. На него придёт информация о лицензии.")
                 return@launch
             }
@@ -1110,6 +1211,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             if (result.success && result.confirmationUrl.isNotEmpty()) {
                 lastPaymentId = result.paymentId
                 prefs.edit().putString("last_yookassa_payment_id", result.paymentId).apply()
+                _paymentAwaitingConfirmation.value = true
                 paymentPollingJob?.cancel()
                 startPaymentPolling()
                 yooKassaService.openPaymentUrl(result.confirmationUrl)
@@ -1127,6 +1229,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                     amountRub = amount
                 )
             } else {
+                _paymentAwaitingConfirmation.value = false
                 _toastEvent.emit(result.errorMessage ?: "Не удалось создать счет ЮKassa")
             }
         }
@@ -1180,6 +1283,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                 if (!verification.isReadyForActivation()) {
                     if (verification.success && verification.status in setOf("canceled", "expired")) {
                         keepPolling = false
+                        _paymentAwaitingConfirmation.value = false
                         paymentPollingJob?.cancel()
                     }
                     val msg = verification.errorMessage ?: "Платёж ещё не подтверждён сервером."
@@ -1198,6 +1302,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                     return@launch
                 }
                 keepPolling = false
+                _paymentAwaitingConfirmation.value = false
                 if (lastPaymentId == paymentIdToVerify) paymentPollingJob?.cancel()
 
                 val daysLeft = ((verification.expiresAt - System.currentTimeMillis()) / 86400000L)

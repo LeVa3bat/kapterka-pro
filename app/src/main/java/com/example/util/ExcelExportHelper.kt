@@ -73,11 +73,33 @@ object ExcelExportHelper {
     }
 
     private fun escapeXml(s: String): String {
-        return s.replace("&", "&amp;")
+        val cleaned = buildString(s.length) {
+            for (ch in s) {
+                val code = ch.code
+                val valid = code == 0x9 || code == 0xA || code == 0xD || code >= 0x20
+                if (valid) append(ch)
+            }
+        }
+        return cleaned.replace("&", "&amp;")
             .replace("<", "&lt;")
             .replace(">", "&gt;")
             .replace("\"", "&quot;")
             .replace("'", "&apos;")
+    }
+
+    private fun parsePureNumber(raw: String): String? {
+        val clean = raw.replace(" ", "").replace("\u00A0", "").replace(",", ".")
+        if (!clean.matches(Regex("^-?\\d+(?:\\.\\d+)?$"))) return null
+        val unsigned = clean.removePrefix("-")
+        // Keep leading-zero codes like "0504042" or "001" as text so Excel doesn't drop zeros.
+        if (unsigned.length > 1 && unsigned.startsWith("0") && !unsigned.startsWith("0.")) return null
+        val d = clean.toDoubleOrNull() ?: return null
+        if (!d.isFinite()) return null
+        return if (d % 1.0 == 0.0 && d >= Long.MIN_VALUE.toDouble() && d <= Long.MAX_VALUE.toDouble()) {
+            d.toLong().toString()
+        } else {
+            clean
+        }
     }
 
     /** Prevents spreadsheet formula injection while preserving plain text and punctuation. */
@@ -319,17 +341,16 @@ object ExcelExportHelper {
                 if (isSection) {
                     sb.append("""<c r="$ref" s="14" t="inlineStr"><is><t>${safeInlineText(cellVal)}</t></is></c>""")
                 } else {
-                    val cleanNumStr = cellVal.replace(" ", "").replace("\u00A0", "").replace(",", ".")
-                    val numVal = if (cleanNumStr.matches(Regex("^-?\\d+(?:\\.\\d+)?$"))) cleanNumStr.toDoubleOrNull() else null
+                    val numStr = parsePureNumber(cellVal)
                     val styleId = when {
                         cIdx == 0 -> 6
                         cIdx == 1 -> 5
-                        numVal != null -> 7
+                        numStr != null -> 7
                         cellVal == "-" || cellVal == "—" -> 6
                         else -> 5
                     }
-                    if (numVal != null && cIdx > 0) {
-                        sb.append("""<c r="$ref" s="$styleId"><v>$numVal</v></c>""")
+                    if (numStr != null && cIdx > 0) {
+                        sb.append("""<c r="$ref" s="$styleId"><v>$numStr</v></c>""")
                     } else {
                         sb.append("""<c r="$ref" s="$styleId" t="inlineStr"><is><t>${safeInlineText(cellVal)}</t></is></c>""")
                     }
@@ -345,12 +366,11 @@ object ExcelExportHelper {
             for (cIdx in 0 until data.headers.size) {
                 val cellVal = if (cIdx < data.totalRow.size) data.totalRow[cIdx] else ""
                 val ref = "${colLetter(cIdx)}$rowNum"
-                val cleanNumStr = cellVal.replace(" ", "").replace("\u00A0", "").replace(",", ".")
-                val numVal = if (cleanNumStr.matches(Regex("^-?\\d+(?:\\.\\d+)?$"))) cleanNumStr.toDoubleOrNull() else null
-                val styleId = if (cIdx <= 1 || numVal == null) 8 else 9
+                val numStr = parsePureNumber(cellVal)
+                val styleId = if (cIdx <= 1 || numStr == null) 8 else 9
 
-                if (numVal != null && cIdx > 1) {
-                    sb.append("""<c r="$ref" s="$styleId"><v>$numVal</v></c>""")
+                if (numStr != null && cIdx > 1) {
+                    sb.append("""<c r="$ref" s="$styleId"><v>$numStr</v></c>""")
                 } else {
                     sb.append("""<c r="$ref" s="$styleId" t="inlineStr"><is><t>${safeInlineText(cellVal)}</t></is></c>""")
                 }
@@ -427,6 +447,16 @@ object ExcelExportHelper {
                 output.use { os ->
                     os.write(bytes)
                     os.flush()
+                }
+            } else {
+                // Android 7-9: also save a durable copy in app-scoped Downloads without requiring legacy storage permission
+                val extDownloads = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
+                if (extDownloads != null) {
+                    val appFolder = File(extDownloads, "Каптерка").apply { mkdirs() }
+                    FileOutputStream(File(appFolder, fileName)).use { fos ->
+                        fos.write(bytes)
+                        fos.flush()
+                    }
                 }
             }
 

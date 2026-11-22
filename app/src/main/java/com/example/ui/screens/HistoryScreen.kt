@@ -68,6 +68,9 @@ import com.example.data.model.InventoryItem
 import com.example.data.model.OperationItemEntry
 import com.example.data.model.OperationRecord
 import com.example.data.model.OperationType
+import com.example.data.model.WorkspaceProfileMode
+import com.example.data.model.isReturnOperation
+import com.example.data.model.returnSenderName
 import com.example.ui.theme.SageGreenBright
 import com.example.ui.theme.SageGreenDark
 import com.example.ui.theme.SageGreenPrimary
@@ -91,9 +94,14 @@ import java.util.Date
 import java.util.Locale
 
 // Utility: Service Category detection
-fun resolveItemCategory(item: OperationItemEntry, catalog: List<InventoryItem>): String {
+fun resolveItemCategory(
+    item: OperationItemEntry,
+    catalog: List<InventoryItem>,
+    isMilitary: Boolean = true
+): String {
     val found = catalog.firstOrNull { it.id == item.itemId || it.name.equals(item.itemName, ignoreCase = true) }
     if (found != null && found.serviceCategory.isNotBlank()) return found.serviceCategory
+    if (!isMilitary) return "Прочее"
     val lower = item.itemName.lowercase()
     return when {
         lower.contains("мина") || lower.contains("выстрел") || lower.contains("патрон") || lower.contains("снаряд") ||
@@ -140,10 +148,12 @@ fun HistoryScreen(
     availableCategories: List<String> = emptyList(),
     onFilterChange: (OperationType?) -> Unit,
     onSearchChange: (String) -> Unit,
-    parseItems: (String) -> List<OperationItemEntry>
+    parseItems: (String) -> List<OperationItemEntry>,
+    profileMode: WorkspaceProfileMode = WorkspaceProfileMode.MILITARY
 ) {
     val dateFormat = remember { SimpleDateFormat("dd.MM.yyyy HH:mm", Locale("ru")) }
     var selectedCategoryFilter by remember { mutableStateOf("Все категории") }
+    var filterReturnsOnly by remember { mutableStateOf(false) }
     val expandedOpIds = remember { mutableStateMapOf<String, Boolean>() }
 
     // 0 = всё время, 1 = сегодня, 2 = 7 дней, 3 = 30 дней
@@ -154,20 +164,26 @@ fun HistoryScreen(
     // Days folded by tapping their header.
     val collapsedDays = remember { androidx.compose.runtime.mutableStateListOf<Long>() }
 
-    LaunchedEffect(filterType, selectedCategoryFilter, searchQuery, period) {
+    LaunchedEffect(filterType, filterReturnsOnly, selectedCategoryFilter, searchQuery, period) {
         expandedOpIds.clear()
         visibleLimit = PAGE_SIZE
     }
 
-    val filteredOperations = remember(operations, filterType, selectedCategoryFilter, searchQuery, catalogItems, period) {
+    val filteredOperations = remember(operations, filterType, filterReturnsOnly, selectedCategoryFilter, searchQuery, catalogItems, period, profileMode) {
         operations.filter { op ->
-            val matchesType = filterType == null || op.type == filterType
+            val isRet = op.isReturnOperation()
+            val matchesType = when {
+                filterReturnsOnly -> isRet
+                filterType == OperationType.INCOME -> op.type == OperationType.INCOME && !isRet
+                filterType != null -> op.type == filterType
+                else -> true
+            }
             val parsedItems = parseItems(op.itemsJson)
 
             val matchesCategory = if (selectedCategoryFilter == "Все категории") {
                 true
             } else {
-                parsedItems.any { resolveItemCategory(it, catalogItems) == selectedCategoryFilter } ||
+                parsedItems.any { resolveItemCategory(it, catalogItems, profileMode.isMilitary) == selectedCategoryFilter } ||
                         op.itemsSummary.contains(selectedCategoryFilter, ignoreCase = true)
             }
 
@@ -182,7 +198,7 @@ fun HistoryScreen(
                         op.responsiblePerson.lowercase().contains(q) ||
                         parsedItems.any { 
                             it.itemName.lowercase().contains(q) || 
-                                    resolveItemCategory(it, catalogItems).lowercase().contains(q) 
+                                    resolveItemCategory(it, catalogItems, profileMode.isMilitary).lowercase().contains(q) 
                         }
             }
             matchesType && matchesCategory && matchesQuery && matchesPeriod(op.timestamp, period)
@@ -281,7 +297,8 @@ fun HistoryScreen(
 
         // UNIFIED SINGLE FILTER ROW (One clean, informative line)
         item {
-            val countIncome = remember(operations) { operations.count { it.type == OperationType.INCOME } }
+            val countReturn = remember(operations) { operations.count { it.isReturnOperation() } }
+            val countIncome = remember(operations) { operations.count { it.type == OperationType.INCOME && !it.isReturnOperation() } }
             val countTransfer = remember(operations) { operations.count { it.type == OperationType.TRANSFER } }
             val countIssue = remember(operations) { operations.count { it.type == OperationType.ISSUE } }
             val countExpenditure = remember(operations) { operations.count { it.type == OperationType.EXPENDITURE } }
@@ -301,8 +318,9 @@ fun HistoryScreen(
                 // All
                 HistoryFilterChip(
                     label = "Все (${operations.size})",
-                    isSelected = filterType == null && selectedCategoryFilter == "Все категории",
+                    isSelected = filterType == null && !filterReturnsOnly && selectedCategoryFilter == "Все категории",
                     onClick = {
+                        filterReturnsOnly = false
                         onFilterChange(null)
                         selectedCategoryFilter = "Все категории"
                     }
@@ -311,29 +329,46 @@ fun HistoryScreen(
                 // Types
                 HistoryFilterChip(
                     label = "Приход ($countIncome)",
-                    isSelected = filterType == OperationType.INCOME,
+                    isSelected = !filterReturnsOnly && filterType == OperationType.INCOME,
                     onClick = {
+                        filterReturnsOnly = false
                         onFilterChange(if (filterType == OperationType.INCOME) null else OperationType.INCOME)
                     }
                 )
-                HistoryFilterChip(
-                    label = "Перемещение ($countTransfer)",
-                    isSelected = filterType == OperationType.TRANSFER,
-                    onClick = {
-                        onFilterChange(if (filterType == OperationType.TRANSFER) null else OperationType.TRANSFER)
-                    }
-                )
+                if (!profileMode.isMilitary || countReturn > 0) {
+                    HistoryFilterChip(
+                        label = "Возврат ($countReturn)",
+                        isSelected = filterReturnsOnly,
+                        onClick = {
+                            val next = !filterReturnsOnly
+                            filterReturnsOnly = next
+                            if (next) onFilterChange(null)
+                        }
+                    )
+                }
+                if (profileMode.isMilitary || countTransfer > 0) {
+                    HistoryFilterChip(
+                        label = "Перемещение ($countTransfer)",
+                        isSelected = !filterReturnsOnly && filterType == OperationType.TRANSFER,
+                        onClick = {
+                            filterReturnsOnly = false
+                            onFilterChange(if (filterType == OperationType.TRANSFER) null else OperationType.TRANSFER)
+                        }
+                    )
+                }
                 HistoryFilterChip(
                     label = "Выдача ($countIssue)",
-                    isSelected = filterType == OperationType.ISSUE,
+                    isSelected = !filterReturnsOnly && filterType == OperationType.ISSUE,
                     onClick = {
+                        filterReturnsOnly = false
                         onFilterChange(if (filterType == OperationType.ISSUE) null else OperationType.ISSUE)
                     }
                 )
                 HistoryFilterChip(
                     label = "Списание ($countExpenditure)",
-                    isSelected = filterType == OperationType.EXPENDITURE,
+                    isSelected = !filterReturnsOnly && filterType == OperationType.EXPENDITURE,
                     onClick = {
+                        filterReturnsOnly = false
                         onFilterChange(if (filterType == OperationType.EXPENDITURE) null else OperationType.EXPENDITURE)
                     }
                 )
@@ -487,6 +522,7 @@ fun HistoryScreen(
                             operation = op,
                             dateFormat = dateFormat,
                             catalogItems = catalogItems,
+                            isMilitary = profileMode.isMilitary,
                             parseItems = parseItems,
                             isExpanded = isOpExpanded,
                             onToggleExpand = {
@@ -642,17 +678,20 @@ private fun OperationAccordionCard(
     operation: OperationRecord,
     dateFormat: SimpleDateFormat,
     catalogItems: List<InventoryItem>,
+    isMilitary: Boolean = true,
     parseItems: (String) -> List<OperationItemEntry>,
     isExpanded: Boolean,
     onToggleExpand: () -> Unit
 ) {
     val items = remember(operation.itemsJson) { parseItems(operation.itemsJson) }
+    val isReturn = operation.isReturnOperation()
 
-    val (badgeBg, badgeText, badgeTitle) = when (operation.type) {
-        OperationType.INCOME -> Triple(com.example.ui.theme.TacticalEmeraldDark, com.example.ui.theme.TacticalEmeraldText, "ПРИХОД")
-        OperationType.TRANSFER -> Triple(TacticalTealDark, TacticalTealText, "ПЕРЕМЕЩЕНИЕ")
-        OperationType.ISSUE -> Triple(TacticalGoldDark, TacticalGoldText, "ВЫДАЧА")
-        OperationType.EXPENDITURE -> Triple(TacticalRedDark, TacticalRedText, "СПИСАНИЕ")
+    val (badgeBg, badgeText, badgeTitle) = when {
+        isReturn -> Triple(TacticalTealDark, TacticalTealText, "ВОЗВРАТ")
+        operation.type == OperationType.INCOME -> Triple(com.example.ui.theme.TacticalEmeraldDark, com.example.ui.theme.TacticalEmeraldText, "ПРИХОД")
+        operation.type == OperationType.TRANSFER -> Triple(TacticalTealDark, TacticalTealText, "ПЕРЕМЕЩЕНИЕ")
+        operation.type == OperationType.ISSUE -> Triple(TacticalGoldDark, TacticalGoldText, "ВЫДАЧА")
+        else -> Triple(TacticalRedDark, TacticalRedText, "СПИСАНИЕ")
     }
 
     Card(
@@ -694,7 +733,7 @@ private fun OperationAccordionCard(
                         )
                     }
 
-                    if (operation.docNumber.isNotBlank()) {
+                    if (operation.docNumber.isNotBlank() && !isReturn) {
                         Spacer(modifier = Modifier.width(6.dp))
                         Box(
                             modifier = Modifier
@@ -737,21 +776,25 @@ private fun OperationAccordionCard(
             Spacer(modifier = Modifier.height(8.dp))
 
             // ROW 2: Route Display - single clean line with balanced weights
-            val (fromName, toName) = when (operation.type) {
-                OperationType.INCOME -> Pair(
-                    operation.fromPointName.ifBlank { "Поставщик / Снабжение" },
-                    operation.toPointName.ifBlank { "Базовый склад" }
+            val (fromName, toName) = when {
+                isReturn -> Pair(
+                    operation.returnSenderName(),
+                    operation.toPointName.ifBlank { "Основной склад" }
                 )
-                OperationType.TRANSFER -> Pair(
+                operation.type == OperationType.INCOME -> Pair(
+                    operation.fromPointName.ifBlank { if (isMilitary) "Поставщик / Снабжение" else "Поставщик" },
+                    operation.toPointName.ifBlank { if (isMilitary) "Базовый склад" else "Основной склад" }
+                )
+                operation.type == OperationType.TRANSFER -> Pair(
                     operation.fromPointName.ifBlank { "Склад отправки" },
                     operation.toPointName.ifBlank { "Склад назначения" }
                 )
-                OperationType.ISSUE -> Pair(
-                    operation.fromPointName.ifBlank { "Базовый склад" },
+                operation.type == OperationType.ISSUE -> Pair(
+                    operation.fromPointName.ifBlank { if (isMilitary) "Базовый склад" else "Основной склад" },
                     operation.toPointName.ifBlank { "Получатель" }
                 )
-                OperationType.EXPENDITURE -> Pair(
-                    operation.fromPointName.ifBlank { operation.toPointName.ifBlank { "Позиция" } },
+                else -> Pair(
+                    operation.fromPointName.ifBlank { operation.toPointName.ifBlank { if (isMilitary) "Позиция" else "Склад" } },
                     "Списание"
                 )
             }
@@ -896,8 +939,8 @@ private fun OperationAccordionCard(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     if (items.isNotEmpty()) {
-                        val groupedByCategory = remember(items, catalogItems) {
-                            items.groupBy { resolveItemCategory(it, catalogItems) }
+                        val groupedByCategory = remember(items, catalogItems, isMilitary) {
+                            items.groupBy { resolveItemCategory(it, catalogItems, isMilitary) }
                         }
 
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {

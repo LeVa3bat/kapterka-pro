@@ -37,6 +37,7 @@ import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.PlaylistAdd
 import androidx.compose.material.icons.rounded.Warehouse
+import androidx.compose.material.icons.rounded.WarningAmber
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -116,7 +117,8 @@ fun RequestsScreen(
     onUpdateStatus: (RequisitionRequest, RequestStatus) -> Unit,
     onDeleteRequisition: (String) -> Unit,
     parseItems: (String) -> List<RequisitionItemEntry>,
-    onIssueRequisition: (RequisitionRequest) -> Unit = { onUpdateStatus(it, RequestStatus.ISSUED) }
+    onIssueRequisition: (RequisitionRequest) -> Unit = { onUpdateStatus(it, RequestStatus.ISSUED) },
+    profileMode: com.example.data.model.WorkspaceProfileMode = com.example.data.model.WorkspaceProfileMode.MILITARY
 ) {
     var tab by remember { mutableStateOf(RequestStatus.PENDING) }
     var showForm by remember { mutableStateOf(false) }
@@ -244,6 +246,7 @@ fun RequestsScreen(
             points = points,
             catalogItems = catalogItems,
             stockRecords = stockRecords,
+            profileMode = profileMode,
             onDismiss = { showForm = false },
             onSubmit = { pointName, applicant, items, comment ->
                 onCreateRequisition(pointName, applicant, items, comment)
@@ -260,7 +263,11 @@ fun RequestsScreen(
             text = {
                 Text(
                     "Со склада «${req.pointName}» будут списаны позиции заявки и выданы: ${req.applicantName}. " +
-                        "Выдача попадёт в журнал операций и в ведомость выдачи (ф. 8 / МБ-7)."
+                        if (profileMode.isMilitary) {
+                            "Выдача попадёт в журнал операций и в ведомость выдачи (Форма № 8)."
+                        } else {
+                            "Выдача попадёт в журнал операций и в ведомость выдачи на руки (МБ-7)."
+                        }
                 )
             },
             confirmButton = {
@@ -462,6 +469,7 @@ private fun NewRequestSheet(
     points: List<WarehousePoint>,
     catalogItems: List<InventoryItem>,
     stockRecords: List<StockRecord>,
+    profileMode: com.example.data.model.WorkspaceProfileMode = com.example.data.model.WorkspaceProfileMode.MILITARY,
     onDismiss: () -> Unit,
     onSubmit: (String, String, List<RequisitionItemEntry>, String) -> Unit
 ) {
@@ -473,10 +481,91 @@ private fun NewRequestSheet(
     val lines = remember { mutableStateListOf<DraftLine>() }
     var picked by remember { mutableStateOf<InventoryItem?>(null) }
     var pickedQty by remember { mutableStateOf("1") }
+    var pendingShortageLines by remember { mutableStateOf<List<String>?>(null) }
     val stockAtSource = remember(stockRecords, source) {
         stockRecords.filter { it.pointId == source?.id }.groupBy { it.itemId }.mapValues { (_, r) -> r.sumOf { it.quantity } }
     }
+    val stockTotalAll = remember(stockRecords) {
+        stockRecords.groupBy { it.itemId }.mapValues { (_, r) -> r.sumOf { it.quantity } }
+    }
     val canSubmit = source != null && recipient.isNotBlank() && lines.isNotEmpty()
+
+    pendingShortageLines?.let { shortages ->
+        AlertDialog(
+            onDismissRequest = { pendingShortageLines = null },
+            containerColor = TacticalSurface,
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Rounded.WarningAmber,
+                        contentDescription = null,
+                        tint = TacticalRedText,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Позиций нет на складе",
+                        color = TacticalRedText,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    )
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = "На складе «${source?.name.orEmpty()}» отсутствует или недостаточно следующих позиций:",
+                        color = TacticalTextPrimary,
+                        fontSize = 13.sp,
+                        lineHeight = 18.sp
+                    )
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(TacticalRedText.copy(alpha = 0.12f))
+                            .border(1.dp, TacticalRedText.copy(alpha = 0.45f), RoundedCornerShape(12.dp))
+                            .padding(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        shortages.forEach { msg ->
+                            Text(
+                                text = "• $msg",
+                                color = TacticalRedText,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                lineHeight = 16.sp
+                            )
+                        }
+                    }
+                    Text(
+                        text = "Оформить заявку в очередь всё равно?",
+                        color = TacticalTextSecondary,
+                        fontSize = 12.sp
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val src = source ?: return@Button
+                        val entries = lines.map { RequisitionItemEntry(it.item.name, it.qty.toIntOrNull()?.coerceAtLeast(1) ?: 1, it.item.unit) }
+                        pendingShortageLines = null
+                        onSubmit(src.name, recipient.trim(), entries, (if (urgent) URGENT else "") + comment.trim())
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = TacticalRedText, contentColor = Color.White),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Отправить всё равно", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingShortageLines = null }) {
+                    Text("Исправить", color = TacticalTextSecondary)
+                }
+            }
+        )
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -507,7 +596,12 @@ private fun NewRequestSheet(
             OutlinedTextField(
                 value = recipient,
                 onValueChange = { recipient = it.take(60) },
-                placeholder = { Text("Позывной, ФИО или подразделение", color = TacticalTextMuted) },
+                placeholder = {
+                    Text(
+                        if (profileMode.isMilitary) "Позывной, ФИО или подразделение" else "ФИО, бригада или участок",
+                        color = TacticalTextMuted
+                    )
+                },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),
@@ -532,6 +626,43 @@ private fun NewRequestSheet(
                 availableStocksMap = stockAtSource
             )
             picked?.let { item ->
+                val haveAtSource = stockAtSource[item.id] ?: 0
+                val totalAll = stockTotalAll[item.id] ?: 0
+                val wantQty = pickedQty.toIntOrNull()?.coerceAtLeast(1) ?: 1
+                if (haveAtSource < wantQty) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(TacticalRedText.copy(alpha = 0.14f))
+                            .border(1.dp, TacticalRedText.copy(alpha = 0.55f), RoundedCornerShape(12.dp))
+                            .padding(horizontal = 10.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.WarningAmber,
+                            contentDescription = null,
+                            tint = TacticalRedText,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = when {
+                                haveAtSource <= 0 && totalAll <= 0 ->
+                                    "На складе «${source?.name.orEmpty()}» и на базе этой позиции нет в наличии (0 ${item.unit})."
+                                haveAtSource <= 0 && totalAll > 0 ->
+                                    "На складе «${source?.name.orEmpty()}» нет в наличии (0 ${item.unit}), но на других складах есть $totalAll ${item.unit}."
+                                else ->
+                                    "На складе «${source?.name.orEmpty()}» недостаточно: в наличии $haveAtSource ${item.unit}, запрошено $wantQty ${item.unit}."
+                            },
+                            color = TacticalRedText,
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            lineHeight = 15.sp
+                        )
+                    }
+                }
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     QuantityStepper(value = pickedQty, onValueChange = { pickedQty = it }, unit = item.unit, modifier = Modifier.weight(1f))
@@ -555,6 +686,14 @@ private fun NewRequestSheet(
                     }
                 }
             }
+            val shortageSummary = lines.mapNotNull { line ->
+                val have = stockAtSource[line.item.id] ?: 0
+                val q = line.qty.toIntOrNull() ?: 0
+                if (have < q) {
+                    if (have <= 0) "${line.item.name}: нет на складе (0 ${line.item.unit}), нужно $q ${line.item.unit}"
+                    else "${line.item.name}: есть $have ${line.item.unit}, нужно $q ${line.item.unit}"
+                } else null
+            }
             if (lines.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(10.dp))
                 Column(
@@ -567,9 +706,14 @@ private fun NewRequestSheet(
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(line.item.name, color = TacticalTextPrimary, fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                                 Text(
-                                    if (have >= q) "на складе $have ${line.item.unit} — хватает" else "на складе только $have ${line.item.unit}",
+                                    when {
+                                        have >= q -> "на складе $have ${line.item.unit} — хватает"
+                                        have <= 0 -> "⚠️ нет на складе (0 ${line.item.unit})"
+                                        else -> "⚠️ на складе только $have ${line.item.unit} (не хватает ${q - have})"
+                                    },
                                     color = if (have >= q) SageGreenBright else TacticalRedText,
-                                    fontSize = 11.sp
+                                    fontSize = 11.sp,
+                                    fontWeight = if (have >= q) FontWeight.Normal else FontWeight.SemiBold
                                 )
                             }
                             Text("$q ${line.item.unit}", color = TacticalTextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
@@ -580,6 +724,33 @@ private fun NewRequestSheet(
                                 modifier = Modifier.clip(CircleShape).clickable { lines.remove(line) }.padding(6.dp).size(18.dp)
                             )
                         }
+                    }
+                }
+                if (shortageSummary.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(TacticalRedText.copy(alpha = 0.14f))
+                            .border(1.dp, TacticalRedText.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                            .padding(horizontal = 10.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.WarningAmber,
+                            contentDescription = null,
+                            tint = TacticalRedText,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Внимание: по ${shortageSummary.size} поз. нет достаточного остатка на складе «${source?.name.orEmpty()}».",
+                            color = TacticalRedText,
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            lineHeight = 15.sp
+                        )
                     }
                 }
             }
@@ -618,8 +789,12 @@ private fun NewRequestSheet(
             Button(
                 onClick = {
                     val src = source ?: return@Button
-                    val entries = lines.map { RequisitionItemEntry(it.item.name, it.qty.toIntOrNull()?.coerceAtLeast(1) ?: 1, it.item.unit) }
-                    onSubmit(src.name, recipient.trim(), entries, (if (urgent) URGENT else "") + comment.trim())
+                    if (shortageSummary.isNotEmpty()) {
+                        pendingShortageLines = shortageSummary
+                    } else {
+                        val entries = lines.map { RequisitionItemEntry(it.item.name, it.qty.toIntOrNull()?.coerceAtLeast(1) ?: 1, it.item.unit) }
+                        onSubmit(src.name, recipient.trim(), entries, (if (urgent) URGENT else "") + comment.trim())
+                    }
                 },
                 enabled = canSubmit,
                 modifier = Modifier.fillMaxWidth().height(54.dp),
