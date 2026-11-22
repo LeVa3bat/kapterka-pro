@@ -1,83 +1,226 @@
-/* Каптёрка PRO: переключатель «Для кого» и демонстрация «Остаток меняется сам». */
+/* Каптёрка PRO: переключатель стартовых профилей (Путь А) и интерактивная демонстрация учёта. */
 (function () {
-  // "Кто вы?": one card, content per audience.
   var personas = [
-    { img: 'screens/36-8-form8.jpg', head: 'Имущество роты под контролем',
-      list: ['Выдача по взводам и бойцам с распиской в форме 8', 'Книга учёта по форме 18 — сама, из операций', 'Заявки от взводов: видно, что собрано и что выдано'] },
-    { img: 'screens/36-3-stock-table.jpg', head: 'Склад без бумажной путаницы',
-      list: ['Приход, расход и остаток по каждому складу', 'Перемещение между складами в одно касание', 'Поиск по названию и фильтр по группам'] },
-    { img: 'screens/36-4-requests.jpg', head: 'Гуманитарная помощь — прозрачно',
-      list: ['Приём грузов и выдача адресатам с журналом', 'Несколько телефонов команды видят одни данные', 'Отчёт для отчётности в Excel за минуту'] },
-    { img: 'screens/36-5-journal.jpg', head: 'Инструмент всегда на счету',
-      list: ['Кто взял инструмент и когда — в журнале по дням', 'Возврат и списание с причиной', 'Работает в цеху без интернета'] }
+    {
+      img: 'screens/36-5-journal-preview.webp',
+      tag: 'Стартовый профиль № 2 • Гражданский учёт',
+      head: 'Мастерская, бригада и склад инструмента',
+      desc: 'Нейтральный гражданский справочник без армейской терминологии: электроинструмент, расходники, СИЗ, ГСМ, крепёж и обычные бланки Excel.',
+      list: [
+        'Выдача инструмента на руки по фамилии за 2 касания — всегда видно, у кого перфоратор',
+        'Обычные бланки: ведомость выдачи, сводка остатков и журнал движения в Excel',
+        'Бесплатный базовый режим офлайн (1 склад, 15 ключевых позиций) — навсегда после 3 дней демо'
+      ]
+    },
+    {
+      img: 'screens/36-8-form8-preview.webp',
+      tag: 'Стартовый профиль № 1 • Ведомственный учёт',
+      head: 'Склад подразделения и снабжение',
+      desc: 'Готовый справочник по службам (РАВ, БПЛА, Связь, Вещевая, ГСМ, Мед), КЗ и передовые точки, официальные печатные формы.',
+      list: [
+        'Раздаточная ведомость по Форме № 8 и книга учёта по Форме № 18 — собираются сами в Excel',
+        'Заявки от подразделений по этапам: Новая → Сборка → Собрана → Выдана со склада',
+        'При обновлении старой версии все ваши склады, остатки и история сохраняются без изменений'
+      ]
+    },
+    {
+      img: 'screens/36-3-stock-table-preview.webp',
+      tag: 'Стартовый профиль № 3 • Чистый лист',
+      head: 'Пустой склад — заведите всё с нуля',
+      desc: 'Один основной склад и пустой каталог. Добавьте только свои категории, точки хранения и карточки — ничего лишнего перед глазами.',
+      list: [
+        'Полный контроль структуры: свои названия складов, стеллажей, цехов или объектов',
+        'Быстрая инвентаризация: корректировка остатка автоматически фиксируется в журнале',
+        'Локальная резервная копия в файл — данные всегда под вашим контролем'
+      ]
+    },
+    {
+      img: 'screens/36-6-unit-qr-preview.webp',
+      tag: 'Командная работа • Синхронизация по QR',
+      head: 'Волонтёрские штабы и выездные бригады',
+      desc: 'Несколько телефонов работают с одной базой. Наведите камеру на QR-код первого телефона — и вся команда видит актуальные остатки.',
+      list: [
+        'Приём грузов и выдача адресатам с точной датой, временем и ответственным',
+        'Учёт работает без интернета в дороге и на складе; обмен запускается при появлении сети',
+        'Синхронизацию можно поставить на паузу или удалить облачную копию одной кнопкой'
+      ]
+    }
   ];
+
   var tabs = document.querySelectorAll('.lp-persona-tabs button');
   var img = document.getElementById('personaImg');
+  var tag = document.getElementById('personaTag');
   var head = document.getElementById('personaHead');
+  var desc = document.getElementById('personaDesc');
   var list = document.getElementById('personaList');
+
+  function applyPersona(index) {
+    var p = personas[index] || personas[0];
+    tabs.forEach(function (t) {
+      var active = Number(t.getAttribute('data-persona')) === index;
+      t.classList.toggle('on', active);
+      t.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+    if (img) img.src = p.img;
+    if (tag) tag.textContent = p.tag;
+    if (head) head.textContent = p.head;
+    if (desc) desc.textContent = p.desc;
+    if (list) {
+      list.replaceChildren.apply(list, p.list.map(function (text) {
+        var li = document.createElement('li');
+        li.textContent = text;
+        return li;
+      }));
+    }
+  }
+
   tabs.forEach(function (tab) {
     tab.addEventListener('click', function () {
-      var p = personas[Number(tab.getAttribute('data-persona')) || 0];
-      tabs.forEach(function (t) { t.classList.toggle('on', t === tab); t.setAttribute('aria-selected', t === tab ? 'true' : 'false'); });
-      img.src = p.img;
-      head.textContent = p.head;
-      list.replaceChildren.apply(list, p.list.map(function (text) { var li = document.createElement('li'); li.textContent = text; return li; }));
-      if (typeof ym === 'function') { try { ym(112255061, 'reachGoal', 'persona_' + tab.getAttribute('data-persona')); } catch (e) {} }
+      var idx = Number(tab.getAttribute('data-persona')) || 0;
+      applyPersona(idx);
+      if (typeof ym === 'function') {
+        try { ym(112255061, 'reachGoal', 'persona_' + idx); } catch (e) {}
+      }
     });
   });
 })();
 
-// «Остаток меняется сам»: демонстрация на вымышленных данных. Ничего не сохраняется и не отправляется.
+// «Остаток меняется сам»: интерактивная демонстрация на вымышленных данных (Мастерская / Подразделение).
 (function () {
   var root = document.getElementById('lpLedger');
   var journal = document.getElementById('lpJournal');
   var resetBtn = document.getElementById('lpReset');
   if (!root || !journal || !resetBtn) return;
-  var STEP = 3;
-  var rows = Array.prototype.slice.call(root.querySelectorAll('tr[data-item]'));
-  var start = rows.map(function (r) { return Number(r.getAttribute('data-qty')); });
-  var qty = start.slice();
-  var empty = journal.firstElementChild; // строка «Пока пусто»
 
-  function paint(i, flash) {
-    var row = rows[i];
-    var cell = row.querySelector('.lp-qty');
-    var btn = row.querySelector('.lp-issue');
-    var name = row.getAttribute('data-item');
-    var can = qty[i] >= STEP;
-    cell.textContent = String(qty[i]);
-    btn.disabled = !can;
-    btn.textContent = can ? 'Выдать ' + STEP : 'Нет остатка';
-    btn.setAttribute('aria-label', can ? 'Выдать ' + STEP + ': ' + name : 'Остатка недостаточно: ' + name);
-    if (flash) { cell.classList.remove('lp-flash'); void cell.offsetWidth; cell.classList.add('lp-flash'); }
-  }
+  var PRESETS = {
+    workshop: {
+      caption: 'Склад «Мастерская № 1» (пример)',
+      items: [
+        { name: 'Перфоратор SDS-Plus', unit: 'шт.', qty: 6 },
+        { name: 'Диски отрезные 125 мм', unit: 'уп.', qty: 35 },
+        { name: 'Краги сварочные', unit: 'пар', qty: 24 }
+      ]
+    },
+    unit: {
+      caption: 'Склад подразделения (КЗ, пример)',
+      items: [
+        { name: 'Рукавицы утеплённые', unit: 'пар', qty: 42 },
+        { name: 'Спальный мешок', unit: 'шт.', qty: 18 },
+        { name: 'Тушёнка говяжья', unit: 'банок', qty: 240 }
+      ]
+    }
+  };
+
+  var ISSUE_STEP = 3;
+  var INCOME_STEP = 5;
+  var currentPreset = 'workshop';
+  var rows = Array.prototype.slice.call(root.querySelectorAll('tr[data-item]'));
+  var captionEl = root.querySelector('table caption');
+  var qty = rows.map(function (r) { return Number(r.getAttribute('data-qty')); });
+  var empty = journal.firstElementChild;
+  var modeBtns = document.querySelectorAll('[data-ledger-preset]');
+
   function stamp() {
     var d = new Date();
     return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
   }
 
-  rows.forEach(function (row, i) {
-    row.querySelector('.lp-issue').addEventListener('click', function () {
-      if (qty[i] < STEP) return;
-      qty[i] -= STEP;
-      paint(i, true);
-      if (empty && empty.parentNode) empty.parentNode.removeChild(empty);
-      var li = document.createElement('li');
-      var time = document.createElement('time');
-      var text = document.createElement('span');
-      time.textContent = stamp();
-      text.textContent = 'Выдача −' + STEP + ' · ' + row.getAttribute('data-item') + ' · остаток ' + qty[i];
-      li.appendChild(time);
-      li.appendChild(text);
-      journal.insertBefore(li, journal.firstChild);
-      while (journal.children.length > 6) journal.removeChild(journal.lastChild);
+  function paintRow(i, flashClass) {
+    var row = rows[i];
+    if (!row) return;
+    var cell = row.querySelector('.lp-qty');
+    var issueBtn = row.querySelector('.lp-issue');
+    var incomeBtn = row.querySelector('.lp-income');
+    var name = row.getAttribute('data-item');
+    var canIssue = qty[i] >= ISSUE_STEP;
+    if (cell) {
+      cell.textContent = String(qty[i]);
+      if (flashClass) {
+        cell.classList.remove('lp-flash', 'lp-flash-in');
+        void cell.offsetWidth;
+        cell.classList.add(flashClass);
+      }
+    }
+    if (issueBtn) {
+      issueBtn.disabled = !canIssue;
+      issueBtn.textContent = canIssue ? '−' + ISSUE_STEP + ' Выдать' : 'Нет остатка';
+      issueBtn.setAttribute('aria-label', canIssue ? 'Выдать ' + ISSUE_STEP + ': ' + name : 'Остатка недостаточно: ' + name);
+    }
+    if (incomeBtn) {
+      incomeBtn.setAttribute('aria-label', 'Приход +' + INCOME_STEP + ': ' + name);
+    }
+  }
+
+  function appendLog(kind, deltaText, itemName, newQty) {
+    if (empty && empty.parentNode) empty.parentNode.removeChild(empty);
+    var li = document.createElement('li');
+    li.className = kind === 'in' ? 'lp-log-in' : 'lp-log-out';
+    var time = document.createElement('time');
+    var text = document.createElement('span');
+    time.textContent = stamp();
+    text.textContent = deltaText + ' · ' + itemName + ' · остаток ' + newQty;
+    li.appendChild(time);
+    li.appendChild(text);
+    journal.insertBefore(li, journal.firstChild);
+    while (journal.children.length > 6) journal.removeChild(journal.lastChild);
+  }
+
+  function loadPreset(presetKey) {
+    var preset = PRESETS[presetKey] || PRESETS.workshop;
+    currentPreset = presetKey in PRESETS ? presetKey : 'workshop';
+    modeBtns.forEach(function (btn) {
+      var active = btn.getAttribute('data-ledger-preset') === currentPreset;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-pressed', active ? 'true' : 'false');
     });
-    paint(i, false);
+    if (captionEl) captionEl.textContent = preset.caption;
+    rows.forEach(function (row, i) {
+      var item = preset.items[i];
+      if (!item) return;
+      row.setAttribute('data-item', item.name);
+      row.setAttribute('data-qty', String(item.qty));
+      var nameCell = row.querySelector('.lp-name');
+      if (nameCell) {
+        nameCell.textContent = '';
+        nameCell.appendChild(document.createTextNode(item.name));
+        var small = document.createElement('small');
+        small.textContent = item.unit;
+        nameCell.appendChild(small);
+      }
+      qty[i] = item.qty;
+      paintRow(i, '');
+    });
+    if (empty) journal.replaceChildren(empty);
+  }
+
+  rows.forEach(function (row, i) {
+    var issueBtn = row.querySelector('.lp-issue');
+    if (issueBtn) {
+      issueBtn.addEventListener('click', function () {
+        if (qty[i] < ISSUE_STEP) return;
+        qty[i] -= ISSUE_STEP;
+        paintRow(i, 'lp-flash');
+        appendLog('out', 'Выдача −' + ISSUE_STEP, row.getAttribute('data-item'), qty[i]);
+      });
+    }
+    var incomeBtn = row.querySelector('.lp-income');
+    if (incomeBtn) {
+      incomeBtn.addEventListener('click', function () {
+        qty[i] += INCOME_STEP;
+        paintRow(i, 'lp-flash-in');
+        appendLog('in', 'Приход +' + INCOME_STEP, row.getAttribute('data-item'), qty[i]);
+      });
+    }
+    paintRow(i, '');
+  });
+
+  modeBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      loadPreset(btn.getAttribute('data-ledger-preset'));
+    });
   });
 
   resetBtn.addEventListener('click', function () {
-    qty = start.slice();
-    rows.forEach(function (_, i) { paint(i, false); });
-    journal.replaceChildren(empty);
+    loadPreset(currentPreset);
   });
 })();

@@ -410,7 +410,7 @@ function loadCabinetProfile() {
 }
 
 function saveCabinetProfile() {
-  const callsign = document.getElementById('cabCallsignInput')?.value.trim() || 'Боец';
+  const callsign = document.getElementById('cabCallsignInput')?.value.trim() || 'Пользователь';
   const rank = document.getElementById('cabRankInput')?.value.trim() || '';
   const unitName = document.getElementById('cabUnitNameInput')?.value.trim() || '';
   const unitKey = document.getElementById('cabUnitKeyInput')?.value.trim() || localStorage.getItem(STORAGE_UNIT_KEY) || '';
@@ -448,21 +448,37 @@ function saveCabinetProfile() {
   const payCallsignInput = document.getElementById('payCallsignInput');
   if (payCallsignInput) payCallsignInput.value = callsign;
 
-  showToast('Данные профиля и подразделения сохранены!');
+  if (typeof window.saveWebAuthProfileToServer === 'function') {
+    window.saveWebAuthProfileToServer({ callsign, rank, unitName, unitKey, phone })
+      .then((res) => {
+        if (res && res.ok) showToast('Профиль сохранён и синхронизирован с сервером.');
+        else showToast('Данные профиля сохранены в этом браузере.');
+      })
+      .catch(() => showToast('Данные профиля сохранены в этом браузере.'));
+    return;
+  }
+
+  showToast('Данные профиля сохранены!');
 }
 
 function generateNewUnitKey() {
-  const chars = '0123456789abcdef';
   let rand = '';
-  for (let i = 0; i < 6; i++) {
-    rand += chars.charAt(Math.floor(Math.random() * chars.length));
+  if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
+    const bytes = new Uint8Array(10);
+    window.crypto.getRandomValues(bytes);
+    rand = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+  } else {
+    const chars = '0123456789abcdef';
+    for (let i = 0; i < 20; i++) {
+      rand += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
   }
   const newKey = `kapt_${rand}`;
   const unitKeyInput = document.getElementById('cabUnitKeyInput');
   if (unitKeyInput) {
     unitKeyInput.value = newKey;
     localStorage.setItem(STORAGE_UNIT_KEY, newKey);
-    showToast(`Сформирован новый ключ роты: ${newKey}`);
+    showToast(`Сформирован новый защищённый ключ: ${newKey}`);
   }
 }
 
@@ -677,7 +693,10 @@ function updateCabinetLicenseStatus() {
     if (expiryText) expiryText.textContent = 'Срок подтверждён реестром';
     if (daysEl) daysEl.textContent = String(days ?? '—');
     if (expiryDateEl) expiryDateEl.textContent = expiryDate ? 'до ' + expiryDate : '';
-    if (progressEl) progressEl.style.width = Math.max(0, Math.min(100, ((days || 0) / 30) * 100)) + '%';
+    const spanDays = meta.activatedAt && meta.expiresAt > meta.activatedAt
+      ? Math.max(30, Math.round((meta.expiresAt - meta.activatedAt) / 86400000))
+      : (days > 90 ? 365 : days > 30 ? 90 : 30);
+    if (progressEl) progressEl.style.width = Math.max(0, Math.min(100, ((days || 0) / spanDays) * 100)) + '%';
     if (navBadgeStatus) {
       navBadgeStatus.textContent = 'ПРО';
       navBadgeStatus.style.display = 'inline-block';
@@ -1287,10 +1306,11 @@ function applyNewPaidKey(newKey, callsign, meta = {}) {
   updateAuthUI();
 
   // Conversion tracking without sending the license key or personal data.
-  trackYm('reachGoal', 'license_activated', { plan: 'PRO_30' });
+  const planCode = daysLeft > 120 ? 'PRO_365' : daysLeft > 45 ? 'PRO_90' : 'PRO_30';
+  trackYm('reachGoal', 'license_activated', { plan: planCode });
   if (typeof window.gtag === 'function') {
     try {
-      window.gtag('event', 'license_activated', { plan: 'PRO_30' });
+      window.gtag('event', 'license_activated', { plan: planCode });
     } catch (e) {}
   }
 

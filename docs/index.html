@@ -119,7 +119,7 @@
         "name": "Сколько стоит?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "3 дня полного доступа бесплатно, затем PRO — 490 ₽ за 30 дней. Оплата через ЮKassa: СБП, карта МИР, SberPay."
+          "text": "3 дня полного доступа бесплатно, затем базовый режим (1 склад, до 15 позиций офлайн) остаётся бесплатным. Лицензия PRO: 490 ₽ за 30 дней, 1 190 ₽ за 90 дней, 3 490 ₽ за 365 дней. Оплата через ЮKassa (СБП, МИР, SberPay), самозанятый (НПД)."
         }
       },
       {
@@ -152,16 +152,16 @@
   <link rel="preload" as="font" type="font/woff2" href="fonts/plex-sans-600-cyrillic.woff2" crossorigin>
   <link rel="preload" as="font" type="font/woff2" href="fonts/plex-sans-400-cyrillic.woff2" crossorigin>
   <!-- Собрано из style.css, tabs_and_cabinet.css, site36.css и landing.css -->
-  <link rel="stylesheet" href="site.bundle.min.css?v=20261013">
+  <link rel="stylesheet" href="site.bundle.min.css?v=20261122">
 
-  <!-- Favicon & Mobile Icons (Тактическая светящаяся иконка Каптёрка Про) -->
+  <!-- Favicon & Mobile Icons (Иконка Каптёрка PRO) -->
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="alternate icon" href="favicon.svg">
   <link rel="apple-touch-icon" href="app_icon_512.png">
   <link rel="manifest" href="site.webmanifest">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="theme-color" content="#0d140e">
+  <meta name="theme-color" content="#091014">
   <meta name="application-name" content="Каптёрка PRO">
   <meta name="apple-mobile-web-app-title" content="Каптёрка PRO">
   <meta name="color-scheme" content="dark">
@@ -240,7 +240,7 @@
   <!-- /Yandex.Metrika counter -->
 
   <script>
-    window.KAPTERKA_WEB_VERSION = "3.9.0-web.59";
+    window.KAPTERKA_WEB_VERSION = "3.9.0-web.60";
     (function () {
       try {
         const key = 'kapterka_web_version_seen';
@@ -315,33 +315,130 @@
       <section class="lp-hero">
         <div class="lp-wrap lp-hero-grid">
           <div class="lp-hero-copy">
-            <p class="lp-kicker">Каптёрка PRO · версия <span data-release-version>3.9.0</span></p>
-            <h1><small class="lp-h1-sub">Складской учёт и учёт имущества на Android</small>Записал —<span>остаток уже посчитан.</span></h1>
-            <p class="lp-lead">Для кладовщика, мастерской и ответственного за имущество: записывайте приход и выдачу, проверяйте остатки, формируйте отчёты Excel из своих записей. Основной учёт работает офлайн.</p>
+            <p class="lp-kicker">Каптёрка PRO · v<span data-release-version>3.9.0</span> · Android 7.0+ · Офлайн</p>
+            <h1><small class="lp-h1-sub">Складской учёт и учёт имущества на Android</small>Порядок на складе —<span>прямо в телефоне.</span></h1>
+            <p class="lp-lead">Приход, выдача на руки, остатки, перемещения, заявки и отчёты Excel — без интернета, рекламы и Google-аккаунта. Универсальный учёт для мастерской, бригады, склада подразделения или собственного хозяйства.</p>
             <div class="lp-actions">
               <a class="lp-btn lp-btn-gold" href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('neo_hero')">Скачать официальный APK</a>
               <button type="button" class="lp-btn lp-btn-line" onclick="openModal('modalRuStore')">Открыть в RuStore</button>
-              <a class="lp-btn lp-btn-line" href="uchet-instrumenta-android.html#workshop-kit">Бесплатный XLSX для мастерской</a>
+              <a class="lp-btn lp-btn-line" href="#ledger-demo">Попробовать демо ↓</a>
             </div>
-            <ul class="lp-facts"><li>72 часа полного демо</li><li>далее 490 ₽ / 30 дней</li><li>без рекламы</li><li>Android 7.0+</li></ul>
-            <p>Демо начинается с первого запуска. После окончания данные сохраняются для просмотра. <a href="#plans">Условия доступа</a></p>
+            <ul class="lp-facts">
+              <li>3 дня полного демо</li>
+              <li>Базовый режим бесплатно</li>
+              <li>PRO от 490 ₽ / 30 дней</li>
+              <li>Вход только по Email</li>
+            </ul>
+            <p class="lp-hero-note">После 72 часов демо данные сохраняются, а 1 склад и 15 позиций остаются бесплатными. <a href="#plans">Сравнить условия</a> · <a href="uchet-instrumenta-android.html#workshop-kit">Бесплатный XLSX</a></p>
           </div>
-          <div class="lp-paper lp-form8" role="img" aria-label="Пример раздаточной ведомости: выдача записана, остаток пересчитан, поставлен штамп «Выдано»">
-            <div class="lp-form8-head"><span>Форма № 8 · раздаточная ведомость</span><span>склад «Пример»</span></div>
-            <div class="lp-row"><i>1</i><span>Рукавицы утеплённые, пар</span><b><s>42</s>39</b></div>
-            <div class="lp-row"><i>2</i><span>Спальный мешок, шт.</span><b><s>18</s>15</b></div>
-            <div class="lp-row"><i>3</i><span>Тушёнка, банок</span><b><s>240</s>237</b></div>
-            <p class="lp-sign">выдал ______ принял ______</p>
-            <div class="lp-stamp">ВЫДАНО</div>
+          <div class="lp-hero-visual">
+            <div class="lp-paper lp-form8" role="img" aria-label="Пример ведомости выдачи: операция записана, остаток пересчитан, поставлен штамп «Выдано»">
+              <div class="lp-form8-head"><span>Ведомость выдачи · Excel / ф. № 8</span><span>склад «Пример»</span></div>
+              <div class="lp-row"><i>1</i><span>Перфоратор SDS-Plus, шт.</span><b><s>6</s>3</b></div>
+              <div class="lp-row"><i>2</i><span>Диски отрезные 125 мм, уп.</span><b><s>35</s>32</b></div>
+              <div class="lp-row"><i>3</i><span>Краги сварочные, пар</span><b><s>24</s>21</b></div>
+              <p class="lp-sign">выдал ______ принял ______</p>
+              <div class="lp-stamp">ВЫДАНО</div>
+            </div>
+            <div class="lp-hero-profiles-strip" aria-label="Три профиля при первом запуске">
+              <div class="lp-mini-prof">
+                <span>Профиль 1</span>
+                <strong>Склад подразделения</strong>
+                <small>КЗ, точки, Формы № 8 и 18</small>
+              </div>
+              <div class="lp-mini-prof">
+                <span>Профиль 2</span>
+                <strong>Мастерская / бригада</strong>
+                <small>Инструмент, ТМЦ, обычные бланки</small>
+              </div>
+              <div class="lp-mini-prof">
+                <span>Профиль 3</span>
+                <strong>Пустой склад</strong>
+                <small>Чистый старт с нуля</small>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      <!-- 2. Приложение в работе (настоящие экраны) -->
+      <!-- 2. Три стартовых профиля (Путь А) -->
+      <section class="lp-section lp-persona" id="profiles" aria-labelledby="personaTitle">
+        <div class="lp-wrap">
+          <div class="lp-eyebrow">Универсальный старт · Путь А</div>
+          <h2 class="lp-h2" id="personaTitle">Один инструмент — под любую задачу</h2>
+          <p class="lp-sub">Выберите сценарий, чтобы увидеть, как Каптёрка PRO подстраивается под ваш склад, терминологию и бланки отчётов.</p>
+          <div class="lp-persona-tabs" role="tablist" aria-label="Сценарий использования">
+            <button type="button" role="tab" class="lp-tab on" aria-selected="true" data-persona="0">Мастерская / бригада</button>
+            <button type="button" role="tab" class="lp-tab" aria-selected="false" data-persona="1">Склад подразделения</button>
+            <button type="button" role="tab" class="lp-tab" aria-selected="false" data-persona="2">Пустой склад</button>
+            <button type="button" role="tab" class="lp-tab" aria-selected="false" data-persona="3">Волонтёры и команды</button>
+          </div>
+          <div class="lp-persona-card">
+            <img id="personaImg" src="screens/36-5-journal-preview.webp" alt="Экран приложения Каптёрка PRO" loading="lazy" decoding="async" width="1080" height="2340">
+            <div>
+              <span class="lp-persona-tag" id="personaTag">Стартовый профиль № 2 • Гражданский учёт</span>
+              <h3 id="personaHead">Мастерская, бригада и склад инструмента</h3>
+              <p class="lp-persona-desc" id="personaDesc">Нейтральный гражданский справочник без армейской терминологии: электроинструмент, расходники, СИЗ, ГСМ, крепёж и обычные бланки Excel.</p>
+              <ul id="personaList">
+                <li>Выдача инструмента на руки по фамилии за 2 касания — всегда видно, у кого перфоратор</li>
+                <li>Обычные бланки: ведомость выдачи, сводка остатков и журнал движения в Excel</li>
+                <li>Бесплатный базовый режим офлайн (1 склад, 15 ключевых позиций) — навсегда после 3 дней демо</li>
+              </ul>
+              <a class="lp-btn lp-btn-gold" href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('persona')">Скачать и попробовать 3 дня бесплатно</a>
+            </div>
+          </div>
+          <div class="lp-upgrade-safe">
+            <span>🛡️</span>
+            <div><b>Уже пользуетесь Каптёркой?</b> При обновлении поверх установленной версии ваши склады, остатки, журнал, справочник и лицензия остаются нетронутыми.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. Интерактивная демонстрация учёта -->
+      <section class="lp-section lp-ledger" id="ledger-demo" aria-labelledby="ledgerTitle">
+        <div class="lp-wrap">
+          <div class="lp-ledger-head">
+            <div class="lp-ledger-head-copy">
+              <div class="lp-eyebrow">Попробуйте прямо в браузере</div>
+              <h2 class="lp-h2" id="ledgerTitle">Остаток пересчитывается сам</h2>
+              <p>Переключите профиль, проведите приход или выдачу и посмотрите, как обновляется склад и журнал. Это пример в браузере — ничего не сохраняется.</p>
+            </div>
+            <div class="lp-ledger-switch" role="group" aria-label="Режим демонстрации">
+              <button type="button" class="active" data-ledger-preset="workshop" aria-pressed="true">Мастерская</button>
+              <button type="button" data-ledger-preset="unit" aria-pressed="false">Подразделение</button>
+            </div>
+          </div>
+          <div class="lp-ledger-board" id="lpLedger">
+            <div class="lp-paper lp-sheet">
+              <table>
+                <caption>Склад «Мастерская № 1» (пример)</caption>
+                <thead><tr><th scope="col">Наименование</th><th scope="col">Остаток</th><th scope="col"><span class="lp-sr">Действие</span></th></tr></thead>
+                <tbody>
+                  <tr data-item="Перфоратор SDS-Plus" data-qty="6"><td class="lp-name">Перфоратор SDS-Plus<small>шт.</small></td><td class="lp-qty">6</td><td class="lp-act"><div class="lp-act-group"><button type="button" class="lp-income">+5</button><button type="button" class="lp-issue">−3 Выдать</button></div></td></tr>
+                  <tr data-item="Диски отрезные 125 мм" data-qty="35"><td class="lp-name">Диски отрезные 125 мм<small>уп.</small></td><td class="lp-qty">35</td><td class="lp-act"><div class="lp-act-group"><button type="button" class="lp-income">+5</button><button type="button" class="lp-issue">−3 Выдать</button></div></td></tr>
+                  <tr data-item="Краги сварочные" data-qty="24"><td class="lp-name">Краги сварочные<small>пар</small></td><td class="lp-qty">24</td><td class="lp-act"><div class="lp-act-group"><button type="button" class="lp-income">+5</button><button type="button" class="lp-issue">−3 Выдать</button></div></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="lp-journal">
+              <h3>Журнал операций</h3>
+              <ol id="lpJournal" aria-live="polite"><li class="lp-empty">Нажмите «+5» или «−3 Выдать» слева — операция сразу появится здесь.</li></ol>
+              <button type="button" class="lp-reset" id="lpReset">Сбросить пример</button>
+            </div>
+          </div>
+          <p class="lp-ledger-foot">В приложении так же, только по всем вашим складам: ведомость выдачи, сводка остатков, Форма № 8 и книга учёта (Форма № 18) собираются в Excel одной кнопкой. <a href="forma-8-razdatochnaya-vedomost.html">Посмотреть пример бланка →</a></p>
+        </div>
+      </section>
+
+      <!-- 4. Приложение в работе (галерея экранов) -->
       <section class="lp-section lp-gallery" aria-labelledby="galTitle">
         <div class="lp-wrap">
           <div class="lp-gallery-top">
-            <div><h2 class="lp-h2" id="galTitle">Приложение в работе</h2><p class="lp-sub">Примеры интерфейса на демонстрационных данных, подготовленные для версии 3.6. Вид экранов в установленной версии может отличаться.</p></div>
+            <div>
+              <div class="lp-eyebrow">Интерфейс</div>
+              <h2 class="lp-h2" id="galTitle">Приложение в работе</h2>
+              <p class="lp-sub">Нажмите на любой экран, чтобы рассмотреть детали. Примеры подготовлены на демонстрационных данных текущей линейки 3.6–3.9.</p>
+            </div>
             <div class="lp-gnav" aria-label="Переключение скриншотов">
               <button type="button" id="previewGalleryPrev" onclick="movePreviewGallery(-1)" aria-label="Предыдущий скриншот">‹</button>
               <span id="previewGalleryCount" aria-live="polite">1 / 7</span>
@@ -370,12 +467,12 @@
               <strong>QR-подключение</strong><small>Второй телефон за секунды</small>
             </button>
             <button type="button" class="lp-shot" data-gallery-index="5" onclick="openGallerySlide(5)">
-              <img src="screens/36-8-form8-preview.webp" alt="Пример интерфейса — Форма № 8: раздаточная ведомость в excel" loading="lazy" decoding="async" width="1080" height="2340">
-              <strong>Форма № 8</strong><small>Раздаточная ведомость в Excel</small>
+              <img src="screens/36-8-form8-preview.webp" alt="Пример интерфейса — Форма № 8: раздаточная ведомость в Excel" loading="lazy" decoding="async" width="1080" height="2340">
+              <strong>Ведомость Excel</strong><small>Форма № 8 и обычные бланки</small>
             </button>
             <button type="button" class="lp-shot" data-gallery-index="6" onclick="openGallerySlide(6)">
               <img src="screens/36-7-pro-preview.webp" alt="Пример интерфейса — PRO: оплата и ключ на почту" loading="lazy" decoding="async" width="1080" height="2340">
-              <strong>PRO</strong><small>Оплата и ключ на почту</small>
+              <strong>Тарифы PRO</strong><small>Оплата ЮKassa и ключ на Email</small>
             </button>
           </div>
           <div class="lp-dots" id="previewGalleryDots" aria-label="Выбор скриншота">
@@ -390,86 +487,50 @@
         </div>
       </section>
 
-      <!-- 3. Возможности -->
+      <!-- 5. Возможности (Bento Grid) -->
       <section class="lp-section lp-features" id="for-whom" aria-labelledby="featTitle">
         <div class="lp-wrap">
-          <h2 class="lp-h2" id="featTitle">Всё, что делала бы ваша тетрадь, только без арифметики</h2>
-          <p class="lp-sub">Для складов, кладовых, подразделений, мастерских и волонтёрских штабов: везде, где важно знать, что есть в наличии и кому выдано.</p>
+          <div class="lp-eyebrow">Функциональность</div>
+          <h2 class="lp-h2" id="featTitle">Всё, что делала тетрадь — быстрее и без ошибок</h2>
+          <p class="lp-sub">Создано для реальной работы на складе, в цеху и в поле: лёгкий APK (5 МБ), мгновенный отклик и полная автономность.</p>
           <ul class="lp-lines">
-            <li><span class="lp-tick">✓</span><div><strong>Остатки по складам</strong><span class="lp-d">Приход, выдача, перемещение и списание сразу меняют остаток.</span></div></li>
-            <li><span class="lp-tick">✓</span><div><strong>Заявки по этапам</strong><span class="lp-d">Новая, сборка, собрана, выдана. Выдача проводится со склада.</span></div></li>
-            <li><span class="lp-tick">✓</span><div><strong>Формы № 8 и № 18 в Excel</strong><span class="lp-d">Раздаточная ведомость и книга учёта собираются из уже введённых данных.</span></div></li>
-            <li><span class="lp-tick">✓</span><div><strong>Второй телефон по QR-коду</strong><span class="lp-d">Навели камеру, и учёт общий на всё подразделение.</span></div></li>
-            <li><span class="lp-tick">✓</span><div><strong>Работает без интернета</strong><span class="lp-d">База на телефоне; синхронизация уходит, когда появится связь.</span></div></li>
-            <li><span class="lp-tick">✓</span><div><strong>Лицензия хранится на сервере</strong><span class="lp-d">Не пропадает при переустановке, ключ приходит на почту.</span></div></li>
+            <li><span class="lp-tick">01</span><div><strong>Остатки и выдача на руки</strong><span class="lp-d">Приход, выдача по фамилии, перемещение между точками и списание мгновенно пересчитывают остаток.</span></div></li>
+            <li><span class="lp-tick">02</span><div><strong>Заявки по этапам</strong><span class="lp-d">Новая → Сборка → Собрана → Выдана. Выдача по заявке сразу списывает позиции со склада.</span></div></li>
+            <li><span class="lp-tick">03</span><div><strong>Готовые отчёты Excel (.xlsx)</strong><span class="lp-d">Сводные остатки, журнал движения, а также официальные Формы № 8 и № 18 — прямо с телефона.</span></div></li>
+            <li><span class="lp-tick">04</span><div><strong>Второй телефон по QR-коду</strong><span class="lp-d">Наведите камеру — и вся команда работает в общем контуре синхронизации. Пауза и очистка облака в 1 клик.</span></div></li>
+            <li><span class="lp-tick">05</span><div><strong>Работает офлайн (Room / SQLite)</strong><span class="lp-d">База хранится на телефоне; на Huawei, Honor и старых Android 7+ всё работает стабильно без Google-сервисов.</span></div></li>
+            <li><span class="lp-tick">06</span><div><strong>Вход только по почте</strong><span class="lp-d">Никаких паролей и входа через Google — только 6-значный код на Email. Лицензия хранится на сервере.</span></div></li>
           </ul>
         </div>
       </section>
 
-      <!-- 4. Для кого -->
-      <section class="lp-section lp-persona" aria-labelledby="personaTitle">
-        <div class="lp-wrap">
-          <h2 class="lp-h2" id="personaTitle">Выберите свою ситуацию</h2>
-          <p class="lp-sub">Покажем, чем приложение поможет именно вам.</p>
-          <div class="lp-persona-tabs" role="tablist" aria-label="Кто вы">
-            <button type="button" role="tab" class="lp-tab on" aria-selected="true" data-persona="0">Старшина</button>
-            <button type="button" role="tab" class="lp-tab" aria-selected="false" data-persona="1">Склад</button>
-            <button type="button" role="tab" class="lp-tab" aria-selected="false" data-persona="2">Волонтёры</button>
-            <button type="button" role="tab" class="lp-tab" aria-selected="false" data-persona="3">Мастерская</button>
-          </div>
-          <div class="lp-persona-card">
-            <img id="personaImg" src="screens/36-8-form8-preview.webp" alt="" loading="lazy" decoding="async" width="1080" height="2340">
-            <div>
-              <h3 id="personaHead">Имущество роты под контролем</h3>
-              <ul id="personaList">
-                <li>Выдача по взводам и бойцам с распиской в форме 8</li>
-                <li>Книга учёта по форме 18 — сама, из операций</li>
-                <li>Заявки от взводов: видно, что собрано и что выдано</li>
-              </ul>
-              <a class="lp-btn lp-btn-gold" href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('persona')">Попробовать 3 дня бесплатно</a>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- 5. Попробуйте сами -->
-      <section class="lp-section lp-ledger" id="ledger-demo" aria-labelledby="ledgerTitle">
-        <div class="lp-wrap">
-          <div class="lp-ledger-head">
-            <h2 class="lp-h2" id="ledgerTitle">Остаток меняется сам</h2>
-            <p>Проведите выдачу и посмотрите, что произойдёт. Это демонстрация на вымышленных данных: ничего не сохраняется и не отправляется.</p>
-          </div>
-          <div class="lp-ledger-board" id="lpLedger">
-            <div class="lp-paper lp-sheet">
-              <table>
-                <caption>Склад «Пример»</caption>
-                <thead><tr><th scope="col">Наименование</th><th scope="col">Остаток</th><th scope="col"><span class="lp-sr">Действие</span></th></tr></thead>
-                <tbody>
-                  <tr data-item="Рукавицы утеплённые" data-qty="42"><td class="lp-name">Рукавицы утеплённые<small>пар</small></td><td class="lp-qty">42</td><td class="lp-act"><button type="button" class="lp-issue">Выдать 3</button></td></tr>
-                  <tr data-item="Спальный мешок" data-qty="18"><td class="lp-name">Спальный мешок<small>шт.</small></td><td class="lp-qty">18</td><td class="lp-act"><button type="button" class="lp-issue">Выдать 3</button></td></tr>
-                  <tr data-item="Тушёнка" data-qty="240"><td class="lp-name">Тушёнка<small>банок</small></td><td class="lp-qty">240</td><td class="lp-act"><button type="button" class="lp-issue">Выдать 3</button></td></tr>
-                </tbody>
-              </table>
-            </div>
-            <div class="lp-journal">
-              <h3>Журнал операций</h3>
-              <ol id="lpJournal" aria-live="polite"><li class="lp-empty">Пока пусто. Нажмите «Выдать 3».</li></ol>
-              <button type="button" class="lp-reset" id="lpReset">Сбросить пример</button>
-            </div>
-          </div>
-          <p class="lp-ledger-foot">В приложении так же, только с вашими данными: форма № 8 и книга учёта (форма 18) собираются из журнала одной кнопкой. <a href="forma-8-razdatochnaya-vedomost.html">Как выглядит форма 8</a></p>
-        </div>
-      </section>
-
-      <!-- 6. Доверие -->
+      <!-- 6. Доверие и проверка -->
       <section class="lp-section lp-trust" aria-labelledby="trustTitle">
         <div class="lp-wrap">
-          <h2 class="lp-h2" id="trustTitle">Скачиваете не из магазина? Проверьте сами</h2>
-          <p class="lp-sub">Файл подписан, контрольную сумму можно сверить. Оплата только через ЮKassa.</p>
+          <div class="lp-eyebrow">Прозрачность и безопасность</div>
+          <h2 class="lp-h2" id="trustTitle">Проверьте всё сами перед установкой</h2>
+          <p class="lp-sub">Официальный APK подписан неизменным ключом разработчика, контрольная сумма SHA-256 открыта, оплата проходит только через ЮKassa.</p>
           <div class="lp-seals">
-            <a class="lp-seal" href="security.html"><strong>Проверяемый APK</strong><small>подпись и SHA-256</small></a>
-            <a class="lp-seal" href="updates.html"><strong>Версия <span data-release-version>3.9.0</span></strong><small>что нового</small></a>
-            <div class="lp-seal"><strong>Оплата ЮKassa</strong><small>СБП · МИР · SberPay</small></div>
+            <a class="lp-seal" href="security.html">
+              <span class="lp-seal-badge">Проверка файла</span>
+              <strong>Подпись и SHA-256</strong>
+              <small>Сверьте контрольную сумму APK</small>
+            </a>
+            <a class="lp-seal" href="updates.html">
+              <span class="lp-seal-badge">Актуальная сборка</span>
+              <strong>Версия <span data-release-version>3.9.0</span></strong>
+              <small>build <span data-release-code>39</span> · история изменений</small>
+            </a>
+            <div class="lp-seal">
+              <span class="lp-seal-badge">Самозанятый · НПД</span>
+              <strong>Оплата ЮKassa</strong>
+              <small>СБП · МИР · SberPay · ИНН 250104230398</small>
+            </div>
+            <button type="button" class="lp-seal" style="text-align:left;cursor:pointer;" onclick="switchMainTab('tabCabinet')">
+              <span class="lp-seal-badge">Без Google-аккаунта</span>
+              <strong>Регистрация по Email</strong>
+              <small>Одноразовый 6-значный код</small>
+            </button>
           </div>
         </div>
       </section>
@@ -477,128 +538,127 @@
       <!-- 7. Три шага -->
       <section class="lp-section lp-start" id="how-to-start" aria-labelledby="startTitle">
         <div class="lp-wrap">
-          <h2 class="lp-h2" id="startTitle">Три шага, и можно записывать</h2>
+          <div class="lp-eyebrow">Быстрый старт</div>
+          <h2 class="lp-h2" id="startTitle">Три шага — и учёт готов</h2>
           <ol class="lp-steps">
-            <li><div><strong>Установите</strong><span>Скачайте APK с сайта или установите из RuStore. Три дня бесплатно.</span></div></li>
-            <li><div><strong>Добавьте склады</strong><span>Создайте склады и внесите фактические остатки.</span></div></li>
-            <li><div><strong>Ведите учёт</strong><span>Приход, выдача, заявки и отчёты в одно касание. <a href="rukovodstvo-polzovatelya.html">Руководство</a></span></div></li>
+            <li><div><strong>Установите приложение</strong><span>Скачайте официальный APK с сайта или установите из RuStore. Три дня полного доступа бесплатно.</span></div></li>
+            <li><div><strong>Войдите по почте</strong><span>Подтвердите Email 6-значным кодом или начните в автономном офлайн-режиме. Пароль и Google не нужны.</span></div></li>
+            <li><div><strong>Ведите учёт и выгружайте Excel</strong><span>Добавьте свои склады и остатки — приход, выдача, заявки и ведомости работают в одно касание. <a href="rukovodstvo-polzovatelya.html">Руководство →</a></span></div></li>
           </ol>
         </div>
       </section>
 
-      <!-- 9. Доступ -->
+      <!-- 8. Тарифы и доступ -->
       <section class="lp-section lp-plans" id="plans" aria-labelledby="plansTitle">
         <div class="lp-wrap">
-          <h2 class="lp-h2" id="plansTitle">Сначала попробуйте, потом решайте</h2>
-          <p class="lp-sub">Демо — 72 часа с первого запуска на все функции. Затем остаётся бесплатный базовый учёт (1 основной склад и до 15 позиций офлайн) или полный PRO от 490 ₽ за 30 дней.</p>
+          <div class="lp-eyebrow">Честные условия</div>
+          <h2 class="lp-h2" id="plansTitle">Сначала проверьте в деле — потом решайте</h2>
+          <p class="lp-sub">Первые 72 часа открыты все функции. Затем остаётся вечный бесплатный базовый учёт офлайн или полный PRO без ограничений и без скрытых автосписаний.</p>
           <div class="lp-plans-grid">
             <article class="lp-plan lp-plan-demo">
-              <div class="lp-plan-head"><span>Базовый + Демо</span><span class="lp-plan-price">3 дня</span></div>
-              <span class="lp-plan-term">далее бесплатно</span>
-              <p>72 часа полного доступа после регистрации, далее вечный базовый учёт на 1 основном складе без интернета.</p>
+              <div class="lp-plan-head"><span>Демо + Базовый</span><span class="lp-plan-price">3 дня</span></div>
+              <span class="lp-plan-term">полного доступа · далее базовый режим бесплатно</span>
+              <p>72 часа полного доступа после регистрации (по серверной дате), далее постоянный базовый учёт на телефоне без интернета.</p>
               <ul>
-                <li>1 основной склад и до 15 активных позиций</li>
-                <li>до 15 своих карточек, приход и выдача на руки</li>
-                <li>просмотр всей истории и копия базы в файл</li>
+                <li>1 основной склад и до 15 активных позиций на остатках</li>
+                <li>до 15 своих карточек в справочнике, приход и выдача на руки</li>
+                <li>просмотр всей накопленной истории и резервная копия в файл</li>
               </ul>
-              <a class="lp-btn lp-btn-gold" href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('plan_demo')">Скачать APK</a>
+              <a class="lp-btn lp-btn-emerald" href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('plan_demo')">Скачать APK бесплатно</a>
             </article>
             <article class="lp-plan lp-plan-pro">
-              <div class="lp-plan-head"><span>PRO</span><span class="lp-plan-price">490 ₽</span></div>
-              <span class="lp-plan-term">30 дней • 1 190 ₽ / 90 дн. • 3 490 ₽ / 365 дн.</span>
-              <p>Полный безлимит складов, отчётов и синхронизации. Экономия до 41% при оплате на 90 или 365 дней.</p>
+              <div class="lp-plan-head"><span>Лицензия PRO</span><span class="lp-plan-price">490 ₽</span></div>
+              <span class="lp-plan-term">30 дней • 1 190 ₽ / 90 дн. (−19%) • 3 490 ₽ / 365 дн. (−41%)</span>
+              <p>Полный безлимит складов, карточек, заявок, Excel-отчётов и синхронизации между телефонами. Без автопродления.</p>
               <ul>
-                <li>безлимит складов, позиций, перемещений и заявок</li>
-                <li>форма № 8, отчёты Excel и второй телефон</li>
-                <li>лицензионный ключ KAPT-… и чек ЮKassa</li>
+                <li>безлимит складов, позиций, перемещений, списаний и заявок</li>
+                <li>выгрузка в Excel (ведомости, остатки, Формы № 8 и № 18)</li>
+                <li>синхронизация нескольких телефонов по QR и облачная копия</li>
+                <li>мгновенный ключ KAPT-… на Email после оплаты через ЮKassa</li>
               </ul>
-              <button type="button" class="lp-btn lp-btn-line" onclick="switchMainTab('tabPayment')">Выбрать тариф PRO</button>
+              <button type="button" class="lp-btn lp-btn-gold" onclick="switchMainTab('tabPayment')">Выбрать тариф PRO</button>
             </article>
+          </div>
+          <div class="lp-npd-note">
+            <strong>Оплата и касса (самозанятый НПД):</strong> платежи принимаются через ЮKassa (СБП, карты МИР, SberPay, магазин №1450722). Правообладатель применяет специальный налоговый режим НПД (самозанятый, ИНН 250104230398, ФЗ № 422-ФЗ, без онлайн-ККТ по 54-ФЗ). Лицензионный ключ отправляется на Email автоматически; чек НПД из приложения «Мой налог» предоставляется по условиям <a href="terms.html">публичной оферты</a>.
           </div>
         </div>
       </section>
 
-      <!-- 10. Вопросы -->
-      <section class="lp-section" aria-labelledby="access-terms-title">
-        <div class="lp-wrap">
-          <h2 class="lp-h2" id="access-terms-title">Как действует доступ</h2>
-          <p class="lp-sub">Первые 72 часа после регистрации открыты все функции (срок привязан к серверной дате регистрации). После демо работает бесплатный базовый режим: 1 основной склад, до 15 активных позиций и 15 своих карточек, приход, выдача на руки, просмотр накопленных данных и локальная копия в файл. Для безлимита, нескольких складов, Excel-отчётов и второго телефона доступен PRO на 30 (490 ₽), 90 (1 190 ₽) или 365 дней (3 490 ₽).</p>
-          <p><a href="uchet-instrumenta-android.html#workshop-kit">Бесплатный XLSX и PDF для небольшой мастерской →</a></p>
-        </div>
-      </section>
-
-      <!-- 10. Вопросы -->
+      <!-- 9. Частые вопросы -->
       <section class="lp-section lp-faq" aria-labelledby="faqTitle">
         <div class="lp-wrap">
+          <div class="lp-eyebrow">Ответы</div>
           <h2 class="lp-h2" id="faqTitle">Частые вопросы</h2>
           <div class="lp-faq-list">
             <details>
-              <summary>Нужен ли постоянный интернет?</summary>
-              <p>Нет. Основной учёт работает на телефоне без сети. Интернет нужен для синхронизации между телефонами, оплаты и проверки лицензии.</p>
+              <summary>Нужен ли постоянный интернет или Google-аккаунт?</summary>
+              <p>Нет. Основной учёт работает локально на телефоне без сети и не зависит от Google-сервисов. Регистрация и вход — только по адресу электронной почты (6-значный код).</p>
             </details>
             <details>
               <summary>Как подключить второй телефон?</summary>
-              <p>На первом телефоне нажмите «Подключить» — появится QR-код подразделения. На втором телефоне при входе нажмите значок QR и наведите камеру. Ключ можно ввести и вручную.</p>
+              <p>На первом телефоне нажмите «Подключить» — появится QR-код. На втором телефоне при входе нажмите значок QR и наведите камеру. Код можно ввести и вручную.</p>
             </details>
             <details>
-              <summary>Какие отчёты можно сформировать?</summary>
-              <p>Форму № 8 (раздаточная ведомость), книгу учёта по форме 18, сводную ведомость остатков и реестр заявок. Всё выгружается в Excel.</p>
+              <summary>Какие отчёты можно выгрузить в Excel?</summary>
+              <p>Сводную ведомость остатков, журнал операций, реестр заявок, а также Форму № 8 (раздаточную ведомость) и книгу учёта по Форме № 18. Файлы .xlsx открываются в Excel, МойОфис, LibreOffice и WPS.</p>
             </details>
             <details>
-              <summary>Сколько стоит?</summary>
-              <p>3 дня полного доступа бесплатно, далее базовый режим (1 склад, до 15 позиций) остаётся бесплатным. Лицензия PRO: 30 дней — 490 ₽, 90 дней — 1 190 ₽ (−19%), 365 дней — 3 490 ₽ (−41%). Оплата через ЮKassa: СБП, карта МИР, SberPay.</p>
+              <summary>Сколько стоит и как выдаётся чек?</summary>
+              <p>3 дня полного доступа бесплатно, далее базовый режим (1 склад, до 15 позиций) остаётся бесплатным. Лицензия PRO: 30 дней — 490 ₽, 90 дней — 1 190 ₽ (−19%), 365 дней — 3 490 ₽ (−41%). Оплата через ЮKassa (СБП, МИР, SberPay). Правообладатель — самозанятый (НПД, ИНН 250104230398), чек НПД формируется через «Мой налог».</p>
             </details>
             <details>
-              <summary>Можно обновить поверх старой версии?</summary>
-              <p>Да. Официальная сборка ставится поверх установленной, склад, журнал и лицензия сохраняются.</p>
+              <summary>Сохранятся ли данные при обновлении поверх старой версии?</summary>
+              <p>Да. Официальный APK подписан тем же ключом, пакет и структура локальной базы Room сохраняются — все склады, остатки, журнал и лицензия остаются на месте.</p>
             </details>
             <details>
-              <summary>Зачем приложению камера?</summary>
-              <p>Только для сканирования QR-кода подразделения. Приложение не снимает фото и видео.</p>
+              <summary>Зачем приложению доступ к камере?</summary>
+              <p>Только для сканирования QR-кода при подключении второго телефона. Приложение не снимает фото и видео и не отправляет медиафайлы.</p>
             </details>
           </div>
         </div>
       </section>
 
-      <!-- 11. Материалы -->
+      <!-- 10. Материалы и SEO-хаб -->
       <section class="lp-section lp-guides" id="guides" aria-labelledby="guides-title">
         <div class="lp-wrap">
+          <div class="lp-eyebrow">База знаний</div>
           <h2 class="lp-h2" id="guides-title">Практика складского учёта на Android</h2>
-          <p class="lp-sub">Короткие разборы: как вести приход, выдачу, инвентаризацию и отчёты.</p>
+          <p class="lp-sub">Короткие рабочие разборы и бесплатные шаблоны: приход, выдача, инвентаризация, инструмент и отчёты.</p>
           <ul class="lp-guide-list">
             <li><a href="skladskoy-uchet-android.html"><span><strong>Складской учёт на Android</strong><small>Как вести приход, выдачу, перемещения и остатки прямо на телефоне.</small></span><b>→</b></a></li>
             <li><a href="prihod-rashod-sklad-android.html"><span><strong>Приход и расход на складе</strong><small>Как разделять поступление, выдачу, списание и перемещение без путаницы.</small></span><b>→</b></a></li>
-            <li><a href="inventarizaciya-na-android.html"><span><strong>Инвентаризация на телефоне</strong><small>Проверяем фактическое наличие и сверяем его с учётными остатками.</small></span><b>→</b></a></li>
+            <li><a href="inventarizaciya-na-android.html"><span><strong>Инвентаризация и калькулятор сверки</strong><small>Проверяйте фактическое наличие и сверяйте расхождения прямо на странице.</small></span><b>→</b></a></li>
           </ul>
           <div class="lp-more" aria-label="Материалы по задачам">
             <span>По задачам:</span>
-            <a href="programma-dlya-starshiny-roty.html">Для старшины</a>
-            <a href="forma-8-razdatochnaya-vedomost.html">Форма 8</a>
-            <a href="uchet-tmc-android.html">ТМЦ</a>
-            <a href="uchet-instrumenta-android.html">Инструмент</a>
+            <a href="uchet-instrumenta-android.html">Инструмент и мастерская</a>
+            <a href="uchet-tmc-android.html">ТМЦ и расходники</a>
             <a href="uchet-oborudovaniya-android.html">Оборудование</a>
             <a href="skladskoy-uchet-dlya-nebolshogo-sklada.html">Небольшой склад</a>
-            <a href="guides.html">Все материалы</a>
+            <a href="programma-dlya-starshiny-roty.html">Для старшины</a>
+            <a href="forma-8-razdatochnaya-vedomost.html">Форма 8</a>
+            <a href="guides.html">Все материалы →</a>
           </div>
           <div class="lp-resources" aria-label="Информация о продукте">
             <a href="rukovodstvo-polzovatelya.html"><span><strong>Руководство</strong><small>Все функции по шагам</small></span><b>→</b></a>
-            <a href="security.html"><span><strong>Безопасность</strong><small>Данные, APK и оплата</small></span><b>→</b></a>
-            <a href="help.html"><span><strong>Помощь</strong><small>Установка, лицензия, синхронизация</small></span><b>→</b></a>
+            <a href="security.html"><span><strong>Безопасность</strong><small>Данные, SHA-256 APK и оплата</small></span><b>→</b></a>
+            <a href="help.html"><span><strong>Центр помощи</strong><small>Установка, лицензия, синхронизация</small></span><b>→</b></a>
           </div>
         </div>
       </section>
 
-      <!-- 12. Финал -->
+      <!-- 11. Финал -->
       <section class="lp-section lp-final" aria-labelledby="finalTitle">
         <div class="lp-wrap">
-          <h2 id="finalTitle">Три дня полного доступа бесплатно</h2>
-          <p>Проверьте приход, выдачу и отчёты на своих данных за 72 часа. Затем PRO — 490 ₽ за 30 дней через ЮKassa. После окончания доступа данные остаются для просмотра.</p>
+          <h2 id="finalTitle">Попробуйте 3 дня полного доступа бесплатно</h2>
+          <p>Установите официальный APK за минуту, проверьте приход, выдачу и Excel на своих задачах. Далее базовый режим остаётся бесплатным, а PRO доступен от 490 ₽ на 30 дней.</p>
           <div class="lp-actions">
             <a class="lp-btn lp-btn-gold" href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('neo_bottom')">Скачать APK</a>
-            <button type="button" class="lp-btn lp-btn-line" onclick="switchMainTab('tabPayment')">PRO — 490 ₽ / 30 дней</button>
+            <button type="button" class="lp-btn lp-btn-line" onclick="switchMainTab('tabPayment')">Выбрать тариф PRO</button>
           </div>
           <a class="lp-tg" href="https://t.me/kapterka_pro" target="_blank" rel="noopener noreferrer">
-            <span><strong>Канал в Telegram</strong><small>Инструкции, примеры выдачи и сверки, бесплатные шаблоны и обновления.</small></span><b>Подписаться</b>
+            <span><strong>Официальный канал в Telegram — @kapterka_pro</strong><small>Обновления приложения, разборы учёта, бесплатные шаблоны и прямая связь с разработчиком.</small></span><b>Подписаться</b>
           </a>
         </div>
       </section>
@@ -606,68 +666,80 @@
   </div>
 
   <!-- ========================================================================= -->
-  <!-- TAB 2: ЛИЧНЫЙ КАБИНЕТ И РЕГИСТРАЦИЯ БОЙЦА (TAB CABINET) -->
+  <!-- TAB 2: ЛИЧНЫЙ КАБИНЕТ И РЕГИСТРАЦИЯ ПО EMAIL (TAB CABINET) -->
   <!-- ========================================================================= -->
   <div id="tabCabinet" class="app-view-tab" role="tabpanel" aria-labelledby="btnTabCabinet" aria-hidden="true">
     <section class="section">
       <div class="container">
         <div class="section-header v2-page-head">
-          <div class="badge">Аккаунт</div>
+          <div class="badge">Аккаунт по почте</div>
           <h2>Личный кабинет</h2>
-          <p>Профиль, лицензия и ключ подразделения — в одном месте.</p>
+          <p>Профиль, статус PRO-лицензии и код синхронизации — вход по одноразовому коду на Email, без Google и паролей.</p>
         </div>
 
         <div id="authContainer" class="auth-wrapper">
           <div class="auth-card">
+            <div class="auth-email-only-badge">✉️ Вход только по Email · без Google-аккаунта</div>
+            <div class="auth-steps-bar" aria-label="Этапы входа">
+              <div class="auth-step-pill active" id="authStep1Badge"><i>1</i><span>Укажите Email</span></div>
+              <div class="auth-step-pill" id="authStep2Badge"><i>2</i><span>Введите 6 цифр из письма</span></div>
+            </div>
+            <div id="authInlineAlert" class="auth-inline-alert" role="alert" aria-live="polite"></div>
+
             <div class="auth-switch-header">
-              <button class="auth-switch-btn active" id="btnSwitchRegister" onclick="switchAuthMode('register')">Создать аккаунт</button>
-              <button class="auth-switch-btn" id="btnSwitchLogin" onclick="switchAuthMode('login')">Войти</button>
+              <button type="button" class="auth-switch-btn active" id="btnSwitchRegister" onclick="switchAuthMode('register')">Создать аккаунт</button>
+              <button type="button" class="auth-switch-btn" id="btnSwitchLogin" onclick="switchAuthMode('login')">Войти</button>
             </div>
 
             <div id="panelRegister" class="auth-form-panel active">
               <div>
-                <h3>Регистрация</h3>
-                <p>Введите Email — мы пришлём одноразовый 6-значный код. Пароль не нужен.</p>
+                <h3>Регистрация по почте</h3>
+                <p>Введите Email — мы пришлём одноразовый 6-значный код. Пароль и Google-аккаунт не требуются.</p>
               </div>
               <div id="regStepInputs">
                 <div class="v2-form-grid">
                   <div class="form-group">
-                    <label class="form-label">Имя или позывной *</label>
-                    <input type="text" id="regCallsign" class="form-input" placeholder="Например: Сокол" autocomplete="nickname" maxlength="80" required>
+                    <label class="form-label" for="regCallsign">Имя или позывной *</label>
+                    <input type="text" id="regCallsign" class="form-input" placeholder="Например: Алексей или Сокол" autocomplete="nickname" maxlength="80" required>
                   </div>
                   <div class="form-group">
-                    <label class="form-label">Email *</label>
-                    <input type="email" id="regEmail" class="form-input" placeholder="name@domain.ru" autocomplete="email" inputmode="email" maxlength="160" required>
+                    <label class="form-label" for="regEmail">Электронная почта (Email) *</label>
+                    <input type="email" id="regEmail" class="form-input" placeholder="name@mail.ru" autocomplete="email" inputmode="email" maxlength="160" required>
                   </div>
                   <div class="form-group">
-                    <label class="form-label">Должность / звание</label>
-                    <input type="text" id="regRank" class="form-input" placeholder="По желанию" maxlength="80">
+                    <label class="form-label" for="regUnitName">Склад / мастерская / подразделение</label>
+                    <input type="text" id="regUnitName" class="form-input" placeholder="По желанию (например: Цех №1)" maxlength="120">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="regRank">Должность / роль</label>
+                    <input type="text" id="regRank" class="form-input" placeholder="По желанию (например: Кладовщик)" maxlength="80">
                   </div>
                 </div>
                 <label class="auth-newsletter-check">
-                  <input type="checkbox" id="regNewsletterCheck">
+                  <input type="checkbox" id="regNewsletterCheck" checked>
                   <span>Получать уведомления о важных обновлениях Каптёрка PRO.</span>
                 </label>
-                <button class="btn btn-primary btn-lg v2-full-btn" onclick="startRegistrationProcess()">Получить код на Email</button>
-                <div class="v3-legal-line">Продолжая, вы принимаете <a href="terms.html">условия использования</a> и <a href="privacy.html">политику конфиденциальности</a>.</div>
+                <button type="button" class="btn btn-primary btn-lg v2-full-btn" onclick="startRegistrationProcess()">Получить код на Email</button>
+                <div class="v3-legal-line">Продолжая, вы принимаете <a href="terms.html">условия использования</a> и <a href="privacy.html">политику конфиденциальности (152-ФЗ)</a>.</div>
               </div>
 
               <div id="regStepVerification" style="display:none;">
                 <div class="pin-verify-box">
-                  <h4>Подтверждение Email</h4>
+                  <h4>Введите 6-значный код из письма</h4>
                   <p>Код отправлен на <strong id="verifyEmailDisplay">user@mail.ru</strong></p>
                   <div class="pin-inputs">
-                    <input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="1" class="pin-digit" id="pin1">
-                    <input type="text" inputmode="numeric" maxlength="1" class="pin-digit" id="pin2">
-                    <input type="text" inputmode="numeric" maxlength="1" class="pin-digit" id="pin3">
-                    <input type="text" inputmode="numeric" maxlength="1" class="pin-digit" id="pin4">
-                    <input type="text" inputmode="numeric" maxlength="1" class="pin-digit" id="pin5">
-                    <input type="text" inputmode="numeric" maxlength="1" class="pin-digit" id="pin6">
+                    <input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="1" class="pin-digit" id="pin1" aria-label="Цифра 1">
+                    <input type="text" inputmode="numeric" maxlength="1" class="pin-digit" id="pin2" aria-label="Цифра 2">
+                    <input type="text" inputmode="numeric" maxlength="1" class="pin-digit" id="pin3" aria-label="Цифра 3">
+                    <input type="text" inputmode="numeric" maxlength="1" class="pin-digit" id="pin4" aria-label="Цифра 4">
+                    <input type="text" inputmode="numeric" maxlength="1" class="pin-digit" id="pin5" aria-label="Цифра 5">
+                    <input type="text" inputmode="numeric" maxlength="1" class="pin-digit" id="pin6" aria-label="Цифра 6">
                   </div>
-                  <div id="verificationHint" class="form-helper">Введите код из письма.</div>
+                  <div id="verificationHint" class="form-helper">Код действует 10 минут и используется один раз.</div>
                   <div class="v2-inline-actions">
                     <button type="button" class="btn btn-primary" id="regVerifyCodeBtn" onclick="verifyEmailPinCode()">Подтвердить</button>
                     <button type="button" class="btn btn-outline btn-sm" id="regResendCodeBtn" onclick="resendPinCode()">Отправить ещё раз</button>
+                    <button type="button" class="btn btn-outline btn-sm" id="regBackToEmailBtn">Изменить Email</button>
                   </div>
                 </div>
               </div>
@@ -675,15 +747,17 @@
 
             <div id="panelLogin" class="auth-form-panel">
               <div>
-                <h3>Вход</h3>
-                <p>Введите Email — мы отправим одноразовый код для входа.</p>
+                <h3>Вход по Email</h3>
+                <p>Введите адрес почты — мы отправим одноразовый 6-значный код для входа.</p>
               </div>
-              <div class="form-group">
-                <label class="form-label">Email</label>
-                <input type="email" id="loginEmail" class="form-input" placeholder="name@domain.ru" autocomplete="email" inputmode="email" maxlength="160" required>
+              <div id="loginStepInputs">
+                <div class="form-group">
+                  <label class="form-label" for="loginEmail">Электронная почта (Email)</label>
+                  <input type="email" id="loginEmail" class="form-input" placeholder="name@mail.ru" autocomplete="email" inputmode="email" maxlength="160" required>
+                </div>
+                <button type="button" class="btn btn-primary btn-lg v2-full-btn" onclick="processUserLogin()">Получить код для входа</button>
+                <div class="v3-legal-line">Вход выполняется только по коду из письма. Пароль и Google не используются.</div>
               </div>
-              <button class="btn btn-primary btn-lg v2-full-btn" onclick="processUserLogin()">Получить код для входа</button>
-              <div class="v3-legal-line">Вход выполняется по одноразовому коду. Пароль на сайте не хранится.</div>
             </div>
           </div>
         </div>
@@ -753,14 +827,14 @@
                     <input type="text" id="cabRankInput" class="form-input" placeholder="По желанию" maxlength="80">
                   </div>
                   <div class="form-group">
-                    <label class="form-label">Подразделение</label>
-                    <input type="text" id="cabUnitNameInput" class="form-input" placeholder="Название подразделения" maxlength="120">
+                    <label class="form-label">Склад / мастерская / подразделение</label>
+                    <input type="text" id="cabUnitNameInput" class="form-input" placeholder="Название склада или подразделения" maxlength="120">
                   </div>
                   <div class="form-group">
-                    <label class="form-label">Ключ подразделения</label>
+                    <label class="form-label">Код группы синхронизации</label>
                     <div class="v2-input-action">
-                      <input type="text" id="cabUnitKeyInput" class="form-input mono" placeholder="kapt_xxxxxx" maxlength="64" autocapitalize="none" spellcheck="false">
-                      <button class="btn btn-outline btn-sm" onclick="generateNewUnitKey()">Новый</button>
+                      <input type="text" id="cabUnitKeyInput" class="form-input mono" placeholder="kapt_..." maxlength="64" autocapitalize="none" spellcheck="false">
+                      <button type="button" class="btn btn-outline btn-sm" onclick="generateNewUnitKey()">Новый</button>
                     </div>
                   </div>
                   <div class="form-group">
@@ -818,16 +892,17 @@
                 <span class="payment-method-pill active">СБП</span>
                 <span class="payment-method-pill active">МИР / карта</span>
                 <span class="payment-method-pill active">SberPay</span>
-                <span class="payment-method-pill active">Чек на Email</span>
+                <span class="payment-method-pill active">Самозанятый (НПД)</span>
+                <span class="payment-method-pill active">Ключ на Email</span>
               </div>
 
               <div class="v2-form-grid">
                 <div class="form-group">
-                  <label class="form-label">Имя или позывной</label>
-                  <input type="text" id="payCallsignInput" class="form-input" placeholder="Например: Сокол" autocomplete="nickname" maxlength="80">
+                  <label class="form-label" for="payCallsignInput">Имя или позывной</label>
+                  <input type="text" id="payCallsignInput" class="form-input" placeholder="Например: Алексей или Сокол" autocomplete="nickname" maxlength="80">
                 </div>
                 <div class="form-group">
-                  <label class="form-label">Email для чека и ключа</label>
+                  <label class="form-label" for="payEmailInput">Email для ключа и подтверждения</label>
                   <input type="email" id="payEmailInput" class="form-input" placeholder="name@mail.ru" autocomplete="email" inputmode="email" maxlength="160" required>
                 </div>
               </div>
@@ -847,10 +922,10 @@
                     <strong class="pro-plan-sum">3 490 ₽</strong>
                   </button>
                 </div>
-                <div class="v2-payment-warning">Если банк отклоняет переход к оплате, временно отключите VPN.</div>
+                <div class="v2-payment-warning">Если банк отклоняет переход к оплате, временно отключите VPN. Автосписаний нет.</div>
                 <button id="btnPayYooKassaMain" class="btn btn-gold btn-lg v2-full-btn" onclick="processYooKassaPayment()">Оплатить 490 ₽ через ЮKassa</button>
-                <div class="v2-payment-footnote">Платёж проводится на стороне ЮKassa • магазин №1450722</div>
-                <div class="v3-legal-line">Нажимая «Оплатить», вы принимаете <a href="terms.html">условия лицензии</a>.</div>
+                <div class="v2-payment-footnote">ЮKassa (магазин №1450722) · Самозанятый НПД (ИНН 250104230398, без 54-ФЗ ККТ)</div>
+                <div class="v3-legal-line">Нажимая «Оплатить», вы принимаете <a href="terms.html">публичную оферту</a> и <a href="privacy.html">политику конфиденциальности</a>.</div>
               </div>
 
               <div id="boxPaymentPending" style="display:none;">
@@ -876,9 +951,9 @@
               <button class="btn btn-primary btn-lg" id="btnCopyPaidKey" onclick="copyPaidKeyAction()" style="display:none;">Скопировать ключ</button>
               <button class="btn btn-outline btn-sm" id="btnGoToCabinetAfterPay" onclick="switchMainTab('tabCabinet')" style="display:none;">Открыть кабинет</button>
               <div class="v2-trust-list">
-                <span>✓ Чек на Email</span>
-                <span>✓ Ключ формата KAPT-…</span>
-                <span>✓ Лицензия сохраняется при обновлении приложения</span>
+                <span>✓ Ключ KAPT-… приходит на Email</span>
+                <span>✓ Самозанятый (НПД), чек «Мой налог»</span>
+                <span>✓ Без автосписаний · сохраняется при обновлении</span>
               </div>
             </aside>
           </div>
@@ -887,11 +962,11 @@
         <div class="s36-tabrow">
           <div class="s36-benefits">
             <h3>Что входит в PRO</h3>
-            <div><b>📄</b><span><strong>Формы 8 и 18, отчёты Excel</strong><small>Раздаточная ведомость, книга учёта, сводные ведомости</small></span></div>
-            <div><b>📋</b><span><strong>Все функции без ограничений</strong><small>Склады, операции, заявки, списание</small></span></div>
-            <div><b>📱</b><span><strong>Общий учёт подразделения</strong><small>Синхронизация телефонов по ключу и QR-коду</small></span></div>
-            <div><b>🔐</b><span><strong>Лицензия на сервере</strong><small>Не пропадёт при переустановке; ключ и чек — на почту</small></span></div>
-            <p class="s36-note">Платёж обрабатывает ЮKassa. Данные карты сайт и приложение не видят.</p>
+            <div><b>📄</b><span><strong>Отчёты Excel (ведомости и Формы 8 / 18)</strong><small>Раздаточная ведомость, книга учёта, остатки и журнал движения</small></span></div>
+            <div><b>📋</b><span><strong>Безлимит складов и позиций</strong><small>Сколько угодно точек, карточек, перемещений, списаний и заявок</small></span></div>
+            <div><b>📱</b><span><strong>Общий учёт команды</strong><small>Синхронизация нескольких телефонов по ключу и QR-коду</small></span></div>
+            <div><b>🔐</b><span><strong>Лицензия на сервере</strong><small>Не пропадёт при переустановке; ключ на Email, чек НПД («Мой налог»)</small></span></div>
+            <p class="s36-note">Платёж обрабатывает ЮKassa. Правообладатель — самозанятый (НПД, ИНН 250104230398). Данные карты сайт и приложение не видят.</p>
           </div>
           <img class="s36-tabshot" src="screens/36-7-pro-preview.webp" alt="Окно лицензии PRO в приложении Каптёрка" loading="lazy" decoding="async" width="1080" height="2340">
         </div>
@@ -1067,8 +1142,8 @@
         <button type="button" class="modal-close" onclick="closeModal('modalOffer')" aria-label="Закрыть окно">×</button>
       </div>
       <div class="modal-body">
-        <p>Для новых пользователей действует 3-дневный демо-период. PRO-доступ предоставляется на 30 дней по текущей цене 490 ₽. Оплата проводится через ЮKassa.</p>
-        <p>Синхронизация является дополнительной сетевой функцией. Приложение не заменяет обязательные документы и внутренние регламенты пользователя.</p>
+        <p>Для новых пользователей действует 3-дневный демо-период полного доступа, далее остаётся бесплатный базовый офлайн-режим (1 склад, до 15 позиций). PRO-доступ предоставляется на 30 (490 ₽), 90 (1 190 ₽) или 365 дней (3 490 ₽) без автосписаний.</p>
+        <p>Оплата проводится через ЮKassa (СБП, МИР, SberPay). Правообладатель — самозанятый (НПД, ИНН 250104230398, без онлайн-ККТ по 54-ФЗ), чек НПД формируется через «Мой налог».</p>
         <a href="terms.html" class="btn btn-outline btn-sm">Открыть полное соглашение</a>
       </div>
     </div>
@@ -1082,8 +1157,8 @@
         <button type="button" class="modal-close" onclick="closeModal('modalPrivacy')" aria-label="Закрыть окно">×</button>
       </div>
       <div class="modal-body">
-        <p>Основная база приложения хранится локально в Room/SQLite. При включённой синхронизации выбранные данные передаются через Firebase по ключу подразделения.</p>
-        <p>Сайт использует Email для входа по одноразовому коду, ЮKassa для оплаты, а также Google Analytics и Яндекс Метрику для технической аналитики.</p>
+        <p>Основная база приложения хранится локально в Room/SQLite. При включённой синхронизации выбранные данные передаются через Firebase по защищённому ключу группы учёта.</p>
+        <p>Вход и регистрация выполняются только по Email (одноразовый 6-значный код, без Google-аккаунта и пароля). Оплата идёт через ЮKassa, аналитика сайта работает без Вебвизора.</p>
         <a href="privacy.html" class="btn btn-outline btn-sm">Открыть политику полностью</a>
       </div>
     </div>
@@ -1253,10 +1328,10 @@
     </button>
   </nav>
 
-  <script src="app.js?v=20261104-payment1" defer></script>
-  <script src="site36.js?v=1" defer></script>
+  <script src="app.js?v=20261122" defer></script>
+  <script src="site36.js?v=20261122" defer></script>
   <script src="auth-config.js?v=3.4.9.31a" defer></script>
-  <script src="auth-v2.js?v=20261104-payment1" defer></script>
+  <script src="auth-v2.js?v=20261122" defer></script>
 </body>
 </html>
 

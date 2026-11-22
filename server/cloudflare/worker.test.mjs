@@ -1062,6 +1062,100 @@ test('fighter_upsert and fighter_lookup return server registered_at', async () =
   assert.equal(lookedUp.body.fighter.registered_at, created.body.registered_at);
 });
 
+test('web_auth: passwordless email OTP register, session, profile update, logout and re-login', async () => {
+  // Missing name on register is rejected; unknown email on login is rejected.
+  assert.equal((await call('web_auth_request_code', { mode: 'register', email: 'webuser@kapterka.ru' }, { ip: '9.1.1.1' })).status, 400);
+  assert.equal((await call('web_auth_request_code', { mode: 'login', email: 'webuser@kapterka.ru' }, { ip: '9.1.1.1' })).status, 404);
+  assert.equal((await call('web_auth_request_code', { mode: 'register', email: 'bad-email', callsign: 'Мастер' }, { ip: '9.1.1.1' })).status, 400);
+
+  // Register sends a 6-digit code via email and enforces resend cooldown.
+  const req = await call('web_auth_request_code', {
+    mode: 'register',
+    email: 'WebUser@Kapterka.ru',
+    callsign: 'Алексей',
+    rank: 'Мастер цеха',
+    unit_name: 'Мастерская №2',
+    newsletter: true
+  }, { ip: '9.1.1.2' });
+  assert.equal(req.status, 200);
+  assert.equal(req.body.status, 'CODE_SENT');
+  assert.equal(req.body.maskedEmail, 'we***@kapterka.ru');
+  assert.equal(req.body.existingAccount, false);
+  const code = (state.emails.at(-1).subject.match(/(\d{6})/) || [])[1];
+  assert.ok(code, '6-digit code emailed');
+  assert.equal((await call('web_auth_request_code', { mode: 'register', email: 'webuser@kapterka.ru', callsign: 'Алексей' }, { ip: '9.1.1.3' })).status, 429);
+
+  // Wrong code decrements attemptsLeft; valid code authenticates once and creates an 80-bit unit key.
+  const wrongCode = code === '123456' ? '654321' : '123456';
+  const bad = await call('web_auth_verify_code', { email: 'webuser@kapterka.ru', code: wrongCode }, { ip: '9.1.1.2' });
+  assert.equal(bad.status, 403);
+  assert.equal(bad.body.attemptsLeft, 4);
+
+  const ok = await call('web_auth_verify_code', { email: 'webuser@kapterka.ru', code }, { ip: '9.1.1.2' });
+  assert.equal(ok.status, 200);
+  assert.equal(ok.body.isNewUser, true);
+  assert.match(ok.body.sessionToken, /^[a-f0-9]{64}$/);
+  assert.equal(ok.body.user.email, 'webuser@kapterka.ru');
+  assert.equal(ok.body.user.callsign, 'Алексей');
+  assert.equal(ok.body.user.unitName, 'Мастерская №2');
+  assert.match(ok.body.user.unitKey, /^kapt_[a-f0-9]{20}$/);
+
+  // Code is single-use.
+  assert.equal((await call('web_auth_verify_code', { email: 'webuser@kapterka.ru', code }, { ip: '9.1.1.2' })).status, 404);
+
+  // Duplicate registration is rejected with 409 ACCOUNT_EXISTS.
+  const dup = await call('web_auth_request_code', { mode: 'register', email: 'webuser@kapterka.ru', callsign: 'Другой' }, { ip: '9.1.1.4' });
+  assert.equal(dup.status, 409);
+  assert.equal(dup.body.error, 'ACCOUNT_EXISTS');
+
+  // Session verification & profile update persist server-side without allowing email overwrite.
+  const sess = await call('web_auth_session', { token: ok.body.sessionToken });
+  assert.equal(sess.status, 200);
+  assert.equal(sess.body.user.email, 'webuser@kapterka.ru');
+
+  const upd = await call('web_auth_update_profile', {
+    token: ok.body.sessionToken,
+    email: 'evil@other.ru',
+    callsign: 'Алексей С.',
+    rank: 'Начальник склада',
+    unit_name: 'Цех №1',
+    unit_key: 'kapt_11223344556677889900',
+    phone: '@alex_sklad'
+  });
+  assert.equal(upd.status, 200);
+  assert.equal(upd.body.user.email, 'webuser@kapterka.ru', 'email cannot be forged via profile update');
+  assert.equal(upd.body.user.callsign, 'Алексей С.');
+  assert.equal(upd.body.user.unitName, 'Цех №1');
+  assert.equal(upd.body.user.unitKey, 'kapt_11223344556677889900');
+
+  // Invalid unit key is rejected.
+  assert.equal((await call('web_auth_update_profile', { token: ok.body.sessionToken, unit_key: 'bad key!' })).status, 400);
+
+  // Logout invalidates the session token server-side.
+  assert.equal((await call('web_auth_logout', { token: ok.body.sessionToken })).status, 200);
+  assert.equal((await call('web_auth_session', { token: ok.body.sessionToken })).status, 401);
+  assert.equal((await call('web_auth_update_profile', { token: ok.body.sessionToken, callsign: 'X' })).status, 401);
+});
+
+test('web_auth: brute force locks after 5 attempts and rejects GET requests', async () => {
+  assert.equal((await call('web_auth_request_code', { email: 'get@x.ru' }, { method: 'GET' })).status, 405);
+  await call('web_auth_request_code', { mode: 'auto', email: 'webbrute@x.ru', callsign: 'Тест' }, { ip: '9.2.2.1' });
+  const code = (state.emails.at(-1).subject.match(/(\d{6})/) || [])[1];
+  const bad = code === '000000' ? '999999' : '000000';
+  for (let i = 0; i < 5; i++) {
+    assert.equal((await call('web_auth_verify_code', { email: 'webbrute@x.ru', code: bad }, { ip: '9.2.2.1' })).status, 403);
+  }
+  assert.equal((await call('web_auth_verify_code', { email: 'webbrute@x.ru', code }, { ip: '9.2.2.1' })).status, 429);
+});
+
+test('create: self-employed (NPD) checkout omits 54-FZ online-KKT receipt block', async () => {
+  const c = await call('create', { email: 'npd@x.ru', callsign: 'Самозанятый' });
+  assert.equal(c.status, 200);
+  const payment = state.payments.get(c.body.payment_id);
+  assert.equal(payment.receipt, undefined, 'NPD self-employed checkout must not send 54-FZ KKT receipt');
+  assert.equal((await call('health', {}, { method: 'GET' })).body.webAuthConfigured, true);
+});
+
 // ------------------------------------------------------------------ run
 
 let failed = 0;
