@@ -314,9 +314,9 @@ class KapterkaRepository(
         return false
     }
 
-    suspend fun saveUserProfile(profile: UserProfile) {
+    suspend fun saveUserProfile(profile: UserProfile, syncNow: Boolean = true) {
         dao.saveUserProfile(profile)
-        if (profile.unitKey.isNotBlank()) {
+        if (syncNow && profile.unitKey.isNotBlank()) {
             syncManager?.syncAndReconcileAll(profile.unitKey, profile.callsign, profile.unitName)
         }
     }
@@ -536,12 +536,27 @@ class KapterkaRepository(
         syncManager?.deleteInventoryItemAsync(unitKey, id)
     }
 
-    suspend fun createRequisition(pointName: String, applicant: String, items: List<RequisitionItemEntry>, comment: String) {
+    suspend fun createRequisition(
+        pointName: String,
+        applicant: String,
+        items: List<RequisitionItemEntry>,
+        comment: String
+    ): RequisitionRequest {
         val summary = items.joinToString(", ") { "${it.itemName} - ${it.quantity} ${it.unit}" }
         val itemsJson = serializeRequisitionItems(items)
-        val r = RequisitionRequest(java.util.UUID.randomUUID().toString(), pointName, applicant, RequestStatus.PENDING, comment, System.currentTimeMillis(), summary, itemsJson)
+        val r = RequisitionRequest(
+            java.util.UUID.randomUUID().toString(),
+            pointName,
+            applicant,
+            RequestStatus.PENDING,
+            comment,
+            System.currentTimeMillis(),
+            summary,
+            itemsJson
+        )
         dao.insertRequisition(r)
         syncManager?.pushRequisitionAsync(getCurrentUnitKey(), r)
+        return r
     }
     
     suspend fun updateRequisitionStatus(id: String, st: RequestStatus) {

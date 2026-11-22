@@ -83,12 +83,26 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         _showProfilePickerOverlay.value = false
     }
 
+    private var lastResumeSyncAtMs: Long = 0L
+
     fun onAppResumed() {
         licenseManager.refreshLicenseStatus()
         if (lastPaymentId.isNotBlank() &&
             prefs.getString("last_activated_yookassa_payment_id", "") != lastPaymentId
         ) {
             confirmPaymentAndActivateLicense(showProgress = false)
+        }
+        val prof = userProfile.value
+        val now = System.currentTimeMillis()
+        if (prof?.isLoggedIn == true &&
+            prof.unitKey.isNotBlank() &&
+            !syncState.value.isPaused &&
+            (now - lastResumeSyncAtMs) >= 20_000L
+        ) {
+            lastResumeSyncAtMs = now
+            viewModelScope.launch {
+                runCatching { repository.triggerCloudSync() }
+            }
         }
     }
 
@@ -649,22 +663,17 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         comment: String
     ) {
         viewModelScope.launch {
-            repository.createRequisition(pointName, applicantName, items, comment)
-            val summary = items.joinToString(", ") { "${it.itemName} (${it.quantity} ${it.unit})" }
-            val req = RequisitionRequest(
-                id = UUID.randomUUID().toString(),
-                pointName = pointName,
-                applicantName = applicantName,
-                status = RequestStatus.PENDING,
-                comment = comment,
-                itemsSummary = summary
-            )
+            val req = repository.createRequisition(pointName, applicantName, items, comment)
             TacticalNotificationHelper.notifyRequisitionStatus(
                 context = getApplication(),
                 req = req,
                 status = RequestStatus.PENDING
             )
-            _toastEvent.emit("Заявка успешно отправлена на комплектацию")
+            val hasCloudKey = !userProfile.value?.unitKey.isNullOrBlank() && !syncState.value.isPaused
+            _toastEvent.emit(
+                if (hasCloudKey) "Заявка создана и отправлена на все подключённые телефоны"
+                else "Заявка успешно отправлена на комплектацию"
+            )
         }
     }
 
@@ -844,7 +853,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                 unitName = resolvedUnitName,
                 isLoggedIn = true
             )
-            repository.saveUserProfile(updatedProfile)
+            repository.saveUserProfile(updatedProfile, syncNow = false)
 
             // 2. Пытаемся автоматически подтянуть ранее оплаченную лицензию из облака
             val (restored, restoreMsg) = licenseManager.restoreLicenseFromCloud(
@@ -907,7 +916,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
 
             licenseManager.saveUnitKeyToVault(clean)
             val updated = current.copy(unitKey = clean)
-            repository.saveUserProfile(updated)
+            repository.saveUserProfile(updated, syncNow = false)
             
             val curLicense = licenseManager.licenseStatus.value
             fighterRegistryManager.registerOrUpdateFighter(
@@ -1210,49 +1219,61 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
 
     fun startYooKassaPayment(planDays: Int = 30) {
         viewModelScope.launch {
-            val profile = userProfile.value
-            val isMil = _workspaceProfileMode.value.isMilitary
-            val callsign = profile?.callsign?.ifBlank { if (isMil) "Боец" else "Пользователь" } ?: if (isMil) "Боец" else "Пользователь"
-            val email = profile?.email?.trim()?.lowercase().orEmpty()
+            try {
+                val profile = userProfile.value
+                val isMil = _workspaceProfileMode.value.isMilitary
+                val callsign = profile?.callsign?.ifBlank { if (isMil) "Боец" else "Пользователь" } ?: if (isMil) "Боец" else "Пользователь"
+                val email = profile?.email?.trim()?.lowercase().orEmpty()
 
-            if (email.isBlank() || !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-                _paymentAwaitingConfirmation.value = false
-                _toastEvent.emit("Для оплаты укажите корректный Email в профиле. На него придёт информация о лицензии.")
-                return@launch
-            }
-
-            val plan = com.example.data.payment.ProPlanOption.fromDays(planDays)
-            _toastEvent.emit("Формирование счета ЮKassa на ${plan.title}...")
-            val fighterId = licenseManager.getFighterPersonalId()
-            val result = yooKassaService.createPayment(
-                fighterCallsign = callsign,
-                fighterEmail = email,
-                fighterId = fighterId,
-                planDays = plan.days
-            )
-            if (result.success && result.confirmationUrl.isNotEmpty()) {
-                lastPaymentId = result.paymentId
-                prefs.edit().putString("last_yookassa_payment_id", result.paymentId).apply()
-                _paymentAwaitingConfirmation.value = true
-                paymentPollingJob?.cancel()
-                startPaymentPolling()
-                yooKassaService.openPaymentUrl(result.confirmationUrl)
-                _toastEvent.emit("Переход к оплате ЮKassa (СБП/Карта)...")
-
-                // Уведомление в Telegram
-                val amount = if (plan == com.example.data.payment.ProPlanOption.DAYS_30) {
-                    yooKassaService.getConfig().priceRubles
-                } else {
-                    plan.priceRubles
+                if (email.isBlank() || !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                    _paymentAwaitingConfirmation.value = false
+                    _toastEvent.emit("Для оплаты укажите корректный Email в профиле. На него придёт информация о лицензии.")
+                    return@launch
                 }
-                com.example.data.notification.TelegramNotifier.notifyPaymentStarted(
-                    callsign = callsign,
-                    email = email,
-                    amountRub = amount
+
+                val plan = com.example.data.payment.ProPlanOption.fromDays(planDays)
+                _toastEvent.emit("Формирование счета ЮKassa на ${plan.title}...")
+                val fighterId = licenseManager.getFighterPersonalId()
+                val result = yooKassaService.createPayment(
+                    fighterCallsign = callsign,
+                    fighterEmail = email,
+                    fighterId = fighterId,
+                    planDays = plan.days
                 )
-            } else {
+                if (result.success && result.confirmationUrl.isNotEmpty()) {
+                    lastPaymentId = result.paymentId
+                    prefs.edit().putString("last_yookassa_payment_id", result.paymentId).apply()
+                    _paymentAwaitingConfirmation.value = true
+                    paymentPollingJob?.cancel()
+                    startPaymentPolling()
+                    val opened = yooKassaService.openPaymentUrl(result.confirmationUrl)
+                    if (opened) {
+                        _toastEvent.emit("Переход к оплате ЮKassa (СБП/Карта)...")
+                    } else {
+                        _toastEvent.emit("Не удалось открыть браузер для оплаты. Проверьте наличие браузера на телефоне.")
+                    }
+
+                    // Уведомление в Telegram
+                    val amount = if (plan == com.example.data.payment.ProPlanOption.DAYS_30) {
+                        yooKassaService.getConfig().priceRubles
+                    } else {
+                        plan.priceRubles
+                    }
+                    com.example.data.notification.TelegramNotifier.notifyPaymentStarted(
+                        callsign = callsign,
+                        email = email,
+                        amountRub = amount
+                    )
+                } else {
+                    _paymentAwaitingConfirmation.value = false
+                    _toastEvent.emit(result.errorMessage ?: "Не удалось создать счет ЮKassa")
+                }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (t: Throwable) {
+                android.util.Log.e("KapterkaViewModel", "startYooKassaPayment failed", t)
                 _paymentAwaitingConfirmation.value = false
-                _toastEvent.emit(result.errorMessage ?: "Не удалось создать счет ЮKassa")
+                _toastEvent.emit("Не удалось открыть оплату. Проверьте интернет и попробуйте снова.")
             }
         }
     }

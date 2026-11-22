@@ -36,6 +36,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
 data class SyncState(
     val isSyncing: Boolean = false,
@@ -121,6 +122,8 @@ class FirebaseSyncManager(
     private val unitAccess: UnitAccessService by lazy { UnitAccessService() }
     private var listeners = mutableListOf<ListenerRegistration>()
     private var presenceHeartbeatJob: Job? = null
+    private val reqUpdatedAt = ConcurrentHashMap<String, Long>()
+    private val knownReqStatuses = ConcurrentHashMap<String, RequestStatus>()
 
     private companion object {
         const val ACTIVE_DEVICE_WINDOW_MS = 15 * 60 * 1000L
@@ -311,6 +314,130 @@ class FirebaseSyncManager(
         return false
     }
 
+    /**
+     * Merge one cloud requisition without reverting newer local status updates.
+     * Tombstones win first; then RequisitionConflictResolver picks the authoritative revision.
+     */
+    private suspend fun mergeCloudRequisition(
+        unitKey: String,
+        cloudReq: RequisitionRequest,
+        cloudUpdatedAt: Long
+    ): Boolean {
+        if (isTombstoned(unitKey, TOMBSTONE_REQUISITION, cloudReq.id)) return false
+
+        val local = dao.getAllRequisitions().first().firstOrNull { it.id == cloudReq.id }
+        val localUpdatedAt = reqUpdatedAt[cloudReq.id] ?: 0L
+        if (RequisitionConflictResolver.cloudMayReplaceLocal(local, cloudReq, localUpdatedAt, cloudUpdatedAt)) {
+            dao.insertRequisition(cloudReq)
+            reqUpdatedAt[cloudReq.id] = maxOf(cloudUpdatedAt, cloudReq.timestamp)
+            return true
+        }
+
+        // Local requisition is newer / further along in workflow: preserve and republish to cloud.
+        if (local != null && productionCloudEnabled) {
+            pushRequisitionNow(unitKey, local, maxOf(localUpdatedAt, System.currentTimeMillis()))
+        }
+        return false
+    }
+
+    /**
+     * Ensures membership before any Firestore write/delete and retries once on PERMISSION_DENIED
+     * so brand-new devices or freshly reconnected phones never silently drop operations or requisitions.
+     */
+    private suspend fun executeCloudWrite(
+        unitKey: String,
+        label: String,
+        successMessage: String? = null,
+        block: suspend () -> Unit
+    ): Boolean {
+        val cleanKey = unitKey.trim()
+        if (!productionCloudEnabled || cleanKey.isEmpty()) return false
+        return try {
+            val access = runCatching {
+                unitAccess.ensureMembership(cleanKey, fighterId(), lastCallsign, deviceId)
+            }.getOrNull()
+            if (access is UnitAccessResult.Denied) {
+                _syncState.value = _syncState.value.copy(
+                    isOnline = false,
+                    syncMessage = access.reason
+                )
+                return false
+            }
+            block()
+            lastCloudError = null
+            _syncState.value = _syncState.value.copy(
+                lastSyncTime = System.currentTimeMillis(),
+                isOnline = true,
+                syncMessage = successMessage ?: _syncState.value.syncMessage
+            )
+            true
+        } catch (e: FirebaseFirestoreException) {
+            if (e.code == FirebaseFirestoreException.Code.PERMISSION_DENIED) {
+                unitAccess.invalidateMembership(cleanKey)
+                val retryAccess = runCatching {
+                    unitAccess.ensureMembership(cleanKey, fighterId(), lastCallsign, deviceId)
+                }.getOrNull()
+                if (retryAccess is UnitAccessResult.Member) {
+                    val retried = runCatching { block() }.isSuccess
+                    if (retried) {
+                        lastCloudError = null
+                        _syncState.value = _syncState.value.copy(
+                            lastSyncTime = System.currentTimeMillis(),
+                            isOnline = true,
+                            syncMessage = successMessage ?: _syncState.value.syncMessage
+                        )
+                        return true
+                    }
+                }
+                onAccessDenied(cleanKey)
+            }
+            Log.w(TAG, "Cloud write failed ($label): ${e.code}", e)
+            false
+        } catch (e: Exception) {
+            Log.w(TAG, "Cloud write failed ($label)", e)
+            false
+        }
+    }
+
+    private suspend fun pushRequisitionNow(
+        unitKey: String,
+        r: RequisitionRequest,
+        updatedAt: Long = System.currentTimeMillis()
+    ): Boolean {
+        val cleanKey = unitKey.trim()
+        if (cleanKey.isEmpty()) return false
+        reqUpdatedAt[r.id] = updatedAt
+        knownReqStatuses[r.id] = r.status
+        return executeCloudWrite(cleanKey, "requisition/${r.id}", "Заявка синхронизирована") {
+            firestore.collection("units").document(cleanKey)
+                .collection("requisitions").document(r.id).set(
+                    hashMapOf(
+                        "id" to r.id,
+                        "pointName" to r.pointName,
+                        "applicantName" to r.applicantName,
+                        "status" to r.status.name,
+                        "comment" to r.comment,
+                        "timestamp" to r.timestamp,
+                        "updatedAt" to updatedAt,
+                        "updatedByDeviceId" to deviceId,
+                        "itemsSummary" to r.itemsSummary,
+                        "itemsJson" to r.itemsJson
+                    ),
+                    SetOptions.merge()
+                ).await()
+        }
+    }
+
+    private fun handleListenerError(unitKey: String, listenerName: String, e: FirebaseFirestoreException?) {
+        if (e == null) return
+        if (e.code == FirebaseFirestoreException.Code.PERMISSION_DENIED) {
+            unitAccess.invalidateMembership(unitKey)
+            onAccessDenied(unitKey)
+        } else {
+            Log.w(TAG, "Snapshot listener '$listenerName' error: ${e.code}", e)
+        }
+    }
+
     private suspend fun syncTombstones(unitKey: String) {
         if (unitKey.isBlank()) return
         val unitRef = firestore.collection("units").document(unitKey)
@@ -377,7 +504,7 @@ class FirebaseSyncManager(
         activeUnitKey = cleanKey
         _syncState.value = _syncState.value.copy(
             isSyncing = true,
-            syncMessage = "Подключение к подразделению..."
+            syncMessage = "Подключение к общему складу..."
         )
 
         lastCallsign = callsign
@@ -402,7 +529,7 @@ class FirebaseSyncManager(
                 _syncState.value = _syncState.value.copy(
                     isSyncing = false,
                     isOnline = cloudError == null,
-                    syncMessage = cloudError ?: "Подключено к подразделению"
+                    syncMessage = cloudError ?: "Синхронизация активна"
                 )
             }
         }
@@ -416,7 +543,7 @@ class FirebaseSyncManager(
                 "Нет связи с облаком (сервер Google Firebase недоступен с этого телефона). " +
                     "Проверьте интернет, режим полёта, VPN или блокировщик рекламы."
             FirebaseFirestoreException.Code.PERMISSION_DENIED ->
-                "Облако отказало в доступе к подразделению."
+                "Облако отказало в доступе к общему складу."
             else -> "Ошибка облака: ${e.javaClass.simpleName}${code?.let { " ($it)" } ?: ""}"
         }
     }
@@ -431,7 +558,7 @@ class FirebaseSyncManager(
         _syncState.value = _syncState.value.copy(
             isSyncing = false,
             isOnline = false,
-            syncMessage = "Нет доступа к подразделению. Проверьте ключ и интернет — повторим автоматически."
+            syncMessage = "Нет доступа к общему складу. Проверьте код и интернет — повторим автоматически."
         )
         if (accessRetryJob?.isActive == true) return
         accessRetryJob = scope.launch {
@@ -446,7 +573,7 @@ class FirebaseSyncManager(
                     _syncState.value = _syncState.value.copy(
                         isSyncing = false,
                         isOnline = true,
-                        syncMessage = "Подключено к подразделению"
+                        syncMessage = "Синхронизация активна"
                     )
                     break
                 }
@@ -459,9 +586,7 @@ class FirebaseSyncManager(
         val unitRef = db.collection("units").document(unitKey)
 
         val tombstoneReg = unitRef.collection("sync_tombstones").addSnapshotListener { snap, e ->
-            if (e is FirebaseFirestoreException && e.code == FirebaseFirestoreException.Code.PERMISSION_DENIED) {
-                onAccessDenied(unitKey)
-            }
+            handleListenerError(unitKey, "sync_tombstones", e)
             if (e != null || snap == null) return@addSnapshotListener
             scope.launch(Dispatchers.IO) {
                 for (dc in snap.documentChanges) {
@@ -485,6 +610,7 @@ class FirebaseSyncManager(
         listeners.add(tombstoneReg)
 
         val pointsReg = unitRef.collection("warehouse_points").addSnapshotListener { snap, e ->
+            handleListenerError(unitKey, "warehouse_points", e)
             if (e != null || snap == null) return@addSnapshotListener
             scope.launch(Dispatchers.IO) {
                 for (dc in snap.documentChanges) {
@@ -507,6 +633,7 @@ class FirebaseSyncManager(
         listeners.add(pointsReg)
 
         val itemsReg = unitRef.collection("inventory_items").addSnapshotListener { snap, e ->
+            handleListenerError(unitKey, "inventory_items", e)
             if (e != null || snap == null) return@addSnapshotListener
             scope.launch(Dispatchers.IO) {
                 for (dc in snap.documentChanges) {
@@ -531,6 +658,7 @@ class FirebaseSyncManager(
         listeners.add(itemsReg)
 
         val stockReg = unitRef.collection("stock_records").addSnapshotListener { snap, e ->
+            handleListenerError(unitKey, "stock_records", e)
             if (e != null || snap == null) return@addSnapshotListener
             scope.launch(Dispatchers.IO) {
                 for (dc in snap.documentChanges) {
@@ -550,18 +678,16 @@ class FirebaseSyncManager(
                         )
                         if (s.pointId.isNotBlank() && s.itemId.isNotBlank()) {
                             mergeCloudStockRecord(unitKey, s)
-                            // Do not create generic placeholder from stock record if nameHint is missing;
-                            // operations listener will register it with exact name from itemsJson.
-                            // ensureItemExists(unitKey, s.itemId)
                         }
                     }
                 }
             }
         }
         listeners.add(stockReg)
-        
+
         var isFirstOpLoad = true
         val opReg = unitRef.collection("operation_records").addSnapshotListener { snap, e ->
+            handleListenerError(unitKey, "operation_records", e)
             if (e != null || snap == null) return@addSnapshotListener
             scope.launch(Dispatchers.IO) {
                 for (dc in snap.documentChanges) {
@@ -579,12 +705,13 @@ class FirebaseSyncManager(
                         itemsSummary = dc.document.getString("itemsSummary") ?: "",
                         itemsJson = dc.document.getString("itemsJson") ?: ""
                     )
+                    val updatedByDeviceId = dc.document.getString("updatedByDeviceId").orEmpty()
                     if (dc.type != DocumentChange.Type.REMOVED &&
                         !isTombstoned(unitKey, TOMBSTONE_OPERATION, op.id)
                     ) {
                         dao.insertOperation(op)
                         extractAndRegisterItemsFromOperation(unitKey, op)
-                        if (!isFirstOpLoad && dc.type == DocumentChange.Type.ADDED) {
+                        if (!isFirstOpLoad && dc.type == DocumentChange.Type.ADDED && updatedByDeviceId != deviceId) {
                             val typeName = when {
                                 op.isReturnOperation() -> "↩️ Возврат на «${op.toPointName.ifBlank { "склад" }}»"
                                 op.type == OperationType.INCOME -> "📥 Поставка на «${op.toPointName.ifBlank { "склад" }}»"
@@ -601,39 +728,71 @@ class FirebaseSyncManager(
                         }
                     }
                 }
+                if (!isFirstOpLoad && snap.documentChanges.isNotEmpty()) {
+                    _syncState.value = _syncState.value.copy(
+                        isOnline = true,
+                        lastSyncTime = System.currentTimeMillis()
+                    )
+                }
                 isFirstOpLoad = false
             }
         }
-
         listeners.add(opReg)
 
+        var isFirstReqLoad = true
         val reqReg = unitRef.collection("requisitions").addSnapshotListener { snap, e ->
+            handleListenerError(unitKey, "requisitions", e)
             if (e != null || snap == null) return@addSnapshotListener
             scope.launch(Dispatchers.IO) {
                 for (dc in snap.documentChanges) {
                     val statusStr = dc.document.getString("status") ?: "PENDING"
                     val status = try { RequestStatus.valueOf(statusStr) } catch (ex: Exception) { RequestStatus.PENDING }
+                    val timestamp = dc.document.getLong("timestamp") ?: 0L
+                    val cloudUpdatedAt = dc.document.getLong("updatedAt") ?: timestamp
+                    val updatedByDeviceId = dc.document.getString("updatedByDeviceId").orEmpty()
                     val req = RequisitionRequest(
                         id = dc.document.id,
                         pointName = dc.document.getString("pointName") ?: "",
                         applicantName = dc.document.getString("applicantName") ?: "",
                         status = status,
                         comment = dc.document.getString("comment") ?: "",
-                        timestamp = dc.document.getLong("timestamp") ?: 0L,
+                        timestamp = timestamp,
                         itemsSummary = dc.document.getString("itemsSummary") ?: "",
                         itemsJson = dc.document.getString("itemsJson") ?: ""
                     )
                     if (dc.type != DocumentChange.Type.REMOVED &&
                         !isTombstoned(unitKey, TOMBSTONE_REQUISITION, req.id)
                     ) {
-                        dao.insertRequisition(req)
+                        val prevStatus = knownReqStatuses[req.id]
+                        val accepted = mergeCloudRequisition(unitKey, req, cloudUpdatedAt)
+                        if (accepted) {
+                            knownReqStatuses[req.id] = req.status
+                            if (!isFirstReqLoad && updatedByDeviceId != deviceId) {
+                                val who = req.applicantName.ifBlank { "получатель" }
+                                val where = req.pointName.ifBlank { "склад" }
+                                val summary = req.itemsSummary.ifBlank { "откройте раздел «Заявки»" }
+                                if (dc.type == DocumentChange.Type.ADDED && prevStatus == null) {
+                                    _syncEvents.emit("📋 Новая заявка от $who ($where): $summary")
+                                } else if (prevStatus != null && prevStatus != req.status) {
+                                    _syncEvents.emit("📋 Заявка «$who» ($where) → ${req.status.titleRu}")
+                                }
+                            }
+                        }
                     }
                 }
+                if (!isFirstReqLoad && snap.documentChanges.isNotEmpty()) {
+                    _syncState.value = _syncState.value.copy(
+                        isOnline = true,
+                        lastSyncTime = System.currentTimeMillis()
+                    )
+                }
+                isFirstReqLoad = false
             }
         }
         listeners.add(reqReg)
-        
+
         val presReg = unitRef.collection("devices").addSnapshotListener { snap, e ->
+            handleListenerError(unitKey, "devices", e)
             if (e != null || snap == null) return@addSnapshotListener
             val now = System.currentTimeMillis()
             val activeDevices = snap.documents.count { doc ->
@@ -715,7 +874,8 @@ class FirebaseSyncManager(
             return@withContext Pair(false, reason)
         }
         val cleanKey = unitKey.trim()
-        if (cleanKey.isEmpty()) return@withContext Pair(false, "Не указан код подразделения")
+        if (cleanKey.isEmpty()) return@withContext Pair(false, "Не указан код общего склада")
+        lastCallsign = callsign
 
         _syncState.value = _syncState.value.copy(isSyncing = true, syncMessage = "Синхронизация базы [$cleanKey]...")
         try {
@@ -747,6 +907,7 @@ class FirebaseSyncManager(
             val stockPointIds = cloudStocksSnap.documents.mapNotNull { it.getString("pointId") }.filter { it.isNotBlank() }.toSet()
 
             // 2. Reconcile Warehouse Points
+            val localPointsBefore = dao.getAllPoints().first()
             val defaultPointsMap = com.example.data.local.InitialData.getDefaultPoints().associateBy { it.id }
             val cloudPointsSnap = unitRef.collection("warehouse_points").get(Source.SERVER).await()
             val existingPointsMap = mutableMapOf<String, WarehousePoint>()
@@ -776,14 +937,18 @@ class FirebaseSyncManager(
                 )
             }
 
-            // Always ensure the root base warehouse exists (only base_sklad is protected)
+            // Always ensure the root base warehouse exists (only base_sklad is protected).
+            // Prefer the device's existing local base_sklad so Civilian/Empty "Основной склад"
+            // is never overwritten with military "Базовый склад (КЗ)" on first cloud sync.
             if (!existingPointsMap.containsKey("base_sklad")) {
-                val base = defaultPointsMap["base_sklad"] ?: WarehousePoint(
-                    id = "base_sklad",
-                    name = "Базовый склад (КЗ)",
-                    description = "Основной склад подразделения",
-                    isBase = true
-                )
+                val base = localPointsBefore.firstOrNull { it.id == "base_sklad" }
+                    ?: defaultPointsMap["base_sklad"]
+                    ?: WarehousePoint(
+                        id = "base_sklad",
+                        name = "Основной склад",
+                        description = "Центральный склад хранения",
+                        isBase = true
+                    )
                 existingPointsMap["base_sklad"] = base
                 pushWarehousePointAsync(cleanKey, base)
             }
@@ -863,22 +1028,27 @@ class FirebaseSyncManager(
 
             // 5. Reconcile Requisitions
             val cloudReqSnap = unitRef.collection("requisitions").get(Source.SERVER).await()
-            // Merge cloud requisitions locally. Do not delete local data by absence alone.
+            // Merge cloud requisitions locally without reverting newer local statuses.
             for (doc in cloudReqSnap.documents) {
                 val statusStr = doc.getString("status") ?: "PENDING"
                 val status = try { RequestStatus.valueOf(statusStr) } catch (ex: Exception) { RequestStatus.PENDING }
+                val timestamp = doc.getLong("timestamp") ?: 0L
+                val cloudUpdatedAt = doc.getLong("updatedAt") ?: timestamp
                 val req = RequisitionRequest(
                     id = doc.id,
                     pointName = doc.getString("pointName") ?: "",
                     applicantName = doc.getString("applicantName") ?: "",
                     status = status,
                     comment = doc.getString("comment") ?: "",
-                    timestamp = doc.getLong("timestamp") ?: 0L,
+                    timestamp = timestamp,
                     itemsSummary = doc.getString("itemsSummary") ?: "",
                     itemsJson = doc.getString("itemsJson") ?: ""
                 )
                 if (!isTombstoned(cleanKey, TOMBSTONE_REQUISITION, req.id)) {
-                    dao.insertRequisition(req)
+                    val accepted = mergeCloudRequisition(cleanKey, req, cloudUpdatedAt)
+                    if (accepted) {
+                        knownReqStatuses[req.id] = req.status
+                    }
                 }
             }
 
@@ -934,7 +1104,7 @@ class FirebaseSyncManager(
             }
             for (req in dao.getAllRequisitions().first()) {
                 if (req.id !in cloudReqIds && !isTombstoned(cleanKey, TOMBSTONE_REQUISITION, req.id)) {
-                    pushRequisitionAsync(cleanKey, req)
+                    pushRequisitionNow(cleanKey, req, reqUpdatedAt[req.id] ?: req.timestamp.coerceAtLeast(System.currentTimeMillis()))
                 }
             }
 
@@ -946,7 +1116,7 @@ class FirebaseSyncManager(
                 isSyncing = false,
                 isOnline = true,
                 lastSyncTime = System.currentTimeMillis(),
-                syncMessage = "Синхронизировано с подразделением [$cleanKey]"
+                syncMessage = "Синхронизировано [$cleanKey]"
             )
             Pair(true, "База синхронизирована с каналом [$cleanKey]")
         } catch (e: Exception) {
@@ -978,6 +1148,12 @@ class FirebaseSyncManager(
             return@withContext Pair(false, disabledSyncReason())
         }
         try {
+            val access = runCatching {
+                unitAccess.ensureMembership(cleanKey, fighterId(), lastCallsign, deviceId)
+            }.getOrNull()
+            if (access is UnitAccessResult.Denied) {
+                return@withContext Pair(false, access.reason)
+            }
             val unitRef = firestore.collection("units").document(cleanKey)
             val points = dao.getAllPoints().first()
             val stocks = dao.getAllStockRecords().first()
@@ -1034,7 +1210,7 @@ class FirebaseSyncManager(
             customItems.forEach { pushInventoryItemAsync(cleanKey, it) }
             stocks.forEach { pushStockRecordAsync(cleanKey, it) }
             operations.forEach { pushOperationAsync(cleanKey, it, emptyList()) }
-            requisitions.forEach { pushRequisitionAsync(cleanKey, it) }
+            requisitions.forEach { pushRequisitionNow(cleanKey, it) }
 
             // Confirm the server really received everything before reporting success.
             val delivered = withTimeoutOrNull(60_000) { firestore.waitForPendingWrites().await(); true } ?: false
@@ -1051,8 +1227,8 @@ class FirebaseSyncManager(
             )
             Pair(
                 true,
-                "Готово: облако = этот телефон. Отправлено точек: ${points.size}, остатков: ${stocks.size}, " +
-                    "операций: ${operations.size}. Удалено устаревших записей: $removed."
+                "Готово: облако = этот телефон. Складов: ${points.size}, остатков: ${stocks.size}, " +
+                    "операций: ${operations.size}, заявок: ${requisitions.size}. Удалено устаревших записей: $removed."
             )
         } catch (e: Exception) {
             Log.e(TAG, "publishLocalAsReference failed", e)
@@ -1073,6 +1249,12 @@ class FirebaseSyncManager(
             return@withContext Pair(false, disabledSyncReason())
         }
         try {
+            val access = runCatching {
+                unitAccess.ensureMembership(cleanKey, fighterId(), lastCallsign, deviceId)
+            }.getOrNull()
+            if (access is UnitAccessResult.Denied) {
+                return@withContext Pair(false, access.reason)
+            }
             val unitRef = firestore.collection("units").document(cleanKey)
             // Read everything first: nothing local is touched unless the whole
             // cloud snapshot arrived.
@@ -1178,7 +1360,13 @@ class FirebaseSyncManager(
             items.forEach { dao.insertItem(it) }
             dao.insertOrUpdateStockList(stocks)
             operations.forEach { dao.insertOperation(it) }
-            requisitions.forEach { dao.insertRequisition(it) }
+            knownReqStatuses.clear()
+            reqUpdatedAt.clear()
+            requisitions.forEach {
+                dao.insertRequisition(it)
+                knownReqStatuses[it.id] = it.status
+                reqUpdatedAt[it.id] = it.timestamp
+            }
 
             _syncState.value = _syncState.value.copy(
                 lastSyncTime = System.currentTimeMillis(),
@@ -1186,7 +1374,7 @@ class FirebaseSyncManager(
             )
             Pair(
                 true,
-                "Готово: телефон = облако. Точек: ${points.size}, остатков: ${stocks.size}, операций: ${operations.size}."
+                "Готово: телефон = облако. Складов: ${points.size}, остатков: ${stocks.size}, операций: ${operations.size}, заявок: ${requisitions.size}."
             )
         } catch (e: Exception) {
             Log.e(TAG, "replaceLocalWithCloud failed", e)
@@ -1195,12 +1383,11 @@ class FirebaseSyncManager(
     }
 
     fun pushOperationAsync(unitKey: String, op: OperationRecord, updatedStocks: List<StockRecord>) {
-        if (!productionCloudEnabled) return
-        if (unitKey.isEmpty()) return
+        val cleanKey = unitKey.trim()
+        if (!productionCloudEnabled || cleanKey.isEmpty()) return
         scope.launch(Dispatchers.IO) {
-            try {
-                val db = firestore
-                val unitRef = db.collection("units").document(unitKey)
+            executeCloudWrite(cleanKey, "operation/${op.id}", "Операция синхронизирована") {
+                val unitRef = firestore.collection("units").document(cleanKey)
                 unitRef.collection("operation_records").document(op.id).set(
                     hashMapOf(
                         "id" to op.id,
@@ -1211,14 +1398,15 @@ class FirebaseSyncManager(
                         "responsiblePerson" to op.responsiblePerson,
                         "comment" to op.comment,
                         "timestamp" to op.timestamp,
+                        "updatedByDeviceId" to deviceId,
                         "itemsSummary" to op.itemsSummary,
                         "itemsJson" to op.itemsJson
                     ),
                     SetOptions.merge()
-                )
+                ).await()
 
                 for (s in updatedStocks) {
-                    if (!shouldAcceptStockRecord(unitKey, s)) {
+                    if (!shouldAcceptStockRecord(cleanKey, s)) {
                         Log.w(TAG, "Skipped stock push blocked by a newer tombstone: ${s.pointId}:::${s.itemId}")
                         continue
                     }
@@ -1233,16 +1421,18 @@ class FirebaseSyncManager(
                             "lastUpdated" to s.lastUpdated
                         ),
                         SetOptions.merge()
-                    )
+                    ).await()
                 }
 
                 if (op.itemsJson.isNotBlank()) {
                     try {
                         val entries = parseOperationItems(op.itemsJson)
+                        val starterCatalog = com.example.data.local.InitialData.getCivilianItems() +
+                            com.example.data.local.InitialData.getDefaultItems()
                         for (entry in entries) {
                             if (entry.itemId.isNotBlank()) {
                                 val localItem = dao.getItemById(entry.itemId)
-                                val defaultMatch = com.example.data.local.InitialData.getDefaultItems().find { it.id == entry.itemId }
+                                val defaultMatch = starterCatalog.find { it.id == entry.itemId }
                                 val fallbackName = formatFallbackItemName(entry.itemId)
                                 val resolvedName = if (entry.itemName.isNotBlank()) entry.itemName else fallbackName
                                 val resolvedUnit = if (entry.unit.isNotBlank()) entry.unit else "шт."
@@ -1268,37 +1458,28 @@ class FirebaseSyncManager(
                                         "isCustom" to itemToPush.isCustom
                                     ),
                                     SetOptions.merge()
-                                )
+                                ).await()
                             }
                         }
                     } catch (ie: Exception) {
                         Log.w(TAG, "Failed pushing op items to cloud inventory_items", ie)
                     }
                 }
-
-                _syncState.value = _syncState.value.copy(
-                    lastSyncTime = System.currentTimeMillis(),
-                    isOnline = true,
-                    syncMessage = "Операция синхронизирована"
-                )
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed pushing op live, saved locally", e)
             }
         }
     }
 
     fun pushStockRecordAsync(unitKey: String, s: StockRecord) {
-        if (!productionCloudEnabled) return
-        if (unitKey.isEmpty()) return
+        val cleanKey = unitKey.trim()
+        if (!productionCloudEnabled || cleanKey.isEmpty()) return
         scope.launch(Dispatchers.IO) {
-            try {
-                if (!shouldAcceptStockRecord(unitKey, s)) {
-                    Log.w(TAG, "Skipped stock push blocked by a newer tombstone: ${s.pointId}:::${s.itemId}")
-                    return@launch
-                }
-                val db = firestore
-                val docId = "${s.pointId}___${s.itemId}"
-                db.collection("units").document(unitKey)
+            if (!shouldAcceptStockRecord(cleanKey, s)) {
+                Log.w(TAG, "Skipped stock push blocked by a newer tombstone: ${s.pointId}:::${s.itemId}")
+                return@launch
+            }
+            val docId = "${s.pointId}___${s.itemId}"
+            executeCloudWrite(cleanKey, "stock/$docId") {
+                firestore.collection("units").document(cleanKey)
                     .collection("stock_records").document(docId).set(
                         hashMapOf(
                             "pointId" to s.pointId,
@@ -1309,74 +1490,52 @@ class FirebaseSyncManager(
                             "lastUpdated" to s.lastUpdated
                         ),
                         SetOptions.merge()
-                    )
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed pushing stock record live", e)
+                    ).await()
             }
         }
     }
 
     fun pushRequisitionAsync(unitKey: String, r: RequisitionRequest) {
-        if (!productionCloudEnabled) return
-        if (unitKey.isEmpty()) return
+        val cleanKey = unitKey.trim()
+        if (!productionCloudEnabled || cleanKey.isEmpty()) return
+        val now = System.currentTimeMillis()
+        reqUpdatedAt[r.id] = now
+        knownReqStatuses[r.id] = r.status
         scope.launch(Dispatchers.IO) {
-            try {
-                val db = firestore
-                db.collection("units").document(unitKey)
-                    .collection("requisitions").document(r.id).set(
-                        hashMapOf(
-                            "id" to r.id,
-                            "pointName" to r.pointName,
-                            "applicantName" to r.applicantName,
-                            "status" to r.status.name,
-                            "comment" to r.comment,
-                            "timestamp" to r.timestamp,
-                            "itemsSummary" to r.itemsSummary,
-                            "itemsJson" to r.itemsJson
-                        ),
-                        SetOptions.merge()
-                    )
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed pushing req live", e)
-            }
+            pushRequisitionNow(cleanKey, r, now)
         }
     }
 
     fun deleteRequisitionAsync(unitKey: String, reqId: String) {
-        if (!productionCloudEnabled) return
-        if (unitKey.isEmpty()) return
+        val cleanKey = unitKey.trim()
+        if (!productionCloudEnabled || cleanKey.isEmpty()) return
+        knownReqStatuses.remove(reqId)
+        reqUpdatedAt.remove(reqId)
         scope.launch(Dispatchers.IO) {
-            try {
-                val db = firestore
-                db.collection("units").document(unitKey)
-                    .collection("requisitions").document(reqId).delete()
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed deleting req live", e)
+            executeCloudWrite(cleanKey, "delete_requisition/$reqId") {
+                firestore.collection("units").document(cleanKey)
+                    .collection("requisitions").document(reqId).delete().await()
             }
         }
     }
 
     fun deleteOperationAsync(unitKey: String, opId: String) {
-        if (!productionCloudEnabled) return
-        if (unitKey.isEmpty()) return
+        val cleanKey = unitKey.trim()
+        if (!productionCloudEnabled || cleanKey.isEmpty()) return
         scope.launch(Dispatchers.IO) {
-            try {
-                val db = firestore
-                db.collection("units").document(unitKey)
-                    .collection("operation_records").document(opId).delete()
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed deleting operation live", e)
+            executeCloudWrite(cleanKey, "delete_operation/$opId") {
+                firestore.collection("units").document(cleanKey)
+                    .collection("operation_records").document(opId).delete().await()
             }
         }
     }
 
     fun pushWarehousePointAsync(unitKey: String, p: WarehousePoint) {
-        if (!productionCloudEnabled) return
-        if (unitKey.isEmpty()) return
+        val cleanKey = unitKey.trim()
+        if (!productionCloudEnabled || cleanKey.isEmpty()) return
         scope.launch(Dispatchers.IO) {
-            try {
-                val db = firestore
-                db.collection("units").document(unitKey)
+            executeCloudWrite(cleanKey, "point/${p.id}") {
+                firestore.collection("units").document(cleanKey)
                     .collection("warehouse_points").document(p.id).set(
                         hashMapOf(
                             "id" to p.id,
@@ -1387,20 +1546,17 @@ class FirebaseSyncManager(
                             "createdAt" to p.createdAt
                         ),
                         SetOptions.merge()
-                    )
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed pushing point live", e)
+                    ).await()
             }
         }
     }
 
     fun deleteWarehousePointAsync(unitKey: String, pointId: String) {
-        if (!productionCloudEnabled) return
-        if (unitKey.isEmpty()) return
+        val cleanKey = unitKey.trim()
+        if (!productionCloudEnabled || cleanKey.isEmpty()) return
         scope.launch(Dispatchers.IO) {
-            try {
-                val db = firestore
-                val unitRef = db.collection("units").document(unitKey)
+            executeCloudWrite(cleanKey, "delete_point/$pointId") {
+                val unitRef = firestore.collection("units").document(cleanKey)
                 // Delete warehouse point document in cloud with await
                 unitRef.collection("warehouse_points").document(pointId).delete().await()
 
@@ -1415,19 +1571,16 @@ class FirebaseSyncManager(
                         Log.w(TAG, "Error deleting stock doc ${doc.id}", de)
                     }
                 }
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed deleting point live", e)
             }
         }
     }
 
     fun pushInventoryItemAsync(unitKey: String, item: InventoryItem) {
-        if (!productionCloudEnabled) return
-        if (unitKey.isEmpty()) return
+        val cleanKey = unitKey.trim()
+        if (!productionCloudEnabled || cleanKey.isEmpty()) return
         scope.launch(Dispatchers.IO) {
-            try {
-                val db = firestore
-                db.collection("units").document(unitKey)
+            executeCloudWrite(cleanKey, "item/${item.id}") {
+                firestore.collection("units").document(cleanKey)
                     .collection("inventory_items").document(item.id).set(
                         hashMapOf(
                             "id" to item.id,
@@ -1440,30 +1593,28 @@ class FirebaseSyncManager(
                             "isCustom" to item.isCustom
                         ),
                         SetOptions.merge()
-                    )
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed pushing item live", e)
+                    ).await()
             }
         }
     }
 
     fun deleteInventoryItemAsync(unitKey: String, itemId: String) {
-        if (!productionCloudEnabled) return
-        if (unitKey.isEmpty()) return
+        val cleanKey = unitKey.trim()
+        if (!productionCloudEnabled || cleanKey.isEmpty()) return
         scope.launch(Dispatchers.IO) {
-            try {
-                val db = firestore
-                db.collection("units").document(unitKey)
-                    .collection("inventory_items").document(itemId).delete()
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed deleting item live", e)
+            executeCloudWrite(cleanKey, "delete_item/$itemId") {
+                firestore.collection("units").document(cleanKey)
+                    .collection("inventory_items").document(itemId).delete().await()
             }
         }
     }
 
     fun resolveServiceCategory(itemId: String, nameHint: String = ""): String {
+        val civilianMatch = com.example.data.local.InitialData.getCivilianItems().firstOrNull { it.id == itemId }
+        if (civilianMatch != null) return civilianMatch.serviceCategory
         val lowerName = nameHint.lowercase()
         return when {
+            itemId.startsWith("civ_") -> "Основное"
             itemId.startsWith("rav_") || lowerName.contains("мина") || lowerName.contains("снаряд") || lowerName.contains("выстрел") || lowerName.contains("взрыватель") || lowerName.contains("патрон") -> "Служба РАВ"
             itemId.startsWith("auto_") || lowerName.contains("уаз") || lowerName.contains("фильтр") || lowerName.contains("масло") || lowerName.contains("ремень") || lowerName.contains("колодк") -> "Автомобильная и БТ служба"
             itemId.startsWith("gsm_") || lowerName.contains("дизель") || lowerName.contains("бензин") || lowerName.contains("топливо") -> "Служба ГСМ"
@@ -1474,7 +1625,7 @@ class FirebaseSyncManager(
             itemId.startsWith("prod_") || lowerName.contains("ирп") || lowerName.contains("вода") || lowerName.contains("тушенк") -> "Продовольственная служба"
             itemId.startsWith("bpla_") || lowerName.contains("мавик") || lowerName.contains("fpv") || lowerName.contains("дрон") -> "Служба БПЛА и робототехники"
             itemId.startsWith("svyaz_") || lowerName.contains("радио") || lowerName.contains("антенн") || lowerName.contains("рэб") -> "Служба связи и РЭБ"
-            else -> "Служба РАВ"
+            else -> "Общее"
         }
     }
 
@@ -1523,7 +1674,8 @@ class FirebaseSyncManager(
             return
         }
 
-        val defaultMatch = com.example.data.local.InitialData.getDefaultItems().find { it.id == itemId }
+        val defaultMatch = (com.example.data.local.InitialData.getCivilianItems() +
+            com.example.data.local.InitialData.getDefaultItems()).find { it.id == itemId }
         val itemToInsert = defaultMatch ?: InventoryItem(
             id = itemId,
             name = nameHint?.ifBlank { null } ?: formatFallbackItemName(itemId),
@@ -1601,6 +1753,7 @@ class FirebaseSyncManager(
     }
 
     fun stopSync() {
+        activeUnitKey = ""
         connectJob?.cancel()
         connectJob = null
         accessRetryJob?.cancel()

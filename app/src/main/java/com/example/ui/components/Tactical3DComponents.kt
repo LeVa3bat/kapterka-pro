@@ -4,7 +4,6 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateIntAsState
@@ -25,6 +24,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -53,6 +53,7 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -537,14 +538,16 @@ fun Volumetric3DActionTile(
 ) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
-    val pressOffset by animateDpAsState(
-        targetValue = if (pressed) 4.dp else 0.dp,
-        animationSpec = spring(dampingRatio = 0.65f, stiffness = Spring.StiffnessHigh),
+    val density = LocalDensity.current
+    val maxPressPx = with(density) { 4.dp.toPx() }
+    val pressFraction by animateFloatAsState(
+        targetValue = if (pressed) 1f else 0f,
+        animationSpec = spring(dampingRatio = 0.72f, stiffness = Spring.StiffnessHigh),
         label = "tilePressY"
     )
     val scale by animateFloatAsState(
         targetValue = if (pressed) 0.97f else 1f,
-        animationSpec = spring(dampingRatio = 0.65f, stiffness = Spring.StiffnessHigh),
+        animationSpec = spring(dampingRatio = 0.72f, stiffness = Spring.StiffnessHigh),
         label = "tileScale"
     )
     val shape = RoundedCornerShape(18.dp)
@@ -574,11 +577,15 @@ fun Volumetric3DActionTile(
                 .background(extrusionColor)
         )
 
-        // Elevated glossy gradient face that depresses physically on press
+        // Elevated glossy gradient face that depresses smoothly via GPU translationY
+        // (never animates padding directly so spring overshoot can never produce negative Dp).
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = pressOffset, bottom = 5.dp - pressOffset)
+                .padding(bottom = 5.dp)
+                .graphicsLayer {
+                    translationY = (pressFraction * maxPressPx).coerceIn(0f, maxPressPx)
+                }
                 .clip(shape)
                 .background(
                     Brush.linearGradient(
@@ -637,6 +644,8 @@ fun Volumetric3DActionTile(
 
 /**
  * Full-width or inline tactile 3D extruded primary button for modals, CTAs, and header actions.
+ * Uses matchParentSize() for the 3D bottom lip and wrap-content width for the face Row with
+ * propagateMinConstraints = true so it works identically both inline ("+ Заявка") and full-width.
  */
 @Composable
 fun Volumetric3DButton(
@@ -654,9 +663,11 @@ fun Volumetric3DButton(
 ) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
-    val pressOffset by animateDpAsState(
-        targetValue = if (pressed && enabled) 3.dp else 0.dp,
-        animationSpec = spring(dampingRatio = 0.7f, stiffness = Spring.StiffnessHigh),
+    val density = LocalDensity.current
+    val maxPressPx = with(density) { 3.dp.toPx() }
+    val pressFraction by animateFloatAsState(
+        targetValue = if (pressed && enabled) 1f else 0f,
+        animationSpec = spring(dampingRatio = 0.75f, stiffness = Spring.StiffnessHigh),
         label = "btn3dY"
     )
     val shape = RoundedCornerShape(cornerRadius)
@@ -673,19 +684,23 @@ fun Volumetric3DButton(
                 interactionSource = interaction,
                 indication = null,
                 onClick = onClick
-            )
+            ),
+        propagateMinConstraints = true
     ) {
         Box(
             modifier = Modifier
-                .fillMaxSize()
+                .matchParentSize()
                 .padding(top = 4.dp)
                 .clip(shape)
                 .background(effLip)
         )
         Row(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(top = pressOffset, bottom = 4.dp - pressOffset)
+                .fillMaxHeight()
+                .padding(bottom = 4.dp)
+                .graphicsLayer {
+                    translationY = (pressFraction * maxPressPx).coerceIn(0f, maxPressPx)
+                }
                 .clip(shape)
                 .background(Brush.linearGradient(listOf(effStart, effEnd)))
                 .border(
@@ -717,6 +732,7 @@ fun Volumetric3DButton(
                 fontSize = 14.sp,
                 fontWeight = FontWeight.ExtraBold,
                 maxLines = 1,
+                softWrap = false,
                 overflow = TextOverflow.Ellipsis
             )
         }

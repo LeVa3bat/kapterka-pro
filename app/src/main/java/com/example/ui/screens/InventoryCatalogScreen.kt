@@ -141,12 +141,13 @@ fun InventoryCatalogScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "Имущество",
                         color = TacticalTextPrimary,
                         fontSize = 22.sp,
-                        fontWeight = FontWeight.ExtraBold
+                        fontWeight = FontWeight.ExtraBold,
+                        modifier = Modifier.testTag("catalog_header_title")
                     )
                     Text(
                         text = "Каталог • ${items.size} позиций",
@@ -155,10 +156,13 @@ fun InventoryCatalogScreen(
                     )
                 }
 
+                Spacer(modifier = Modifier.width(8.dp))
+
                 com.example.ui.components.Volumetric3DButton(
                     text = "Добавить",
                     icon = Icons.Default.Add,
                     onClick = onAddNewItemClick,
+                    modifier = Modifier.testTag("catalog_add_button"),
                     height = 40.dp,
                     cornerRadius = 13.dp
                 )

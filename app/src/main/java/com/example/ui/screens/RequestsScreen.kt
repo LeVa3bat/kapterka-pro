@@ -58,6 +58,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -152,7 +154,13 @@ fun RequestsScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Заявки", color = TacticalTextPrimary, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
+                        Text(
+                            "Заявки",
+                            color = TacticalTextPrimary,
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            modifier = Modifier.testTag("requests_header_title")
+                        )
                         Text("Запросы имущества: сборка и выдача со склада", color = TacticalTextMuted, fontSize = 12.sp)
                     }
                     Spacer(modifier = Modifier.width(8.dp))
@@ -160,6 +168,7 @@ fun RequestsScreen(
                         text = "Заявка",
                         icon = Icons.Rounded.Add,
                         onClick = { showForm = true },
+                        modifier = Modifier.testTag("requests_add_button"),
                         height = 42.dp,
                         cornerRadius = 13.dp
                     )
@@ -441,7 +450,12 @@ private fun StageProgress(step: Int, color: Color) {
                     val scale by animateFloatAsState(if (i == step) 1.25f else 1f, spring(dampingRatio = 0.4f), label = "dot")
                     Box(
                         modifier = Modifier
-                            .size((12 * scale).dp)
+                            .size(12.dp)
+                            .graphicsLayer {
+                                val s = scale.coerceIn(0.6f, 1.5f)
+                                scaleX = s
+                                scaleY = s
+                            }
                             .clip(CircleShape)
                             .background(if (reached) color else TacticalSurfaceLight)
                             .border(2.dp, TacticalSurface, CircleShape)
