@@ -413,7 +413,12 @@ function saveCabinetProfile() {
   const callsign = document.getElementById('cabCallsignInput')?.value.trim() || 'Пользователь';
   const rank = document.getElementById('cabRankInput')?.value.trim() || '';
   const unitName = document.getElementById('cabUnitNameInput')?.value.trim() || '';
-  const unitKey = document.getElementById('cabUnitKeyInput')?.value.trim() || localStorage.getItem(STORAGE_UNIT_KEY) || '';
+  const rawUnitKey = document.getElementById('cabUnitKeyInput')?.value.trim() || '';
+  if (rawUnitKey && !/^[A-Za-z0-9_-]{4,120}$/.test(rawUnitKey)) {
+    showToast('Код группы должен содержать 4–120 латинских букв, цифр, «_» или «-».');
+    return;
+  }
+  const unitKey = rawUnitKey || localStorage.getItem(STORAGE_UNIT_KEY) || '';
   const currentSession = getActiveUserSession();
   // Email является идентификатором серверного аккаунта и не меняется локальным редактированием профиля.
   const email = (currentSession?.email || document.getElementById('cabEmailInput')?.value || '').trim().toLowerCase();
@@ -441,6 +446,9 @@ function saveCabinetProfile() {
       localStorage.setItem(STORAGE_AUTH_USER, JSON.stringify(updatedSession));
     }
   } catch (e) {}
+  if (typeof window.snapshotWebAuthAccount === 'function') {
+    window.snapshotWebAuthAccount(email);
+  }
 
   const navCallsignDisplay = document.getElementById('navCallsignDisplay');
   if (navCallsignDisplay) navCallsignDisplay.textContent = callsign;
@@ -452,6 +460,8 @@ function saveCabinetProfile() {
     window.saveWebAuthProfileToServer({ callsign, rank, unitName, unitKey, phone })
       .then((res) => {
         if (res && res.ok) showToast('Профиль сохранён и синхронизирован с сервером.');
+        else if (res && res.error === 'INVALID_UNIT_KEY') showToast('Сервер отклонил код группы. Проверьте формат kapt_…');
+        else if (res && (res.error === 'INVALID_SESSION' || res.error === 'SESSION_EXPIRED')) showToast('Профиль сохранён локально. Войдите снова для синхронизации с сервером.');
         else showToast('Данные профиля сохранены в этом браузере.');
       })
       .catch(() => showToast('Данные профиля сохранены в этом браузере.'));

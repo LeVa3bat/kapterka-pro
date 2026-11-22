@@ -952,7 +952,7 @@ const SCREENS = [
         </div>
 
         <div class="btn btn-gold no-wrap"><span>Оплатить 490 ₽ · ЮKassa (СБП / МИР)</span></div>
-        <div style="font:500 10px/1.35 var(--mono);color:var(--muted);text-align:center">Самозанятый (НПД, ИНН 250104230398) · Ключ KAPT-… на Email · Чек «Мой налог»</div>
+        <div style="font:500 10px/1.45 var(--mono);color:var(--muted);text-align:center">Самозанятый НПД · ИНН 250104230398<br>Ключ KAPT-… на Email · Чек «Мой налог»</div>
       </div>
 
       <div class="card" style="display:flex;flex-direction:column;gap:8px">

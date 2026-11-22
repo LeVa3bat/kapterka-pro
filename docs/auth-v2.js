@@ -188,6 +188,18 @@
     }
   }
 
+  function clearResendCooldown(button) {
+    if (!button) return;
+    if (button._kapterkaCooldownTimer) {
+      clearInterval(button._kapterkaCooldownTimer);
+      button._kapterkaCooldownTimer = null;
+    }
+    button.disabled = false;
+    if (button.dataset.cooldownOriginalText) {
+      button.textContent = button.dataset.cooldownOriginalText;
+    }
+  }
+
   function startResendCooldown(button, seconds) {
     if (!button) return;
     const total = Number(seconds || 60);
@@ -360,9 +372,9 @@
     const user = {
       ...(serverUser || {}),
       email: targetEmail || normalizeAccountEmail(currentSession?.email) || "",
-      callsign: serverUser?.callsign || cached?.callsign || (sameGenericOwner ? localStorage.getItem("kapterka_user_callsign") || "" : "") || "Пользователь",
-      rank: serverUser?.rank ?? cached?.rank ?? (sameGenericOwner ? localStorage.getItem("kapterka_user_rank") || "" : ""),
-      unitName: serverUser?.unitName || cached?.unitName || (sameGenericOwner ? localStorage.getItem("kapterka_unit_name") || "" : "") || "",
+      callsign: serverUser?.callsign || pendingRegister?.callsign || cached?.callsign || (sameGenericOwner ? localStorage.getItem("kapterka_user_callsign") || "" : "") || "Пользователь",
+      rank: serverUser?.rank || pendingRegister?.rank || cached?.rank || (sameGenericOwner ? localStorage.getItem("kapterka_user_rank") || "" : ""),
+      unitName: serverUser?.unitName || pendingRegister?.unitName || cached?.unitName || (sameGenericOwner ? localStorage.getItem("kapterka_unit_name") || "" : "") || "",
       unitKey: serverUser?.unitKey || cached?.unitKey || (sameGenericOwner ? localStorage.getItem("kapterka_unit_key") || "" : "") || "",
       phone: serverUser?.phone || cached?.phone || (sameGenericOwner ? localStorage.getItem("kapterka_user_phone") || "" : "") || "",
       activeKey: activeKey,
@@ -394,6 +406,8 @@
   function resetToEmailStep() {
     setAuthAlert("", "");
     updateStepIndicator(1);
+    clearResendCooldown(document.getElementById("regResendCodeBtn"));
+    clearResendCooldown(document.getElementById("loginResendCodeBtn"));
     const stepInputs = document.getElementById("regStepInputs");
     const stepVerif = document.getElementById("regStepVerification");
     if (stepInputs) stepInputs.style.display = "block";
@@ -544,7 +558,7 @@
       pendingTransport = transport;
       if (!data || !data.ok) {
         const msg = authErrorMessage(data?.error, data);
-        if (data?.error === "ACCOUNT_EXISTS" && typeof window.switchAuthMode === "function") {
+        if (data?.error === "ACCOUNT_EXISTS") {
           const loginInput = document.getElementById("loginEmail");
           if (loginInput) loginInput.value = email;
         }
@@ -579,7 +593,13 @@
         { action: "auth_request_code", mode: "login", email }
       );
       pendingTransport = transport;
-      if (!data || !data.ok) return notify(authErrorMessage(data?.error, data), "error");
+      if (!data || !data.ok) {
+        if (data?.error === "USER_NOT_FOUND") {
+          const regInput = document.getElementById("regEmail");
+          if (regInput) regInput.value = email;
+        }
+        return notify(authErrorMessage(data?.error, data), "error");
+      }
 
       const loginInputs = document.getElementById("loginStepInputs");
       if (loginInputs) loginInputs.style.display = "none";
@@ -629,7 +649,13 @@
         transport = res.transport;
       }
 
-      if (!data || !data.ok) return notify(authErrorMessage(data?.error, data), "error");
+      if (!data || !data.ok) {
+        if (data?.error === "USER_NOT_FOUND" && pendingEmail) {
+          const regInput = document.getElementById("regEmail");
+          if (regInput) regInput.value = pendingEmail;
+        }
+        return notify(authErrorMessage(data?.error, data), "error");
+      }
 
       migrateAndSetSession(data.user || {}, data.sessionToken || "", data.sessionExpiresAt || 0, transport);
       pendingMode = null;
@@ -693,7 +719,7 @@
     if (!token) return;
 
     if (expiresAt && Date.now() > expiresAt) {
-      logoutV2();
+      logoutV2({ silent: true });
       notify("Сессия завершена. Войдите снова по коду из Email.");
       return;
     }
@@ -720,7 +746,7 @@
       }
 
       if (data && ["INVALID_SESSION", "SESSION_EXPIRED", "USER_NOT_FOUND"].includes(data.error)) {
-        logoutV2();
+        logoutV2({ silent: true });
         notify("Сессия завершена. Войдите снова по коду из Email.");
       }
     } catch (err) {
@@ -728,7 +754,8 @@
     }
   }
 
-  function logoutV2() {
+  function logoutV2(opts) {
+    const silent = Boolean(opts && opts.silent);
     const token = localStorage.getItem(TOKEN_KEY) || "";
     const provider = localStorage.getItem(PROVIDER_KEY) || "worker";
     if (token && provider === "worker" && workerBaseUrl()) {
@@ -752,7 +779,7 @@
     resetToEmailStep();
     if (typeof window.updateAuthUI === "function") window.updateAuthUI();
     if (typeof window.loadCabinetProfile === "function") window.loadCabinetProfile();
-    notify("Вы вышли из личного кабинета.");
+    if (!silent) notify("Вы вышли из личного кабинета.");
   }
 
   function activate() {
@@ -773,6 +800,7 @@
     };
     window.logoutUserSession = logoutV2;
     window.saveWebAuthProfileToServer = saveProfileToServer;
+    window.snapshotWebAuthAccount = snapshotAccount;
 
     document.documentElement.classList.add("auth-v2-enabled");
     refreshExistingSession();

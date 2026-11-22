@@ -38,7 +38,7 @@
     "applicationSubCategory": "Складской учёт и учёт имущества",
     "inLanguage": "ru",
     "softwareVersion": "3.9.0",
-    "dateModified":"2026-11-21",
+    "dateModified":"2026-11-22",
     "offers": {
       "@type": "Offer",
       "price": "490.00",
@@ -979,19 +979,19 @@
       <div class="container">
         <div class="section-header v2-page-head">
           <div class="badge">Совместная работа</div>
-          <h2>Синхронизация подразделения</h2>
-          <p>Персональная лицензия отвечает за доступ, а общий ключ <code>kapt_...</code> объединяет устройства одного подразделения.</p>
+          <h2>Синхронизация команды и склада</h2>
+          <p>Персональная лицензия отвечает за доступ, а общий защищённый код группы <code>kapt_…</code> объединяет телефоны одной мастерской, бригады или подразделения.</p>
         </div>
 
         <div class="s36-tabrow s36-qrsync">
-          <img class="s36-tabshot" src="screens/36-6-unit-qr-preview.webp" alt="QR-код подразделения в приложении Каптёрка" loading="lazy" decoding="async" width="1080" height="2340">
+          <img class="s36-tabshot" src="screens/36-6-unit-qr-preview.webp" alt="QR-код подключения второго телефона в приложении Каптёрка PRO" loading="lazy" decoding="async" width="1080" height="2340">
           <div class="s36-benefits">
             <span class="s36-new">Подключение по QR</span>
             <h3>Второй телефон — по QR-коду</h3>
-            <div><b>1</b><span><strong>Откройте «Подключить»</strong><small>На главном экране первого телефона — появится QR-код подразделения</small></span></div>
+            <div><b>1</b><span><strong>Откройте «Подключить»</strong><small>На главном экране первого телефона — появится QR-код группы учёта</small></span></div>
             <div><b>2</b><span><strong>Отсканируйте</strong><small>На втором телефоне при входе нажмите значок QR и наведите камеру</small></span></div>
-            <div><b>3</b><span><strong>Готово</strong><small>Склады, остатки, операции и заявки — одни на всех телефонах</small></span></div>
-            <p class="s36-note">Доступ к данным подразделения получают только его участники. QR-код не даёт больше, чем сам ключ.</p>
+            <div><b>3</b><span><strong>Готово</strong><small>Склады, остатки, операции и заявки — единые на всех телефонах команды</small></span></div>
+            <p class="s36-note">Доступ к общему складу получают только участники с кодом группы. Синхронизацию можно поставить на паузу или очистить облако одной кнопкой.</p>
           </div>
         </div>
 
@@ -1000,23 +1000,23 @@
             <span class="v2-sync-number">01</span>
             <h3>Персональная лицензия</h3>
             <code>KAPT-XXXX-XXXX-XXXX</code>
-            <p>Принадлежит пользователю и не меняется при переходе в другое подразделение.</p>
+            <p>Привязана к вашему аккаунту и не меняется при переходе на другой склад или в новую команду.</p>
           </div>
           <div class="v2-sync-divider">+</div>
           <div class="v2-sync-side">
             <span class="v2-sync-number">02</span>
-            <h3>Ключ подразделения</h3>
-            <code>kapt_xxxxxx</code>
-            <p>Одинаковый код на устройствах, которые должны видеть общий склад.</p>
+            <h3>Код группы синхронизации</h3>
+            <code>kapt_8f3a1b2c…</code>
+            <p>Одинаковый защищённый код на телефонах, которые должны видеть общий склад и журнал операций.</p>
           </div>
         </div>
 
         <div class="v2-steps-card" id="tabSyncMechanism">
           <div class="v2-card-heading"><div><span>Как подключиться</span><h3>Три шага</h3></div><button class="btn btn-primary btn-sm" onclick="switchMainTab('tabCabinet')">Открыть кабинет</button></div>
           <div class="v2-step-row">
-            <div><b>1</b><span><strong>Создайте ключ</strong><small>Старшина или ответственный создаёт <code>kapt_...</code>.</small></span></div>
-            <div><b>2</b><span><strong>Передайте участникам</strong><small>На нужных устройствах вводится тот же ключ.</small></span></div>
-            <div><b>3</b><span><strong>Синхронизируйте</strong><small>При наличии связи устройства обмениваются изменениями.</small></span></div>
+            <div><b>1</b><span><strong>Создайте код группы</strong><small>Ответственный за склад создаёт защищённый код <code>kapt_…</code>.</small></span></div>
+            <div><b>2</b><span><strong>Передайте участникам</strong><small>На нужных телефонах сканируется QR-код или вводится тот же код.</small></span></div>
+            <div><b>3</b><span><strong>Синхронизируйте</strong><small>При наличии связи устройства автоматически обмениваются изменениями.</small></span></div>
           </div>
         </div>
 
@@ -1030,8 +1030,8 @@
         <div class="v2-security-note" id="tabSyncOpsec">
           <div>
             <span>Безопасность</span>
-            <h3>Не передавайте ключ подразделения посторонним</h3>
-            <p>Ключ <code>kapt_...</code> используется для разделения данных подразделений. При смене состава его можно заменить в кабинете или приложении.</p>
+            <h3>Не передавайте код группы посторонним</h3>
+            <p>Код <code>kapt_…</code> разделяет данные разных складов и команд. При смене состава его можно в любой момент заменить в кабинете или приложении.</p>
           </div>
           <button class="btn btn-outline btn-sm" onclick="openModal('modalSyncMech')">Подробнее о синхронизации</button>
         </div>
@@ -1269,12 +1269,12 @@
       </div>
       <div class="modal-body">
         <div class="v3-sync-flow">
-          <div><b>1</b><span><strong>Создайте ключ подразделения</strong><small>Например: <code>kapt_a1b2c3</code>.</small></span></div>
-          <div><b>2</b><span><strong>Введите его на нужных устройствах</strong><small>Одинаковый ключ объединяет только выбранную группу устройств.</small></span></div>
-          <div><b>3</b><span><strong>Работайте локально</strong><small>Операции продолжают записываться на телефоне.</small></span></div>
-          <div><b>4</b><span><strong>Синхронизируйте при наличии сети</strong><small>Изменения передаются через Firebase в общий набор данных подразделения.</small></span></div>
+          <div><b>1</b><span><strong>Создайте код группы</strong><small>Например: <code>kapt_8f3a1b2c…</code> (генерируется автоматически).</small></span></div>
+          <div><b>2</b><span><strong>Введите его на нужных телефонах</strong><small>Одинаковый код объединяет только выбранную команду, мастерскую или подразделение.</small></span></div>
+          <div><b>3</b><span><strong>Работайте локально</strong><small>Операции продолжают записываться на телефоне даже без интернета.</small></span></div>
+          <div><b>4</b><span><strong>Синхронизируйте при наличии сети</strong><small>Изменения передаются через Firebase в общий набор данных группы.</small></span></div>
         </div>
-        <div class="v3-modal-note">Не передавайте ключ подразделения посторонним. При необходимости его можно заменить.</div>
+        <div class="v3-modal-note">Не передавайте код группы посторонним. При необходимости его можно заменить или очистить облачную копию.</div>
         <div class="v3-modal-cta">
           <span>Управление ключом доступно в личном кабинете.</span>
           <button class="btn btn-primary btn-sm" onclick="closeModal('modalSyncMech'); switchMainTab('tabCabinet');">Открыть кабинет</button>

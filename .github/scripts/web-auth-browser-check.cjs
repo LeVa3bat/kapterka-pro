@@ -66,18 +66,20 @@ function startStaticServer() {
       const errors = [];
       page.on('pageerror', (err) => errors.push(err.message));
 
-      // Check homepage & legal/info pages for overflow and zero JS errors
-      for (const file of ['', 'terms.html', 'privacy.html', 'security.html', 'help.html', 'updates.html']) {
+      // Check homepage & legal/info pages for overflow, zero external Google Fonts, and zero JS errors
+      for (const file of ['', 'terms.html', 'privacy.html', 'security.html', 'help.html', 'updates.html', 'skladskoy-uchet-android.html', 'uchet-imushchestva-offline.html', 'uchet-ostatkov-na-telefone.html']) {
         await page.goto(`${base}/${file}`, { waitUntil: 'networkidle' });
         await page.locator('h1').waitFor();
-        const overflow = await page.evaluate(() => ({
+        const check = await page.evaluate(() => ({
           scrollW: document.documentElement.scrollWidth,
-          innerW: window.innerWidth
+          innerW: window.innerWidth,
+          googleFonts: [...document.querySelectorAll('link[href*="fonts.googleapis.com"]')].length
         }));
         assert.ok(
-          overflow.scrollW <= overflow.innerW + 1,
-          `${label} overflow on /${file}: scrollWidth=${overflow.scrollW} > innerWidth=${overflow.innerW}`
+          check.scrollW <= check.innerW + 1,
+          `${label} overflow on /${file}: scrollWidth=${check.scrollW} > innerWidth=${check.innerW}`
         );
+        assert.equal(check.googleFonts, 0, `${label}: external Google Fonts link found on /${file}`);
       }
 
       // Homepage interactive features
@@ -121,12 +123,22 @@ function startStaticServer() {
         await page.screenshot({ path: path.join(previewDir, `${label}-payment.png`), fullPage: false });
       }
 
-      // Check all 5 tabs for horizontal overflow
+      // Check all 5 tabs for horizontal overflow and unclipped mobile trust badges
       for (const tab of ['tabOverview', 'tabCabinet', 'tabPayment', 'tabSync', 'tabDownload']) {
         await page.evaluate((id) => window.switchMainTab(id), tab);
         await page.locator(`#${tab}.active`).waitFor({ state: 'visible' });
-        const ov = await page.evaluate(() => ({ s: document.documentElement.scrollWidth, w: window.innerWidth }));
+        const ov = await page.evaluate((id) => {
+          const out = { s: document.documentElement.scrollWidth, w: window.innerWidth, clipped: [] };
+          if (id === 'tabPayment') {
+            document.querySelectorAll('#tabPayment .v2-trust-list span').forEach((el) => {
+              const r = el.getBoundingClientRect();
+              if (r.right > window.innerWidth + 1) out.clipped.push(el.textContent.trim());
+            });
+          }
+          return out;
+        }, tab);
         assert.ok(ov.s <= ov.w + 1, `${label} overflow on ${tab}: ${ov.s} > ${ov.w}`);
+        assert.deepEqual(ov.clipped, [], `${label} clipped trust badges on ${tab}: ${ov.clipped.join(', ')}`);
       }
 
       assert.deepEqual(errors, [], `${label}: browser page errors`);
@@ -210,6 +222,15 @@ function startStaticServer() {
       await page.locator('#cabinetContent').waitFor({ state: 'visible' });
       assert.equal(await page.locator('#sessionCallsignText').innerText(), 'Алексей');
       assert.equal(await page.locator('#cabUnitKeyInput').inputValue(), 'kapt_0123456789abcdef0123');
+
+      // Invalid unit key is rejected client-side without corrupting storage or calling server
+      const validKeyBefore = await page.locator('#cabUnitKeyInput').inputValue();
+      const profCallsBefore = apiCalls.filter((c) => c.action === 'web_auth_update_profile').length;
+      await page.locator('#cabUnitKeyInput').fill('bad key!');
+      await page.getByRole('button', { name: 'Сохранить' }).click();
+      await page.waitForTimeout(100);
+      assert.equal(apiCalls.filter((c) => c.action === 'web_auth_update_profile').length, profCallsBefore, 'invalid unitKey must not call server');
+      assert.equal(await page.evaluate(() => localStorage.getItem('kapterka_unit_key')), validKeyBefore, 'invalid unitKey must not overwrite localStorage');
 
       // Generate new unit key uses 80-bit hex (20 hex chars)
       await page.getByRole('button', { name: 'Новый' }).click();

@@ -193,7 +193,7 @@ globalThis.fetch = async (input, init = {}) => {
     if (method === 'POST' && url.pathname === '/v3/payments') {
       const req = JSON.parse(body);
       const id = 'pay-' + (state.payments.size + 1).toString().padStart(8, '0');
-      state.payments.set(id, { id, status: 'pending', paid: false, amount: req.amount, metadata: req.metadata });
+      state.payments.set(id, { id, status: 'pending', paid: false, amount: req.amount, metadata: req.metadata, rawRequest: req });
       return jsonResponse(200, { id, confirmation: { confirmation_url: 'https://yoomoney.ru/checkout/' + id } });
     }
     if (method === 'GET' && url.pathname === '/v3/payments') {
@@ -1128,13 +1128,51 @@ test('web_auth: passwordless email OTP register, session, profile update, logout
   assert.equal(upd.body.user.unitName, 'Цех №1');
   assert.equal(upd.body.user.unitKey, 'kapt_11223344556677889900');
 
+  // Partial profile update must preserve omitted fields instead of erasing them.
+  const partialUpd = await call('web_auth_update_profile', {
+    token: ok.body.sessionToken,
+    callsign: 'Алексей (обновлён)'
+  });
+  assert.equal(partialUpd.status, 200);
+  assert.equal(partialUpd.body.user.callsign, 'Алексей (обновлён)');
+  assert.equal(partialUpd.body.user.rank, 'Начальник склада');
+  assert.equal(partialUpd.body.user.unitName, 'Цех №1');
+  assert.equal(partialUpd.body.user.unitKey, 'kapt_11223344556677889900');
+  assert.equal(partialUpd.body.user.phone, '@alex_sklad');
+
   // Invalid unit key is rejected.
   assert.equal((await call('web_auth_update_profile', { token: ok.body.sessionToken, unit_key: 'bad key!' })).status, 400);
+
+  // Redeeming a code must NOT reset cooldown / hourly quota for that email.
+  const tooSoonAfterVerify = await call('web_auth_request_code', { mode: 'login', email: 'webuser@kapterka.ru' }, { ip: '9.1.1.5' });
+  assert.equal(tooSoonAfterVerify.status, 429);
+  assert.equal(tooSoonAfterVerify.body.error, 'TOO_SOON');
 
   // Logout invalidates the session token server-side.
   assert.equal((await call('web_auth_logout', { token: ok.body.sessionToken })).status, 200);
   assert.equal((await call('web_auth_session', { token: ok.body.sessionToken })).status, 401);
   assert.equal((await call('web_auth_update_profile', { token: ok.body.sessionToken, callsign: 'X' })).status, 401);
+});
+
+test('web_auth: concurrent OTP redemption succeeds only once and failed mail send rolls back code', async () => {
+  // Failed email send must clear codeHash and cooldown so retry succeeds cleanly.
+  state.mailDown = true;
+  const failedMail = await call('web_auth_request_code', { mode: 'register', email: 'race@kapterka.ru', callsign: 'Гонка' }, { ip: '9.3.3.1' });
+  assert.equal(failedMail.status, 503);
+  state.mailDown = false;
+
+  const sent = await call('web_auth_request_code', { mode: 'register', email: 'race@kapterka.ru', callsign: 'Гонка' }, { ip: '9.3.3.1' });
+  assert.equal(sent.status, 200);
+  const code = (state.emails.at(-1).subject.match(/(\d{6})/) || [])[1];
+  assert.ok(code);
+
+  // Two simultaneous redemptions of the same 6-digit OTP: exactly one wins.
+  const [r1, r2] = await Promise.all([
+    call('web_auth_verify_code', { email: 'race@kapterka.ru', code }, { ip: '9.3.3.1' }),
+    call('web_auth_verify_code', { email: 'race@kapterka.ru', code }, { ip: '9.3.3.2' })
+  ]);
+  const statuses = [r1.status, r2.status].sort((a, b) => a - b);
+  assert.deepEqual(statuses, [200, 404], 'only one concurrent OTP redemption may succeed');
 });
 
 test('web_auth: brute force locks after 5 attempts and rejects GET requests', async () => {
@@ -1152,7 +1190,9 @@ test('create: self-employed (NPD) checkout omits 54-FZ online-KKT receipt block'
   const c = await call('create', { email: 'npd@x.ru', callsign: 'Самозанятый' });
   assert.equal(c.status, 200);
   const payment = state.payments.get(c.body.payment_id);
-  assert.equal(payment.receipt, undefined, 'NPD self-employed checkout must not send 54-FZ KKT receipt');
+  assert.ok(payment.rawRequest && typeof payment.rawRequest === 'object', 'mock must capture raw YooKassa payload');
+  assert.equal('receipt' in payment.rawRequest, false, 'NPD self-employed checkout must not send 54-FZ KKT receipt');
+  assert.equal(payment.rawRequest.amount.value, '490.00');
   assert.equal((await call('health', {}, { method: 'GET' })).body.webAuthConfigured, true);
 });
 

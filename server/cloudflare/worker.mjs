@@ -1394,7 +1394,9 @@ const handlers = {
       });
     } catch (error) {
       console.error('Web auth email error:', error?.message || error);
-      await db.patch(WEB_EMAIL_CODES, id, { sentAt: 0 }).catch(() => {});
+      // Roll back the undelivered code and rate counters so it can neither be
+      // redeemed nor unfairly burn the user's cooldown/hourly quota.
+      await db.patch(WEB_EMAIL_CODES, id, { codeHash: '', expiresAt: 0, sentAt: 0, hourCount }).catch(() => {});
       return ctx.fail(503, 'EMAIL_PROVIDER_UNAVAILABLE', { reason: mailReason(error) });
     }
 
@@ -1418,27 +1420,35 @@ const handlers = {
     }
 
     const id = await sha256Hex(email);
-    const rec = await db.get(WEB_EMAIL_CODES, id);
+    const expectedHash = await sha256Hex(`web|${code}|${email}`);
     const now = Date.now();
-    if (!rec) return ctx.fail(404, 'CODE_NOT_FOUND');
-    if (Number(rec.expiresAt || 0) < now) {
-      await db.remove(WEB_EMAIL_CODES, id).catch(() => {});
-      return ctx.fail(410, 'CODE_EXPIRED');
-    }
-    const attempts = Number(rec.attempts || 0);
-    if (attempts >= EMAIL_CODE_MAX_ATTEMPTS) return ctx.fail(429, 'TOO_MANY_ATTEMPTS');
 
-    const valid = constantTimeEqual(
-      await sha256Hex(`web|${code}|${email}`),
-      String(rec.codeHash || '')
-    );
-    if (!valid) {
-      const nextAttempts = attempts + 1;
-      await db.patch(WEB_EMAIL_CODES, id, { attempts: nextAttempts });
-      return ctx.fail(403, 'WRONG_CODE', { attemptsLeft: Math.max(0, EMAIL_CODE_MAX_ATTEMPTS - nextAttempts) });
-    }
+    // Optimistically validate and consume the OTP in a single version-guarded
+    // commit: prevents concurrent double-redemption, atomic-counts wrong tries,
+    // and keeps hourStart/hourCount/sentAt intact so quota cannot be bypassed.
+    const check = await withCommitRetry(async () => {
+      const rec = await db.get(WEB_EMAIL_CODES, id);
+      if (!rec || !rec.codeHash) return { fail: [404, 'CODE_NOT_FOUND'] };
+      if (Number(rec.expiresAt || 0) < now) {
+        await db.commit([db.write(WEB_EMAIL_CODES, id, { codeHash: '', expiresAt: 0 }, rec)]);
+        return { fail: [410, 'CODE_EXPIRED'] };
+      }
+      const attempts = Number(rec.attempts || 0);
+      if (attempts >= EMAIL_CODE_MAX_ATTEMPTS) return { fail: [429, 'TOO_MANY_ATTEMPTS'] };
 
-    await db.remove(WEB_EMAIL_CODES, id);
+      const valid = constantTimeEqual(expectedHash, String(rec.codeHash || ''));
+      if (!valid) {
+        const nextAttempts = attempts + 1;
+        await db.commit([db.write(WEB_EMAIL_CODES, id, { attempts: nextAttempts }, rec)]);
+        return { fail: [403, 'WRONG_CODE', { attemptsLeft: Math.max(0, EMAIL_CODE_MAX_ATTEMPTS - nextAttempts) }] };
+      }
+
+      await db.commit([db.write(WEB_EMAIL_CODES, id, { codeHash: '', expiresAt: 0, usedAt: now }, rec)]);
+      return { ok: true, rec };
+    });
+
+    if (check.fail) return ctx.fail(...check.fail);
+    const rec = check.rec;
 
     let user = await db.get(WEB_USERS, id);
     let isNewUser = false;
@@ -1446,7 +1456,7 @@ const handlers = {
       if (rec.mode === 'login') return ctx.fail(404, 'USER_NOT_FOUND');
       isNewUser = true;
       const fallbackName = cleanText(email.split('@')[0], 40) || 'Пользователь';
-      user = {
+      const created = {
         email,
         callsign: cleanText(rec.callsign, 80) || fallbackName,
         rank: cleanText(rec.rank, 80),
@@ -1458,7 +1468,15 @@ const handlers = {
         createdAt: now,
         updatedAt: now
       };
-      await db.patch(WEB_USERS, id, user);
+      try {
+        await db.commit([db.write(WEB_USERS, id, created, null)]);
+        user = created;
+      } catch (error) {
+        if (!commitConflict(error)) throw error;
+        isNewUser = false;
+        user = await db.get(WEB_USERS, id);
+        if (!user) throw error;
+      }
     }
 
     const sessionToken = randomHex(32);
@@ -1491,6 +1509,7 @@ const handlers = {
 
   async web_auth_session(ctx) {
     const { body, db } = ctx;
+    if (!(await ctx.limit('websess:' + ctx.ip))) return ctx.fail(429, 'RATE_LIMITED');
     const token = cleanText(body.token, 128);
     if (!/^[a-f0-9]{64}$/i.test(token)) return ctx.fail(401, 'INVALID_SESSION');
 
@@ -1516,6 +1535,7 @@ const handlers = {
 
   async web_auth_update_profile(ctx) {
     const { body, db } = ctx;
+    if (!(await ctx.limit('webprof:' + ctx.ip))) return ctx.fail(429, 'RATE_LIMITED');
     const token = cleanText(body.token, 128);
     if (!/^[a-f0-9]{64}$/i.test(token)) return ctx.fail(401, 'INVALID_SESSION');
 
@@ -1532,17 +1552,16 @@ const handlers = {
     const user = await db.get(WEB_USERS, userId);
     if (!user) return ctx.fail(404, 'USER_NOT_FOUND');
 
-    const unitKey = cleanText(body.unit_key, 120);
+    const has = (k) => Object.prototype.hasOwnProperty.call(body, k);
+    const unitKey = has('unit_key') ? cleanText(body.unit_key, 120) : '';
     if (unitKey && !UNIT_KEY_RE.test(unitKey)) return ctx.fail(400, 'INVALID_UNIT_KEY');
 
-    const patch = {
-      callsign: cleanText(body.callsign, 80) || cleanText(user.callsign, 80) || 'Пользователь',
-      rank: cleanText(body.rank, 80),
-      unitName: cleanText(body.unit_name, 120),
-      unitKey: unitKey || cleanText(user.unitKey, 120),
-      phone: cleanText(body.phone, 64),
-      updatedAt: now
-    };
+    const patch = { updatedAt: now };
+    if (has('callsign')) patch.callsign = cleanText(body.callsign, 80) || cleanText(user.callsign, 80) || 'Пользователь';
+    if (has('rank')) patch.rank = cleanText(body.rank, 80);
+    if (has('unit_name')) patch.unitName = cleanText(body.unit_name, 120);
+    if (unitKey) patch.unitKey = unitKey;
+    if (has('phone')) patch.phone = cleanText(body.phone, 64);
     if (typeof body.newsletter === 'boolean') patch.subscribedToNewsletter = body.newsletter;
 
     await db.patch(WEB_USERS, userId, patch);
@@ -1551,6 +1570,7 @@ const handlers = {
 
   async web_auth_logout(ctx) {
     const { body, db } = ctx;
+    if (!(await ctx.limit('weblogout:' + ctx.ip))) return ctx.fail(429, 'RATE_LIMITED');
     const token = cleanText(body.token, 128);
     if (/^[a-f0-9]{64}$/i.test(token)) {
       await db.remove(WEB_SESSIONS, await sha256Hex(token.toLowerCase())).catch(() => {});
