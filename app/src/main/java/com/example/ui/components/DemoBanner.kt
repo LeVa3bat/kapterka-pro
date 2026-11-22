@@ -54,16 +54,16 @@ fun DemoBanner(
     if (isPro && (profile?.proDaysLeft ?: 0) > 5) return
 
     if (isPro) {
-        // PRO ACTIVE BANNER
+        // PRO ACTIVE 3D BANNER
         Row(
             modifier = modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 6.dp)
-                .clip(RoundedCornerShape(16.dp))
+                .padding(horizontal = 14.dp, vertical = 5.dp)
+                .clip(RoundedCornerShape(18.dp))
                 .background(TacticalProBanner)
-                .border(1.dp, TacticalProBannerBorder, RoundedCornerShape(16.dp))
+                .border(1.dp, glassRimBrush(TacticalProBannerBorder), RoundedCornerShape(18.dp))
                 .clickable { onBannerClick() }
-                .padding(horizontal = 12.dp, vertical = 9.dp)
+                .padding(horizontal = 12.dp, vertical = 10.dp)
                 .testTag("pro_active_banner"),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
@@ -111,16 +111,16 @@ fun DemoBanner(
         Row(
             modifier = modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 6.dp)
-                .clip(RoundedCornerShape(16.dp))
+                .padding(horizontal = 14.dp, vertical = 5.dp)
+                .clip(RoundedCornerShape(18.dp))
                 .background(if (isExpired) TacticalRedDark else TacticalDemoBanner)
                 .border(
                     1.dp,
-                    if (isExpired) TacticalRed.copy(alpha = 0.45f) else TacticalDemoBannerBorder,
-                    RoundedCornerShape(16.dp)
+                    glassRimBrush(if (isExpired) TacticalRed else TacticalDemoBannerBorder),
+                    RoundedCornerShape(18.dp)
                 )
                 .clickable { onBannerClick() }
-                .padding(horizontal = 12.dp, vertical = 9.dp)
+                .padding(horizontal = 12.dp, vertical = 10.dp)
                 .testTag("demo_mode_banner"),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween

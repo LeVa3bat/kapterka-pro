@@ -1084,11 +1084,23 @@
   let toastTimer = null;
   let activeModalMode = 'income';
 
+  function formatUnitSummary(items) {
+    const map = {};
+    items.forEach(it => {
+      if (it.qty > 0) {
+        const u = (it.unit || 'шт.').trim();
+        map[u] = (map[u] || 0) + it.qty;
+      }
+    });
+    const entries = Object.entries(map).sort((a, b) => b[1] - a[1]);
+    return entries.length ? entries.slice(0, 3).map(([u, q]) => `${q} ${u}`).join(' · ') : 'Нет остатков';
+  }
+
   function updateKPIs(boostCube = false) {
-    const totalUnits = warehouses.reduce((s, w) => s + w.items.reduce((a, i) => a + i.qty, 0), 0);
-    const totalItems = warehouses.reduce((s, w) => s + w.items.length, 0);
-    document.getElementById('kpiTotal').textContent = `${totalUnits} ед.`;
-    document.getElementById('kpiPositions').textContent = totalItems;
+    const allItems = warehouses.flatMap(w => w.items);
+    const activeItems = allItems.filter(i => i.qty > 0);
+    document.getElementById('kpiTotal').textContent = `${activeItems.length} поз.`;
+    document.getElementById('kpiPositions').textContent = formatUnitSummary(activeItems);
     document.getElementById('kpiWarehouses').textContent = warehouses.length;
     document.getElementById('kpiOnHands').textContent = onHandsCount;
     document.getElementById('whCountBadge').textContent = warehouses.length;
@@ -1110,7 +1122,8 @@
         : w.items;
       if (q && matchedItems.length === 0 && !w.name.toLowerCase().includes(q)) return;
 
-      const sum = w.items.reduce((s, it) => s + it.qty, 0);
+      const activeCount = w.items.filter(it => it.qty > 0).length;
+      const whBreakdown = formatUnitSummary(w.items);
       const card = document.createElement('div');
       card.className = 'wh-card' + (w.expanded || q ? ' expanded' : '') + (newId === w.id ? ' entering' : '');
       card.id = 'wh_' + w.id;
@@ -1120,10 +1133,10 @@
           <div class="wh-icon-3d ${w.iconClass}">${w.icon}</div>
           <div class="wh-meta">
             <div class="wh-name">${w.name}</div>
-            <div class="wh-desc">${w.desc}</div>
+            <div class="wh-desc">${whBreakdown}</div>
           </div>
           <div class="wh-right">
-            <span class="wh-qty-pill">${sum} ед.</span>
+            <span class="wh-qty-pill">${activeCount} поз.</span>
             ${!w.isBase ? `<button class="del-btn" title="Удалить склад" onclick="event.stopPropagation(); deleteWarehouse('${w.id}')">🗑️</button>` : ''}
           </div>
         </div>

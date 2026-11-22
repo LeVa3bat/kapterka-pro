@@ -79,13 +79,12 @@ fun AddPointDialog(
     var description by remember { mutableStateOf("") }
 
     Dialog(onDismissRequest = onDismiss) {
-        Card(
+        Animated3DDialogContainer(
             modifier = Modifier
                 .fillMaxWidth(0.95f)
                 .padding(vertical = 16.dp),
-            shape = RoundedCornerShape(22.dp),
-            colors = CardDefaults.cardColors(containerColor = TacticalSurface),
-            border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorder)
+            cornerRadius = 24.dp,
+            accentBorder = SageGreenPrimary
         ) {
             Column(
                 modifier = Modifier
@@ -181,13 +180,12 @@ fun EditPointDialog(
     var description by remember { mutableStateOf(point.description) }
 
     Dialog(onDismissRequest = onDismiss) {
-        Card(
+        Animated3DDialogContainer(
             modifier = Modifier
                 .fillMaxWidth(0.95f)
                 .padding(vertical = 16.dp),
-            shape = RoundedCornerShape(22.dp),
-            colors = CardDefaults.cardColors(containerColor = TacticalSurface),
-            border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorder)
+            cornerRadius = 24.dp,
+            accentBorder = SageGreenPrimary
         ) {
             Column(
                 modifier = Modifier
@@ -304,13 +302,12 @@ fun ReorderPointsDialog(
     var selectedPointId by remember { mutableStateOf<String?>(null) }
 
     Dialog(onDismissRequest = onDismiss) {
-        Card(
+        Animated3DDialogContainer(
             modifier = Modifier
                 .fillMaxWidth(0.96f)
                 .padding(vertical = 12.dp),
-            shape = RoundedCornerShape(22.dp),
-            colors = CardDefaults.cardColors(containerColor = TacticalSurface),
-            border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorder)
+            cornerRadius = 24.dp,
+            accentBorder = SageGreenPrimary
         ) {
             Column(
                 modifier = Modifier
@@ -336,13 +333,13 @@ fun ReorderPointsDialog(
                         Spacer(modifier = Modifier.width(8.dp))
                         Column {
                             Text(
-                                text = "ПОРЯДОК И СОРТИРОВКА ТОЧЕК",
+                                text = "ПОРЯДОК И СОРТИРОВКА СКЛАДОВ",
                                 color = SageGreenBright,
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "Нажмите на точку для перемещения стрелками",
+                                text = "Нажмите на склад для перемещения стрелками",
                                 color = TacticalTextMuted,
                                 fontSize = 10.5.sp
                             )
@@ -698,13 +695,12 @@ fun AddCustomItemDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
-        Card(
+        Animated3DDialogContainer(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 16.dp),
-            shape = RoundedCornerShape(22.dp),
-            colors = CardDefaults.cardColors(containerColor = TacticalSurface),
-            border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorder)
+            cornerRadius = 24.dp,
+            accentBorder = SageGreenPrimary
         ) {
             Column(
                 modifier = Modifier
@@ -724,16 +720,13 @@ fun AddCustomItemDialog(
                         fontWeight = FontWeight.ExtraBold
                     )
 
-                    IconButton(
+                    IconOrb3DButton(
+                        icon = Icons.Default.Close,
+                        contentDescription = "Закрыть",
+                        tint = TacticalTextMuted,
                         onClick = onDismiss,
-                        modifier = Modifier.size(28.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Закрыть",
-                            tint = TacticalTextMuted
-                        )
-                    }
+                        size = 34.dp
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -742,12 +735,12 @@ fun AddCustomItemDialog(
                     label = "Наименование позиции",
                     value = name,
                     onValueChange = { name = it },
-                    placeholder = "Например: Перфоратор, Масло 5W-40 или Радиостанция"
+                    placeholder = "Например: Перфоратор, Масло 5W-40 или Кабель"
                 )
 
                 Spacer(modifier = Modifier.height(10.dp))
                 TacticalSearchableTextDropdown(
-                    label = "Категория / служба",
+                    label = "Категория",
                     value = serviceCategory,
                     onValueChange = { serviceCategory = it },
                     suggestions = cleanCategories,
@@ -821,21 +814,19 @@ fun EditCatalogItemDialog(
     var standardCode by remember { mutableStateOf(item.standardCode) }
 
     val categories = remember(availableCategories, item.serviceCategory) {
-        (availableCategories + listOf(item.serviceCategory) +
-            com.example.data.local.InitialData.getCivilianCategories() +
-            com.example.data.local.InitialData.getDefaultCategories())
+        val base = (availableCategories + listOf(item.serviceCategory))
             .filter { it.isNotBlank() && it != "Все виды" }
             .distinct()
+        if (base.isNotEmpty()) base else com.example.data.local.InitialData.getCivilianCategories()
     }
 
     Dialog(onDismissRequest = onDismiss) {
-        Card(
+        Animated3DDialogContainer(
             modifier = Modifier
                 .fillMaxWidth(0.96f)
                 .padding(vertical = 14.dp),
-            shape = RoundedCornerShape(22.dp),
-            colors = CardDefaults.cardColors(containerColor = TacticalSurface),
-            border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorder)
+            cornerRadius = 24.dp,
+            accentBorder = SageGreenPrimary
         ) {
             Column(
                 modifier = Modifier
@@ -887,7 +878,7 @@ fun EditCatalogItemDialog(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 TacticalSearchableTextDropdown(
-                    label = "Категория / служба",
+                    label = "Категория",
                     value = serviceCategory,
                     onValueChange = { serviceCategory = it },
                     suggestions = categories,
@@ -917,10 +908,10 @@ fun EditCatalogItemDialog(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 TacticalInputField(
-                    label = "Номенклатурный код / Артикул",
+                    label = "Код / Артикул",
                     value = standardCode,
                     onValueChange = { standardCode = it },
-                    placeholder = "например: ГРАУ-3ВМ12"
+                    placeholder = "например: АРТ-0042"
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -995,13 +986,12 @@ fun AdjustStockDialog(
     var comment by remember { mutableStateOf("") }
 
     Dialog(onDismissRequest = onDismiss) {
-        Card(
+        Animated3DDialogContainer(
             modifier = Modifier
                 .fillMaxWidth(0.95f)
                 .padding(vertical = 16.dp),
-            shape = RoundedCornerShape(22.dp),
-            colors = CardDefaults.cardColors(containerColor = TacticalSurface),
-            border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorder)
+            cornerRadius = 24.dp,
+            accentBorder = SageGreenPrimary
         ) {
             Column(
                 modifier = Modifier
@@ -1035,7 +1025,7 @@ fun AdjustStockDialog(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Text(
-                    text = "Точка: $pointName",
+                    text = "Склад: $pointName",
                     color = SageGreenPrimary,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold

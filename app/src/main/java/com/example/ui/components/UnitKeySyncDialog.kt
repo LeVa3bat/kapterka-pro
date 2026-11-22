@@ -106,11 +106,13 @@ fun UnitKeySyncDialog(
     onPauseSync: () -> Unit = {},
     onResumeSync: () -> Unit = {},
     onDeleteCloudData: () -> Unit = {},
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    profileMode: com.example.data.model.WorkspaceProfileMode = com.example.data.model.WorkspaceProfileMode.MILITARY
 ) {
     val context = LocalContext.current
+    val isMil = profileMode.isMilitary
     val unitKey = profile?.unitKey?.trim().orEmpty()
-    val unitName = profile?.unitName?.takeIf { it.isNotBlank() } ?: "Подразделение"
+    val unitName = profile?.unitName?.takeIf { it.isNotBlank() } ?: if (isMil) "Подразделение" else "Основной склад"
     var manualKeyInput by remember { mutableStateOf("") }
     var confirmAction by remember { mutableStateOf<String?>(null) }
     val scanLauncher = rememberQrScanLauncher { invite ->
@@ -126,6 +128,7 @@ fun UnitKeySyncDialog(
         SyncConfirmDialog(
             action = action,
             unitKey = unitKey,
+            isMilitary = isMil,
             onConfirm = {
                 when (action) {
                     "reference" -> onMakeReference()
@@ -141,11 +144,14 @@ fun UnitKeySyncDialog(
     }
 
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Animated3DDialogContainer(
+            modifier = Modifier.fillMaxWidth(0.94f),
+            cornerRadius = 26.dp,
+            accentBorder = SageGreenPrimary
+        ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth(0.94f)
-                .clip(RoundedCornerShape(26.dp))
-                .background(TacticalSurface)
+                .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
                 .padding(18.dp)
         ) {
@@ -155,38 +161,48 @@ fun UnitKeySyncDialog(
                     modifier = Modifier
                         .size(44.dp)
                         .clip(RoundedCornerShape(14.dp))
-                        .background(Brush.linearGradient(listOf(SageGreenPrimary, TacticalTealText))),
+                        .background(Brush.linearGradient(listOf(SageGreenPrimary, TacticalTealText)))
+                        .border(0.9.dp, Color.White.copy(alpha = 0.35f), RoundedCornerShape(14.dp)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(Icons.Rounded.Groups, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Подразделение", color = TacticalTextPrimary, fontSize = 19.sp, fontWeight = FontWeight.ExtraBold)
+                    Text(
+                        if (isMil) "Подразделение" else "Общий склад",
+                        color = TacticalTextPrimary,
+                        fontSize = 19.sp,
+                        fontWeight = FontWeight.ExtraBold
+                    )
                     Text(unitName, color = TacticalTextSecondary, fontSize = 13.sp)
                 }
-                IconButton(onClick = onDismiss) {
-                    Icon(Icons.Rounded.Close, contentDescription = "Закрыть", tint = TacticalTextMuted)
-                }
+                IconOrb3DButton(
+                    icon = Icons.Rounded.Close,
+                    contentDescription = "Закрыть",
+                    tint = TacticalTextMuted,
+                    onClick = onDismiss,
+                    size = 36.dp
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             // QR + key
             if (unitKey.isNotBlank()) {
-                UnitQrCard(unitKey = unitKey, unitName = unitName)
+                UnitQrCard(unitKey = unitKey, unitName = unitName, isMilitary = isMil)
                 Spacer(modifier = Modifier.height(10.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     PillButton(Icons.Rounded.ContentCopy, "Копировать", Modifier.weight(1f)) {
                         copyToClipboard(context, unitKey)
                     }
                     PillButton(Icons.Rounded.Share, "Поделиться", Modifier.weight(1f)) {
-                        shareKey(context, unitKey, unitName)
+                        shareKey(context, unitKey, unitName, isMil)
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    "На другом телефоне: «Вход по ключу» → «Сканировать QR» и наведите камеру на этот код.",
+                    "На другом телефоне: «Подключиться» → «Сканировать QR» и наведите камеру на этот код.",
                     color = TacticalTextMuted,
                     fontSize = 12.sp,
                     lineHeight = 16.sp
@@ -195,9 +211,14 @@ fun UnitKeySyncDialog(
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            // Join another unit
+            // Join another unit / warehouse
             SectionCard {
-                Text("Подключиться к другому подразделению", color = TacticalTextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    if (isMil) "Подключиться к другому подразделению" else "Подключиться к другому складу",
+                    color = TacticalTextPrimary,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold
+                )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     "Отсканируйте QR-код или введите ключ вида kapt_…",
@@ -257,7 +278,8 @@ fun UnitKeySyncDialog(
                 }
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    "Если на этом телефоне уже есть записи, смена подразделения будет заблокирована — чтобы ничего не потерять.",
+                    if (isMil) "Если на этом телефоне уже есть записи, смена подразделения будет заблокирована — чтобы ничего не потерять."
+                    else "Если на этом телефоне уже есть записи, смена ключа будет заблокирована — чтобы ничего не потерять.",
                     color = TacticalTextMuted,
                     fontSize = 11.sp,
                     lineHeight = 15.sp
@@ -268,16 +290,14 @@ fun UnitKeySyncDialog(
 
             // Sync tools
             SectionCard {
-                Button(
+                Volumetric3DButton(
+                    text = "Синхронизировать сейчас",
+                    icon = Icons.Rounded.Sync,
                     onClick = { onForceSync(); onDismiss() },
-                    modifier = Modifier.fillMaxWidth().height(46.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = SageGreenDark, contentColor = SageGreenBright)
-                ) {
-                    Icon(Icons.Rounded.Sync, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Синхронизировать сейчас", fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                }
+                    modifier = Modifier.fillMaxWidth(),
+                    height = 48.dp,
+                    cornerRadius = 14.dp
+                )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text("Если на телефонах разные данные", color = TacticalTextSecondary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(8.dp))
@@ -316,7 +336,8 @@ fun UnitKeySyncDialog(
                     }
                 } else {
                     Text(
-                        "Пока синхронизация включена, данные подразделения хранятся в облаке (Google Firebase).",
+                        if (isMil) "Пока синхронизация включена, данные подразделения хранятся в облаке (Google Firebase)."
+                        else "Пока синхронизация включена, данные склада хранятся в облаке (Google Firebase).",
                         color = TacticalTextMuted, fontSize = 12.sp, lineHeight = 16.sp
                     )
                     Spacer(modifier = Modifier.height(8.dp))
@@ -334,8 +355,13 @@ fun UnitKeySyncDialog(
                 onClick = { confirmAction = "regenerate" },
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             ) {
-                Text("Создать новый ключ подразделения", color = TacticalTextMuted, fontSize = 12.sp)
+                Text(
+                    if (isMil) "Создать новый ключ подразделения" else "Создать новый ключ общего склада",
+                    color = TacticalTextMuted,
+                    fontSize = 12.sp
+                )
             }
+        }
         }
     }
 }
@@ -348,7 +374,7 @@ fun rememberQrScanLauncher(onInvite: (UnitQr.Invite) -> Unit): () -> Unit {
         val contents = result?.contents ?: return@rememberLauncherForActivityResult
         val invite = UnitQr.parse(contents)
         if (invite == null) {
-            Toast.makeText(context, "Это не QR-код подразделения «Каптёрка ПРО»", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, "Это не QR-код «Каптёрка ПРО»", Toast.LENGTH_LONG).show()
         } else {
             onInvite(invite)
         }
@@ -358,7 +384,7 @@ fun rememberQrScanLauncher(onInvite: (UnitQr.Invite) -> Unit): () -> Unit {
             launcher.launch(
                 ScanOptions()
                     .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
-                    .setPrompt("Наведите камеру на QR-код подразделения")
+                    .setPrompt("Наведите камеру на QR-код подключения")
                     .setBeepEnabled(false)
                     .setOrientationLocked(false)
             )
@@ -369,7 +395,7 @@ fun rememberQrScanLauncher(onInvite: (UnitQr.Invite) -> Unit): () -> Unit {
 }
 
 @Composable
-private fun UnitQrCard(unitKey: String, unitName: String) {
+private fun UnitQrCard(unitKey: String, unitName: String, isMilitary: Boolean = true) {
     val bitmap = remember(unitKey, unitName) {
         runCatching { UnitQr.bitmap(UnitQr.payload(unitKey, unitName)).asImageBitmap() }.getOrNull()
     }
@@ -380,6 +406,7 @@ private fun UnitQrCard(unitKey: String, unitName: String) {
             .fillMaxWidth()
             .clip(RoundedCornerShape(22.dp))
             .background(Brush.linearGradient(listOf(HeroGradientStart, HeroGradientEnd)))
+            .border(1.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(22.dp))
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -393,11 +420,17 @@ private fun UnitQrCard(unitKey: String, unitName: String) {
             contentAlignment = Alignment.Center
         ) {
             if (bitmap != null) {
-                Image(bitmap = bitmap, contentDescription = "QR-код подразделения", modifier = Modifier.fillMaxWidth())
+                Image(bitmap = bitmap, contentDescription = "QR-код подключения", modifier = Modifier.fillMaxWidth())
             }
         }
         Spacer(modifier = Modifier.height(12.dp))
-        Text("КЛЮЧ ПОДРАЗДЕЛЕНИЯ", color = Color.White.copy(alpha = 0.75f), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+        Text(
+            if (isMilitary) "КЛЮЧ ПОДРАЗДЕЛЕНИЯ" else "КЛЮЧ ОБЩЕГО СКЛАДА",
+            color = Color.White.copy(alpha = 0.78f),
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.sp
+        )
         Text(
             unitKey,
             color = Color.White,
@@ -463,33 +496,35 @@ private fun FixRow(icon: ImageVector, title: String, subtitle: String, tint: Col
 private fun SyncConfirmDialog(
     action: String,
     unitKey: String,
+    isMilitary: Boolean = true,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val groupGen = if (isMilitary) "подразделения" else "общего склада"
     val (title, text, button) = when (action) {
         "reference" -> Triple(
             "Сделать этот телефон эталоном?",
-            "Облако станет точной копией ЭТОГО телефона. Точки, остатки и операции, которых нет на этом телефоне, " +
-                "будут удалены из облака и со всех телефонов подразделения версии 3.6. Делайте это на телефоне с правильными данными.",
+            "Облако станет точной копией ЭТОГО телефона. Склады, остатки и операции, которых нет на этом телефоне, " +
+                "будут удалены из облака и со всех подключённых телефонов $groupGen. Делайте это на телефоне с правильными данными.",
             "Да, отправить"
         )
         "load" -> Triple(
             "Загрузить всё из облака?",
-            "ЭТОТ телефон станет точной копией облака. Точки, остатки и операции, которых нет в облаке, будут удалены с этого телефона.",
+            "ЭТОТ телефон станет точной копией облака. Склады, остатки и операции, которых нет в облаке, будут удалены с этого телефона.",
             "Да, загрузить"
         )
         "pause" -> Triple(
             "Приостановить синхронизацию?",
             "Обмен с облаком прекратится: данные будут храниться только на этом телефоне и никуда не отправляться. " +
-                "Ключ подразделения и все данные останутся. Данные, которые уже лежат в облаке, не удаляются. " +
+                "Ключ $groupGen и все данные останутся. Данные, которые уже лежат в облаке, не удаляются. " +
                 "Включить синхронизацию обратно можно в любой момент этим же окном.",
             "Приостановить"
         )
         "delete_cloud" -> Triple(
             "Удалить данные из облака?",
-            "Все данные подразделения (склады, остатки, операции, заявки, список устройств и облачная копия) будут удалены с сервера, " +
+            "Все данные $groupGen (склады, остатки, операции, заявки, список устройств и облачная копия) будут удалены с сервера, " +
                 "синхронизация приостановится. Ключ и данные на этом телефоне останутся. " +
-                "Если у других телефонов подразделения синхронизация включена, они могут загрузить свои данные в облако заново. " +
+                "Если у других телефонов синхронизация включена, они могут загрузить свои данные в облако заново. " +
                 "Отменить удаление нельзя.",
             "Удалить"
         )
@@ -511,7 +546,7 @@ private fun SyncConfirmDialog(
                 Text(text)
                 if (needsKey) {
                     Spacer(modifier = Modifier.height(10.dp))
-                    Text("Для подтверждения введите ключ подразделения:", fontSize = 12.sp)
+                    Text("Для подтверждения введите ключ $groupGen:", fontSize = 12.sp)
                     Spacer(modifier = Modifier.height(4.dp))
                     OutlinedTextField(
                         value = typedKey,
@@ -536,8 +571,9 @@ private fun copyToClipboard(context: Context, text: String) {
     Toast.makeText(context, "Ключ скопирован", Toast.LENGTH_SHORT).show()
 }
 
-private fun shareKey(context: Context, unitKey: String, unitName: String) {
-    val text = "Подключение к подразделению «$unitName» в «Каптёрка ПРО»:\n" +
+private fun shareKey(context: Context, unitKey: String, unitName: String, isMilitary: Boolean = true) {
+    val target = if (isMilitary) "подразделению" else "складу"
+    val text = "Подключение к $target «$unitName» в «Каптёрка ПРО»:\n" +
         "ключ $unitKey\n\nУстановить приложение: https://kapterka-pro.ru/"
     runCatching {
         context.startActivity(

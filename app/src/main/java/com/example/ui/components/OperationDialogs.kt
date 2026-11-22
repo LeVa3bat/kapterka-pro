@@ -1181,28 +1181,39 @@ private fun TacticalOperationModalLayout(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
-        Column(
+        Animated3DDialogContainer(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 10.dp, vertical = 12.dp)
-                .heightIn(max = maxHeight)
-                .clip(RoundedCornerShape(26.dp))
-                .background(TacticalSurface)
-                .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(26.dp))
+                .heightIn(max = maxHeight),
+            cornerRadius = 26.dp,
+            accentBorder = titleColor
         ) {
-            // Header: coloured operation icon, title, subtitle, close.
+        Column(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            // 3D Header: glossy operation icon medallion, title, subtitle, 3D close orb.
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(badgeColor.copy(alpha = 0.35f))
+                    .background(
+                        androidx.compose.ui.graphics.Brush.linearGradient(
+                            listOf(badgeColor.copy(alpha = 0.50f), badgeColor.copy(alpha = 0.22f))
+                        )
+                    )
                     .padding(start = 18.dp, end = 12.dp, top = 16.dp, bottom = 14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(
                     modifier = Modifier
-                        .size(44.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(titleColor.copy(alpha = 0.18f)),
+                        .size(46.dp)
+                        .clip(RoundedCornerShape(15.dp))
+                        .background(
+                            androidx.compose.ui.graphics.Brush.linearGradient(
+                                listOf(titleColor.copy(alpha = 0.34f), titleColor.copy(alpha = 0.14f))
+                            )
+                        )
+                        .border(1.dp, Color.White.copy(alpha = 0.32f), RoundedCornerShape(15.dp)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(icon, contentDescription = null, tint = titleColor, modifier = Modifier.size(24.dp))
@@ -1214,15 +1225,13 @@ private fun TacticalOperationModalLayout(
                         Text(subtitle, color = TacticalTextMuted, fontSize = 12.sp)
                     }
                 }
-                IconButton(
+                IconOrb3DButton(
+                    icon = Icons.Default.Close,
+                    contentDescription = "Закрыть",
+                    tint = TacticalTextMuted,
                     onClick = onDismiss,
-                    modifier = Modifier
-                        .size(38.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(TacticalSurfaceLight)
-                ) {
-                    Icon(Icons.Default.Close, contentDescription = "Закрыть", tint = TacticalTextMuted, modifier = Modifier.size(20.dp))
-                }
+                    size = 38.dp
+                )
             }
 
             // Scrollable form.
@@ -1244,6 +1253,7 @@ private fun TacticalOperationModalLayout(
             ) {
                 footer()
             }
+        }
         }
     }
 }
@@ -1516,7 +1526,11 @@ private fun ItemsDraftListSection(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "⚠️ На данной точке нет столько (официально)! В наличии: $available ${selected?.unit ?: "ед."}",
+                                text = if (profileMode.isMilitary) {
+                                    "⚠️ На данной точке нет столько! В наличии: $available ${selected?.unit ?: "ед."}"
+                                } else {
+                                    "⚠️ На складе не хватает остатка! В наличии: $available ${selected?.unit ?: "шт."}"
+                                },
                                 color = TacticalRedText,
                                 fontSize = 10.5.sp,
                                 fontWeight = FontWeight.Bold

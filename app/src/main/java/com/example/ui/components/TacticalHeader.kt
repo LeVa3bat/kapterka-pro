@@ -139,34 +139,35 @@ fun TacticalHeader(
 
             Spacer(modifier = Modifier.width(6.dp))
 
-            // Quick Light/Dark theme switch button
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .background(TacticalSurface)
-                    .border(1.dp, TacticalBorderSubtle, CircleShape)
-                    .clickable { onToggleTheme() }
-                    .testTag("header_theme_toggle"),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = if (isDarkTheme) Icons.Rounded.LightMode else Icons.Rounded.DarkMode,
-                    contentDescription = if (isDarkTheme) "Светлая тема" else "Тёмная тема",
-                    tint = if (isDarkTheme) TacticalGold else SageGreenPrimary,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
+            // Quick Light/Dark 3D theme orb button
+            IconOrb3DButton(
+                icon = if (isDarkTheme) Icons.Rounded.LightMode else Icons.Rounded.DarkMode,
+                contentDescription = if (isDarkTheme) "Светлая тема" else "Тёмная тема",
+                tint = if (isDarkTheme) TacticalGold else SageGreenPrimary,
+                onClick = onToggleTheme,
+                modifier = Modifier.testTag("header_theme_toggle"),
+                size = 38.dp
+            )
 
-            Spacer(modifier = Modifier.width(6.dp))
+            Spacer(modifier = Modifier.width(8.dp))
 
-            // Profile / License Pill
+            // 3D Glass Profile / License Pill
+            val isDark = LocalTacticalColors.current.isDark
             Row(
                 modifier = Modifier
-                    .widthIn(max = 164.dp)
+                    .widthIn(max = 166.dp)
                     .clip(RoundedCornerShape(20.dp))
-                    .background(TacticalSurface)
-                    .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(20.dp))
+                    .background(
+                        androidx.compose.ui.graphics.Brush.verticalGradient(
+                            if (isDark) listOf(Color(0xFF1A2B27), Color(0xFF111C1A))
+                            else listOf(Color(0xFFFFFFFF), Color(0xFFF1F7F4))
+                        )
+                    )
+                    .border(
+                        1.dp,
+                        glassRimBrush(if (isPro) TacticalEmerald else if (demoDays > 0) TacticalGold else null),
+                        RoundedCornerShape(20.dp)
+                    )
                     .clickable { if (isPro) onProfileClick() else onBannerClick() }
                     .padding(start = 10.dp, end = 5.dp, top = 4.dp, bottom = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -184,7 +185,7 @@ fun TacticalHeader(
                         text = licenseText,
                         color = licenseColor,
                         fontSize = 9.5.sp,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.ExtraBold,
                         maxLines = 1
                     )
                 }
@@ -193,13 +194,17 @@ fun TacticalHeader(
                     modifier = Modifier
                         .size(28.dp)
                         .clip(CircleShape)
-                        .background(SageGreenDark),
+                        .background(
+                            androidx.compose.ui.graphics.Brush.linearGradient(
+                                listOf(SageGreenPrimary, TacticalTeal)
+                            )
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.Person,
                         contentDescription = "Профиль",
-                        tint = SageGreenPrimary,
+                        tint = Color.White,
                         modifier = Modifier.size(16.dp)
                     )
                 }
@@ -323,13 +328,20 @@ private fun ModernHeaderAction(
     accent: Color = SageGreenPrimary,
     statusDot: Color? = null
 ) {
+    val isDark = LocalTacticalColors.current.isDark
+    val shape = RoundedCornerShape(16.dp)
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(14.dp))
-            .background(TacticalSurface)
-            .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(14.dp))
+            .clip(shape)
+            .background(
+                androidx.compose.ui.graphics.Brush.verticalGradient(
+                    if (isDark) listOf(Color(0xFF182825), Color(0xFF101B19))
+                    else listOf(Color(0xFFFFFFFF), Color(0xFFF3FAF7))
+                )
+            )
+            .border(1.dp, glassRimBrush(), shape)
             .clickable { onClick() }
-            .heightIn(min = 60.dp)
+            .heightIn(min = 64.dp)
     ) {
         Column(
             modifier = Modifier
@@ -339,18 +351,26 @@ private fun ModernHeaderAction(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                tint = accent,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.height(3.dp))
+            Box(
+                modifier = Modifier
+                    .size(26.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(accent.copy(alpha = if (isDark) 0.16f else 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = label,
+                    tint = accent,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = label,
                 color = TacticalTextPrimary,
                 fontSize = 10.5.sp,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Bold,
                 maxLines = 1,
                 softWrap = false,
                 overflow = TextOverflow.Ellipsis
@@ -368,13 +388,12 @@ private fun ModernHeaderAction(
             }
         }
         if (statusDot != null) {
-            Box(
+            PulsingStatusDot(
+                color = statusDot,
+                size = 7.dp,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(top = 6.dp, end = 6.dp)
-                    .size(7.dp)
-                    .clip(CircleShape)
-                    .background(statusDot)
             )
         }
     }

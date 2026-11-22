@@ -164,7 +164,8 @@ fun MainDashboardScreen(
     profileMode: com.example.data.model.WorkspaceProfileMode = com.example.data.model.WorkspaceProfileMode.MILITARY,
     onReorderPoints: (List<WarehousePoint>) -> Unit = {},
     onDeletePoint: (String) -> Unit = {},
-    onReturnClick: () -> Unit = {}
+    onReturnClick: () -> Unit = {},
+    pendingRequisitionsCount: Int = 0
 ) {
     var selectedPointFilterId by remember { mutableStateOf<String?>(null) } // null = Все склады
     var adjustingStock by remember { mutableStateOf<PendingAdjustStock?>(null) }
@@ -321,8 +322,38 @@ fun MainDashboardScreen(
         points.associate { it.id to getItemsForPoint(it.id) }
     }
     val allStockRows = remember(rowsByPoint) { points.flatMap { rowsByPoint[it.id].orEmpty() } }
-    val overallStockSum = remember(stockRecords) { stockRecords.sumOf { it.quantity } }
-    val overallPositionsCount = remember(stockRecords) { stockRecords.filter { it.quantity > 0 }.map { it.itemId }.distinct().size }
+    val catalogUnitById = remember(catalogItems, operationItemsMap) {
+        val map = mutableMapOf<String, String>()
+        operationItemsMap.forEach { (id, entry) ->
+            if (entry.unit.isNotBlank()) map[id] = entry.unit
+        }
+        catalogItems.forEach { item ->
+            if (item.unit.isNotBlank()) map[item.id] = item.unit
+        }
+        map
+    }
+    val overallPositionsCount = remember(stockRecords) {
+        stockRecords.filter { it.quantity > 0 }.map { it.itemId }.distinct().size
+    }
+    val overallUnitBreakdown = remember(stockRecords, catalogUnitById) {
+        com.example.ui.components.formatUnitBreakdown(
+            unitQuantities = stockRecords
+                .filter { it.quantity > 0 }
+                .map { (catalogUnitById[it.itemId] ?: "шт.") to it.quantity },
+            maxUnits = 3,
+            emptyLabel = "Остатков пока нет"
+        )
+    }
+    val todayOpsCount = remember(operations) {
+        val cal = java.util.Calendar.getInstance().apply {
+            set(java.util.Calendar.HOUR_OF_DAY, 0)
+            set(java.util.Calendar.MINUTE, 0)
+            set(java.util.Calendar.SECOND, 0)
+            set(java.util.Calendar.MILLISECOND, 0)
+        }
+        val startOfDay = cal.timeInMillis
+        operations.count { it.timestamp >= startOfDay }
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -354,63 +385,20 @@ fun MainDashboardScreen(
             )
         }
 
-        // MODERN COBALT HERO KPI CARD
+        // 3D VOLUMETRIC HERO STAGE CARD (Unit-safe: positions count + separated units, NEVER mixed sum!)
         item {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 6.dp)
-                    .clip(RoundedCornerShape(22.dp))
-                    .background(
-                        androidx.compose.ui.graphics.Brush.linearGradient(
-                            listOf(
-                                com.example.ui.theme.HeroGradientStart,
-                                com.example.ui.theme.HeroGradientEnd
-                            )
-                        )
-                    )
-                    .padding(horizontal = 14.dp, vertical = 16.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    DashboardSummaryMetric(
-                        value = overallStockSum.toString(),
-                        label = "единиц на учёте",
-                        onGradient = true,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Box(
-                        modifier = Modifier
-                            .width(1.dp)
-                            .height(34.dp)
-                            .background(Color.White.copy(alpha = 0.22f))
-                    )
-                    DashboardSummaryMetric(
-                        value = overallPositionsCount.toString(),
-                        label = "активных позиций",
-                        onGradient = true,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Box(
-                        modifier = Modifier
-                            .width(1.dp)
-                            .height(34.dp)
-                            .background(Color.White.copy(alpha = 0.22f))
-                    )
-                    DashboardSummaryMetric(
-                        value = points.size.toString(),
-                        label = if (profileMode.isMilitary) "складов и точек" else "складов / цехов",
-                        onGradient = true,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
+            com.example.ui.components.Hero3DStageCard(
+                eyebrow = if (profileMode.isMilitary) "Сводка наличия по точкам" else "Состояние склада",
+                positionsCount = overallPositionsCount,
+                unitBreakdown = overallUnitBreakdown,
+                warehousesCount = points.size,
+                todayOpsCount = todayOpsCount,
+                pendingRequestsCount = pendingRequisitionsCount,
+                warehousesLabel = if (profileMode.isMilitary) "Точек" else "Складов"
+            )
         }
 
-        // PRIMARY ACTIONS — vibrant semantic 4-tile row
+        // PRIMARY ACTIONS — Extruded 3D Tactile 4-Tile Row
         item {
             Row(
                 modifier = Modifier
@@ -418,46 +406,51 @@ fun MainDashboardScreen(
                     .padding(horizontal = 14.dp, vertical = 6.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                SleekOperationTile(
+                com.example.ui.components.Volumetric3DActionTile(
                     title = "Приход",
                     icon = Icons.Default.MoveToInbox,
-                    accentColor = com.example.ui.theme.TacticalEmerald,
-                    accentBg = com.example.ui.theme.TacticalEmeraldDark,
+                    gradientStart = Color(0xFF10B981),
+                    gradientEnd = Color(0xFF059669),
+                    extrusionColor = Color(0xFF065F46),
                     onClick = onIncomeClick,
                     modifier = Modifier.weight(1f).testTag("op_income_button")
                 )
-                SleekOperationTile(
+                com.example.ui.components.Volumetric3DActionTile(
                     title = "Выдача",
                     icon = Icons.Default.AssignmentInd,
-                    accentColor = TacticalGold,
-                    accentBg = TacticalGoldDark,
+                    gradientStart = Color(0xFFF59E0B),
+                    gradientEnd = Color(0xFFD97706),
+                    extrusionColor = Color(0xFF92400E),
                     onClick = onIssueClick,
                     modifier = Modifier.weight(1f).testTag("op_issue_button")
                 )
                 if (profileMode.isMilitary) {
-                    SleekOperationTile(
+                    com.example.ui.components.Volumetric3DActionTile(
                         title = "Перенос",
                         icon = Icons.Default.LocalShipping,
-                        accentColor = TacticalTeal,
-                        accentBg = TacticalTealDark,
+                        gradientStart = Color(0xFF06B6D4),
+                        gradientEnd = Color(0xFF0891B2),
+                        extrusionColor = Color(0xFF155E75),
                         onClick = onTransferClick,
                         modifier = Modifier.weight(1f).testTag("op_transfer_button")
                     )
                 } else {
-                    SleekOperationTile(
+                    com.example.ui.components.Volumetric3DActionTile(
                         title = "Возврат",
                         icon = Icons.Default.Undo,
-                        accentColor = TacticalTeal,
-                        accentBg = TacticalTealDark,
+                        gradientStart = Color(0xFF06B6D4),
+                        gradientEnd = Color(0xFF0891B2),
+                        extrusionColor = Color(0xFF155E75),
                         onClick = onReturnClick,
                         modifier = Modifier.weight(1f).testTag("op_return_button")
                     )
                 }
-                SleekOperationTile(
+                com.example.ui.components.Volumetric3DActionTile(
                     title = "Списание",
                     icon = Icons.Default.DeleteSweep,
-                    accentColor = TacticalRed,
-                    accentBg = TacticalRedDark,
+                    gradientStart = Color(0xFFEF4444),
+                    gradientEnd = Color(0xFFDC2626),
+                    extrusionColor = Color(0xFF991B1B),
                     onClick = onExpenditureClick,
                     modifier = Modifier.weight(1f).testTag("op_expenditure_button")
                 )
@@ -489,48 +482,33 @@ fun MainDashboardScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 14.dp, vertical = 6.dp)
                     .testTag("dashboard_search_input"),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = TacticalSurface,
                     unfocusedContainerColor = TacticalSurface,
                     focusedBorderColor = SageGreenPrimary,
-                    unfocusedBorderColor = TacticalBorder,
+                    unfocusedBorderColor = TacticalBorderSubtle,
                     focusedTextColor = TacticalTextPrimary,
                     unfocusedTextColor = TacticalTextPrimary
                 )
             )
         }
 
-        // CATEGORY FILTER CHIPS
+        // CATEGORY FILTER CHIPS (3D Pills)
         item {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 14.dp, vertical = 2.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    .padding(horizontal = 14.dp, vertical = 3.dp),
+                horizontalArrangement = Arrangement.spacedBy(7.dp)
             ) {
                 categories.forEach { cat ->
-                    val isSelected = cat == selectedCategory
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(if (isSelected) SageGreenPrimary else TacticalSurface)
-                            .border(
-                                1.dp,
-                                if (isSelected) SageGreenBright else TacticalBorder,
-                                RoundedCornerShape(8.dp)
-                            )
-                            .clickable { onSelectCategory(cat) }
-                            .padding(horizontal = 10.dp, vertical = 6.dp)
-                    ) {
-                        Text(
-                            text = cat,
-                            color = if (isSelected) Color.White else TacticalTextSecondary,
-                            fontSize = 11.sp,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                        )
-                    }
+                    com.example.ui.components.Filter3DPill(
+                        text = cat,
+                        selected = cat == selectedCategory,
+                        onClick = { onSelectCategory(cat) }
+                    )
                 }
             }
         }
@@ -604,7 +582,12 @@ fun MainDashboardScreen(
             val currentPoint = points.firstOrNull { it.id == selectedPointFilterId }
             if (currentPoint != null) {
                 val pointRows = rowsByPoint[currentPoint.id].orEmpty()
-                val pointStockSum = pointRows.sumOf { it.quantity }
+                val activePointPositions = pointRows.count { it.quantity > 0 }
+                val pointUnitBreakdown = com.example.ui.components.formatUnitBreakdown(
+                    unitQuantities = pointRows.filter { it.quantity > 0 }.map { it.item.unit to it.quantity },
+                    maxUnits = 2,
+                    emptyLabel = "Пусто"
+                )
 
                 item {
                     Column(
@@ -612,13 +595,10 @@ fun MainDashboardScreen(
                             .fillMaxWidth()
                             .padding(horizontal = 14.dp, vertical = 4.dp)
                     ) {
-                        // Point Summary Card
-                        Card(
+                        // Point Summary 3D Card
+                        com.example.ui.components.Card3DSurface(
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(18.dp),
-                            colors = CardDefaults.cardColors(containerColor = TacticalSurface),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorderSubtle),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                            cornerRadius = 20.dp
                         ) {
                             Row(
                                 modifier = Modifier
@@ -627,7 +607,7 @@ fun MainDashboardScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Column {
+                                Column(modifier = Modifier.weight(1f)) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(
                                             text = currentPoint.name,
@@ -663,18 +643,18 @@ fun MainDashboardScreen(
 
                                 Column(horizontalAlignment = Alignment.End) {
                                     Text(
-                                        text = if (profileMode.isMilitary) "Остаток на точке" else "Остаток на складе",
-                                        color = TacticalTextMuted,
-                                        fontSize = 9.5.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        letterSpacing = 0.5.sp
-                                    )
-                                    Text(
-                                        text = "$pointStockSum ед.",
+                                        text = "$activePointPositions поз.",
                                         color = SageGreenBright,
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.Black,
                                         fontFamily = FontFamily.Monospace
+                                    )
+                                    Text(
+                                        text = pointUnitBreakdown,
+                                        color = TacticalTextMuted,
+                                        fontSize = 10.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
                                     )
                                 }
                             }
@@ -737,10 +717,15 @@ fun MainDashboardScreen(
                     }
                 }
             } else {
-                // Collapsible Point Lists to avoid information overload - hidden by default upon entrance
+                // Collapsible 3D Point Cards (unit-safe metrics: positions count + separated units)
                 itemsIndexed(points, key = { _, pt -> pt.id }) { _, point ->
                     val pointRows = rowsByPoint[point.id].orEmpty()
-                    val pointStockSum = pointRows.sumOf { it.quantity }
+                    val activePointPositions = pointRows.count { it.quantity > 0 }
+                    val pointUnitBreakdown = com.example.ui.components.formatUnitBreakdown(
+                        unitQuantities = pointRows.filter { it.quantity > 0 }.map { it.item.unit to it.quantity },
+                        maxUnits = 2,
+                        emptyLabel = "Пусто"
+                    )
                     // Default to collapsed (false) so that on entrance all lists are hidden
                     val isExpanded = expandedPointIds[point.id] ?: false
 
@@ -750,24 +735,19 @@ fun MainDashboardScreen(
                         animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.55f, stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow),
                         label = "lift"
                     )
-                    Card(
+                    com.example.ui.components.Card3DSurface(
                         modifier = Modifier
                             .animateItem()
                             .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 4.dp)
+                            .padding(horizontal = 14.dp, vertical = 5.dp)
                             .graphicsLayer {
-                                scaleX = 1f + 0.035f * lift
-                                scaleY = 1f + 0.035f * lift
-                                shadowElevation = 22f * lift
-                                shape = RoundedCornerShape(18.dp)
+                                scaleX = 1f + 0.03f * lift
+                                scaleY = 1f + 0.03f * lift
+                                translationY = -4f * lift
                             },
-                        shape = RoundedCornerShape(18.dp),
-                        colors = CardDefaults.cardColors(containerColor = TacticalSurface),
-                        border = androidx.compose.foundation.BorderStroke(
-                            if (lifted) 1.5.dp else 1.dp,
-                            if (lifted) SageGreenBright else TacticalBorderSubtle
-                        ),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                        cornerRadius = 20.dp,
+                        accentBorder = if (lifted) SageGreenBright else if (isExpanded) SageGreenPrimary.copy(alpha = 0.55f) else null,
+                        elevated = isExpanded || lifted
                     ) {
                         Column(modifier = Modifier.fillMaxWidth()) {
                             // Point Header Row (Tappable to expand / collapse)
@@ -781,7 +761,7 @@ fun MainDashboardScreen(
                                             pointMenuFor = point
                                         }
                                     )
-                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                                    .padding(horizontal = 13.dp, vertical = 11.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -791,32 +771,42 @@ fun MainDashboardScreen(
                                 ) {
                                     Box(
                                         modifier = Modifier
-                                            .size(32.dp)
-                                            .clip(RoundedCornerShape(12.dp))
-                                            .background(if (point.isBase) TacticalGoldDark else SageGreenDark),
+                                            .size(38.dp)
+                                            .clip(RoundedCornerShape(13.dp))
+                                            .background(
+                                                androidx.compose.ui.graphics.Brush.linearGradient(
+                                                    if (point.isBase) listOf(Color(0xFFF59E0B), Color(0xFFD97706))
+                                                    else listOf(Color(0xFF10B981), Color(0xFF0D9488))
+                                                )
+                                            )
+                                            .border(
+                                                0.9.dp,
+                                                Color.White.copy(alpha = 0.30f),
+                                                RoundedCornerShape(13.dp)
+                                            ),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Icon(
                                             imageVector = if (point.isBase) Icons.Default.Warehouse else Icons.Default.Inventory2,
                                             contentDescription = null,
-                                            tint = if (point.isBase) TacticalGoldText else SageGreenBright,
-                                            modifier = Modifier.size(18.dp)
+                                            tint = Color.White,
+                                            modifier = Modifier.size(19.dp)
                                         )
                                     }
 
-                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Spacer(modifier = Modifier.width(11.dp))
 
                                     Column {
                                         Text(
                                             text = point.name,
                                             color = TacticalTextPrimary,
-                                            fontSize = 14.sp,
+                                            fontSize = 14.5.sp,
                                             fontWeight = FontWeight.Bold,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis
                                         )
                                         Text(
-                                            text = (if (point.isBase) "Базовый • " else "") + "${pointRows.size} наим.",
+                                            text = (if (point.isBase) "Базовый · " else "") + pointUnitBreakdown,
                                             color = if (point.isBase) TacticalGoldText else TacticalTextMuted,
                                             fontSize = 11.sp,
                                             maxLines = 1,
@@ -828,16 +818,16 @@ fun MainDashboardScreen(
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Box(
                                         modifier = Modifier
-                                            .clip(RoundedCornerShape(12.dp))
+                                            .clip(RoundedCornerShape(11.dp))
                                             .background(SageGreenDark)
-                                            .border(1.dp, SageGreenPrimary.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                                            .border(1.dp, SageGreenPrimary.copy(alpha = 0.45f), RoundedCornerShape(11.dp))
                                             .padding(horizontal = 8.dp, vertical = 4.dp)
                                     ) {
                                         Text(
-                                            text = "$pointStockSum ед.",
+                                            text = "$activePointPositions поз.",
                                             color = SageGreenBright,
                                             fontSize = 11.5.sp,
-                                            fontWeight = FontWeight.Bold,
+                                            fontWeight = FontWeight.ExtraBold,
                                             fontFamily = FontFamily.Monospace
                                         )
                                     }
@@ -989,9 +979,18 @@ private fun PointStockTableView(
     }
 
     // Compact table: one line per item, numbers in aligned columns.
+    // Never sum mixed units (e.g. pieces + liters) into one meaningless number!
+    val distinctUnits = rows.map { it.item.unit.trim().ifBlank { "шт." } }.distinct()
+    val singleUnit = distinctUnits.size == 1
     val totalIncome = rows.sumOf { it.incomeTotal }
     val totalExpense = rows.sumOf { it.expenseTotal }
     val totalQty = rows.sumOf { it.quantity }
+    val activeRowsCount = rows.count { it.quantity > 0 }
+    val unitSummary = com.example.ui.components.formatUnitBreakdown(
+        unitQuantities = rows.filter { it.quantity > 0 }.map { it.item.unit to it.quantity },
+        maxUnits = 4,
+        emptyLabel = "Нет остатков"
+    )
 
     Column(
         modifier = Modifier
@@ -1037,10 +1036,11 @@ private fun PointStockTableView(
                 .background(SageGreenPrimary.copy(alpha = 0.4f))
         )
         CompactStockRow(
-            name = "Итого: ${rows.size} наим.",
-            income = totalIncome.toString(),
-            expense = totalExpense.toString(),
-            balance = totalQty.toString(),
+            name = if (singleUnit) "Итого: ${rows.size} наим. (${distinctUnits.first()})" else "Всего позиций: $activeRowsCount из ${rows.size}",
+            subtitle = if (!singleUnit) unitSummary else "",
+            income = if (singleUnit) totalIncome.toString() else "—",
+            expense = if (singleUnit) totalExpense.toString() else "—",
+            balance = if (singleUnit) totalQty.toString() else "$activeRowsCount поз.",
             isTotal = true
         )
     }
@@ -1103,24 +1103,24 @@ private fun CompactStockRow(
             }
         }
         Text(
-            text = if (isHeader) income else if (income == "0") "0" else "+$income",
-            color = if (isHeader) labelColor else com.example.ui.theme.TacticalEmeraldText,
+            text = if (isHeader || income == "—") income else if (income == "0") "0" else "+$income",
+            color = if (isHeader || income == "—") labelColor else com.example.ui.theme.TacticalEmeraldText,
             fontSize = numberSize,
             fontWeight = weight,
-            fontFamily = if (isHeader) FontFamily.Default else FontFamily.Monospace,
+            fontFamily = if (isHeader || income == "—") FontFamily.Default else FontFamily.Monospace,
             textAlign = TextAlign.End,
             modifier = Modifier.width(58.dp)
         )
         Text(
-            text = if (isHeader) expense else if (expense == "0") "0" else "−$expense",
+            text = if (isHeader || expense == "—") expense else if (expense == "0") "0" else "−$expense",
             color = when {
-                isHeader -> labelColor
+                isHeader || expense == "—" -> labelColor
                 expense != "0" -> TacticalRedText
                 else -> TacticalTextMuted
             },
             fontSize = numberSize,
             fontWeight = weight,
-            fontFamily = if (isHeader) FontFamily.Default else FontFamily.Monospace,
+            fontFamily = if (isHeader || expense == "—") FontFamily.Default else FontFamily.Monospace,
             textAlign = TextAlign.End,
             modifier = Modifier.width(58.dp)
         )

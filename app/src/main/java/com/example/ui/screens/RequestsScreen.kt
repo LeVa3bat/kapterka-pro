@@ -156,18 +156,13 @@ fun RequestsScreen(
                         Text("Запросы имущества: сборка и выдача со склада", color = TacticalTextMuted, fontSize = 12.sp)
                     }
                     Spacer(modifier = Modifier.width(8.dp))
-                    Row(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(SageGreenPrimary)
-                            .clickable { showForm = true }
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Rounded.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Заявка", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
-                    }
+                    com.example.ui.components.Volumetric3DButton(
+                        text = "Заявка",
+                        icon = Icons.Rounded.Add,
+                        onClick = { showForm = true },
+                        height = 42.dp,
+                        cornerRadius = 13.dp
+                    )
                 }
                 Spacer(modifier = Modifier.height(12.dp))
             }
@@ -326,12 +321,15 @@ private fun RequestCard(
     val urgent = req.comment.startsWith(URGENT)
     val comment = req.comment.removePrefix(URGENT)
     val date = remember(req.timestamp) { SimpleDateFormat("d MMM, HH:mm", Locale("ru")).format(Date(req.timestamp)) }
+    com.example.ui.components.Card3DSurface(
+        modifier = Modifier.fillMaxWidth(),
+        cornerRadius = 22.dp,
+        accentBorder = if (urgent && req.status != RequestStatus.ISSUED) TacticalRedText else null,
+        elevated = urgent && req.status != RequestStatus.ISSUED
+    ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .background(TacticalSurface)
-            .border(1.dp, if (urgent && req.status != RequestStatus.ISSUED) TacticalRedText.copy(alpha = 0.6f) else TacticalBorderSubtle, RoundedCornerShape(20.dp))
             .padding(14.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -424,6 +422,7 @@ private fun RequestCard(
                 modifier = Modifier.clip(CircleShape).clickable(onClick = onDelete).padding(8.dp).size(20.dp)
             )
         }
+    }
     }
 }
 

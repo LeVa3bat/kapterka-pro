@@ -271,25 +271,12 @@ fun HistoryScreen(
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 listOf("Всё время", "Сегодня", "7 дней", "30 дней").forEachIndexed { i, label ->
-                    val selected = period == i
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(if (selected) SageGreenPrimary else TacticalSurface)
-                            .border(1.dp, if (selected) SageGreenBright else TacticalBorder, RoundedCornerShape(12.dp))
-                            .clickable { period = i }
-                            .padding(vertical = 8.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            label,
-                            color = if (selected) Color.White else TacticalTextSecondary,
-                            fontSize = 12.sp,
-                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                            maxLines = 1
-                        )
-                    }
+                    com.example.ui.components.Filter3DPill(
+                        text = label,
+                        selected = period == i,
+                        onClick = { period = i },
+                        modifier = Modifier.weight(1f)
+                    )
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
@@ -652,25 +639,11 @@ private fun HistoryFilterChip(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(if (isSelected) SageGreenPrimary else TacticalSurfaceLight)
-            .border(
-                1.dp,
-                if (isSelected) SageGreenBright else TacticalBorder,
-                RoundedCornerShape(12.dp)
-            )
-            .clickable { onClick() }
-            .padding(horizontal = 10.dp, vertical = 6.dp)
-    ) {
-        Text(
-            text = label,
-            color = if (isSelected) Color.White else TacticalTextSecondary,
-            fontSize = 12.sp,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-        )
-    }
+    com.example.ui.components.Filter3DPill(
+        text = label,
+        selected = isSelected,
+        onClick = onClick
+    )
 }
 
 @Composable
@@ -694,15 +667,14 @@ private fun OperationAccordionCard(
         else -> Triple(TacticalRedDark, TacticalRedText, "СПИСАНИЕ")
     }
 
-    Card(
+    com.example.ui.components.Card3DSurface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
             .clickable { onToggleExpand() }
             .testTag("operation_card_${operation.id}"),
-        colors = CardDefaults.cardColors(containerColor = TacticalSurface),
-        border = BorderStroke(1.dp, if (isExpanded) SageGreenPrimary.copy(alpha = 0.35f) else TacticalBorderSubtle),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isExpanded) 2.dp else 0.dp)
+        cornerRadius = 20.dp,
+        accentBorder = if (isExpanded) badgeText.copy(alpha = 0.55f) else null,
+        elevated = isExpanded
     ) {
         Column(
             modifier = Modifier

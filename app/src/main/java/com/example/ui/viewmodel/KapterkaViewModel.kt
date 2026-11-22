@@ -708,7 +708,8 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                 _toastEvent.emit("Не удалось выдать: позиции заявки не найдены в каталоге. Статус не изменён.")
                 return@launch
             }
-            val actor = userProfile.value?.callsign ?: "Старшина подразделения"
+            val actor = userProfile.value?.callsign?.ifBlank { null }
+                ?: if (_workspaceProfileMode.value.isMilitary) "Старшина подразделения" else "Кладовщик"
             val comment = "По заявке от ${req.applicantName}" + if (req.comment.isNotBlank()) " • ${req.comment}" else ""
             val target = points.firstOrNull { it.name == req.applicantName && it.id != source.id }
             if (target != null) {
@@ -757,7 +758,8 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         comment: String
     ) {
         viewModelScope.launch {
-            val actor = userProfile.value?.callsign ?: "Старшина подразделения"
+            val actor = userProfile.value?.callsign?.ifBlank { null }
+                ?: if (_workspaceProfileMode.value.isMilitary) "Старшина подразделения" else "Кладовщик"
             val delta = repository.setStockAbsoluteQuantity(
                 pointId, pointName, itemId, itemName, unit, newQuantity, comment, actor
             )
@@ -814,7 +816,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             }
 
             if (resolvedUnitName.isBlank()) {
-                resolvedUnitName = "1-е Подразделение"
+                resolvedUnitName = if (_workspaceProfileMode.value.isMilitary) "1-е Подразделение" else "Основной склад"
             }
 
             val current = userProfile.value ?: UserProfile()
@@ -825,8 +827,11 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
 
             if (isUnitSwitch && repository.hasLocalUnitData()) {
                 _toastEvent.emit(
-                    "Ключ подразделения не изменён: на телефоне есть рабочие данные. " +
-                        "Автоматическая очистка запрещена для защиты остатков и истории."
+                    if (_workspaceProfileMode.value.isMilitary) {
+                        "Ключ подразделения не изменён: на телефоне есть рабочие данные. Автоматическая очистка запрещена для защиты остатков и истории."
+                    } else {
+                        "Код общего склада не изменён: на телефоне есть рабочие данные. Автоматическая очистка запрещена для защиты остатков и истории."
+                    }
                 )
                 return@launch
             }
@@ -865,7 +870,10 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             if (restored) {
                 _toastEvent.emit("Вход выполнен! Ключ: $resolvedKey. $restoreMsg")
             } else {
-                _toastEvent.emit("Вход выполнен! Подразделение: $resolvedUnitName")
+                _toastEvent.emit(
+                    if (_workspaceProfileMode.value.isMilitary) "Вход выполнен! Подразделение: $resolvedUnitName"
+                    else "Вход выполнен! Склад: $resolvedUnitName"
+                )
             }
             repository.triggerCloudSync()
             
@@ -886,7 +894,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             val current = userProfile.value ?: UserProfile()
             val oldKey = current.unitKey.trim()
             if (oldKey.equals(clean, ignoreCase = true)) {
-                _toastEvent.emit("Ключ подразделения уже используется")
+                _toastEvent.emit(if (_workspaceProfileMode.value.isMilitary) "Ключ подразделения уже используется" else "Код общего склада уже используется")
                 return@launch
             }
             if (oldKey.isNotBlank() && repository.hasLocalUnitData()) {
@@ -930,7 +938,11 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
 
             val safeProfile = if (wantsUnitSwitch && repository.hasLocalUnitData()) {
                 _toastEvent.emit(
-                    "Профиль сохранён без смены ключа подразделения: локальные складские данные защищены."
+                    if (_workspaceProfileMode.value.isMilitary) {
+                        "Профиль сохранён без смены ключа подразделения: локальные складские данные защищены."
+                    } else {
+                        "Профиль сохранён без смены кода склада: локальные складские данные защищены."
+                    }
                 )
                 profile.copy(unitKey = current.unitKey)
             } else {
@@ -1021,15 +1033,17 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         val newKey = com.example.data.sync.SyncIdentityGenerator.newUnitKey()
         viewModelScope.launch {
             val current = userProfile.value ?: UserProfile()
+            val isMil = _workspaceProfileMode.value.isMilitary
             if (current.unitKey.isNotBlank() && repository.hasLocalUnitData()) {
                 _toastEvent.emit(
-                    "Новый ключ не создан: на телефоне есть данные текущего подразделения. Ничего не удалено."
+                    if (isMil) "Новый ключ не создан: на телефоне есть данные текущего подразделения. Ничего не удалено."
+                    else "Новый ключ не создан: на телефоне есть данные текущего склада. Ничего не удалено."
                 )
                 return@launch
             }
             licenseManager.saveUnitKeyToVault(newKey)
             repository.saveUserProfile(current.copy(unitKey = newKey))
-            _toastEvent.emit("Новый ключ подразделения: $newKey")
+            _toastEvent.emit(if (isMil) "Новый ключ подразделения: $newKey" else "Новый ключ общего склада: $newKey")
         }
     }
 
@@ -1045,7 +1059,10 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
     /** This phone is overwritten with the data stored in the cloud. */
     fun loadEverythingFromCloud() {
         viewModelScope.launch {
-            _toastEvent.emit("Загружаю данные подразделения из облака...")
+            _toastEvent.emit(
+                if (_workspaceProfileMode.value.isMilitary) "Загружаю данные подразделения из облака..."
+                else "Загружаю данные склада из облака..."
+            )
             val (_, msg) = repository.replaceLocalWithCloud()
             _toastEvent.emit(msg)
         }
@@ -1107,7 +1124,12 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             _toastEvent.emit("Отправляем копию в облако...")
             backupManager.uploadToCloud()
-                .onSuccess { _toastEvent.emit("Копия сохранена в облаке подразделения") }
+                .onSuccess {
+                    _toastEvent.emit(
+                        if (_workspaceProfileMode.value.isMilitary) "Копия сохранена в облаке подразделения"
+                        else "Копия сохранена в облаке"
+                    )
+                }
                 .onFailure { _toastEvent.emit("Не удалось сохранить в облаке: ${it.message ?: "проверьте интернет"}") }
         }
     }
@@ -1247,9 +1269,10 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             var keepPolling = true
             try {
                 val profile = userProfile.filterNotNull().first()
-                val callsign = profile.callsign.ifBlank { "Боец" }
+                val isMil = _workspaceProfileMode.value.isMilitary
+                val callsign = profile.callsign.ifBlank { if (isMil) "Боец" else "Пользователь" }
                 val email = profile.email.trim()
-                val unitName = profile.unitName.ifBlank { "Подразделение" }
+                val unitName = profile.unitName.ifBlank { if (isMil) "Подразделение" else "Основной склад" }
                 val unitKey = profile.unitKey.trim()
 
                 val paymentIdToVerify = if (lastPaymentId.isNotBlank()) {
@@ -1357,7 +1380,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             val profile = userProfile.value
             val email = customEmail?.ifBlank { null } ?: profile?.email ?: ""
             val key = _issuedPaymentKey.value ?: licenseStatus.value.licenseKey.ifEmpty { licenseStatus.value.lastSavedKey }
-            val callsign = profile?.callsign ?: "Боец"
+            val callsign = profile?.callsign?.ifBlank { null } ?: if (_workspaceProfileMode.value.isMilitary) "Боец" else "Пользователь"
             if (email.isNotBlank() && key.isNotBlank()) {
                 val daysLeft = licenseStatus.value.daysRemaining.coerceAtLeast(1)
                 val sent = com.example.data.notification.EmailDeliveryService.sendLicenseKeyEmail(
@@ -1380,7 +1403,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
     fun activateLicenseKey(enteredKey: String) {
         viewModelScope.launch {
             val profile = userProfile.value
-            val callsign = profile?.callsign ?: "Боец"
+            val callsign = profile?.callsign?.ifBlank { null } ?: if (_workspaceProfileMode.value.isMilitary) "Боец" else "Пользователь"
             val (success, message) = licenseManager.activateKeyManually(enteredKey, callsign)
             if (success) {
                 val curProfile = userProfile.value ?: UserProfile()

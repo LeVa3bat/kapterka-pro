@@ -123,7 +123,8 @@ fun PersonalLicenseDialog(
     @Suppress("UNUSED_PARAMETER") onSaveYooKassaSettings: (shopId: String, secretKey: String, isTestMode: Boolean, priceRubles: Int) -> Unit = { _, _, _, _ -> },
     onResendEmailKey: (String) -> Unit = {},
     @Suppress("UNUSED_PARAMETER") onResetLicense: () -> Unit = {},
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    profileMode: com.example.data.model.WorkspaceProfileMode = com.example.data.model.WorkspaceProfileMode.MILITARY
 ) {
     val context = LocalContext.current
     val clipboard = LocalClipboardManager.current
@@ -150,30 +151,35 @@ fun PersonalLicenseDialog(
     }
 
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth(0.94f)
-                .clip(RoundedCornerShape(28.dp))
-                .background(TacticalSurface)
-                .verticalScroll(rememberScrollState())
+        Animated3DDialogContainer(
+            modifier = Modifier.fillMaxWidth(0.94f),
+            cornerRadius = 28.dp,
+            accentBorder = if (isPro || justPaidKey != null) SageGreenPrimary else Color(0xFFE0A63A)
         ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+            ) {
             // HERO
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(
                         Brush.linearGradient(
-                            if (isPro || justPaidKey != null) listOf(Color(0xFF0E6E52), Color(0xFF0F766E))
-                            else listOf(Color(0xFF0D4234), Color(0xFF0F5E56))
+                            if (isPro || justPaidKey != null) listOf(Color(0xFF0B6A4F), Color(0xFF0A4F60))
+                            else listOf(Color(0xFF0B5A44), Color(0xFF0A4D5C))
                         )
                     )
                     .padding(20.dp)
             ) {
-                Icon(
-                    Icons.Rounded.Close,
+                IconOrb3DButton(
+                    icon = Icons.Rounded.Close,
                     contentDescription = "Закрыть",
-                    tint = Color.White.copy(alpha = 0.8f),
-                    modifier = Modifier.align(Alignment.TopEnd).clip(CircleShape).clickable(onClick = onDismiss).padding(4.dp)
+                    tint = Color.White,
+                    onClick = onDismiss,
+                    size = 34.dp,
+                    modifier = Modifier.align(Alignment.TopEnd)
                 )
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
                     when {
@@ -253,8 +259,18 @@ fun PersonalLicenseDialog(
                     // What PRO gives
                     Text("Что даёт PRO", color = TacticalTextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(8.dp))
-                    Benefit(Icons.Rounded.Description, "Отчёты Excel (.xlsx)", "Формы № 8 и № 18, М-11, МБ-7, МБ-8 и сводные")
-                    Benefit(Icons.Rounded.Sync, "Безлимит складов и синхронизация", "неограниченно точек, позиций, заявок и QR-подключение")
+                    Benefit(
+                        Icons.Rounded.Description,
+                        "Отчёты Excel (.xlsx)",
+                        if (profileMode.isMilitary) "Формы № 8 и № 18, акт списания и сводные"
+                        else "Оборотная ТМЦ, М-11 / ТОРГ-13, МБ-7 и акт МБ-8"
+                    )
+                    Benefit(
+                        Icons.Rounded.Sync,
+                        "Безлимит складов и синхронизация",
+                        if (profileMode.isMilitary) "неограниченно точек, позиций, заявок и QR-подключение"
+                        else "неограниченно складов, позиций, заявок и QR-подключение"
+                    )
                     Benefit(Icons.Rounded.Shield, "Лицензия хранится на сервере", "не пропадёт при переустановке и смене телефона")
                     Benefit(Icons.Rounded.MarkEmailRead, "Ключ на Email • самозанятый (НПД)", "оплата через ЮKassa (СБП / МИР), чек «Мой налог»")
 
@@ -341,21 +357,17 @@ fun PersonalLicenseDialog(
                                 modifier = Modifier.padding(bottom = 10.dp)
                             )
                         }
-                        Button(
-                            onClick = {
-                                if (email.isNotBlank() && android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-                                    // ViewModel sets paymentAwaitingConfirmation = true only once checkout URL is created
-                                    startPay()
-                                } else {
-                                    startPay()
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth().height(56.dp).testTag("yookassa_pay_button"),
-                            shape = RoundedCornerShape(18.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0A63A), contentColor = Color(0xFF1C1405))
-                        ) {
-                            Text("Оплатить $price ₽", fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
-                        }
+                        Volumetric3DButton(
+                            text = "Оплатить $price ₽",
+                            onClick = { startPay() },
+                            modifier = Modifier.fillMaxWidth().testTag("yookassa_pay_button"),
+                            height = 56.dp,
+                            cornerRadius = 18.dp,
+                            gradientStart = Color(0xFFF59E0B),
+                            gradientEnd = Color(0xFFD97706),
+                            extrusionColor = Color(0xFF92400E),
+                            contentColor = Color(0xFF1C1405)
+                        )
                     } else {
                         Column(
                             modifier = Modifier
@@ -467,6 +479,7 @@ fun PersonalLicenseDialog(
                         }
                     }
                 }
+            }
             }
         }
     }

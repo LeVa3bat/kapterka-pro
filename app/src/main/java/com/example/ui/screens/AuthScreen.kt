@@ -21,9 +21,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.QrCodeScanner
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.MilitaryTech
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.WifiOff
@@ -148,20 +148,18 @@ fun AuthScreen(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(15.dp))
+                        .size(50.dp)
+                        .clip(RoundedCornerShape(16.dp))
                         .background(
                             androidx.compose.ui.graphics.Brush.linearGradient(
-                                listOf(
-                                    com.example.ui.theme.HeroGradientStart,
-                                    com.example.ui.theme.HeroGradientEnd
-                                )
+                                listOf(Color(0xFF10B981), Color(0xFF0891B2))
                             )
-                        ),
+                        )
+                        .border(1.dp, Color.White.copy(alpha = 0.40f), RoundedCornerShape(16.dp)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.MilitaryTech,
+                        imageVector = Icons.Default.Inventory2,
                         contentDescription = null,
                         tint = Color.White,
                         modifier = Modifier.size(28.dp)
@@ -209,13 +207,12 @@ fun AuthScreen(
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            // Main Card
-            Card(
+            // Main 3D Glass Card
+            com.example.ui.components.Card3DSurface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(22.dp),
-                colors = CardDefaults.cardColors(containerColor = TacticalSurface),
-                border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorderSubtle),
-                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+                cornerRadius = 24.dp,
+                accentBorder = SageGreenPrimary.copy(alpha = 0.4f),
+                elevated = true
             ) {
                 Column(
                     modifier = Modifier
@@ -312,7 +309,7 @@ fun AuthScreen(
                             IconButton(onClick = { scanQr() }) {
                                 Icon(
                                     imageVector = Icons.Rounded.QrCodeScanner,
-                                    contentDescription = "Сканировать QR-код подразделения",
+                                    contentDescription = "Сканировать QR-код подключения",
                                     tint = SageGreenBright
                                 )
                             }
@@ -466,17 +463,18 @@ fun AuthScreen(
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    // Primary Submit Button
-                    Button(
+                    // Primary 3D Submit Button
+                    com.example.ui.components.Volumetric3DButton(
+                        text = if (selectedTab == 0) "Создать аккаунт" else "Войти",
                         onClick = {
                             if (!consentAgreed) {
                                 errorMessage = "Для продолжения необходимо подтвердить согласие с Политикой конфиденциальности и Соглашением!"
-                                return@Button
+                                return@Volumetric3DButton
                             }
                             val cleanCallsign = callsign.trim()
                             if (cleanCallsign.isBlank()) {
                                 errorMessage = "Пожалуйста, введите имя пользователя!"
-                                return@Button
+                                return@Volumetric3DButton
                             }
 
                             val cleanEmail = email.trim().lowercase()
@@ -484,14 +482,14 @@ fun AuthScreen(
                                 !android.util.Patterns.EMAIL_ADDRESS.matcher(cleanEmail).matches()
                             ) {
                                 errorMessage = "Укажите корректный Email. Он нужен для лицензии и восстановления доступа."
-                                return@Button
+                                return@Volumetric3DButton
                             }
 
                             val cleanUnitName = unitName.trim().ifEmpty { "Основной склад" }
                             val enteredKey = unitKey.trim()
                             if (selectedTab == 1 && enteredKey.isBlank()) {
                                 errorMessage = "Для подключения к существующей группе укажите её код."
-                                return@Button
+                                return@Volumetric3DButton
                             }
 
                             val resolvedKey = if (selectedTab == 0 && enteredKey.isBlank()) {
@@ -513,21 +511,10 @@ fun AuthScreen(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(48.dp)
                             .testTag("submit_auth_button"),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = SageGreenPrimary,
-                            contentColor = Color.White
-                        ),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Text(
-                            text = if (selectedTab == 0) "Создать аккаунт" else "Войти",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp,
-                            maxLines = 1
-                        )
-                    }
+                        height = 52.dp,
+                        cornerRadius = 16.dp
+                    )
 
                     Spacer(modifier = Modifier.height(10.dp))
 
@@ -554,13 +541,13 @@ fun AuthScreen(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(42.dp)
+                            .height(44.dp)
                             .testTag("offline_auth_button"),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = TacticalSurfaceLight,
                             contentColor = TacticalTextSecondary
                         ),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(14.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.WifiOff,
@@ -568,7 +555,7 @@ fun AuthScreen(
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Автономный вход (Офлайн в поле)", fontSize = 12.sp)
+                        Text("Автономный вход (без интернета)", fontSize = 12.sp)
                     }
                 }
             }

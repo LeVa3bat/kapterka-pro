@@ -226,7 +226,8 @@ fun ProfileSelectionScreen(
 
         Spacer(modifier = Modifier.height(4.dp))
 
-        Button(
+        com.example.ui.components.Volumetric3DButton(
+            text = if (isReconfigureMode) "Применить профиль" else "Начать работу",
             onClick = {
                 if (isReconfigureMode && onConfirmReconfigure != null) {
                     onConfirmReconfigure(selected, applyStarterSet)
@@ -236,20 +237,10 @@ fun ProfileSelectionScreen(
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(54.dp)
                 .testTag("confirm_profile_button"),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = SageGreenPrimary,
-                contentColor = Color.White
-            )
-        ) {
-            Text(
-                text = if (isReconfigureMode) "Применить профиль" else "Начать работу",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.ExtraBold
-            )
-        }
+            height = 56.dp,
+            cornerRadius = 18.dp
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
     }
@@ -269,21 +260,14 @@ private fun ProfileOptionCard(
     onClick: () -> Unit,
     testTag: String
 ) {
-    Card(
+    com.example.ui.components.Card3DSurface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
             .clickable(onClick = onClick)
             .testTag(testTag),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (selected) TacticalSurface else TacticalSurface.copy(alpha = 0.92f)
-        ),
-        border = BorderStroke(
-            width = if (selected) 2.dp else 1.dp,
-            color = if (selected) SageGreenPrimary else TacticalBorderSubtle
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (selected) 4.dp else 1.dp)
+        cornerRadius = 22.dp,
+        accentBorder = if (selected) accent else null,
+        elevated = selected
     ) {
         Column(
             modifier = Modifier

@@ -55,19 +55,31 @@ fun ModernBottomBar(
             .navigationBarsPadding()
             .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 8.dp)
     ) {
+        val isDark = LocalTacticalColors.current.isDark
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(66.dp)
-                .shadow(12.dp, RoundedCornerShape(24.dp), clip = false)
+                .shadow(
+                    elevation = if (isDark) 18.dp else 12.dp,
+                    shape = RoundedCornerShape(24.dp),
+                    clip = false,
+                    ambientColor = Color.Black.copy(alpha = if (isDark) 0.7f else 0.16f),
+                    spotColor = SageGreenPrimary.copy(alpha = if (isDark) 0.25f else 0.14f)
+                )
                 .clip(RoundedCornerShape(24.dp))
-                .background(TacticalSurface)
-                .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(24.dp))
+                .background(
+                    Brush.verticalGradient(
+                        if (isDark) listOf(Color(0xFF172724), Color(0xFF0E1816))
+                        else listOf(Color(0xFFFFFFFF), Color(0xFFF3FAF7))
+                    )
+                )
+                .border(1.dp, glassRimBrush(), RoundedCornerShape(24.dp))
         ) {
             val tabWidth = maxWidth / tabs.size
             val lensX by animateDpAsState(
                 targetValue = tabWidth * selectedIndex,
-                animationSpec = spring(dampingRatio = 0.75f, stiffness = Spring.StiffnessMediumLow),
+                animationSpec = spring(dampingRatio = 0.72f, stiffness = Spring.StiffnessMediumLow),
                 label = "lens"
             )
             Box(
@@ -80,10 +92,20 @@ fun ModernBottomBar(
                     .background(
                         Brush.verticalGradient(
                             listOf(
-                                SageGreenPrimary.copy(alpha = 0.16f),
-                                TacticalTeal.copy(alpha = 0.08f)
+                                SageGreenPrimary.copy(alpha = if (isDark) 0.24f else 0.18f),
+                                TacticalTeal.copy(alpha = if (isDark) 0.10f else 0.08f)
                             )
                         )
+                    )
+                    .border(
+                        width = 0.9.dp,
+                        brush = Brush.verticalGradient(
+                            listOf(
+                                SageGreenBright.copy(alpha = 0.45f),
+                                Color.Transparent
+                            )
+                        ),
+                        shape = RoundedCornerShape(18.dp)
                     )
             )
             Row(modifier = Modifier.fillMaxWidth().fillMaxHeight()) {

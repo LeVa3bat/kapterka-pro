@@ -68,7 +68,8 @@ fun BackupAndDiagnosticsCard(
     lastCloudBackupAt: Long = 0L,
     onSaveCloud: () -> Unit = {},
     onRestoreCloud: () -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    profileMode: com.example.data.model.WorkspaceProfileMode = com.example.data.model.WorkspaceProfileMode.MILITARY
 ) {
     val context = LocalContext.current
     var pendingRestore by remember { mutableStateOf<Uri?>(null) }
@@ -104,11 +105,11 @@ fun BackupAndDiagnosticsCard(
         Spacer(Modifier.height(10.dp))
 
         BackupSection(
-            title = "В ОБЛАКЕ ПОДРАЗДЕЛЕНИЯ",
+            title = if (profileMode.isMilitary) "В ОБЛАКЕ ПОДРАЗДЕЛЕНИЯ" else "В ОБЛАКЕ",
             status = if (lastCloudBackupAt > 0L) {
                 "Обновляется раз в сутки. Последняя: " + formatBackupTime(lastCloudBackupAt)
             } else "Обновляется раз в сутки. Пока не создавалась",
-            hint = "Нужен общий учёт (код подразделения) и интернет.",
+            hint = if (profileMode.isMilitary) "Нужен общий учёт (код подразделения) и интернет." else "Нужен общий учёт (код склада) и интернет.",
             primaryLabel = "В облако",
             onPrimary = onSaveCloud,
             secondaryLabel = "Из облака",
@@ -162,14 +163,15 @@ fun BackupAndDiagnosticsCard(
     }
 
     if (confirmCloudRestore) {
+        val groupWord = if (profileMode.isMilitary) "подразделения" else "общего склада"
         AlertDialog(
             onDismissRequest = { confirmCloudRestore = false },
             title = { Text("Восстановить из облака?") },
             text = {
                 Text(
-                    "Текущие данные на этом телефоне будут заменены последней облачной копией подразделения. " +
+                    "Текущие данные на этом телефоне будут заменены последней облачной копией $groupWord. " +
                         "Перед заменой приложение сохранит текущие данные в папку приложения. " +
-                        "Если подключён общий учёт, такое же состояние получат и все остальные телефоны подразделения."
+                        "Если подключён общий учёт, такое же состояние получат и все остальные телефоны $groupWord."
                 )
             },
             confirmButton = {
@@ -180,6 +182,7 @@ fun BackupAndDiagnosticsCard(
     }
 
     pendingRestore?.let { uri ->
+        val groupWord = if (profileMode.isMilitary) "подразделения" else "общего склада"
         AlertDialog(
             onDismissRequest = { pendingRestore = null },
             title = { Text("Восстановить из копии?") },
@@ -187,7 +190,7 @@ fun BackupAndDiagnosticsCard(
                 Text(
                     "Текущие склады, остатки, операции и заявки на этом телефоне будут заменены данными из файла. " +
                         "Перед заменой приложение само сохранит текущие данные в папку приложения. " +
-                        "Если подключён общий учёт, такое же состояние получат и все остальные телефоны подразделения."
+                        "Если подключён общий учёт, такое же состояние получат и все остальные телефоны $groupWord."
                 )
             },
             confirmButton = {

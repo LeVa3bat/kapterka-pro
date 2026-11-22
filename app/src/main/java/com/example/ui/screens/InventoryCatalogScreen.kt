@@ -155,29 +155,13 @@ fun InventoryCatalogScreen(
                     )
                 }
 
-                Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(SageGreenPrimary)
-                        .clickable { onAddNewItemClick() }
-                        .padding(horizontal = 10.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Добавить",
-                        tint = Color.White,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "Добавить",
-                        color = Color.White,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1
-                    )
-                }
+                com.example.ui.components.Volumetric3DButton(
+                    text = "Добавить",
+                    icon = Icons.Default.Add,
+                    onClick = onAddNewItemClick,
+                    height = 40.dp,
+                    cornerRadius = 13.dp
+                )
             }
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -221,31 +205,15 @@ fun InventoryCatalogScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(7.dp)
             ) {
                 services.forEach { srv ->
-                    val isSelected = srv == selectedService
                     val count = if (srv == "Все категории") items.size else items.count { it.serviceCategory == srv }
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(if (isSelected) SageGreenPrimary else TacticalSurfaceLight)
-                            .border(
-                                1.dp,
-                                if (isSelected) SageGreenBright else TacticalBorder,
-                                RoundedCornerShape(12.dp)
-                            )
-                            .clickable { selectedService = srv }
-                            .padding(horizontal = 10.dp, vertical = 6.dp)
-                    ) {
-                        Text(
-                            text = "$srv ($count)",
-                            color = if (isSelected) Color.White else TacticalTextSecondary,
-                            fontSize = 11.5.sp,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                            maxLines = 1
-                        )
-                    }
+                    com.example.ui.components.Filter3DPill(
+                        text = "$srv ($count)",
+                        selected = srv == selectedService,
+                        onClick = { selectedService = srv }
+                    )
                 }
             }
 
@@ -343,14 +311,13 @@ fun InventoryCatalogScreen(
                 val isExpanded = expandedCategoriesMap[serviceCategory] ?: false
 
                 item(key = serviceCategory) {
-                    Card(
+                    com.example.ui.components.Card3DSurface(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 4.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = TacticalSurface),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorderSubtle)
+                        cornerRadius = 18.dp,
+                        accentBorder = if (isExpanded) SageGreenPrimary.copy(alpha = 0.5f) else null,
+                        elevated = isExpanded
                     ) {
                         Column(modifier = Modifier.fillMaxWidth()) {
                             // Service Header

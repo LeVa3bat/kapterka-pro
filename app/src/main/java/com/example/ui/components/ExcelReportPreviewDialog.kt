@@ -56,11 +56,9 @@ fun ExcelReportPreviewDialog(
     responsiblePerson: String = "",
     onDismiss: () -> Unit
 ) {
-    var activeMode by remember(profileMode) {
-        mutableStateOf(
-            if (profileMode == WorkspaceProfileMode.MILITARY) WorkspaceProfileMode.MILITARY
-            else WorkspaceProfileMode.CIVILIAN
-        )
+    val activeMode = remember(profileMode) {
+        if (profileMode.isMilitary) WorkspaceProfileMode.MILITARY
+        else WorkspaceProfileMode.CIVILIAN
     }
 
     val tabTitles = remember(activeMode, points) {
@@ -201,21 +199,21 @@ fun ExcelReportPreviewDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
-        Card(
+        Animated3DDialogContainer(
             modifier = Modifier
-                .fillMaxWidth(0.98f)
-                .fillMaxHeight(0.95f)
+                .fillMaxWidth(0.97f)
+                .fillMaxHeight(0.94f)
                 .padding(vertical = 6.dp),
-            shape = RoundedCornerShape(22.dp),
-            colors = CardDefaults.cardColors(containerColor = TacticalSurface),
-            border = BorderStroke(1.dp, TacticalBorder)
+            cornerRadius = 24.dp,
+            accentBorder = SageGreenPrimary
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
-                // Header with Profile Form Switcher
+                // 3D Dialog Header (strictly locked to active workspace profile — zero military forms in Civilian/Empty)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 16.dp, end = 12.dp, top = 12.dp, bottom = 6.dp),
+                        .background(SageGreenDark.copy(alpha = 0.45f))
+                        .padding(start = 16.dp, end = 12.dp, top = 12.dp, bottom = 10.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -223,7 +221,7 @@ fun ExcelReportPreviewDialog(
                         Text(
                             text = if (activeMode.isMilitary) "УСТАВНЫЕ ФОРМЫ (МО РФ)" else "СКЛАДСКИЕ БЛАНКИ (ОКУД)",
                             color = SageGreenBright,
-                            fontSize = 13.sp,
+                            fontSize = 13.5.sp,
                             fontWeight = FontWeight.ExtraBold,
                             letterSpacing = 0.4.sp,
                             maxLines = 1,
@@ -233,7 +231,7 @@ fun ExcelReportPreviewDialog(
                             text = if (activeMode.isMilitary) {
                                 "Форма № 8 • Форма № 18 • Акт списания • Excel А4"
                             } else {
-                                "М-11 / ТОРГ-13 • МБ-7 • МБ-8 • Оборотная ТМЦ"
+                                "Оборотная ТМЦ • М-11 / ТОРГ-13 • МБ-7 • МБ-8 • Excel А4"
                             },
                             color = TacticalTextMuted,
                             fontSize = 10.5.sp,
@@ -241,39 +239,13 @@ fun ExcelReportPreviewDialog(
                             overflow = TextOverflow.Ellipsis
                         )
                     }
-                    IconButton(
+                    Spacer(modifier = Modifier.width(8.dp))
+                    IconOrb3DButton(
+                        icon = Icons.Default.Close,
+                        contentDescription = "Закрыть",
+                        tint = TacticalTextMuted,
                         onClick = onDismiss,
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Закрыть",
-                            tint = TacticalTextMuted
-                        )
-                    }
-                }
-
-                // 1-tap switcher between Military (МО РФ) and Civilian (Склад/ТМЦ) forms
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 4.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(TacticalSurfaceLight)
-                        .padding(3.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    FormModeChip(
-                        text = "Военные (Ф-8 / Ф-18)",
-                        selected = activeMode.isMilitary,
-                        onClick = { activeMode = WorkspaceProfileMode.MILITARY },
-                        modifier = Modifier.weight(1f)
-                    )
-                    FormModeChip(
-                        text = "Гражданские (М-11)",
-                        selected = !activeMode.isMilitary,
-                        onClick = { activeMode = WorkspaceProfileMode.CIVILIAN },
-                        modifier = Modifier.weight(1f)
+                        size = 34.dp
                     )
                 }
 
@@ -355,7 +327,9 @@ fun ExcelReportPreviewDialog(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Button(
+                    Volumetric3DButton(
+                        text = "Скачать Excel",
+                        icon = Icons.Default.FileDownload,
                         onClick = {
                             val excelData = report.toExcelReportData()
                             val bytes = ExcelExportHelper.generateXlsxBytes(excelData)
@@ -369,28 +343,10 @@ fun ExcelReportPreviewDialog(
                                 }
                             }
                         },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(48.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF059669),
-                            contentColor = Color.White
-                        ),
-                        shape = RoundedCornerShape(14.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.FileDownload,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "Скачать Excel",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.5.sp,
-                            maxLines = 1
-                        )
-                    }
+                        modifier = Modifier.weight(1f),
+                        height = 50.dp,
+                        cornerRadius = 15.dp
+                    )
 
                     OutlinedButton(
                         onClick = {

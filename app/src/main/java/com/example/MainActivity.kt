@@ -413,14 +413,13 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                     val isProblem = listOf("не удалось", "ошибк", "нельзя", "нет связи", "отклон", "истек", "истёк", "недоступ", "неверн")
                         .any { msg.contains(it, ignoreCase = true) }
                     val accent = if (isProblem) com.example.ui.theme.TacticalGoldText else SageGreenBright
-                    Card(
+                    com.example.ui.components.Card3DSurface(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { inAppToastMessage = null },
-                        colors = CardDefaults.cardColors(containerColor = TacticalSurfaceLight),
-                        border = BorderStroke(1.dp, accent.copy(alpha = 0.7f)),
-                        shape = RoundedCornerShape(18.dp),
-                        elevation = CardDefaults.cardElevation(12.dp)
+                        cornerRadius = 20.dp,
+                        accentBorder = accent,
+                        elevated = true
                     ) {
                         Row(
                             modifier = Modifier
@@ -556,7 +555,8 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                             profileMode = workspaceProfileMode,
                             onReorderPoints = { viewModel.reorderWarehousePoints(it) },
                             onDeletePoint = { viewModel.deleteWarehousePoint(it) },
-                            onReturnClick = { showReturnDialog = true }
+                            onReturnClick = { showReturnDialog = true },
+                            pendingRequisitionsCount = requisitions.count { it.status == com.example.data.model.RequestStatus.PENDING }
                         )
                     }
 
@@ -666,13 +666,13 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
                                 }
                             },
                             onExportForm8Click = {
-                                checkProAccess("выгрузки Формы № 8") {
+                                checkProAccess(if (workspaceProfileMode.isMilitary) "выгрузки Формы № 8" else "выгрузки накладной М-11") {
                                     excelReportInitialTab = points.size + 1
                                     showExcelReportDialog = true
                                 }
                             },
                             onExportForm18Click = {
-                                checkProAccess("выгрузки Формы № 18") {
+                                checkProAccess(if (workspaceProfileMode.isMilitary) "выгрузки Формы № 18" else "выгрузки ведомости МБ-7") {
                                     excelReportInitialTab = points.size + 2
                                     showExcelReportDialog = true
                                 }
@@ -844,7 +844,8 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
             onPauseSync = { viewModel.pauseSync() },
             onResumeSync = { viewModel.resumeSync() },
             onDeleteCloudData = { viewModel.deleteCloudDataAndPauseSync() },
-            onDismiss = { showUnitKeySyncDialog = false }
+            onDismiss = { showUnitKeySyncDialog = false },
+            profileMode = workspaceProfileMode
         )
     }
 
@@ -880,7 +881,8 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
             onDismiss = {
                 showPaymentProDialog = false
                 viewModel.clearIssuedPaymentKey()
-            }
+            },
+            profileMode = workspaceProfileMode
         )
     }
 
@@ -978,7 +980,8 @@ fun KapterkaAppRoot(viewModel: KapterkaViewModel, isDarkTheme: Boolean = false) 
 
     if (showUserManualDialog) {
         UserManualDialog(
-            onDismiss = { showUserManualDialog = false }
+            onDismiss = { showUserManualDialog = false },
+            profileMode = workspaceProfileMode
         )
     }
 }
