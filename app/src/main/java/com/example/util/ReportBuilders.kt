@@ -263,7 +263,7 @@ object ReportBuilders {
         }
 
         val widths = buildList {
-            add(30); add(104); add(54)
+            add(34); add(108); add(76)
             if (matKeys.isEmpty()) add(120) else repeat(matKeys.size) { add(100) }
             add(78); add(90)
         }

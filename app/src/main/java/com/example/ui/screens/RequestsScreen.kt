@@ -56,7 +56,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -145,8 +144,29 @@ fun RequestsScreen(
         ) {
             item {
                 Spacer(modifier = Modifier.height(10.dp))
-                Text("Заявки", color = TacticalTextPrimary, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
-                Text("Запросы имущества: сборка и выдача со склада", color = TacticalTextMuted, fontSize = 12.sp)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Заявки", color = TacticalTextPrimary, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
+                        Text("Запросы имущества: сборка и выдача со склада", color = TacticalTextMuted, fontSize = 12.sp)
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(SageGreenPrimary)
+                            .clickable { showForm = true }
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Rounded.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Заявка", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
+                    }
+                }
                 Spacer(modifier = Modifier.height(12.dp))
             }
             stickyHeader {
@@ -187,7 +207,7 @@ fun RequestsScreen(
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold
                         )
-                        Text("Нажмите «Новая заявка» внизу", color = TacticalTextMuted, fontSize = 12.sp)
+                        Text("Нажмите «+ Заявка» сверху", color = TacticalTextMuted, fontSize = 12.sp)
                     }
                 }
             }
@@ -214,23 +234,7 @@ fun RequestsScreen(
                 }
                 Spacer(modifier = Modifier.height(10.dp))
             }
-            item { Spacer(modifier = Modifier.height(90.dp)) }
-        }
-
-        // Floating "new request" button
-        Row(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(18.dp)
-                .clip(RoundedCornerShape(20.dp))
-                .background(Brush.linearGradient(listOf(SageGreenPrimary, TacticalTealText)))
-                .clickable { showForm = true }
-                .padding(horizontal = 18.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(Icons.Rounded.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
-            Spacer(modifier = Modifier.width(6.dp))
-            Text("Новая заявка", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            item { Spacer(modifier = Modifier.height(24.dp)) }
         }
     }
 
@@ -256,7 +260,7 @@ fun RequestsScreen(
             text = {
                 Text(
                     "Со склада «${req.pointName}» будут списаны позиции заявки и выданы: ${req.applicantName}. " +
-                        "Выдача попадёт в журнал операций и в форму 8."
+                        "Выдача попадёт в журнал операций и в ведомость выдачи (ф. 8 / МБ-7)."
                 )
             },
             confirmButton = {
@@ -269,7 +273,7 @@ fun RequestsScreen(
         AlertDialog(
             onDismissRequest = { confirmDelete = null },
             title = { Text("Удалить заявку?") },
-            text = { Text("Заявка от ${req.applicantName} будет удалена у всех телефонов подразделения. Остатки не изменятся.") },
+            text = { Text("Заявка от ${req.applicantName} будет удалена на всех подключённых телефонах. Остатки не изменятся.") },
             confirmButton = { TextButton(onClick = { onDeleteRequisition(req.id); confirmDelete = null }) { Text("Удалить", color = TacticalRedText) } },
             dismissButton = { TextButton(onClick = { confirmDelete = null }) { Text("Отмена") } }
         )
