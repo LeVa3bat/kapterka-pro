@@ -1,42 +1,180 @@
-/* Каптёрка PRO 3.6 — cleaner home page, phone-frame gallery, mobile fixes. */
+/* ==========================================================================
+   КАПТЁРКА PRO 4.0 — МОБИЛЬНАЯ ЭРГОНОМИКА, ЗАЩИТА ОТ ПЕРЕПОЛНЕНИЯ И МЕДИА
+   ========================================================================== */
 
-/* Payment tab: columns must shrink to the phone width. */
-#tabPayment .checkout-grid>div{min-width:0}
-#tabPayment .payment-method-pills{flex-wrap:wrap}
-#tabPayment .v2-payment-warning,#tabPayment .v2-payment-footnote,#tabPayment .v3-legal-line{overflow-wrap:anywhere}
+.app-view-tab { overflow-wrap: break-word; }
+#tabPayment .checkout-grid > div,
+#tabPayment .checkout-grid > aside,
+#tabCabinet .v2-cabinet-grid > div { min-width: 0; }
+#tabPayment .payment-method-pills { flex-wrap: wrap; }
+#tabPayment .v2-payment-warning,
+#tabPayment .v2-payment-footnote,
+#tabPayment .v3-legal-line { overflow-wrap: anywhere; }
 
-/* Long words never push the page sideways. */
-.app-view-tab{overflow-wrap:break-word}
-@media (max-width:700px){
-  #tabPayment .checkout-grid{grid-template-columns:minmax(0,1fr)!important}
-  #tabPayment .checkout-grid>div{min-width:0!important;max-width:100%!important}
-  #tabPayment .payment-method-pills{flex-wrap:wrap!important;overflow:visible!important}
+/* 3D Showcase Rows in PRO / Sync / Download Tabs */
+.s36-tabrow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 230px;
+  gap: 28px;
+  align-items: center;
+  margin-top: 22px;
+  padding: 24px;
+  border-radius: 24px;
+  background: linear-gradient(155deg, rgba(16, 33, 27, 0.94), rgba(8, 17, 14, 0.98));
+  border: 1px solid rgba(52, 211, 153, 0.22);
+  box-shadow:
+    0 20px 44px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+.s36-qrsync {
+  grid-template-columns: 230px minmax(0, 1fr);
+  margin: 0 0 20px;
+}
+.s36-tabshot {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1080/2340;
+  object-fit: cover;
+  object-position: top;
+  border-radius: 24px;
+  border: 5px solid #040907;
+  box-shadow:
+    0 22px 44px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(52, 211, 153, 0.28);
+}
+.s36-benefits h3 {
+  margin: 6px 0 14px;
+  font-size: 1.38rem;
+  color: #fff;
+}
+.s36-benefits > div {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 11px 0;
+  border-top: 1px solid rgba(110, 231, 183, 0.1);
+}
+.s36-benefits > div b {
+  flex: 0 0 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: linear-gradient(145deg, rgba(16, 185, 129, 0.22), rgba(6, 182, 212, 0.12));
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  color: var(--kem);
+  font-size: 1rem;
+  box-shadow: 0 3px 0 rgba(3, 12, 9, 0.9);
+}
+.s36-benefits strong { display: block; color: #f1f8f5; font-size: 0.96rem; }
+.s36-benefits small { display: block; color: var(--km); font-size: 0.84rem; line-height: 1.48; margin-top: 2px; }
+.s36-note { margin: 12px 0 0; color: #8aa39b; font-size: 0.8rem; }
+.s36-new {
+  display: inline-block;
+  padding: 4px 11px;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.16);
+  border: 1px solid rgba(52, 211, 153, 0.34);
+  color: var(--kem);
+  font: 600 0.72rem/1.2 var(--kmo);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
-/* ---------- Tabs: PRO / Синхронизация / Скачать ---------- */
-.s36-tabrow{display:grid;grid-template-columns:1fr 220px;gap:24px;align-items:center;margin-top:18px;padding:20px;border-radius:22px;background:linear-gradient(150deg,#111c16,#0a120e);border:1px solid rgba(110,231,183,.12)}
-.s36-qrsync{grid-template-columns:220px 1fr;margin:0 0 16px}
-.s36-tabshot{width:100%;height:auto;aspect-ratio:1080/2340;object-fit:cover;object-position:top;border-radius:24px;border:5px solid #1b211e;box-shadow:0 18px 40px rgba(0,0,0,.4)}
-.s36-benefits h3{margin:4px 0 12px;font-size:1.35rem;color:#f0f6f2}
-.s36-benefits>div{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid rgba(255,255,255,.05)}
-.s36-benefits>div b{flex:0 0 34px;height:34px;display:grid;place-items:center;border-radius:11px;background:rgba(110,231,183,.12);color:#6ee7b7;font-size:1rem}
-.s36-benefits strong{display:block;color:#e8f1ec;font-size:.98rem}
-.s36-benefits small{display:block;color:#8fa298;font-size:.84rem;line-height:1.45;margin-top:2px}
-.s36-note{margin:10px 0 0;color:#7d8f86;font-size:.8rem}
-.s36-new{display:inline-block;padding:4px 10px;border-radius:999px;background:rgba(110,231,183,.15);color:#6ee7b7;font-size:.72rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
-.s36-dlqr{display:grid;grid-template-columns:180px 1fr 150px;gap:22px;align-items:center;margin-bottom:16px;padding:20px;border-radius:22px;background:linear-gradient(135deg,#143024,#0c1812);border:1px solid rgba(110,231,183,.2)}
-.s36-dlqr>img:first-child{border-radius:16px;background:#fff;padding:8px}
-.s36-dlqr h3{margin:0 0 6px;color:#f0f6f2;font-size:1.3rem}
-.s36-dlqr p{margin:0;color:#a9bdb2;font-size:.95rem;line-height:1.5}
-.s36-dlphone{width:100%;height:auto;aspect-ratio:1080/2340;object-fit:cover;object-position:top;border-radius:20px;border:4px solid #1b211e}
-@media (max-width:760px){
-  .s36-tabrow,.s36-qrsync{grid-template-columns:1fr;padding:14px}
-  .s36-tabrow .s36-tabshot{display:none}
-  .s36-dlqr{display:none}
+.s36-dlqr {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr) 150px;
+  gap: 24px;
+  align-items: center;
+  max-width: 880px;
+  margin: 0 auto 20px;
+  padding: 22px;
+  border-radius: 24px;
+  background: linear-gradient(140deg, rgba(16, 48, 36, 0.92), rgba(9, 20, 16, 0.98));
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  box-shadow:
+    0 20px 44px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
-/* Larger, easier to read text on desktop tabs. */
-@media (min-width:900px){
-  .app-view-tab:not(#tabOverview) .v2-page-head h2{font-size:2.1rem!important}
-  .app-view-tab:not(#tabOverview) .v2-page-head p{font-size:1rem!important;max-width:720px}
+.s36-dlqr > img:first-child {
+  border-radius: 16px;
+  background: #fff;
+  padding: 8px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
 }
-.s36-dlqr{max-width:850px;margin-left:auto!important;margin-right:auto!important}
+.s36-dlqr h3 { margin: 0 0 6px; color: #fff; font-size: 1.3rem; }
+.s36-dlqr p { margin: 0; color: #bfd4cd; font-size: 0.94rem; line-height: 1.5; }
+.s36-dlphone {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1080/2340;
+  object-fit: cover;
+  object-position: top;
+  border-radius: 20px;
+  border: 4px solid #040907;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.5);
+}
+
+/* 3D Ecosystem Showcase Banner inside Sync Tab */
+.s36-sync-render {
+  margin: 0 0 22px;
+  border-radius: 24px;
+  overflow: hidden;
+  border: 1px solid rgba(52, 211, 153, 0.28);
+  background: #050c0a;
+  box-shadow: 0 24px 56px rgba(0, 0, 0, 0.55);
+  position: relative;
+}
+.s36-sync-render img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1200/675;
+  object-fit: cover;
+}
+.s36-sync-render-cap {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+.s36-sync-render-cap span {
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(6, 13, 11, 0.82);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(52, 211, 153, 0.34);
+  color: #e6f7f0;
+  font: 600 0.74rem/1.2 var(--kmo);
+}
+
+@media (max-width: 760px) {
+  .s36-tabrow, .s36-qrsync { grid-template-columns: 1fr; padding: 16px; }
+  .s36-tabrow .s36-tabshot { display: none; }
+  .s36-dlqr { display: none; }
+}
+@media (max-width: 640px) {
+  #tabPayment .checkout-grid { grid-template-columns: minmax(0, 1fr); }
+  #tabPayment .v2-trust-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  #tabPayment .v2-trust-list span {
+    flex: 0 1 auto;
+    max-width: 100%;
+    white-space: normal;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
