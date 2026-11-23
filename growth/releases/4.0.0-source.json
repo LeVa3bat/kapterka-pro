@@ -1,0 +1,23 @@
+{
+  "versionName": "4.0.0",
+  "versionCode": 40,
+  "packageName": "com.aistudio.kapterka.jmwqve",
+  "minSdk": 24,
+  "signerSha256": "843a7e883914f3a7a5a7665ff07b2e8c43da87a24ee4dc35e1600758aee73cb9",
+  "apkSize": 5329633,
+  "apkSha256": "9bba1111d904eba0c91356e5dedc37febd8f97c2ef70153cd27213bab68664e1",
+  "sourceCommit": "edc61c84ff5c3a16ef204ffc994984aa72007104",
+  "sourceRef": "edc61c84ff5c3a16ef204ffc994984aa72007104",
+  "workflowCommit": "24b139f8048131b216d1e031de0e17df7867965b",
+  "builtAt": "2026-11-23T08:12:58.469Z",
+  "workflowRunId": "45136078148",
+  "workflowRunAttempt": "1",
+  "verification": {
+    "aapt": true,
+    "apksigner": true,
+    "sha256": true,
+    "sourceCommit": true
+  },
+  "releaseWorkflowUrl": "https://github.com/LeVa3bat/kapterka-pro/actions/runs/45136078148",
+  "physicalDeviceUpgradeTested": false
+}
