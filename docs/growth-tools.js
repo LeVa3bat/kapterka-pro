@@ -131,8 +131,11 @@
     }).join(' · ');
   }
 
-  /* Compact UTF-8 encoder & ZIP Store packager (Zero external deps) */
-  var CRC_TABLE = (function () {
+  /* Compact UTF-8 encoder & ZIP Store packager (Zero external deps; lazy CRC table for 0 startup cost) */
+  var CRC_TABLE = null;
+
+  function getCrcTable() {
+    if (CRC_TABLE) return CRC_TABLE;
     var table = new Uint32Array(256);
     for (var n = 0; n < 256; n++) {
       var c = n;
@@ -141,13 +144,15 @@
       }
       table[n] = c >>> 0;
     }
-    return table;
-  })();
+    CRC_TABLE = table;
+    return CRC_TABLE;
+  }
 
   function crc32(bytes) {
+    var table = getCrcTable();
     var c = 0xFFFFFFFF;
     for (var i = 0; i < bytes.length; i++) {
-      c = CRC_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+      c = table[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
     }
     return (c ^ 0xFFFFFFFF) >>> 0;
   }
@@ -558,6 +563,25 @@
     var typeBtns = section.querySelectorAll('[data-builder-form]');
     var currentForm = 'mb7';
 
+    function wireRowDom(row) {
+      row.querySelectorAll('[data-builder-field]').forEach(function (inp) {
+        if (!inp.dataset.wired) {
+          inp.dataset.wired = '1';
+          inp.addEventListener('input', refreshSummary);
+        }
+      });
+      var del = row.querySelector('.k3d-b-del');
+      if (del && !del.dataset.wired) {
+        del.dataset.wired = '1';
+        del.addEventListener('click', function () {
+          if (rowsHost.children.length <= 1) return;
+          row.remove();
+          refreshSummary();
+        });
+      }
+      return row;
+    }
+
     function createRowDom(data) {
       var row = document.createElement('div');
       row.className = 'k3d-b-row';
@@ -582,7 +606,6 @@
         inp.autocomplete = 'off';
         if (f.key === 'qty') inp.inputMode = 'decimal';
         inp.value = f.val;
-        inp.addEventListener('input', refreshSummary);
         wrap.appendChild(cap);
         wrap.appendChild(inp);
         row.appendChild(wrap);
@@ -593,13 +616,8 @@
       del.className = 'k3d-b-del';
       del.textContent = '×';
       del.setAttribute('aria-label', 'Удалить строку');
-      del.addEventListener('click', function () {
-        if (rowsHost.children.length <= 1) return;
-        row.remove();
-        refreshSummary();
-      });
       row.appendChild(del);
-      return row;
+      return wireRowDom(row);
     }
 
     function readDomRows() {
@@ -708,7 +726,12 @@
       });
     }
 
-    loadTemplate('mb7');
+    if (rowsHost.children.length > 0) {
+      Array.prototype.forEach.call(rowsHost.children, wireRowDom);
+      refreshSummary();
+    } else {
+      loadTemplate('mb7');
+    }
   }
 
   function initTeamShare() {
@@ -747,9 +770,9 @@
     initTeamShare();
   }
 
-  if (typeof scope.requestIdleCallback === 'function') {
-    scope.requestIdleCallback(bootstrapGrowthTools, { timeout: 1200 });
+  if (scope.document.readyState === 'loading') {
+    scope.document.addEventListener('DOMContentLoaded', bootstrapGrowthTools, { once: true });
   } else {
-    scope.setTimeout(bootstrapGrowthTools, 60);
+    bootstrapGrowthTools();
   }
 })(typeof window !== 'undefined' ? window : globalThis);

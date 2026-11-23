@@ -1215,10 +1215,6 @@ a.lp-seal:hover, button.lp-seal:hover { transform: translateY(-3px); border-colo
 .k3d-share-compact { margin-top: 14px; }
 
 /* XLSX Blank Builder (#blank-builder) */
-.k3d-builder-sec, #compare {
-  content-visibility: auto;
-  contain-intrinsic-size: 1px 640px;
-}
 .k3d-builder-head {
   display: flex;
   flex-wrap: wrap;

@@ -778,10 +778,32 @@
 
             <div class="k3d-builder-bar">
               <span id="builderDocMeta">Типовая межотраслевая форма № МБ-7 · ОКУД 0320003</span>
-              <strong id="builderUnitSummary" aria-live="polite">Позиций: 3 · Итого: 10 пар · 5 шт.</strong>
+              <strong id="builderUnitSummary" aria-live="polite">Позиций: 3 · Итого (раздельно): 10 пар · 5 шт.</strong>
             </div>
 
-            <div class="k3d-builder-rows" id="builderRowsHost"></div>
+            <div class="k3d-builder-rows" id="builderRowsHost">
+              <div class="k3d-b-row">
+                <label class="k3d-b-field k3d-b-field-name"><span>Наименование</span><input type="text" data-builder-field="name" placeholder="Например: Перчатки" maxlength="120" autocomplete="off" value="Перчатки с полимерным покрытием"></label>
+                <label class="k3d-b-field k3d-b-field-unit"><span>Ед. изм.</span><input type="text" data-builder-field="unit" placeholder="шт." maxlength="20" autocomplete="off" value="пар"></label>
+                <label class="k3d-b-field k3d-b-field-qty"><span>Кол-во</span><input type="text" data-builder-field="qty" placeholder="1" maxlength="12" autocomplete="off" inputmode="decimal" value="10"></label>
+                <label class="k3d-b-field k3d-b-field-person"><span>Получатель / куда</span><input type="text" data-builder-field="person" placeholder="ФИО или участок" maxlength="80" autocomplete="off" value="Бригада № 1 (Соколов А.И.)"></label>
+                <button type="button" class="k3d-b-del" aria-label="Удалить строку">×</button>
+              </div>
+              <div class="k3d-b-row">
+                <label class="k3d-b-field k3d-b-field-name"><span>Наименование</span><input type="text" data-builder-field="name" placeholder="Например: Перчатки" maxlength="120" autocomplete="off" value="Перфоратор SDS-Plus (дежурный)"></label>
+                <label class="k3d-b-field k3d-b-field-unit"><span>Ед. изм.</span><input type="text" data-builder-field="unit" placeholder="шт." maxlength="20" autocomplete="off" value="шт."></label>
+                <label class="k3d-b-field k3d-b-field-qty"><span>Кол-во</span><input type="text" data-builder-field="qty" placeholder="1" maxlength="12" autocomplete="off" inputmode="decimal" value="1"></label>
+                <label class="k3d-b-field k3d-b-field-person"><span>Получатель / куда</span><input type="text" data-builder-field="person" placeholder="ФИО или участок" maxlength="80" autocomplete="off" value="Егоров Д.В."></label>
+                <button type="button" class="k3d-b-del" aria-label="Удалить строку">×</button>
+              </div>
+              <div class="k3d-b-row">
+                <label class="k3d-b-field k3d-b-field-name"><span>Наименование</span><input type="text" data-builder-field="name" placeholder="Например: Перчатки" maxlength="120" autocomplete="off" value="Очки защитные закрытые"></label>
+                <label class="k3d-b-field k3d-b-field-unit"><span>Ед. изм.</span><input type="text" data-builder-field="unit" placeholder="шт." maxlength="20" autocomplete="off" value="шт."></label>
+                <label class="k3d-b-field k3d-b-field-qty"><span>Кол-во</span><input type="text" data-builder-field="qty" placeholder="1" maxlength="12" autocomplete="off" inputmode="decimal" value="4"></label>
+                <label class="k3d-b-field k3d-b-field-person"><span>Получатель / куда</span><input type="text" data-builder-field="person" placeholder="ФИО или участок" maxlength="80" autocomplete="off" value="Участок сборки"></label>
+                <button type="button" class="k3d-b-del" aria-label="Удалить строку">×</button>
+              </div>
+            </div>
 
             <div class="k3d-builder-foot">
               <div class="k3d-builder-actions">
