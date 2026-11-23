@@ -88,10 +88,21 @@ class RedesignShowcaseScreenshotTest {
             "Runs only when recording redesign screenshots (-Proborazzi.test.record=true)",
             System.getProperty("roborazzi.test.record") == "true"
         )
+        // Mark Robolectric network as online so TacticalHeader renders the green "в сети" state.
+        val ctx = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
+        val cm = ctx.getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager
+        val activeNet = cm?.activeNetwork
+        if (cm != null && activeNet != null) {
+            val caps = org.robolectric.shadows.ShadowNetworkCapabilities.newInstance()
+            org.robolectric.Shadows.shadowOf(caps).addCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            org.robolectric.Shadows.shadowOf(caps).addCapability(android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+            org.robolectric.Shadows.shadowOf(cm).setNetworkCapabilities(activeNet, caps)
+        }
     }
 
-    private val now = 1_795_340_000_000L // 22.11.2026
+    private val now = System.currentTimeMillis()
     private val hour = 3_600_000L
+    private val onlineSync = com.example.data.sync.SyncState(isOnline = true, connectedDevicesCount = 2, syncMessage = "В сети")
 
     private val civProfile = UserProfile(
         callsign = "Алексей",
@@ -123,12 +134,12 @@ class RedesignShowcaseScreenshotTest {
         StockRecord(pointId = "base_sklad", itemId = "civ_el_01", quantity = 8, incomeTotal = 12, expenseTotal = 4, lastUpdated = now),
         StockRecord(pointId = "base_sklad", itemId = "civ_el_02", quantity = 6, incomeTotal = 10, expenseTotal = 4, lastUpdated = now),
         StockRecord(pointId = "base_sklad", itemId = "civ_el_03", quantity = 14, incomeTotal = 18, expenseTotal = 4, lastUpdated = now),
-        StockRecord(pointId = "base_sklad", itemId = "civ_con_01", quantity = 45, incomeTotal = 60, expenseTotal = 15, lastUpdated = now),
-        StockRecord(pointId = "base_sklad", itemId = "civ_ppe_01", quantity = 28, incomeTotal = 40, expenseTotal = 12, lastUpdated = now),
-        StockRecord(pointId = "base_sklad", itemId = "civ_chem_01", quantity = 80, incomeTotal = 120, expenseTotal = 40, lastUpdated = now),
+        StockRecord(pointId = "base_sklad", itemId = "civ_cn_01", quantity = 45, incomeTotal = 60, expenseTotal = 15, lastUpdated = now),
+        StockRecord(pointId = "base_sklad", itemId = "civ_pp_01", quantity = 28, incomeTotal = 40, expenseTotal = 12, lastUpdated = now),
+        StockRecord(pointId = "base_sklad", itemId = "civ_ch_03", quantity = 80, incomeTotal = 120, expenseTotal = 40, lastUpdated = now),
         StockRecord(pointId = "pt_workshop", itemId = "civ_el_01", quantity = 4, incomeTotal = 4, expenseTotal = 0, lastUpdated = now),
-        StockRecord(pointId = "pt_site_1", itemId = "civ_con_01", quantity = 15, incomeTotal = 15, expenseTotal = 0, lastUpdated = now),
-        StockRecord(pointId = "pt_brigade", itemId = "civ_ppe_01", quantity = 12, incomeTotal = 12, expenseTotal = 0, lastUpdated = now)
+        StockRecord(pointId = "pt_site_1", itemId = "civ_cn_01", quantity = 15, incomeTotal = 15, expenseTotal = 0, lastUpdated = now),
+        StockRecord(pointId = "pt_brigade", itemId = "civ_pp_01", quantity = 12, incomeTotal = 12, expenseTotal = 0, lastUpdated = now)
     )
 
     private val civOps = listOf(
@@ -191,13 +202,15 @@ class RedesignShowcaseScreenshotTest {
         RequisitionRequest("rq3", "Основной склад", "Цех сборки", status = RequestStatus.ASSEMBLING, timestamp = now - 5 * hour, itemsJson = "rq3")
     )
 
+    private fun civName(id: String): String = civItems.firstOrNull { it.id == id }?.name ?: id
+
     private fun parseReq(json: String) = when (json) {
         "rq1" -> listOf(
-            RequisitionItemEntry("Перфоратор SDS-Plus (800 Вт)", 2, "шт."),
-            RequisitionItemEntry("Диск отрезной 125х1,2 мм (металл)", 15, "шт.")
+            RequisitionItemEntry(civName("civ_el_01"), 2, "шт."),
+            RequisitionItemEntry(civName("civ_cn_01"), 15, "уп.")
         )
-        "rq2" -> listOf(RequisitionItemEntry("Перчатки рабочие х/б с ПВХ", 12, "пар"))
-        else -> listOf(RequisitionItemEntry("Масло моторное 5W-40", 10, "л."))
+        "rq2" -> listOf(RequisitionItemEntry(civName("civ_pp_01"), 12, "пар"))
+        else -> listOf(RequisitionItemEntry(civName("civ_ch_03"), 10, "л."))
     }
 
     @Composable
@@ -218,6 +231,18 @@ class RedesignShowcaseScreenshotTest {
         compose.waitForIdle()
         compose.mainClock.advanceTimeBy(1_200)
         captureScreenRoboImage("build/outputs/v4-showcase/$name.png")
+    }
+
+    @Test
+    fun v4_00_splash_3d() {
+        compose.mainClock.autoAdvance = false
+        compose.setContent {
+            MyApplicationTheme(darkTheme = true) {
+                com.example.ui.screens.SplashScreen(onInitializationComplete = {})
+            }
+        }
+        compose.mainClock.advanceTimeBy(2_900)
+        captureScreenRoboImage("build/outputs/v4-showcase/00_splash_3d.png")
     }
 
     @Test
@@ -250,6 +275,8 @@ class RedesignShowcaseScreenshotTest {
                 WithBar(AppDestination.HOME) {
                     MainDashboardScreen(
                         profile = civProfile,
+                        syncState = onlineSync,
+                        pendingRequisitionsCount = 2,
                         points = civPoints,
                         catalogItems = civItems,
                         stockRecords = civStocks,
@@ -287,6 +314,8 @@ class RedesignShowcaseScreenshotTest {
                 WithBar(AppDestination.HOME) {
                     MainDashboardScreen(
                         profile = civProfile,
+                        syncState = onlineSync,
+                        pendingRequisitionsCount = 2,
                         points = civPoints,
                         catalogItems = civItems,
                         stockRecords = civStocks,
@@ -325,6 +354,8 @@ class RedesignShowcaseScreenshotTest {
                 WithBar(AppDestination.HOME) {
                     MainDashboardScreen(
                         profile = milProfile,
+                        syncState = onlineSync,
+                        pendingRequisitionsCount = 2,
                         points = milPoints,
                         catalogItems = milItems,
                         stockRecords = milStocks,
@@ -387,7 +418,8 @@ class RedesignShowcaseScreenshotTest {
                         onCreateRequisition = { _, _, _, _ -> },
                         onUpdateStatus = { _, _ -> },
                         onDeleteRequisition = {},
-                        parseItems = ::parseReq
+                        parseItems = ::parseReq,
+                        profileMode = WorkspaceProfileMode.CIVILIAN
                     )
                 }
             }
@@ -425,7 +457,8 @@ class RedesignShowcaseScreenshotTest {
                         profile = civProfile,
                         onRegenerateKey = {},
                         onForceSync = {},
-                        onDismiss = {}
+                        onDismiss = {},
+                        profileMode = WorkspaceProfileMode.CIVILIAN
                     )
                 }
             }
@@ -448,7 +481,8 @@ class RedesignShowcaseScreenshotTest {
                         yooKassaConfig = YooKassaConfig(),
                         onActivateLicenseKey = {},
                         onTestPaymentConfirm = {},
-                        onDismiss = {}
+                        onDismiss = {},
+                        profileMode = WorkspaceProfileMode.CIVILIAN
                     )
                 }
             }
