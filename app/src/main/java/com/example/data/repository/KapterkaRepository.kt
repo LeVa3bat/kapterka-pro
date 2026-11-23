@@ -126,86 +126,89 @@ class KapterkaRepository(
     }
 
     /**
-     * Explicit user-triggered profile change from Settings -> «Изменить профиль».
-     * - On a clean DB with [updateWarehousesAndCatalog] = true, switches starter warehouses & catalog cleanly.
-     * - When working stock/history already exists, NEVER deletes user stock, operations, requisitions,
-     *   custom items or non-empty points; replaces only unreferenced unused starter items/empty starter points
-     *   with the newly chosen profile's starter set.
+     * Explicit user-triggered profile change from Settings -> «Профиль и склады».
+     * - When [updateWarehousesAndCatalog] = false, switches only UI labels & Excel report forms
+     *   without modifying existing warehouses, catalog, stocks, operations, or requisitions.
+     * - When [updateWarehousesAndCatalog] = true, resets old operations, stock balances, and
+     *   requisitions (writing deletion tombstones so cloud sync cannot resurrect stale records)
+     *   and replaces warehouses & catalog cleanly with the newly selected profile's starter set.
      */
     suspend fun reconfigureProfile(
         mode: com.example.data.model.WorkspaceProfileMode,
         updateWarehousesAndCatalog: Boolean
     ): Pair<Boolean, Boolean> {
-        if (!updateWarehousesAndCatalog) return Pair(false, hasLocalUnitData())
-        if (!hasLocalUnitData()) {
-            applyStarterProfile(mode)
-            return Pair(true, false)
-        }
+        val hadData = hasLocalUnitData()
+        if (!updateWarehousesAndCatalog) return Pair(false, hadData)
 
-        // Existing data present: protect every referenced item and non-empty / custom warehouse!
-        val allStocks = dao.getAllStockRecords().first()
-        val allOps = dao.getAllOperations().first()
-        val referencedItemIds = buildSet {
-            allStocks.forEach { if (it.quantity != 0 || it.incomeTotal != 0 || it.expenseTotal != 0) add(it.itemId) }
-            allOps.forEach { op ->
-                parseOperationItems(op.itemsJson).forEach { entry ->
-                    if (entry.itemId.isNotBlank()) add(entry.itemId)
-                }
-            }
-        }
-        val starterItemIds = InitialData.getAllStarterItemIds()
+        val unitKey = getCurrentUnitKey()
+        val oldStocks = dao.getAllStockRecords().first()
+        val oldOps = dao.getAllOperations().first()
+        val oldReqs = dao.getAllRequisitions().first()
+        val oldPoints = dao.getAllPoints().first()
+        val oldItems = dao.getAllItems().first()
+
+        val targetPoints = InitialData.getPointsFor(mode)
+        val targetPointIds = targetPoints.map { it.id }.toSet()
         val targetStarterItems = InitialData.getItemsFor(mode)
         val targetStarterItemIds = targetStarterItems.map { it.id }.toSet()
 
-        // Remove only UNREFERENCED starter items that do not belong to the new profile
-        val currentItems = dao.getAllItems().first()
-        for (item in currentItems) {
-            if (!item.isCustom &&
-                item.id in starterItemIds &&
-                item.id !in targetStarterItemIds &&
-                item.id !in referencedItemIds
-            ) {
-                dao.deleteItem(item.id)
+        // 1. Persist explicit deletion tombstones before clearing so cloud sync / connected phones
+        //    never resurrect stale operations, stock balances, requisitions, or removed warehouses/items.
+        for (stock in oldStocks) {
+            syncManager?.prepareDeletionTombstone(
+                unitKey,
+                "stock_record",
+                "${stock.pointId}:::${stock.itemId}"
+            )
+        }
+        for (op in oldOps) {
+            syncManager?.prepareDeletionTombstone(unitKey, "operation", op.id)
+        }
+        for (req in oldReqs) {
+            syncManager?.prepareDeletionTombstone(unitKey, "requisition", req.id)
+        }
+        for (pt in oldPoints) {
+            if (pt.id !in targetPointIds && pt.id != "base_sklad") {
+                syncManager?.prepareDeletionTombstone(unitKey, "warehouse_point", pt.id)
             }
         }
-        if (targetStarterItems.isNotEmpty()) {
-            dao.insertItemsIfMissing(targetStarterItems)
-        }
-
-        // Update starter warehouses safely: never drop points that have stock or custom points
-        val stockPointIds = allStocks.filter { it.quantity != 0 || it.incomeTotal != 0 || it.expenseTotal != 0 }
-            .map { it.pointId }.toSet()
-        val allStarterPointIds = InitialData.getAllStarterPointIds()
-        val targetPoints = InitialData.getPointsFor(mode)
-        val targetPointIds = targetPoints.map { it.id }.toSet()
-        val defaultBaseNames = setOf("Базовый склад (КЗ)", "Основной склад")
-
-        val currentPoints = dao.getAllPoints().first()
-        for (pt in currentPoints) {
-            if (!pt.isBase &&
-                pt.id in allStarterPointIds &&
-                pt.id !in targetPointIds &&
-                pt.id !in stockPointIds
-            ) {
-                dao.deletePoint(pt.id)
+        for (item in oldItems) {
+            if (item.id !in targetStarterItemIds) {
+                syncManager?.prepareDeletionTombstone(unitKey, "inventory_item", item.id)
             }
         }
-        val remainingPointIds = dao.getAllPoints().first().map { it.id }.toSet()
-        val unitKey = getCurrentUnitKey()
-        for (targetPt in targetPoints) {
-            if (targetPt.id !in remainingPointIds) {
-                dao.insertPoint(targetPt)
-                if (unitKey.isNotBlank()) syncManager?.pushWarehousePointAsync(unitKey, targetPt)
-            } else if (targetPt.isBase) {
-                val existingBase = currentPoints.firstOrNull { it.id == targetPt.id }
-                if (existingBase != null && existingBase.name in defaultBaseNames) {
-                    val renamed = existingBase.copy(name = targetPt.name, description = targetPt.description)
-                    dao.updatePoint(renamed)
-                    if (unitKey.isNotBlank()) syncManager?.pushWarehousePointAsync(unitKey, renamed)
+
+        // 2. Clear any stale tombstones on the newly selected profile's starter points & items
+        //    (e.g. if the user previously switched away from this profile and is now switching back).
+        for (pt in targetPoints) {
+            syncManager?.clearDeletionTombstone(unitKey, "warehouse_point", pt.id)
+        }
+        for (item in targetStarterItems) {
+            syncManager?.clearDeletionTombstone(unitKey, "inventory_item", item.id)
+        }
+
+        // 3. Atomically reset operations, stocks, requisitions, warehouses, and catalog in Room.
+        dao.resetWorkspaceProfileData(targetPoints, targetStarterItems)
+
+        // 4. Synchronize cloud collections if connected to a shared unit/warehouse channel.
+        if (unitKey.isNotBlank()) {
+            syncManager?.clearCloudDataAsync(unitKey)
+            for (pt in oldPoints) {
+                if (pt.id !in targetPointIds && pt.id != "base_sklad") {
+                    syncManager?.deleteWarehousePointAsync(unitKey, pt.id)
                 }
             }
+            for (item in oldItems) {
+                if (item.id !in targetStarterItemIds) {
+                    syncManager?.deleteInventoryItemAsync(unitKey, item.id)
+                }
+            }
+            for (targetPt in targetPoints) {
+                syncManager?.pushWarehousePointAsync(unitKey, targetPt)
+            }
         }
-        return Pair(true, true)
+
+        return Pair(true, hadData)
     }
 
     /**

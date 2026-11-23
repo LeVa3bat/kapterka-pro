@@ -47,11 +47,16 @@ fun ProfileSelectionScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(TacticalBg)
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 18.dp, vertical = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Spacer(modifier = Modifier.height(6.dp))
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 18.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Spacer(modifier = Modifier.height(4.dp))
 
         // Top badge + optional back button in reconfigure mode
         Row(
@@ -171,18 +176,25 @@ fun ProfileSelectionScreen(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Применить стартовые склады и каталог",
+                        text = if (hasExistingData) {
+                            "Заменить склады и сбросить старые операции"
+                        } else {
+                            "Применить стартовые склады и каталог"
+                        },
                         color = TacticalTextPrimary,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = if (hasExistingData) {
-                            "Ваши остатки, операции и заявки сохранятся — обновятся только стартовые шаблоны"
-                        } else {
-                            "Сразу загрузит склады, категории и справочник выбранного профиля"
+                        text = when {
+                            hasExistingData && applyStarterSet ->
+                                "Старые остатки, журнал операций и заявки будут очищены, загрузятся склады и справочник выбранного профиля"
+                            hasExistingData && !applyStarterSet ->
+                                "Сменятся только подписи и бланки Excel — текущие склады, остатки и операции останутся"
+                            else ->
+                                "Сразу загрузит склады, категории и справочник выбранного профиля"
                         },
-                        color = TacticalTextMuted,
+                        color = if (hasExistingData && applyStarterSet) TacticalGoldText else TacticalTextMuted,
                         fontSize = 11.sp,
                         lineHeight = 15.sp
                     )
@@ -224,25 +236,31 @@ fun ProfileSelectionScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(4.dp))
+        }
 
-        com.example.ui.components.Volumetric3DButton(
-            text = if (isReconfigureMode) "Применить профиль" else "Начать работу",
-            onClick = {
-                if (isReconfigureMode && onConfirmReconfigure != null) {
-                    onConfirmReconfigure(selected, applyStarterSet)
-                } else {
-                    onConfirmProfile(selected)
-                }
-            },
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .testTag("confirm_profile_button"),
-            height = 56.dp,
-            cornerRadius = 18.dp
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
+                .background(TacticalBg)
+                .padding(horizontal = 18.dp, vertical = 12.dp)
+        ) {
+            com.example.ui.components.Volumetric3DButton(
+                text = if (isReconfigureMode) "Применить профиль" else "Начать работу",
+                onClick = {
+                    if (isReconfigureMode && onConfirmReconfigure != null) {
+                        onConfirmReconfigure(selected, applyStarterSet)
+                    } else {
+                        onConfirmProfile(selected)
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("confirm_profile_button"),
+                height = 56.dp,
+                cornerRadius = 18.dp
+            )
+        }
     }
 }
 

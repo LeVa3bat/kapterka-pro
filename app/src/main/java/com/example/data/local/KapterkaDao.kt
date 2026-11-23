@@ -145,6 +145,25 @@ interface KapterkaDao {
     @Query("DELETE FROM inventory_items")
     suspend fun clearAllItems()
 
+    /** Atomically resets warehouses, catalog, stock balances, operations, and requisitions when switching profile warehouses. */
+    @Transaction
+    suspend fun resetWorkspaceProfileData(
+        points: List<WarehousePoint>,
+        items: List<InventoryItem>
+    ) {
+        clearAllStockRecords()
+        clearAllOperations()
+        clearAllRequisitions()
+        clearAllPoints()
+        clearAllItems()
+        if (points.isNotEmpty()) {
+            insertPoints(points)
+        }
+        if (items.isNotEmpty()) {
+            insertItems(items)
+        }
+    }
+
     /** Restore from a backup file: all data tables are replaced atomically or not at all. */
     @Transaction
     suspend fun replaceAllData(

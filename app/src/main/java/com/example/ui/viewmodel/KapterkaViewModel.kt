@@ -195,18 +195,33 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
 
             val (reconfigured, hadUserData) = repository.reconfigureProfile(mode, updateWarehousesAndCatalog)
 
-            // Sync category chips cleanly to the selected profile (+ any category with active stock/items)
             val profileDefaults = com.example.data.local.InitialData.getCategoriesFor(mode)
-            val stockItemIds = repository.allStockRecords.first()
-                .filter { it.quantity > 0 || it.incomeTotal > 0 || it.expenseTotal > 0 }
-                .map { it.itemId }
-                .toSet()
-            val activeItemCategories = repository.allItems.first()
-                .filter { it.isCustom || it.id in stockItemIds }
-                .map { it.serviceCategory.trim() }
-                .filter { it.isNotEmpty() }
-                .distinct()
-            saveCategoriesToPrefs((profileDefaults + activeItemCategories).distinct())
+            if (reconfigured) {
+                saveCategoriesToPrefs(profileDefaults)
+                _inventorySearchQuery.value = ""
+                _historyFilterType.value = null
+                _historySearchQuery.value = ""
+
+                val curProf = userProfile.value
+                val defaultUnitNames = setOf("1-е Подразделение", "Основной склад", "Базовый склад", "Базовый склад (КЗ)")
+                if (curProf != null && (curProf.unitName.isBlank() || curProf.unitName in defaultUnitNames)) {
+                    val newUnitName = if (mode.isMilitary) "1-е Подразделение" else "Основной склад"
+                    if (curProf.unitName != newUnitName) {
+                        repository.saveUserProfile(curProf.copy(unitName = newUnitName), syncNow = false)
+                    }
+                }
+            } else {
+                val stockItemIds = repository.allStockRecords.first()
+                    .filter { it.quantity > 0 || it.incomeTotal > 0 || it.expenseTotal > 0 }
+                    .map { it.itemId }
+                    .toSet()
+                val activeItemCategories = repository.allItems.first()
+                    .filter { it.isCustom || it.id in stockItemIds }
+                    .map { it.serviceCategory.trim() }
+                    .filter { it.isNotEmpty() }
+                    .distinct()
+                saveCategoriesToPrefs((profileDefaults + activeItemCategories).distinct())
+            }
             _selectedCategory.value = "Все виды"
             val updatedPoints = repository.allPoints.first()
             _selectedPointId.value = updatedPoints.firstOrNull { it.isBase }?.id
@@ -223,9 +238,9 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                         "Профиль изменён: «Пустой склад» — чистый «Основной склад» без лишних позиций"
                 }
                 reconfigured && hadUserData ->
-                    "Профиль «${mode.titleRu}» применён. Ваши остатки и журнал сохранены, стартовые склады и каталог обновлены."
+                    "Профиль «${mode.titleRu}» применён: склады и справочник заменены, старые операции, остатки и заявки сброшены."
                 else ->
-                    "Профиль учёта и бланков: ${mode.titleRu}"
+                    "Профиль учёта и бланков: ${mode.titleRu} (склады и операции сохранены)"
             }
             _toastEvent.emit(msg)
         }

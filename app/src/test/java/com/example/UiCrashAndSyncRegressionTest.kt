@@ -6,6 +6,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.down
@@ -399,5 +400,35 @@ class UiCrashAndSyncRegressionTest {
         composeRule.waitForIdle()
         composeRule.onNodeWithText("Введите название").performClick()
         composeRule.waitForIdle()
+    }
+
+    @Test
+    fun profileReconfigureScreenShowsResetWarningAndConfirmsWarehouseReset() {
+        var confirmedMode: WorkspaceProfileMode? = null
+        var confirmedReset = false
+        composeRule.setContent {
+            MyApplicationTheme(darkTheme = true) {
+                com.example.ui.screens.ProfileSelectionScreen(
+                    initialSelection = WorkspaceProfileMode.CIVILIAN,
+                    onConfirmProfile = {},
+                    isReconfigureMode = true,
+                    hasExistingData = true,
+                    onCancel = {},
+                    onConfirmReconfigure = { mode, reset ->
+                        confirmedMode = mode
+                        confirmedReset = reset
+                    }
+                )
+            }
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText("Заменить склады и сбросить старые операции").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("profile_option_empty").performScrollTo().performClick()
+        composeRule.onNodeWithTag("confirm_profile_button").assertIsDisplayed().performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(WorkspaceProfileMode.EMPTY, confirmedMode)
+        assertTrue(confirmedReset)
     }
 }

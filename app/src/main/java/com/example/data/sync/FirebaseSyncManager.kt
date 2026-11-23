@@ -208,6 +208,28 @@ class FirebaseSyncManager(
         tombstone
     }
 
+    suspend fun clearDeletionTombstone(
+        unitKey: String,
+        entityType: String,
+        entityId: String
+    ) = withContext(Dispatchers.IO) {
+        val cleanKey = unitKey.trim()
+        if (entityId.isBlank()) return@withContext
+        val tombstoneId = SyncTombstone.create(cleanKey, entityType, entityId, 1L).id
+        dao.deleteSyncTombstoneById(tombstoneId)
+        if (cleanKey.isNotBlank() && productionCloudEnabled) {
+            try {
+                executeCloudWrite(cleanKey, "clear_tombstone/$tombstoneId") {
+                    firestore.collection("units").document(cleanKey)
+                        .collection("sync_tombstones").document(tombstoneId)
+                        .delete().await()
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Deferred cloud tombstone cleanup for $tombstoneId", e)
+            }
+        }
+    }
+
     private suspend fun applyTombstone(tombstone: SyncTombstone) {
         when (tombstone.entityType) {
             TOMBSTONE_POINT -> {
@@ -1794,13 +1816,11 @@ class FirebaseSyncManager(
     }
 
     fun clearCloudDataAsync(unitKey: String) {
-        if (!productionCloudEnabled) return
+        val cleanKey = unitKey.trim()
+        if (!productionCloudEnabled || cleanKey.isEmpty()) return
         scope.launch(Dispatchers.IO) {
-            try {
-                val cleanKey = unitKey.trim()
-                if (cleanKey.isEmpty()) return@launch
-                val db = firestore
-                val unitRef = db.collection("units").document(cleanKey)
+            executeCloudWrite(cleanKey, "clear_cloud_data") {
+                val unitRef = firestore.collection("units").document(cleanKey)
                 val collectionsToClear = listOf("stock_records", "operation_records", "requisitions")
                 for (col in collectionsToClear) {
                     val snapshot = unitRef.collection(col).get().await()
@@ -1808,8 +1828,6 @@ class FirebaseSyncManager(
                         doc.reference.delete().await()
                     }
                 }
-            } catch (e: Exception) {
-                Log.e(TAG, "Error clearing cloud data", e)
             }
         }
     }

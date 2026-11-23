@@ -600,7 +600,7 @@ class ReportBuildersAndProfilesTest {
     }
 
     @Test
-    fun reconfigureProfile_switchesCleanlyAndProtectsActiveStock() = runBlocking {
+    fun reconfigureProfile_resetsOldOperationsStocksRequisitionsAndWarehousesWhenSwitching() = runBlocking {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val db = Room.inMemoryDatabaseBuilder(context, KapterkaDatabase::class.java)
             .allowMainThreadQueries()
@@ -620,23 +620,56 @@ class ReportBuildersAndProfilesTest {
             assertFalse(dao.getAllItems().first().any { it.id.startsWith("rav_") })
             assertEquals(InitialData.getCivilianItems().size, dao.getAllItems().first().size)
 
-            // Record real stock on Base
+            // Record real operations (income + issue), stock, requisition, and custom warehouse in Civilian mode
             val base = dao.getAllPoints().first().first { it.isBase }
             val civItem = dao.getAllItems().first().first()
             repo.recordIncome(
                 base.id, base.name, "Поставщик",
-                listOf(OperationItemEntry(civItem.id, civItem.name, civItem.unit, 7)),
-                "", "Алексей", isMilitary = false
+                listOf(OperationItemEntry(civItem.id, civItem.name, civItem.unit, 10)),
+                "Приход по накладной", "Алексей", isMilitary = false
             )
+            repo.recordIssueToPerson(
+                base.id, base.name, "Иванов И.И.",
+                listOf(OperationItemEntry(civItem.id, civItem.name, civItem.unit, 3)),
+                "Выдача в работу", "Алексей"
+            )
+            repo.createRequisition(
+                pointName = "Бригада №1",
+                applicant = "Петров",
+                items = listOf(com.example.data.model.RequisitionItemEntry(civItem.name, 2, civItem.unit)),
+                comment = "Срочно"
+            )
+            repo.addWarehousePoint("Временный вагончик", "Объект")
 
-            // Reconfigure to EMPTY with existing data -> keeps the stocked item & stock, drops unused starter clutter
-            val (changedWithData, hadData) = repo.reconfigureProfile(WorkspaceProfileMode.EMPTY, true)
-            assertTrue(changedWithData)
-            assertTrue(hadData)
-            val remainingItems = dao.getAllItems().first()
-            assertEquals(1, remainingItems.size)
-            assertEquals(civItem.id, remainingItems.single().id)
+            assertEquals(2, dao.getAllOperations().first().size)
+            assertEquals(1, dao.getAllStockRecords().first().size)
+            assertEquals(1, dao.getAllRequisitions().first().size)
+
+            // Mode-only switch (updateWarehousesAndCatalog = false) preserves operations & stocks
+            val (changedFormsOnly, hadDataFormsOnly) = repo.reconfigureProfile(WorkspaceProfileMode.MILITARY, false)
+            assertFalse(changedFormsOnly)
+            assertTrue(hadDataFormsOnly)
+            assertEquals(2, dao.getAllOperations().first().size)
             assertEquals(7, dao.getAllStockRecords().first().single().quantity)
+
+            // Switching warehouses in profile (updateWarehousesAndCatalog = true) MUST reset all old operations, stocks, requisitions & warehouses!
+            val (changedWithReset, hadData) = repo.reconfigureProfile(WorkspaceProfileMode.EMPTY, true)
+            assertTrue(changedWithReset)
+            assertTrue(hadData)
+            assertTrue("Old operations must be cleared when switching warehouses in profile", dao.getAllOperations().first().isEmpty())
+            assertTrue("Old stock records must be cleared when switching warehouses in profile", dao.getAllStockRecords().first().isEmpty())
+            assertTrue("Old requisitions must be cleared when switching warehouses in profile", dao.getAllRequisitions().first().isEmpty())
+            assertTrue("EMPTY profile must have 0 items", dao.getAllItems().first().isEmpty())
+            assertEquals(1, dao.getAllPoints().first().size)
+            assertEquals("Основной склад", dao.getAllPoints().first().single().name)
+
+            // Switching from EMPTY back to MILITARY loads clean Military points & catalog with 0 stale operations
+            val (changedToMil, _) = repo.reconfigureProfile(WorkspaceProfileMode.MILITARY, true)
+            assertTrue(changedToMil)
+            assertTrue(dao.getAllOperations().first().isEmpty())
+            assertTrue(dao.getAllStockRecords().first().isEmpty())
+            assertEquals(InitialData.getDefaultPoints().size, dao.getAllPoints().first().size)
+            assertEquals(InitialData.getDefaultItems().size, dao.getAllItems().first().size)
         } finally {
             db.close()
         }
