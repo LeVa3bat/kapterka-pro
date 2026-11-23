@@ -1063,7 +1063,7 @@ async function processYooKassaPayment() {
   if (paymentRequestInFlight) return;
   const generation = paymentSessionGeneration;
   const plan = activeProPlan();
-  const callsign = document.getElementById('payCallsignInput')?.value.trim() || 'Боец';
+  const callsign = document.getElementById('payCallsignInput')?.value.trim() || 'Пользователь';
   const email = document.getElementById('payEmailInput')?.value.trim().toLowerCase() || '';
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 160) {
     showToast('Проверьте Email для получения чека и ключа.');
@@ -1210,7 +1210,7 @@ async function verifyWithManualOrderId() {
   const generation = paymentSessionGeneration;
   const input = document.getElementById('payOrderIdInput');
   const enteredKey = input ? input.value.trim().toUpperCase().replace(/\s+/g, '') : '';
-  const callsign = localStorage.getItem('kapterka_pending_callsign') || 'Боец';
+  const callsign = localStorage.getItem('kapterka_pending_callsign') || 'Пользователь';
 
   if (!enteredKey) {
     showToast('Введите ключ лицензии (KAPT-XXXX-XXXX-XXXX)');
@@ -1308,6 +1308,9 @@ function applyNewPaidKey(newKey, callsign, meta = {}) {
         keys: nextHistory
       };
       localStorage.setItem(STORAGE_AUTH_USER, JSON.stringify(updatedSession));
+      if (typeof window.snapshotWebAuthAccount === 'function') {
+        window.snapshotWebAuthAccount(currentSession.email);
+      }
     }
   } catch (e) {}
 
@@ -1348,7 +1351,7 @@ async function linkLicenseKeyInCabinet() {
     return;
   }
 
-  const callsign = localStorage.getItem(STORAGE_USER_CALLSIGN) || 'Боец';
+  const callsign = localStorage.getItem(STORAGE_USER_CALLSIGN) || 'Пользователь';
   showToast('Проверяю лицензию в облачном реестре…');
   const registry = await fetchLicenseRegistryMeta(key);
   if (generation !== paymentSessionGeneration) return;
@@ -1594,13 +1597,16 @@ window.addEventListener('popstate', restoreTabFromLocation);
 // SCREENSHOT LIGHTBOX
 // Lightbox modal opener
 const SCREENSHOT_GALLERY = [
-  { src: 'screens/36-2-dashboard.jpg', title: 'Главная — Склады, остатки и быстрые операции', alt: 'Каптёрка PRO 3.6 — Главная' },
-  { src: 'screens/36-3-stock-table.jpg', title: 'Остатки — Приход, расход и остаток по складу', alt: 'Каптёрка PRO 3.6 — Остатки' },
-  { src: 'screens/36-4-requests.jpg', title: 'Заявки — Новая → Сборка → Собрана → Выдана', alt: 'Каптёрка PRO 3.6 — Заявки' },
-  { src: 'screens/36-5-journal.jpg', title: 'Журнал — Операции по дням и за период', alt: 'Каптёрка PRO 3.6 — Журнал' },
-  { src: 'screens/36-6-unit-qr.jpg', title: 'Подключение по QR — Второй телефон за секунды', alt: 'Каптёрка PRO 3.6 — Подключение по QR' },
-  { src: 'screens/36-8-form8.jpg', title: 'Форма № 8 — Раздаточная ведомость в Excel', alt: 'Каптёрка PRO 3.6 — Форма № 8' },
-  { src: 'screens/36-7-pro.jpg', title: 'PRO — Понятная оплата и ключ на почту', alt: 'Каптёрка PRO 3.6 — PRO' }
+  { src: 'screens/36-2-dashboard.jpg', title: 'Главная · Тёмная 3D — Склады, раздельный баланс и 4 операции', alt: 'Каптёрка PRO 4.0.0 — Главная в тёмной 3D-теме' },
+  { src: 'screens/40-military-light.jpg', title: 'Главная · Светлая 3D — Контрастная дневная тема (Воинский профиль)', alt: 'Каптёрка PRO 4.0.0 — Главная в светлой 3D-теме' },
+  { src: 'screens/40-splash.jpg', title: '3D-заставка 4.0.0 — Мгновенный запуск и фирменная 3D-эмблема', alt: 'Каптёрка PRO 4.0.0 — Живая 3D-заставка' },
+  { src: 'screens/40-profiles.jpg', title: '3 профиля складов — Гражданский (64 поз.), Воинский или Пустой', alt: 'Каптёрка PRO 4.0.0 — Выбор стартового профиля' },
+  { src: 'screens/40-catalog.jpg', title: 'Каталог 64 поз. — 8 категорий инструмента, ТМЦ и расходников', alt: 'Каптёрка PRO 4.0.0 — Каталог 64 позиции' },
+  { src: 'screens/36-4-requests.jpg', title: 'Заявки Live — Новая → Сборка → Собрана → Выдана со звуком', alt: 'Каптёрка PRO 4.0.0 — Заявки' },
+  { src: 'screens/36-5-journal.jpg', title: 'Журнал — Операции по дням и за выбранный период', alt: 'Каптёрка PRO 4.0.0 — Журнал' },
+  { src: 'screens/36-6-unit-qr.jpg', title: 'Подключение по QR — Второй телефон за 5 секунд', alt: 'Каптёрка PRO 4.0.0 — Подключение по QR' },
+  { src: 'screens/40-m11.jpg', title: 'Excel М-11 / МБ-7 / Ф-8 — Готовые печатные формы формата А4', alt: 'Каптёрка PRO 4.0.0 — Отчёты Excel' },
+  { src: 'screens/36-7-pro.jpg', title: 'Тарифы PRO — 30 / 90 / 365 дней через ЮKassa и ключ на Email', alt: 'Каптёрка PRO 4.0.0 — PRO' }
 ];
 let screenshotGalleryIndex = 0;
 let previewGalleryIndex = 0;
