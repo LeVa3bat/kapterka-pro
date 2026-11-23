@@ -269,7 +269,7 @@
   <!-- /Yandex.Metrika counter -->
 
   <script>
-    window.KAPTERKA_WEB_VERSION = "4.0.0-web.2";
+    window.KAPTERKA_WEB_VERSION = "4.0.0-web.3";
     (function () {
       try {
         const key = 'kapterka_web_version_seen';
@@ -473,6 +473,56 @@
               <a class="lp-btn lp-btn-gold" href="kapterka-pro.apk" download="kapterka-pro.apk" onclick="trackApkDownload('persona')">Скачать и попробовать 3 дня бесплатно</a>
             </div>
           </div>
+          <div class="k3d-quiz-card" id="profile-quiz" aria-labelledby="quizTitle">
+            <div class="k3d-quiz-head">
+              <div>
+                <div class="lp-eyebrow">Подбор за 10 секунд</div>
+                <h3 id="quizTitle">Какой профиль 4.0.0 и режим подойдут именно вам?</h3>
+              </div>
+              <div class="k3d-quiz-hours">
+                <span>Экономия времени</span>
+                <strong id="quizResHours">≈ 11 ч / мес.</strong>
+              </div>
+            </div>
+            <div class="k3d-quiz-grid">
+              <div class="k3d-quiz-steps">
+                <div class="k3d-quiz-group">
+                  <span class="k3d-quiz-label">1. Где ведётся учёт?</span>
+                  <div class="k3d-quiz-chips" role="group" aria-label="Сфера учёта">
+                    <button type="button" class="k3d-quiz-chip active" data-quiz-group="sphere" data-quiz-value="workshop" aria-pressed="true">Мастерская / СТО</button>
+                    <button type="button" class="k3d-quiz-chip" data-quiz-group="sphere" data-quiz-value="civil" aria-pressed="false">Склад / ТМЦ / стройка</button>
+                    <button type="button" class="k3d-quiz-chip" data-quiz-group="sphere" data-quiz-value="military" aria-pressed="false">Подразделение</button>
+                  </div>
+                </div>
+                <div class="k3d-quiz-group">
+                  <span class="k3d-quiz-label">2. Сколько человек работает со складом?</span>
+                  <div class="k3d-quiz-chips" role="group" aria-label="Количество устройств">
+                    <button type="button" class="k3d-quiz-chip active" data-quiz-group="team" data-quiz-value="solo" aria-pressed="true">1 телефон (офлайн)</button>
+                    <button type="button" class="k3d-quiz-chip" data-quiz-group="team" data-quiz-value="team" aria-pressed="false">2+ телефона (заявки по QR)</button>
+                  </div>
+                </div>
+                <div class="k3d-quiz-group">
+                  <span class="k3d-quiz-label">3. Сколько выдач/приходов в неделю?</span>
+                  <div class="k3d-quiz-chips" role="group" aria-label="Объём операций">
+                    <button type="button" class="k3d-quiz-chip" data-quiz-group="weeklyOps" data-quiz-value="25" aria-pressed="false">до 25</button>
+                    <button type="button" class="k3d-quiz-chip active" data-quiz-group="weeklyOps" data-quiz-value="60" aria-pressed="true">~60</button>
+                    <button type="button" class="k3d-quiz-chip" data-quiz-group="weeklyOps" data-quiz-value="150" aria-pressed="false">~150</button>
+                    <button type="button" class="k3d-quiz-chip" data-quiz-group="weeklyOps" data-quiz-value="300" aria-pressed="false">300+</button>
+                  </div>
+                </div>
+              </div>
+              <div class="k3d-quiz-result" aria-live="polite">
+                <span class="k3d-quiz-badge">Рекомендация 4.0.0</span>
+                <strong id="quizResProfile">Гражданский склад / Мастерская (64 позиции в 8 категориях)</strong>
+                <p id="quizResForms">М-11 / ТОРГ-13, ведомость МБ-7, акт МБ-8 и оборотная ТМЦ в Excel · Полная локальная работа в базе Room / SQLite без интернета</p>
+                <div class="k3d-quiz-tier" id="quizResTier">3 дня демо → PRO 30 дней за 490 ₽ или Базовый режим навсегда</div>
+                <div class="k3d-quiz-actions">
+                  <button type="button" class="lp-btn lp-btn-emerald btn-sm" id="quizJumpPersonaBtn" data-target-persona="0">Показать экран профиля ↑</button>
+                  <a class="k3d-quiz-guide" id="quizGuideLink" href="uchet-zapchastey-v-avtoservise-android.html">Сценарий для мастерской и СТО →</a>
+                </div>
+              </div>
+            </div>
+          </div>
           <div class="lp-upgrade-safe">
             <span>🛡️</span>
             <div><b>Уже пользуетесь Каптёркой?</b> При обновлении поверх установленной версии ваши склады, остатки, журнал и лицензия сохраняются. А при намеренной смене складов профиля в 4.0.0 старые операции очищаются чисто и без хвостов.</div>
@@ -567,6 +617,14 @@
                 <strong id="reqPhone2Title">🔔 Новая заявка со звуком!</strong>
                 <small id="reqPhone2Sub">Перфоратор SDS-Plus (1 шт.) · ожидает сборки</small>
               </div>
+            </div>
+            <div class="k3d-share-bar">
+              <span>Работаете с напарником или бригадой? Позовите коллегу на общий склад:</span>
+              <div class="k3d-share-actions">
+                <button type="button" class="lp-btn lp-btn-line btn-sm" data-team-share="sim">📲 Отправить напарнику</button>
+                <a class="lp-btn lp-btn-emerald btn-sm" href="https://t.me/share/url?url=https%3A%2F%2Fkapterka-pro.ru%2F%3Futm_source%3Dreferral%26utm_medium%3Dshare%26utm_campaign%3Dteam_qr_400&text=%D0%9A%D0%B0%D0%BF%D1%82%D1%91%D1%80%D0%BA%D0%B0%20PRO%204.0%20%E2%80%94%20%D0%BE%D0%B1%D1%89%D0%B8%D0%B9%20%D1%81%D0%BA%D0%BB%D0%B0%D0%B4%20%D0%BD%D0%B0%20Android%20%D0%B8%20%D0%B7%D0%B0%D1%8F%D0%B2%D0%BA%D0%B8%20%D0%BF%D0%BE%20QR" target="_blank" rel="noopener noreferrer">В Telegram</a>
+              </div>
+              <small class="k3d-share-status" data-team-share-status aria-live="polite"></small>
             </div>
           </div>
 
@@ -690,6 +748,75 @@
         </div>
       </section>
 
+      <!-- 6.5. БЕСПЛАТНЫЙ ОНЛАЙН-КОНСТРУКТОР ВЕДОМОСТИ В EXCEL (.XLSX) -->
+      <section class="lp-section k3d-builder-sec" id="blank-builder" aria-labelledby="builderTitle">
+        <div class="lp-wrap">
+          <div class="k3d-builder-head">
+            <div>
+              <div class="lp-eyebrow">Полезный инструмент · Без регистрации</div>
+              <h2 class="lp-h2" id="builderTitle">Бесплатный онлайн-конструктор ведомости в Excel (.xlsx)</h2>
+              <p class="lp-sub">Нужен срочный бланк прямо сейчас? Выберите форму МБ-7, М-11 или Форму № 8, внесите до 15 позиций и скачайте готовый файл <code>.xlsx</code> для печати на А4. Без отправки данных на сервер.</p>
+            </div>
+            <div class="k3d-builder-tabs" role="group" aria-label="Выбор формы документа">
+              <button type="button" class="k3d-b-tab active" data-builder-form="mb7" aria-pressed="true">МБ-7 · Выдача на руки</button>
+              <button type="button" class="k3d-b-tab" data-builder-form="m11" aria-pressed="false">М-11 · Накладная</button>
+              <button type="button" class="k3d-b-tab" data-builder-form="form8" aria-pressed="false">Форма № 8 · Ведомость</button>
+            </div>
+          </div>
+
+          <div class="k3d-builder-card">
+            <div class="k3d-builder-meta">
+              <label class="k3d-b-field">
+                <span>Организация / подразделение</span>
+                <input type="text" id="builderOrgInput" maxlength="100" autocomplete="off" value="ООО «РемСтройМастер»">
+              </label>
+              <label class="k3d-b-field">
+                <span>Склад / объект / цех</span>
+                <input type="text" id="builderWarehouseInput" maxlength="100" autocomplete="off" value="Кладовая № 1 (Мастерская)">
+              </label>
+            </div>
+
+            <div class="k3d-builder-bar">
+              <span id="builderDocMeta">Типовая межотраслевая форма № МБ-7 · ОКУД 0320003</span>
+              <strong id="builderUnitSummary" aria-live="polite">Позиций: 3 · Итого (раздельно): 10 пар · 5 шт.</strong>
+            </div>
+
+            <div class="k3d-builder-rows" id="builderRowsHost">
+              <div class="k3d-b-row">
+                <label class="k3d-b-field k3d-b-field-name"><span>Наименование</span><input type="text" data-builder-field="name" placeholder="Например: Перчатки" maxlength="120" autocomplete="off" value="Перчатки с полимерным покрытием"></label>
+                <label class="k3d-b-field k3d-b-field-unit"><span>Ед. изм.</span><input type="text" data-builder-field="unit" placeholder="шт." maxlength="20" autocomplete="off" value="пар"></label>
+                <label class="k3d-b-field k3d-b-field-qty"><span>Кол-во</span><input type="text" data-builder-field="qty" placeholder="1" maxlength="12" autocomplete="off" inputmode="decimal" value="10"></label>
+                <label class="k3d-b-field k3d-b-field-person"><span>Получатель / куда</span><input type="text" data-builder-field="person" placeholder="ФИО или участок" maxlength="80" autocomplete="off" value="Бригада № 1 (Соколов А.И.)"></label>
+                <button type="button" class="k3d-b-del" aria-label="Удалить строку">×</button>
+              </div>
+              <div class="k3d-b-row">
+                <label class="k3d-b-field k3d-b-field-name"><span>Наименование</span><input type="text" data-builder-field="name" placeholder="Например: Перчатки" maxlength="120" autocomplete="off" value="Перфоратор SDS-Plus (дежурный)"></label>
+                <label class="k3d-b-field k3d-b-field-unit"><span>Ед. изм.</span><input type="text" data-builder-field="unit" placeholder="шт." maxlength="20" autocomplete="off" value="шт."></label>
+                <label class="k3d-b-field k3d-b-field-qty"><span>Кол-во</span><input type="text" data-builder-field="qty" placeholder="1" maxlength="12" autocomplete="off" inputmode="decimal" value="1"></label>
+                <label class="k3d-b-field k3d-b-field-person"><span>Получатель / куда</span><input type="text" data-builder-field="person" placeholder="ФИО или участок" maxlength="80" autocomplete="off" value="Егоров Д.В."></label>
+                <button type="button" class="k3d-b-del" aria-label="Удалить строку">×</button>
+              </div>
+              <div class="k3d-b-row">
+                <label class="k3d-b-field k3d-b-field-name"><span>Наименование</span><input type="text" data-builder-field="name" placeholder="Например: Перчатки" maxlength="120" autocomplete="off" value="Очки защитные закрытые"></label>
+                <label class="k3d-b-field k3d-b-field-unit"><span>Ед. изм.</span><input type="text" data-builder-field="unit" placeholder="шт." maxlength="20" autocomplete="off" value="шт."></label>
+                <label class="k3d-b-field k3d-b-field-qty"><span>Кол-во</span><input type="text" data-builder-field="qty" placeholder="1" maxlength="12" autocomplete="off" inputmode="decimal" value="4"></label>
+                <label class="k3d-b-field k3d-b-field-person"><span>Получатель / куда</span><input type="text" data-builder-field="person" placeholder="ФИО или участок" maxlength="80" autocomplete="off" value="Участок сборки"></label>
+                <button type="button" class="k3d-b-del" aria-label="Удалить строку">×</button>
+              </div>
+            </div>
+
+            <div class="k3d-builder-foot">
+              <div class="k3d-builder-actions">
+                <button type="button" class="lp-btn lp-btn-gold" id="builderDownloadBtn">📥 Скачать готовый .xlsx бесплатно</button>
+                <button type="button" class="lp-btn lp-btn-line btn-sm" id="builderAddRowBtn">+ Добавить строку</button>
+                <button type="button" class="lp-btn lp-btn-line btn-sm" id="builderResetBtn">Сбросить пример</button>
+              </div>
+              <small id="builderStatus" class="k3d-builder-status" aria-live="polite">Сформировано по форме МБ-7 · В Каптёрке PRO 4.0.0 ведомость МБ-7 собирается из проведённых выдач за 1 секунду.</small>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- 7. ВОЗМОЖНОСТИ BENTO (#for-whom) -->
       <section class="lp-section lp-features" id="for-whom" aria-labelledby="featTitle">
         <div class="lp-wrap">
@@ -748,6 +875,72 @@
             <li><div><strong>Выберите профиль и войдите по Email</strong><span>Гражданский склад (64 поз.), Воинский учёт или Пустой склад. Вход по 6-значному коду без пароля и Google.</span></div></li>
             <li><div><strong>Ведите учёт и выгружайте Excel</strong><span>Приход, выдача, возврат, заявки по QR и готовые ведомости А4 работают в одно касание. <a href="rukovodstvo-polzovatelya.html">Руководство →</a></span></div></li>
           </ol>
+        </div>
+      </section>
+
+      <!-- 9.5. СРАВНЕНИЕ РЕШЕНИЙ (#compare) -->
+      <section class="lp-section" id="compare" aria-labelledby="compareTitle">
+        <div class="lp-wrap">
+          <div class="lp-eyebrow">Честное сравнение</div>
+          <h2 class="lp-h2" id="compareTitle">Тетрадь vs Excel на ПК vs 1С vs Каптёрка PRO 4.0</h2>
+          <p class="lp-sub">Почему мобильный 3D-учёт на Android быстрее тетради и проще тяжёлых ERP-систем в кладовой, мастерской и на выезде.</p>
+          <div class="k3d-compare-scroll">
+            <table class="k3d-compare-table">
+              <thead>
+                <tr>
+                  <th scope="col">Критерий</th>
+                  <th scope="col">Тетрадь / блокнот</th>
+                  <th scope="col">Excel на ПК</th>
+                  <th scope="col">1С / ERP</th>
+                  <th scope="col" class="k3d-col-win">Каптёрка PRO 4.0</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">Старт работы</th>
+                  <td>1 минута</td>
+                  <td>Нужно делать таблицы</td>
+                  <td>Дни настройки</td>
+                  <td class="k3d-col-win"><strong>2 минуты · 3 готовых профиля</strong></td>
+                </tr>
+                <tr>
+                  <th scope="row">Работа в подвале / без связи</th>
+                  <td>Да</td>
+                  <td>Только у компьютера</td>
+                  <td>Требует сеть / сервер</td>
+                  <td class="k3d-col-win"><strong>100% офлайн на телефоне (Room)</strong></td>
+                </tr>
+                <tr>
+                  <th scope="row">Возврат и заявка по QR</th>
+                  <td>Перечёркивания на бумаге</td>
+                  <td>Пересылать файлы вручную</td>
+                  <td>Доп. лицензии и права</td>
+                  <td class="k3d-col-win"><strong>2-й телефон по QR за 5 сек + звук</strong></td>
+                </tr>
+                <tr>
+                  <th scope="row">Раздельные единицы (шт./л./пар)</th>
+                  <td>Легко ошибиться в суммах</td>
+                  <td>Ручные формулы</td>
+                  <td>Да</td>
+                  <td class="k3d-col-win"><strong>Встроено по умолчанию</strong></td>
+                </tr>
+                <tr>
+                  <th scope="row">М-11, МБ-7, МБ-8, Формы 8 и 18</th>
+                  <td>Писать от руки заново</td>
+                  <td>Собирать шаблоны вручную</td>
+                  <td>Только на ПК / подписка</td>
+                  <td class="k3d-col-win"><strong>В Excel А4 одной кнопкой</strong></td>
+                </tr>
+                <tr>
+                  <th scope="row">Стоимость владения</th>
+                  <td>Теряются остатки</td>
+                  <td>Бесплатно + ручной труд</td>
+                  <td>От 3 000 ₽ / мес. + ПК</td>
+                  <td class="k3d-col-win"><strong>0 ₽ Базовый · PRO от 16 ₽/день</strong></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
 
@@ -843,13 +1036,16 @@
           <h2 class="lp-h2" id="guides-title">Практика складского учёта на Android</h2>
           <p class="lp-sub">Рабочие разборы, бесплатные Excel/PDF-бланки и онлайн-инструменты для мастеров, кладовщиков и старшин.</p>
           <ul class="lp-guide-list">
-            <li><a href="skladskoy-uchet-android.html"><span><strong>Складской учёт на Android</strong><small>Как вести приход, выдачу, возврат, перемещения и остатки прямо на телефоне.</small></span><b>→</b></a></li>
-            <li><a href="prihod-rashod-sklad-android.html"><span><strong>Приход и расход на складе</strong><small>Как разделять поступление, выдачу, возврат, списание и перемещение без путаницы.</small></span><b>→</b></a></li>
-            <li><a href="inventarizaciya-na-android.html"><span><strong>Инвентаризация и калькулятор сверки</strong><small>Проверяйте фактическое наличие и выгружайте акт расхождений прямо на странице.</small></span><b>→</b></a></li>
+            <li><a href="nakladnaya-m-11-na-telefone.html"><span><strong>Накладная М-11 / ТОРГ-13</strong><small>Перемещение между складами и выгрузка М-11 в Excel без двойного расхода.</small></span><b>→</b></a></li>
+            <li><a href="uchet-specodezhdy-i-siz-android.html"><span><strong>Спецодежда и СИЗ (МБ-7 / МБ-8)</strong><small>Выдача по фамилиям, возврат, раздельный баланс пар и штук.</small></span><b>→</b></a></li>
+            <li><a href="uchet-zapchastey-v-avtoservise-android.html"><span><strong>Автосервис и мастерская (СТО)</strong><small>64 готовые позиции, инструмент на руки, ГСМ в литрах и заявки из ремзоны.</small></span><b>→</b></a></li>
           </ul>
           <div class="lp-more" aria-label="Материалы по задачам">
             <span>По задачам:</span>
-            <a href="uchet-instrumenta-android.html">Инструмент и мастерская</a>
+            <a href="skladskoy-uchet-android.html">Складской учёт</a>
+            <a href="prihod-rashod-sklad-android.html">Приход и расход</a>
+            <a href="inventarizaciya-na-android.html">Инвентаризация</a>
+            <a href="uchet-instrumenta-android.html">Инструмент</a>
             <a href="uchet-tmc-android.html">ТМЦ и расходники</a>
             <a href="uchet-oborudovaniya-android.html">Оборудование</a>
             <a href="uchet-inventarya-android.html">Инвентарь</a>
@@ -1261,6 +1457,13 @@
             <div><b>2</b><span><strong>Отсканируйте вторым телефоном</strong><small>При входе или в разделе «Подключить» нажмите значок QR и наведите камеру</small></span></div>
             <div><b>3</b><span><strong>Работайте синхронно</strong><small>Склады, остатки, возвраты, заявки и статусы обновляются на всех устройствах команды</small></span></div>
             <p class="s36-note">Доступ к общему складу получают только участники с кодом группы. Синхронизацию можно поставить на паузу или очистить облако одной кнопкой.</p>
+            <div class="k3d-share-bar k3d-share-compact">
+              <div class="k3d-share-actions">
+                <button type="button" class="btn btn-outline btn-sm" data-team-share="tabSync">📲 Пригласить напарника</button>
+                <a class="btn btn-primary btn-sm" href="https://t.me/share/url?url=https%3A%2F%2Fkapterka-pro.ru%2F%3Futm_source%3Dreferral%26utm_medium%3Dshare%26utm_campaign%3Dteam_qr_400&text=%D0%9F%D0%BE%D0%B4%D0%BA%D0%BB%D1%8E%D1%87%D0%B0%D0%B9%D1%81%D1%8F%20%D0%BA%20%D0%BE%D0%B1%D1%89%D0%B5%D0%BC%D1%83%20%D1%81%D0%BA%D0%BB%D0%B0%D0%B4%D1%83%20%D0%B2%20%D0%9A%D0%B0%D0%BF%D1%82%D1%91%D1%80%D0%BA%D0%B5%20PRO%204.0" target="_blank" rel="noopener noreferrer">Отправить в Telegram</a>
+              </div>
+              <small class="k3d-share-status" data-team-share-status aria-live="polite"></small>
+            </div>
           </div>
         </div>
 
@@ -1603,6 +1806,7 @@
 
   <script src="app.js?v=20261123" defer></script>
   <script src="site36.js?v=20261123" defer></script>
+  <script src="growth-tools.js?v=20261123" defer></script>
   <script src="auth-config.js?v=3.4.9.31a" defer></script>
   <script src="auth-v2.js?v=20261123" defer></script>
 </body>
