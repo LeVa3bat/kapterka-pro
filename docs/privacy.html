@@ -2,94 +2,48 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Политика конфиденциальности — Каптёрка PRO</title>
-  <meta name="description" content="Политика обработки данных сайта и Android-приложения Каптёрка PRO: аккаунт, Email-коды, синхронизация, оплата и аналитика.">
+  <meta name="description" content="Политика обработки данных сайта и Android-приложения Каптёрка PRO (152-ФЗ): вход по Email-коду без Google, локальная база Room, синхронизация, оплата ЮKassa (НПД) и удаление данных.">
   <link rel="canonical" href="https://kapterka-pro.ru/privacy.html">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="apple-touch-icon" href="app_icon_512.png">
-  <meta name="theme-color" content="#0d140e">
+  <meta name="theme-color" content="#091014">
   <meta name="color-scheme" content="dark">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --bg: #0d140e;
-      --card-bg: #141c16;
-      --card-inner: #19241c;
-      --primary: #8daa59;
-      --primary-bright: #a3c46a;
-      --text: #e8ede6;
-      --text-muted: #8e9b8f;
-      --border: #2c3e2e;
+    @font-face{font-family:"IBM Plex Sans";font-style:normal;font-weight:400;font-display:swap;src:url("fonts/plex-sans-400-cyrillic.woff2") format("woff2");unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+    @font-face{font-family:"IBM Plex Sans";font-style:normal;font-weight:400;font-display:swap;src:url("fonts/plex-sans-400-latin.woff2") format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+    @font-face{font-family:"IBM Plex Sans";font-style:normal;font-weight:600;font-display:swap;src:url("fonts/plex-sans-600-cyrillic.woff2") format("woff2");unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+    @font-face{font-family:"IBM Plex Sans";font-style:normal;font-weight:600;font-display:swap;src:url("fonts/plex-sans-600-latin.woff2") format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+    @font-face{font-family:"IBM Plex Mono";font-style:normal;font-weight:500;font-display:swap;src:url("fonts/plex-mono-500-cyrillic.woff2") format("woff2");unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+    @font-face{font-family:"IBM Plex Mono";font-style:normal;font-weight:500;font-display:swap;src:url("fonts/plex-mono-500-latin.woff2") format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+    :root{
+      --bg:#091014; --card:#0f1920; --card-inner:#13222b;
+      --primary:#10b981; --primary-bright:#34d399; --gold:#fbbf24;
+      --text:#edf4f2; --text-muted:#98aeb8; --border:rgba(148,179,191,.2);
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      background-color: var(--bg);
-      color: var(--text);
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      line-height: 1.6;
-      padding: 24px 16px;
-    }
-    .container {
-      max-width: 800px;
-      margin: 0 auto;
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 32px 28px;
-    }
-    .header {
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 20px;
-      margin-bottom: 24px;
-    }
-    .badge {
-      display: inline-block;
-      font-size: 11px;
-      text-transform: uppercase;
-      font-weight: 700;
-      color: var(--primary-bright);
-      background: rgba(141,170,89,0.15);
-      border: 1px solid var(--primary);
-      padding: 4px 10px;
-      border-radius: 6px;
-      margin-bottom: 10px;
-      letter-spacing: 0.5px;
-    }
-    h1 { font-size: 1.6rem; color: #fff; margin-bottom: 8px; font-weight: 800; }
-    .meta { font-size: 0.85rem; color: var(--text-muted); }
-    h2 { font-size: 1.15rem; color: var(--primary-bright); margin-top: 24px; margin-bottom: 10px; }
-    p, ul { font-size: 0.95rem; color: var(--text); margin-bottom: 12px; }
-    ul { padding-left: 20px; }
-    li { margin-bottom: 6px; }
-    .highlight-box {
-      background: var(--card-inner);
-      border: 1px solid var(--primary);
-      border-radius: 8px;
-      padding: 16px;
-      margin: 16px 0;
-      font-size: 0.9rem;
-    }
-    a { color: var(--primary-bright); text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    .btn-back {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: rgba(141,170,89,0.2);
-      color: #fff;
-      border: 1px solid var(--primary);
-      padding: 8px 16px;
-      border-radius: 6px;
-      font-size: 0.85rem;
-      margin-top: 24px;
-      font-weight: 600;
-    }
-    .btn-back:hover { background: var(--primary); color: #000; text-decoration: none; }
-  
-    .skip-link{position:fixed;left:12px;top:10px;z-index:9999;transform:translateY(-160%);padding:9px 12px;border-radius:9px;background:#dff5e8;color:#07100a;font-size:.72rem;font-weight:900;text-decoration:none;box-shadow:0 8px 28px rgba(0,0,0,.35)}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:radial-gradient(ellipse 70% 35% at 50% 0%,rgba(16,185,129,.12),transparent 65%),var(--bg);color:var(--text);font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.65;padding:24px 16px 48px}
+    .container{max-width:840px;margin:0 auto;background:var(--card);border:1px solid var(--border);border-radius:18px;padding:34px 30px;box-shadow:0 20px 50px rgba(0,0,0,.4)}
+    .header{border-bottom:1px solid var(--border);padding-bottom:20px;margin-bottom:24px}
+    .badge{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:11px;text-transform:uppercase;font-weight:600;color:var(--primary-bright);background:rgba(16,185,129,.12);border:1px solid rgba(52,211,153,.32);padding:4px 11px;border-radius:999px;margin-bottom:10px;letter-spacing:.5px}
+    h1{font-size:clamp(1.4rem,4vw,1.8rem);color:#fff;margin-bottom:8px;font-weight:600;line-height:1.2}
+    .meta{font-size:.86rem;color:var(--text-muted)}
+    h2{font-size:1.12rem;color:var(--primary-bright);margin-top:26px;margin-bottom:10px;font-weight:600}
+    p,ul{font-size:.95rem;color:#d6e3e8;margin-bottom:12px}
+    ul{padding-left:20px}
+    li{margin-bottom:6px}
+    code{font-family:"IBM Plex Mono",monospace;font-size:.88em;color:var(--gold);background:rgba(251,191,36,.1);padding:2px 6px;border-radius:5px;white-space:nowrap}
+    .highlight-box{background:var(--card-inner);border:1px solid rgba(52,211,153,.32);border-radius:12px;padding:16px 18px;margin:16px 0;font-size:.92rem;color:#dcebe5}
+    a{color:var(--primary-bright);text-decoration:none}
+    a:hover{text-decoration:underline}
+    .nav-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:28px;padding-top:20px;border-top:1px solid var(--border)}
+    .btn-back{display:inline-flex;align-items:center;gap:6px;background:rgba(16,185,129,.14);color:#fff;border:1px solid rgba(52,211,153,.4);padding:9px 16px;border-radius:10px;font-size:.86rem;font-weight:600}
+    .btn-back:hover{background:var(--primary);color:#04160f;text-decoration:none}
+    .skip-link{position:fixed;left:12px;top:10px;z-index:9999;transform:translateY(-160%);padding:9px 12px;border-radius:9px;background:#dff5e8;color:#07100a;font-size:.75rem;font-weight:700;text-decoration:none}
     .skip-link:focus{transform:translateY(0)}
-    a:focus-visible{outline:2px solid #a3c46a;outline-offset:3px}
+    a:focus-visible{outline:2px solid var(--primary-bright);outline-offset:3px}
+    @media(max-width:600px){.container{padding:22px 18px}}
   </style>
 </head>
 <body>
@@ -99,64 +53,64 @@
       <span class="badge">Правовые документы • 152-ФЗ</span>
       <h1>Политика конфиденциальности и защиты данных</h1>
       <div class="meta">
-        Мобильное приложение «Каптёрка Про» и веб-сайт kapterka-pro.ru<br>
-        Редакция от 26 сентября 2026 г. • Оператор: ИНН 250104230398
+        Мобильное приложение «Каптёрка PRO» и веб-сайт kapterka-pro.ru<br>
+        Редакция от 22 ноября 2026 г. • Оператор: самозанятый (НПД), ИНН 250104230398
       </div>
     </div>
 
     <h2>1. Общие положения</h2>
-    <p>Эта политика описывает обработку данных на сайте kapterka-pro.ru и в Android-приложении «Каптёрка PRO». Мы стараемся собирать только те данные, которые нужны для регистрации, оплаты, поддержки и выбранной пользователем синхронизации.</p>
+    <p>Настоящая Политика описывает порядок обработки и защиты данных на сайте <code>kapterka-pro.ru</code> и в Android-приложении «Каптёрка PRO» в соответствии с Федеральным законом № 152-ФЗ «О персональных данных». Мы собираем только минимальный объём сведений, необходимый для входа по почте, лицензирования, поддержки и добровольно включённой пользователем синхронизации.</p>
 
-    <h2>2. Какие данные используются на сайте</h2>
+    <h2>2. Какие данные обрабатываются</h2>
     <ul>
-      <li><strong>Email:</strong> для входа по одноразовому коду, чеков и связи с пользователем.</li>
-      <li><strong>Имя / позывной и должность:</strong> если пользователь указывает их в профиле.</li>
-      <li><strong>Ключ подразделения:</strong> технический идентификатор для разделения синхронизируемых данных.</li>
-      <li><strong>Данные синхронизации:</strong> если синхронизация включена, в облако попадают склады, позиции, остатки, операции и заявки подразделения, позывной, а также список устройств (случайный код устройства, модель телефона, время последней активности).</li>
-      <li><strong>Сессионный токен:</strong> хранится в браузере и используется для повторного входа в личный кабинет.</li>
-      <li><strong>Техническая аналитика сайта:</strong> на сайте используются Google Analytics и Яндекс Метрика.</li>
+      <li><strong>Email:</strong> для регистрации и входа по одноразовому 6-значному коду (без входа через Google-аккаунт и без хранения паролей), отправки лицензионного ключа и связи с поддержкой.</li>
+      <li><strong>Имя / позывной, название склада и должность:</strong> указываются пользователем добровольно для отображения в профиле и отчётах.</li>
+      <li><strong>Код группы синхронизации (<code>kapt_...</code>):</strong> случайный технический идентификатор для разделения данных между командами.</li>
+      <li><strong>Данные синхронизации (если включена):</strong> склады, карточки имущества, остатки, журнал операций, заявки и список подключённых устройств (случайный код устройства, модель телефона, время последней активности).</li>
+      <li><strong>Сессионный токен сайта:</strong> хранится в браузере, на сервере хранится только его SHA-256 хэш.</li>
+      <li><strong>Техническая аналитика сайта:</strong> на сайте используются Google Analytics и Яндекс Метрика с отключённым Вебвизором (<code>webvisor: false</code>). Лицензионные ключи, коды групп, Email и вводимые списки в аналитику не передаются.</li>
     </ul>
 
-    <h2>3. Где хранятся данные</h2>
+    <h2>3. Где хранятся данные и как работает вход по Email</h2>
     <div class="highlight-box">
-      <strong>📱 На устройстве:</strong><br>
-      Основная база приложения хранится локально в изолированном хранилище Android с использованием Room/SQLite. Мы не заявляем отдельное шифрование этой базы, если оно не включено в конкретной версии приложения.
+      <strong>На устройстве (Offline-First):</strong><br>
+      Основная база приложения хранится локально в изолированном хранилище Android с использованием Room/SQLite. Мы честно указываем: отдельное аппаратное шифрование файла локальной Room-базы не заявляется, поэтому используйте системную блокировку экрана устройства.
     </div>
-    <p>Данные аккаунта сайта и одноразовые коды обрабатываются отдельным серверным скриптом Google Apps Script. Пароль для сайта не используется: вход выполняется по одноразовому коду, отправленному на Email.</p>
+    <p>Авторизация по Email, выдача одноразовых 6-значных кодов и проверка лицензий выполняются серверным API <code>kapterka-api</code> (Cloudflare Workers) с хранением серверных реестров в защищённых коллекциях без клиентского доступа. Пароль не создаётся и не хранится; вход через Google-аккаунт не используется.</p>
 
-    <h2>4. Синхронизация приложения</h2>
-    <p>Если пользователь включает синхронизацию подразделения, приложение передаёт синхронизируемые данные через Google Firebase (Firestore). Они группируются по ключу подразделения <code>kapt_...</code>. Соединение защищено шифрованием, данные на серверах Google также хранятся в зашифрованном виде. Сквозного шифрования нет: данные хранятся в облаке в читаемом для оператора сервиса виде, поэтому ключ подразделения нельзя публиковать и передавать посторонним. Оператор не просматривает и не использует данные подразделений в своих целях.</p>
-    <p>Облачная копия склада (кнопки «В облако» и «Из облака», обновление раз в сутки при включённой синхронизации) хранится там же, одна последняя копия.</p>
-    <p>В приложении нет аналитики поведения, рекламных и трекинговых библиотек. Отчёт о сбое сохраняется на телефоне и отправляется только по нажатию кнопки «Отправить»; в нём нет личных данных.</p>
+    <h2>4. Синхронизация приложения и управление облаком</h2>
+    <p>Если пользователь включает совместную работу, данные синхронизируются через облачное хранилище Firebase (Firestore) и изолируются по коду группы <code>kapt_...</code>. Соединение защищено TLS-шифрованием, однако сквозного (end-to-end) шифрования нет, поэтому код группы нельзя публиковать и передавать посторонним. Оператор не просматривает и не использует складские данные пользователей в своих целях.</p>
+    <p>В Android-приложении отсутствуют рекламные SDK и трекеры поведения. Отчёт о сбое сохраняется локально и отправляется только по явному нажатию пользователя.</p>
 
     <h2>4.1. Как отключить синхронизацию и удалить данные из облака</h2>
     <ul>
-      <li><strong>Приостановить синхронизацию:</strong> окно «Подразделение» → «Приостановить синхронизацию». Обмен с облаком прекращается, данные и ключ остаются на телефоне, включить обратно можно в любой момент.</li>
-      <li><strong>Удалить данные из облака:</strong> окно «Подразделение» → «Удалить данные из облака (на телефоне останутся)», подтверждается вводом ключа подразделения. Данные подразделения удаляются с сервера, синхронизация приостанавливается, учёт на телефоне сохраняется.</li>
-      <li><strong>Очистить учёт на всех телефонах:</strong> «Ещё» → «Опасная зона». Удаляет остатки, операции и заявки на этом телефоне и в облаке.</li>
-      <li>Если у других телефонов подразделения синхронизация включена, они могут загрузить свои данные в облако заново. Чтобы полностью прекратить обмен, приостановите синхронизацию на всех телефонах подразделения.</li>
+      <li><strong>Приостановить синхронизацию:</strong> окно «Подключить» → «Приостановить синхронизацию». Обмен с облаком прекращается, локальные данные и код группы остаются на телефоне.</li>
+      <li><strong>Удалить данные из облака:</strong> окно «Подключить» → «Удалить данные из облака (на телефоне останутся)», подтверждается вводом кода группы. Облачные данные удаляются, учёт на телефоне сохраняется.</li>
+      <li><strong>Полная очистка учёта:</strong> «Ещё» → «Опасная зона». Удаляет остатки, операции и заявки на устройстве и отправляет маркеры удаления другим устройствам группы.</li>
     </ul>
 
-    <h2>5. Оплата</h2>
-    <p>Калькулятор сверки на странице инвентаризации обрабатывает названия, единицы и количества только в памяти браузера. Список не сохраняется на сайте, не отправляется на сервер или в аналитику; экспорт создаёт файл на вашем устройстве. Для этих инструментов счётчики получают только тип действия и путь страницы. Кнопки рекомендации передают заранее подготовленную публичную ссылку, без содержимого вашего списка.</p>
-    <p>Оплата PRO-доступа проводится через ЮKassa. Платёжные реквизиты банковской карты обрабатываются платёжным сервисом, а не сохраняются на сайте «Каптёрка PRO». Email может использоваться для чека и выдачи лицензионного ключа.</p>
+    <h2>5. Оплата (Самозанятый НПД и ЮKassa)</h2>
+    <p>Оплата лицензии PRO проводится через ЮKassa (СБП, карты МИР, SberPay). Платёжные реквизиты карты обрабатываются на стороне ЮKassa и не сохраняются сайтом или приложением. Правообладатель работает как самозанятый (НПД, ИНН 250104230398); Email используется для автоматической отправки ключа лицензии и, при обращении, предоставления чека НПД («Мой налог»).</p>
+    <p>Калькулятор сверки на странице инвентаризации работает полностью в памяти браузера и не отправляет ваши позиции на сервер.</p>
 
-    <h2>6. Цели обработки</h2>
-    <ul>
-      <li>регистрация и вход в личный кабинет;</li>
-      <li>выдача и отображение лицензионных ключей;</li>
-      <li>оплата и отправка чека;</li>
-      <li>синхронизация данных между устройствами, когда пользователь её включает;</li>
-      <li>техническая поддержка, диагностика и улучшение сайта.</li>
-    </ul>
+    <section id="consent">
+      <h2>6. Согласие на обработку персональных данных (152-ФЗ)</h2>
+      <p>Регистрируясь по Email в приложении «Каптёрка PRO» или на сайте <code>kapterka-pro.ru</code>, пользователь даёт согласие Оператору (ИНН 250104230398) на обработку указанных им Email, имени/позывного, названия склада/подразделения и технического кода группы синхронизации в целях предоставления функциональности сервиса, выдачи и восстановления лицензии, технической поддержки и (при отметке соответствующего флажка) уведомлений об обновлениях.</p>
+      <p>Согласие действует до момента его отзыва. Отозвать согласие и запросить удаление серверных записей аккаунта (Email, профиль, привязка лицензии) можно в любой момент письмом на <a href="mailto:alex.666.881@gmail.com">alex.666.881@gmail.com</a> или через <a href="https://t.me/kapterka_help_bot" target="_blank" rel="noopener noreferrer">@kapterka_help_bot</a>.</p>
+    </section>
 
-    <h2>7. Срок хранения и удаление</h2>
-    <p>Локальные данные приложения хранятся на устройстве до удаления пользователем или приложением. Данные аккаунта сайта и технические сессии хранятся в объёме, необходимом для работы сервиса. Данные синхронизации подразделения можно удалить из облака самостоятельно кнопкой в приложении (см. раздел 4.1). Записи о лицензии и регистрации (Email, ключ подразделения) удаляются по запросу: для этого, а также для уточнения данных, можно написать на <a href="mailto:alex.666.881@gmail.com">alex.666.881@gmail.com</a>.</p>
+    <h2>7. Контакты оператора</h2>
+    <p>
+      Оператор: самозанятый (НПД), ИНН <code>250104230398</code><br>
+      Email: <a href="mailto:alex.666.881@gmail.com">alex.666.881@gmail.com</a><br>
+      Поддержка: <a href="https://t.me/kapterka_help_bot" target="_blank" rel="noopener noreferrer">@kapterka_help_bot</a>
+    </p>
 
-    <h2>8. Контакты</h2>
-    <p>Оператор: ИНН 250104230398<br>Email: <a href="mailto:alex.666.881@gmail.com">alex.666.881@gmail.com</a><br>Поддержка: <a href="https://t.me/kapterka_help_bot" target="_blank" rel="noopener noreferrer">@kapterka_help_bot</a></p>
-
-    <a href="index.html" class="btn-back">← На главную страницу</a>
+    <div class="nav-row">
+      <a href="index.html" class="btn-back">← На главную страницу</a>
+      <a href="terms.html" class="btn-back">Пользовательское соглашение</a>
+      <a href="security.html" class="btn-back">Безопасность</a>
+    </div>
   </main>
 </body>
 </html>

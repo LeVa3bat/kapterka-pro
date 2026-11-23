@@ -21,9 +21,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.QrCodeScanner
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.MilitaryTech
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.WifiOff
@@ -141,43 +141,62 @@ fun AuthScreen(
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Emblem and Title
+            // Modern Cobalt Brand Header
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
             ) {
                 Box(
                     modifier = Modifier
-                        .size(38.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(SageGreenDark)
-                        .border(1.dp, SageGreenPrimary, RoundedCornerShape(8.dp)),
+                        .size(50.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(
+                            androidx.compose.ui.graphics.Brush.linearGradient(
+                                listOf(Color(0xFF10B981), Color(0xFF0891B2))
+                            )
+                        )
+                        .border(1.dp, Color.White.copy(alpha = 0.40f), RoundedCornerShape(16.dp)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.MilitaryTech,
+                        imageVector = Icons.Default.Inventory2,
                         contentDescription = null,
-                        tint = SageGreenBright,
-                        modifier = Modifier.size(24.dp)
+                        tint = Color.White,
+                        modifier = Modifier.size(28.dp)
                     )
                 }
-                Spacer(modifier = Modifier.width(10.dp))
+                Spacer(modifier = Modifier.width(12.dp))
                 Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "КАПТЁРКА",
+                            color = TacticalTextPrimary,
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = (-0.5).sp
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(com.example.ui.theme.TacticalGold)
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = "PRO",
+                                color = Color.White,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.ExtraBold
+                            )
+                        }
+                    }
                     Text(
-                        text = "КАПТЁРКА",
-                        color = TacticalTextPrimary,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 1.sp
-                    )
-                    Text(
-                        text = "Учёт склада, имущества и снабжения",
+                        text = "Вход только по Email • без Google-аккаунта",
                         color = TacticalTextSecondary,
-                        fontSize = 11.sp
+                        fontSize = 11.5.sp
                     )
-                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "v${com.example.BuildConfig.VERSION_NAME} PRO (Сборка ${com.example.BuildConfig.VERSION_CODE})",
+                        text = "v${com.example.BuildConfig.VERSION_NAME} • сборка ${com.example.BuildConfig.VERSION_CODE}",
                         color = SageGreenBright,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
@@ -188,12 +207,12 @@ fun AuthScreen(
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            // Main Card
-            Card(
+            // Main 3D Glass Card
+            com.example.ui.components.Card3DSurface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = TacticalSurface),
-                border = androidx.compose.foundation.BorderStroke(1.dp, TacticalBorder)
+                cornerRadius = 24.dp,
+                accentBorder = SageGreenPrimary.copy(alpha = 0.4f),
+                elevated = true
             ) {
                 Column(
                     modifier = Modifier
@@ -290,7 +309,7 @@ fun AuthScreen(
                             IconButton(onClick = { scanQr() }) {
                                 Icon(
                                     imageVector = Icons.Rounded.QrCodeScanner,
-                                    contentDescription = "Сканировать QR-код подразделения",
+                                    contentDescription = "Сканировать QR-код подключения",
                                     tint = SageGreenBright
                                 )
                             }
@@ -404,40 +423,34 @@ fun AuthScreen(
                                 fontWeight = FontWeight.SemiBold
                             )
                             Spacer(modifier = Modifier.height(3.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "Политику конфиденциальности",
-                                    color = SageGreenBright,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    textDecoration = TextDecoration.Underline,
-                                    modifier = Modifier.clickable {
-                                        legalDialogTab = LegalDocumentTab.PRIVACY
-                                        showLegalDialog = true
-                                    }
-                                )
-                                Text(text = "•", color = TacticalTextMuted, fontSize = 11.sp)
-                                Text(
-                                    text = "Соглашение",
-                                    color = SageGreenBright,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    textDecoration = TextDecoration.Underline,
-                                    modifier = Modifier.clickable {
-                                        legalDialogTab = LegalDocumentTab.TERMS
-                                        showLegalDialog = true
-                                    }
-                                )
-                            }
+                            Text(
+                                text = "Политику конфиденциальности",
+                                color = SageGreenBright,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium,
+                                textDecoration = TextDecoration.Underline,
+                                modifier = Modifier.clickable {
+                                    legalDialogTab = LegalDocumentTab.PRIVACY
+                                    showLegalDialog = true
+                                }
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Пользовательское соглашение",
+                                color = SageGreenBright,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium,
+                                textDecoration = TextDecoration.Underline,
+                                modifier = Modifier.clickable {
+                                    legalDialogTab = LegalDocumentTab.TERMS
+                                    showLegalDialog = true
+                                }
+                            )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
                                 text = "Согласие на обработку данных (152-ФЗ)",
                                 color = SageGreenBright,
-                                fontSize = 10.5.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Medium,
                                 textDecoration = TextDecoration.Underline,
                                 modifier = Modifier.clickable {
@@ -450,17 +463,18 @@ fun AuthScreen(
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    // Primary Submit Button
-                    Button(
+                    // Primary 3D Submit Button
+                    com.example.ui.components.Volumetric3DButton(
+                        text = if (selectedTab == 0) "Создать аккаунт" else "Войти",
                         onClick = {
                             if (!consentAgreed) {
                                 errorMessage = "Для продолжения необходимо подтвердить согласие с Политикой конфиденциальности и Соглашением!"
-                                return@Button
+                                return@Volumetric3DButton
                             }
                             val cleanCallsign = callsign.trim()
                             if (cleanCallsign.isBlank()) {
                                 errorMessage = "Пожалуйста, введите имя пользователя!"
-                                return@Button
+                                return@Volumetric3DButton
                             }
 
                             val cleanEmail = email.trim().lowercase()
@@ -468,14 +482,14 @@ fun AuthScreen(
                                 !android.util.Patterns.EMAIL_ADDRESS.matcher(cleanEmail).matches()
                             ) {
                                 errorMessage = "Укажите корректный Email. Он нужен для лицензии и восстановления доступа."
-                                return@Button
+                                return@Volumetric3DButton
                             }
 
                             val cleanUnitName = unitName.trim().ifEmpty { "Основной склад" }
                             val enteredKey = unitKey.trim()
                             if (selectedTab == 1 && enteredKey.isBlank()) {
                                 errorMessage = "Для подключения к существующей группе укажите её код."
-                                return@Button
+                                return@Volumetric3DButton
                             }
 
                             val resolvedKey = if (selectedTab == 0 && enteredKey.isBlank()) {
@@ -497,20 +511,10 @@ fun AuthScreen(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(48.dp)
                             .testTag("submit_auth_button"),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = SageGreenPrimary,
-                            contentColor = Color.White
-                        ),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Text(
-                            text = if (selectedTab == 0) "Зарегистрироваться и создать ключ" else "Войти",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp
-                        )
-                    }
+                        height = 52.dp,
+                        cornerRadius = 16.dp
+                    )
 
                     Spacer(modifier = Modifier.height(10.dp))
 
@@ -537,13 +541,13 @@ fun AuthScreen(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(42.dp)
+                            .height(44.dp)
                             .testTag("offline_auth_button"),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = TacticalSurfaceLight,
                             contentColor = TacticalTextSecondary
                         ),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(14.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.WifiOff,
@@ -551,7 +555,7 @@ fun AuthScreen(
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Автономный вход (Офлайн в поле)", fontSize = 12.sp)
+                        Text("Автономный вход (без интернета)", fontSize = 12.sp)
                     }
                 }
             }

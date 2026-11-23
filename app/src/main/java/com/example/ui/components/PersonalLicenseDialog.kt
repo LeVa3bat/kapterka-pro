@@ -109,8 +109,12 @@ fun PersonalLicenseDialog(
     licenseStatus: FighterLicenseStatus,
     yooKassaConfig: YooKassaConfig,
     issuedPaymentKey: String? = null,
+    paymentAwaitingConfirmation: Boolean = false,
+    paymentCreatingInProgress: Boolean = false,
+    onResetPendingPayment: () -> Unit = {},
     onPayYooKassaClick: () -> Unit = {},
     onPayYooKassaPlanClick: ((Int) -> Unit)? = null,
+    onPayYooKassaWithEmailClick: ((Int, String) -> Unit)? = null,
     onActivateLicenseKey: (String) -> Unit,
     onTestPaymentConfirm: () -> Unit,
     onRestoreSavedLicense: () -> Unit = {},
@@ -118,13 +122,15 @@ fun PersonalLicenseDialog(
     @Suppress("UNUSED_PARAMETER") onSaveYooKassaSettings: (shopId: String, secretKey: String, isTestMode: Boolean, priceRubles: Int) -> Unit = { _, _, _, _ -> },
     onResendEmailKey: (String) -> Unit = {},
     @Suppress("UNUSED_PARAMETER") onResetLicense: () -> Unit = {},
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    profileMode: com.example.data.model.WorkspaceProfileMode = com.example.data.model.WorkspaceProfileMode.MILITARY
 ) {
     val context = LocalContext.current
     val clipboard = LocalClipboardManager.current
     val scope = rememberCoroutineScope()
     var selectedPlan by remember { mutableStateOf(ProPlanOption.DAYS_30) }
-    var paymentStarted by remember { mutableStateOf(false) }
+    var paymentStartedLocal by remember(paymentAwaitingConfirmation) { mutableStateOf(paymentAwaitingConfirmation) }
+    val paymentStarted = paymentAwaitingConfirmation || paymentStartedLocal
     var verifying by remember { mutableStateOf(false) }
     var showKeyEntry by remember { mutableStateOf(false) }
     var showRestore by remember { mutableStateOf(false) }
@@ -134,40 +140,52 @@ fun PersonalLicenseDialog(
     val isPro = licenseStatus.isProActive
     val justPaidKey = issuedPaymentKey?.takeIf { it.isNotBlank() }
     val activeKey = justPaidKey ?: licenseStatus.licenseKey.takeIf { it.isNotBlank() }
-    val email = profile?.email?.trim().orEmpty()
+    val profileEmail = profile?.email?.trim().orEmpty()
+    var checkoutEmail by remember(profileEmail) { mutableStateOf(profileEmail) }
+    val email = checkoutEmail.trim().ifBlank { profileEmail }
+    val isEmailValid = email.isNotBlank() && android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
     val callsign = profile?.callsign?.trim().orEmpty()
     fun planPrice(plan: ProPlanOption): Int =
         if (plan == ProPlanOption.DAYS_30 && yooKassaConfig.priceRubles > 0) yooKassaConfig.priceRubles else plan.priceRubles
     val price = planPrice(selectedPlan)
     val startPay: () -> Unit = {
-        onPayYooKassaPlanClick?.invoke(selectedPlan.days) ?: onPayYooKassaClick()
+        when {
+            onPayYooKassaWithEmailClick != null -> onPayYooKassaWithEmailClick(selectedPlan.days, email)
+            onPayYooKassaPlanClick != null -> onPayYooKassaPlanClick(selectedPlan.days)
+            else -> onPayYooKassaClick()
+        }
     }
 
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth(0.94f)
-                .clip(RoundedCornerShape(28.dp))
-                .background(TacticalSurface)
-                .verticalScroll(rememberScrollState())
+        Animated3DDialogContainer(
+            modifier = Modifier.fillMaxWidth(0.94f),
+            cornerRadius = 28.dp,
+            accentBorder = if (isPro || justPaidKey != null) SageGreenPrimary else Color(0xFFE0A63A)
         ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+            ) {
             // HERO
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(
                         Brush.linearGradient(
-                            if (isPro || justPaidKey != null) listOf(Color(0xFF1F7A57), Color(0xFF0F766E))
-                            else listOf(Color(0xFF3B2A0E), Color(0xFF5A3D0A))
+                            if (isPro || justPaidKey != null) listOf(Color(0xFF0B6A4F), Color(0xFF0A4F60))
+                            else listOf(Color(0xFF0B5A44), Color(0xFF0A4D5C))
                         )
                     )
                     .padding(20.dp)
             ) {
-                Icon(
-                    Icons.Rounded.Close,
+                IconOrb3DButton(
+                    icon = Icons.Rounded.Close,
                     contentDescription = "Закрыть",
-                    tint = Color.White.copy(alpha = 0.8f),
-                    modifier = Modifier.align(Alignment.TopEnd).clip(CircleShape).clickable(onClick = onDismiss).padding(4.dp)
+                    tint = Color.White,
+                    onClick = onDismiss,
+                    size = 34.dp,
+                    modifier = Modifier.align(Alignment.TopEnd)
                 )
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
                     when {
@@ -244,15 +262,6 @@ fun PersonalLicenseDialog(
                         colors = ButtonDefaults.buttonColors(containerColor = SageGreenPrimary, contentColor = Color.White)
                     ) { Text("Начать работу с PRO", fontSize = 16.sp, fontWeight = FontWeight.Bold) }
                 } else {
-                    // What PRO gives
-                    Text("Что даёт PRO", color = TacticalTextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Benefit(Icons.Rounded.Description, "Списание и отчёты Excel", "формы 8 и 18, сводные ведомости")
-                    Benefit(Icons.Rounded.Sync, "Все функции без ограничений", "склады, операции, заявки, синхронизация")
-                    Benefit(Icons.Rounded.Shield, "Лицензия на сервере", "не пропадёт при переустановке и смене телефона")
-                    Benefit(Icons.Rounded.MarkEmailRead, "Ключ на почту", "и чек об оплате по 54-ФЗ")
-
-                    Spacer(modifier = Modifier.height(16.dp))
                     if (!paymentStarted) {
                         Text("Выберите срок PRO", color = TacticalTextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(8.dp))
@@ -263,9 +272,12 @@ fun PersonalLicenseDialog(
                             ProPlanOption.values().forEach { plan ->
                                 val isSelected = plan == selectedPlan
                                 val optPrice = planPrice(plan)
+                                val formattedPrice = "%,d ₽".format(java.util.Locale("ru"), optPrice).replace(',', ' ')
+                                val subBadge = plan.badge.ifEmpty { "${(optPrice / plan.days).coerceAtLeast(1)} ₽/день" }
                                 Box(
                                     modifier = Modifier
                                         .weight(1f)
+                                        .height(88.dp)
                                         .clip(RoundedCornerShape(14.dp))
                                         .background(
                                             if (isSelected) Color(0xFFE0A63A).copy(alpha = 0.16f) else TacticalSurfaceLight
@@ -276,53 +288,79 @@ fun PersonalLicenseDialog(
                                             shape = RoundedCornerShape(14.dp)
                                         )
                                         .clickable { selectedPlan = plan }
-                                        .padding(vertical = 10.dp, horizontal = 6.dp),
+                                        .padding(vertical = 10.dp, horizontal = 4.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.Center
+                                    ) {
                                         Text(
                                             text = plan.title,
                                             color = if (isSelected) TacticalGoldText else TacticalTextSecondary,
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.Bold
+                                            fontSize = 11.5.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 1,
+                                            softWrap = false
                                         )
-                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Spacer(modifier = Modifier.height(3.dp))
                                         Text(
-                                            text = "$optPrice ₽",
+                                            text = formattedPrice,
                                             color = TacticalTextPrimary,
                                             fontSize = 15.sp,
-                                            fontWeight = FontWeight.ExtraBold
+                                            fontWeight = FontWeight.ExtraBold,
+                                            maxLines = 1,
+                                            softWrap = false
                                         )
-                                        if (plan.badge.isNotEmpty()) {
-                                            Text(
-                                                text = plan.badge,
-                                                color = SageGreenBright,
-                                                fontSize = 10.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
+                                        Spacer(modifier = Modifier.height(3.dp))
+                                        Text(
+                                            text = subBadge,
+                                            color = if (plan.badge.isNotEmpty()) SageGreenBright else TacticalTextMuted,
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 1,
+                                            softWrap = false
+                                        )
                                     }
                                 }
                             }
                         }
-                        Spacer(modifier = Modifier.height(14.dp))
-                        Text(if (isPro) "Продлить на ${selectedPlan.title}" else "Как оплатить", color = TacticalTextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Step(1, "Нажмите «Оплатить» — откроется ЮKassa")
-                        Step(2, "Оплатите через СБП, картой МИР или SberPay")
-                        Step(3, "Вернитесь сюда и нажмите «Я оплатил»")
-                        Spacer(modifier = Modifier.height(14.dp))
-                        Button(
-                            onClick = {
-                                paymentStarted = true
-                                startPay()
-                            },
-                            modifier = Modifier.fillMaxWidth().height(56.dp).testTag("yookassa_pay_button"),
-                            shape = RoundedCornerShape(18.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0A63A), contentColor = Color(0xFF1C1405))
-                        ) {
-                            Text("Оплатить $price ₽", fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
+                        Spacer(modifier = Modifier.height(12.dp))
+                        if (profileEmail.isBlank() || !android.util.Patterns.EMAIL_ADDRESS.matcher(profileEmail).matches()) {
+                            Text(
+                                "Укажите Email для получения и восстановления ключа PRO:",
+                                color = TacticalTextSecondary,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(bottom = 6.dp)
+                            )
+                            OutlinedTextField(
+                                value = checkoutEmail,
+                                onValueChange = { checkoutEmail = it.trim() },
+                                placeholder = { Text("example@mail.ru", color = TacticalTextMuted) },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp).testTag("checkout_email_input"),
+                                shape = RoundedCornerShape(14.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = SageGreenBright,
+                                    unfocusedBorderColor = if (checkoutEmail.isNotBlank() && !isEmailValid) TacticalRedText else TacticalBorderSubtle,
+                                    focusedTextColor = TacticalTextPrimary,
+                                    unfocusedTextColor = TacticalTextPrimary
+                                )
+                            )
                         }
+                        Volumetric3DButton(
+                            text = if (paymentCreatingInProgress) "Создаём счёт ЮKassa…" else "Оплатить $price ₽",
+                            onClick = { if (!paymentCreatingInProgress) startPay() },
+                            enabled = !paymentCreatingInProgress,
+                            modifier = Modifier.fillMaxWidth().testTag("yookassa_pay_button"),
+                            height = 56.dp,
+                            cornerRadius = 18.dp,
+                            gradientStart = Color(0xFFF59E0B),
+                            gradientEnd = Color(0xFFD97706),
+                            extrusionColor = Color(0xFF92400E),
+                            contentColor = Color(0xFF1C1405)
+                        )
                     } else {
                         Column(
                             modifier = Modifier
@@ -362,18 +400,52 @@ fun PersonalLicenseDialog(
                                     Text("Я оплатил — проверить", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
-                            TextButton(onClick = startPay) {
-                                Text("Открыть оплату снова", color = TacticalGoldText, fontSize = 13.sp)
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                TextButton(onClick = startPay) {
+                                    Text("Открыть оплату снова", color = TacticalGoldText, fontSize = 12.5.sp)
+                                }
+                                TextButton(onClick = {
+                                    paymentStartedLocal = false
+                                    onResetPendingPayment()
+                                }) {
+                                    Text("Выбрать другой срок", color = TacticalTextMuted, fontSize = 12.5.sp)
+                                }
                             }
                         }
                     }
                     Text(
-                        "Платёж обрабатывает ЮKassa. Данные карты приложение не видит.",
+                        "Платёж обрабатывает ЮKassa (СБП / МИР / SberPay). Данные карты приложение не видит.",
                         color = TacticalTextMuted,
                         fontSize = 11.sp,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
                     )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    // What PRO gives
+                    Text("Что даёт PRO", color = TacticalTextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Benefit(
+                        Icons.Rounded.Description,
+                        "Отчёты Excel (.xlsx)",
+                        if (profileMode.isMilitary) "Формы № 8 и № 18, акт списания и сводные"
+                        else "Оборотная ТМЦ, М-11 / ТОРГ-13, МБ-7 и акт МБ-8"
+                    )
+                    Benefit(
+                        Icons.Rounded.Sync,
+                        "Безлимит складов и синхронизация",
+                        if (profileMode.isMilitary) "неограниченно точек, позиций, заявок и QR-подключение"
+                        else "неограниченно складов, позиций, заявок и QR-подключение"
+                    )
+                    Benefit(Icons.Rounded.Shield, "Лицензия хранится на сервере", "не пропадёт при переустановке и смене телефона")
+                    Benefit(Icons.Rounded.MarkEmailRead, "Ключ на Email • самозанятый (НПД)", "оплата через ЮKassa (СБП / МИР), чек «Мой налог»")
+
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Text(if (isPro) "Продлить на ${selectedPlan.title}" else "Как оплатить", color = TacticalTextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Step(1, "Нажмите «Оплатить» — откроется ЮKassa")
+                    Step(2, "Оплатите через СБП, картой МИР или SberPay")
+                    Step(3, "Вернитесь сюда и нажмите «Я оплатил»")
                 }
 
                 Spacer(modifier = Modifier.height(14.dp))
@@ -426,6 +498,7 @@ fun PersonalLicenseDialog(
                         }
                     }
                 }
+            }
             }
         }
     }

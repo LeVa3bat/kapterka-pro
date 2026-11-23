@@ -161,20 +161,22 @@ class YooKassaPaymentService(private val context: Context) {
         }
     }
 
-    fun openPaymentUrl(confirmationUrl: String) {
-        try {
+    fun openPaymentUrl(confirmationUrl: String): Boolean {
+        return try {
             val uri = Uri.parse(confirmationUrl)
             if (uri.scheme != "https") {
                 Log.e(tag, "Blocked non-HTTPS payment URL")
-                return
+                return false
             }
             context.startActivity(
                 Intent(Intent.ACTION_VIEW, uri).apply {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 }
             )
-        } catch (e: Exception) {
+            true
+        } catch (e: Throwable) {
             Log.e(tag, "Error opening payment link", e)
+            false
         }
     }
 
@@ -294,7 +296,7 @@ class YooKassaPaymentService(private val context: Context) {
                 }
             }.orEmpty()
 
-            val json = if (text.isBlank()) JSONObject() else JSONObject(text)
+            val json = if (text.isBlank()) JSONObject() else runCatching { JSONObject(text) }.getOrDefault(JSONObject())
             if (responseCode !in 200..299 && !json.has("ok")) {
                 json.put("ok", false)
                 json.put("error", "HTTP_$responseCode")

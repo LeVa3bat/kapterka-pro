@@ -37,6 +37,9 @@ import com.example.ui.theme.TacticalGold
 import com.example.ui.theme.TacticalProBanner
 import com.example.ui.theme.TacticalProBannerBorder
 import com.example.ui.theme.TacticalProBannerText
+import com.example.ui.theme.TacticalRed
+import com.example.ui.theme.TacticalRedDark
+import com.example.ui.theme.TacticalRedText
 
 @Composable
 fun DemoBanner(
@@ -51,16 +54,16 @@ fun DemoBanner(
     if (isPro && (profile?.proDaysLeft ?: 0) > 5) return
 
     if (isPro) {
-        // PRO ACTIVE BANNER
+        // PRO ACTIVE 3D BANNER
         Row(
             modifier = modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 6.dp)
-                .clip(RoundedCornerShape(16.dp))
+                .padding(horizontal = 14.dp, vertical = 5.dp)
+                .clip(RoundedCornerShape(18.dp))
                 .background(TacticalProBanner)
-                .border(1.dp, TacticalProBannerBorder, RoundedCornerShape(16.dp))
+                .border(1.dp, glassRimBrush(TacticalProBannerBorder), RoundedCornerShape(18.dp))
                 .clickable { onBannerClick() }
-                .padding(horizontal = 12.dp, vertical = 9.dp)
+                .padding(horizontal = 12.dp, vertical = 10.dp)
                 .testTag("pro_active_banner"),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
@@ -108,16 +111,16 @@ fun DemoBanner(
         Row(
             modifier = modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 6.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(if (isExpired) Color(0x33FF5252) else TacticalDemoBanner)
+                .padding(horizontal = 14.dp, vertical = 5.dp)
+                .clip(RoundedCornerShape(18.dp))
+                .background(if (isExpired) TacticalRedDark else TacticalDemoBanner)
                 .border(
-                    1.dp, 
-                    if (isExpired) Color(0xFFFF5252).copy(alpha = 0.6f) else TacticalDemoBannerBorder, 
-                    RoundedCornerShape(16.dp)
+                    1.dp,
+                    glassRimBrush(if (isExpired) TacticalRed else TacticalDemoBannerBorder),
+                    RoundedCornerShape(18.dp)
                 )
                 .clickable { onBannerClick() }
-                .padding(horizontal = 12.dp, vertical = 9.dp)
+                .padding(horizontal = 12.dp, vertical = 10.dp)
                 .testTag("demo_mode_banner"),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
@@ -129,25 +132,24 @@ fun DemoBanner(
                 Icon(
                     imageVector = if (isExpired) Icons.Default.Lock else Icons.Default.AccessTime,
                     contentDescription = "Демо-режим",
-                    tint = if (isExpired) Color(0xFFFF8B8B) else TacticalGold,
+                    tint = if (isExpired) TacticalRedText else TacticalGold,
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(10.dp))
                 Column {
                     Text(
                         text = if (isExpired) "Демо-период завершён" else "Демо-доступ",
-                        color = if (isExpired) Color(0xFFFF8B8B) else TacticalDemoBannerText,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.5.sp
+                        color = if (isExpired) TacticalRedText else TacticalDemoBannerText,
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.Bold
                     )
                     Text(
                         text = if (isExpired) {
-                            "Для списания и выгрузки отчетов введите ключ PRO"
+                            "Базовый режим (1 склад, до 15 позиций) • Откройте PRO для отчётов и облака"
                         } else {
                             "Осталось $daysLeft дн. • все функции доступны"
                         },
-                        color = if (isExpired) Color(0xFFFFD1D1) else TacticalDemoBannerText.copy(alpha = 0.9f),
+                        color = if (isExpired) TacticalRedText.copy(alpha = 0.85f) else TacticalDemoBannerText.copy(alpha = 0.88f),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Normal
                     )
@@ -157,7 +159,7 @@ fun DemoBanner(
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = if (isExpired) "Активировать" else "Продлить",
-                tint = if (isExpired) Color(0xFFFF8B8B) else TacticalGold,
+                tint = if (isExpired) TacticalRedText else TacticalGold,
                 modifier = Modifier.size(18.dp)
             )
         }

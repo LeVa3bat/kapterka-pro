@@ -32,6 +32,10 @@ const MAIL_RELAY_TIMEOUT_MS = 28000;
 const LICENSES = 'srv_licenses';
 const FIGHTERS = 'srv_fighters';
 const EMAIL_CODES = 'srv_email_codes';
+const WEB_USERS = 'srv_web_users';
+const WEB_SESSIONS = 'srv_web_sessions';
+const WEB_EMAIL_CODES = 'srv_web_email_codes';
+const WEB_SESSION_TTL_MS = 30 * DAY_MS;
 const LICENSE_DELIVERIES = 'srv_license_deliveries';
 const DELIVERY_LEASE_MS = 2 * 60 * 1000;
 const DELIVERY_BATCH_SIZE = 3;
@@ -162,6 +166,28 @@ function moscowTime(ms) {
 function maskKey(key) {
   const parts = String(key || '').split('-');
   return parts.length === 4 ? `${parts[0]}-****-****-${parts[3]}` : '****';
+}
+
+function maskEmail(email) {
+  const parts = String(email || '').split('@');
+  if (parts.length !== 2) return '***';
+  const name = parts[0];
+  const visible = name.length <= 2 ? (name[0] || '*') : name.slice(0, 2);
+  return `${visible}***@${parts[1]}`;
+}
+
+function publicWebUser(doc) {
+  if (!doc) return null;
+  return {
+    email: cleanEmail(doc.email),
+    callsign: cleanText(doc.callsign || 'Пользователь', 80),
+    rank: cleanText(doc.rank, 80),
+    unitName: cleanText(doc.unitName, 120),
+    unitKey: cleanText(doc.unitKey, 120),
+    phone: cleanText(doc.phone, 64),
+    subscribedToNewsletter: Boolean(doc.subscribedToNewsletter),
+    status: cleanText(doc.status || 'ACTIVE', 30)
+  };
 }
 
 function bytesToHex(bytes) {
@@ -1067,6 +1093,7 @@ const handlers = {
       adminAuthConfigured: /^[a-f0-9]{64}$/.test(cfg.adminSecretSha256) || cfg.adminPassword.length >= 12,
       adminSessionConfigured: Boolean(cfg.adminSessionSecret),
       emailConfigured: emailReady(cfg),
+      webAuthConfigured: Boolean(cfg.serviceAccount) && emailReady(cfg),
       telegramConfigured: Boolean(cfg.tgBot && cfg.tgChat)
     });
   },
@@ -1297,6 +1324,258 @@ const handlers = {
     // The welcome letter goes out in the background: the relay can be slow.
     await ctx.background(welcome);
     return ctx.ok({ ok: true, verified: true });
+  },
+
+  // Website passwordless Email OTP auth (no Google Sign-In, no passwords).
+  async web_auth_request_code(ctx) {
+    const { body, db, cfg, ip } = ctx;
+    const email = cleanEmail(body.email);
+    const rawMode = cleanText(body.mode || 'auto', 20).toLowerCase();
+    const mode = rawMode === 'register' || rawMode === 'login' ? rawMode : 'auto';
+    const callsign = cleanText(body.callsign, 80);
+    const rank = cleanText(body.rank, 80);
+    const unitName = cleanText(body.unit_name, 120);
+    const newsletter = body.newsletter !== false && body.newsletter !== '0' && body.newsletter !== 0;
+
+    if (!email) return ctx.fail(400, 'INVALID_EMAIL');
+    if (mode === 'register' && !callsign) return ctx.fail(400, 'CALLSIGN_REQUIRED');
+    if (!emailReady(cfg)) return ctx.fail(503, 'EMAIL_PROVIDER_UNAVAILABLE');
+    if (!(await bindingAllows(ctx.env.AUTH_LIMITER, 'webmail:' + ip))) {
+      return ctx.fail(429, 'RATE_LIMITED', { retry_after_seconds: 60 });
+    }
+
+    const id = await sha256Hex(email);
+    const existing = await db.get(WEB_USERS, id);
+    if (mode === 'register' && existing) return ctx.fail(409, 'ACCOUNT_EXISTS');
+    if (mode === 'login' && !existing) return ctx.fail(404, 'USER_NOT_FOUND');
+
+    const now = Date.now();
+    const prev = await db.get(WEB_EMAIL_CODES, id);
+    if (prev && now - Number(prev.sentAt || 0) < EMAIL_CODE_RESEND_MS) {
+      return ctx.fail(429, 'TOO_SOON', {
+        retry_after_seconds: Math.ceil((EMAIL_CODE_RESEND_MS - (now - Number(prev.sentAt))) / 1000)
+      });
+    }
+    const hourStart = prev && now - Number(prev.hourStart || 0) < 3600_000 ? Number(prev.hourStart) : now;
+    const hourCount = prev && hourStart === Number(prev.hourStart) ? Number(prev.hourCount || 0) : 0;
+    if (hourCount >= EMAIL_CODES_PER_HOUR) {
+      return ctx.fail(429, 'EMAIL_CODE_HOURLY_LIMIT', { retry_after_seconds: 3600 });
+    }
+
+    const buf = new Uint32Array(1);
+    crypto.getRandomValues(buf);
+    const code = String(100000 + (buf[0] % 900000));
+    await db.patch(WEB_EMAIL_CODES, id, {
+      codeHash: await sha256Hex(`web|${code}|${email}`),
+      email,
+      mode: existing ? 'login' : (mode === 'auto' ? 'register' : mode),
+      callsign: callsign || existing?.callsign || '',
+      rank: rank || existing?.rank || '',
+      unitName: unitName || existing?.unitName || '',
+      newsletter,
+      expiresAt: now + EMAIL_CODE_TTL_MS,
+      attempts: 0,
+      sentAt: now,
+      hourStart,
+      hourCount: hourCount + 1
+    });
+
+    try {
+      await sendEmail(cfg, {
+        toEmail: email,
+        toName: callsign || existing?.callsign || '',
+        subject: `Код входа в «Каптёрка ПРО»: ${code}`,
+        title: existing ? 'Код для входа в личный кабинет' : 'Подтверждение регистрации',
+        lines: [
+          `Ваш одноразовый код: ${code}`,
+          'Введите эти 6 цифр на сайте kapterka-pro.ru. Код действует 10 минут и используется один раз.'
+        ],
+        highlight: code
+      });
+    } catch (error) {
+      console.error('Web auth email error:', error?.message || error);
+      // Roll back the undelivered code and rate counters so it can neither be
+      // redeemed nor unfairly burn the user's cooldown/hourly quota.
+      await db.patch(WEB_EMAIL_CODES, id, { codeHash: '', expiresAt: 0, sentAt: 0, hourCount }).catch(() => {});
+      return ctx.fail(503, 'EMAIL_PROVIDER_UNAVAILABLE', { reason: mailReason(error) });
+    }
+
+    return ctx.ok({
+      ok: true,
+      status: 'CODE_SENT',
+      maskedEmail: maskEmail(email),
+      expiresIn: Math.floor(EMAIL_CODE_TTL_MS / 1000),
+      existingAccount: Boolean(existing)
+    });
+  },
+
+  async web_auth_verify_code(ctx) {
+    const { body, db, cfg, ip } = ctx;
+    const email = cleanEmail(body.email);
+    const code = cleanText(body.code, 12).replace(/\D/g, '');
+    if (!email) return ctx.fail(400, 'INVALID_EMAIL');
+    if (code.length !== 6) return ctx.fail(400, 'INVALID_CODE');
+    if (!(await bindingAllows(ctx.env.AUTH_LIMITER, 'webverify:' + ip))) {
+      return ctx.fail(429, 'RATE_LIMITED', { retry_after_seconds: 60 });
+    }
+
+    const id = await sha256Hex(email);
+    const expectedHash = await sha256Hex(`web|${code}|${email}`);
+    const now = Date.now();
+
+    // Optimistically validate and consume the OTP in a single version-guarded
+    // commit: prevents concurrent double-redemption, atomic-counts wrong tries,
+    // and keeps hourStart/hourCount/sentAt intact so quota cannot be bypassed.
+    const check = await withCommitRetry(async () => {
+      const rec = await db.get(WEB_EMAIL_CODES, id);
+      if (!rec || !rec.codeHash) return { fail: [404, 'CODE_NOT_FOUND'] };
+      if (Number(rec.expiresAt || 0) < now) {
+        await db.commit([db.write(WEB_EMAIL_CODES, id, { codeHash: '', expiresAt: 0 }, rec)]);
+        return { fail: [410, 'CODE_EXPIRED'] };
+      }
+      const attempts = Number(rec.attempts || 0);
+      if (attempts >= EMAIL_CODE_MAX_ATTEMPTS) return { fail: [429, 'TOO_MANY_ATTEMPTS'] };
+
+      const valid = constantTimeEqual(expectedHash, String(rec.codeHash || ''));
+      if (!valid) {
+        const nextAttempts = attempts + 1;
+        await db.commit([db.write(WEB_EMAIL_CODES, id, { attempts: nextAttempts }, rec)]);
+        return { fail: [403, 'WRONG_CODE', { attemptsLeft: Math.max(0, EMAIL_CODE_MAX_ATTEMPTS - nextAttempts) }] };
+      }
+
+      await db.commit([db.write(WEB_EMAIL_CODES, id, { codeHash: '', expiresAt: 0, usedAt: now }, rec)]);
+      return { ok: true, rec };
+    });
+
+    if (check.fail) return ctx.fail(...check.fail);
+    const rec = check.rec;
+
+    let user = await db.get(WEB_USERS, id);
+    let isNewUser = false;
+    if (!user) {
+      if (rec.mode === 'login') return ctx.fail(404, 'USER_NOT_FOUND');
+      isNewUser = true;
+      const fallbackName = cleanText(email.split('@')[0], 40) || 'Пользователь';
+      const created = {
+        email,
+        callsign: cleanText(rec.callsign, 80) || fallbackName,
+        rank: cleanText(rec.rank, 80),
+        unitName: cleanText(rec.unitName, 120),
+        unitKey: 'kapt_' + randomHex(10),
+        phone: '',
+        subscribedToNewsletter: Boolean(rec.newsletter),
+        status: 'ACTIVE',
+        createdAt: now,
+        updatedAt: now
+      };
+      try {
+        await db.commit([db.write(WEB_USERS, id, created, null)]);
+        user = created;
+      } catch (error) {
+        if (!commitConflict(error)) throw error;
+        isNewUser = false;
+        user = await db.get(WEB_USERS, id);
+        if (!user) throw error;
+      }
+    }
+
+    const sessionToken = randomHex(32);
+    const sessionExpiresAt = now + WEB_SESSION_TTL_MS;
+    await db.patch(WEB_SESSIONS, await sha256Hex(sessionToken), {
+      userId: id,
+      email,
+      createdAt: now,
+      lastSeenAt: now,
+      expiresAt: sessionExpiresAt
+    });
+
+    const notice = sendTelegram(
+      cfg,
+      (isNewUser ? '🆕 <b>Регистрация на сайте «Каптёрка ПРО»</b>\n' : '🔐 <b>Вход в кабинет на сайте</b>\n') +
+      'Имя: <b>' + escapeHtml(user.callsign || 'Пользователь') + '</b>\n' +
+      'Email: <code>' + escapeHtml(email) + '</code>'
+    );
+    await ctx.background(notice);
+
+    return ctx.ok({
+      ok: true,
+      status: 'AUTHENTICATED',
+      isNewUser,
+      sessionToken,
+      sessionExpiresAt,
+      user: publicWebUser(user)
+    });
+  },
+
+  async web_auth_session(ctx) {
+    const { body, db } = ctx;
+    if (!(await ctx.limit('websess:' + ctx.ip))) return ctx.fail(429, 'RATE_LIMITED');
+    const token = cleanText(body.token, 128);
+    if (!/^[a-f0-9]{64}$/i.test(token)) return ctx.fail(401, 'INVALID_SESSION');
+
+    const tokenHash = await sha256Hex(token.toLowerCase());
+    const session = await db.get(WEB_SESSIONS, tokenHash);
+    if (!session) return ctx.fail(401, 'INVALID_SESSION');
+    const now = Date.now();
+    if (Number(session.expiresAt || 0) <= now) {
+      await db.remove(WEB_SESSIONS, tokenHash).catch(() => {});
+      return ctx.fail(401, 'SESSION_EXPIRED');
+    }
+    const user = await db.get(WEB_USERS, String(session.userId || ''));
+    if (!user) return ctx.fail(404, 'USER_NOT_FOUND');
+
+    await db.patch(WEB_SESSIONS, tokenHash, { lastSeenAt: now }).catch(() => {});
+    return ctx.ok({
+      ok: true,
+      status: 'AUTHENTICATED',
+      sessionExpiresAt: Number(session.expiresAt),
+      user: publicWebUser(user)
+    });
+  },
+
+  async web_auth_update_profile(ctx) {
+    const { body, db } = ctx;
+    if (!(await ctx.limit('webprof:' + ctx.ip))) return ctx.fail(429, 'RATE_LIMITED');
+    const token = cleanText(body.token, 128);
+    if (!/^[a-f0-9]{64}$/i.test(token)) return ctx.fail(401, 'INVALID_SESSION');
+
+    const tokenHash = await sha256Hex(token.toLowerCase());
+    const session = await db.get(WEB_SESSIONS, tokenHash);
+    const now = Date.now();
+    if (!session) return ctx.fail(401, 'INVALID_SESSION');
+    if (Number(session.expiresAt || 0) <= now) {
+      await db.remove(WEB_SESSIONS, tokenHash).catch(() => {});
+      return ctx.fail(401, 'SESSION_EXPIRED');
+    }
+
+    const userId = String(session.userId || '');
+    const user = await db.get(WEB_USERS, userId);
+    if (!user) return ctx.fail(404, 'USER_NOT_FOUND');
+
+    const has = (k) => Object.prototype.hasOwnProperty.call(body, k);
+    const unitKey = has('unit_key') ? cleanText(body.unit_key, 120) : '';
+    if (unitKey && !UNIT_KEY_RE.test(unitKey)) return ctx.fail(400, 'INVALID_UNIT_KEY');
+
+    const patch = { updatedAt: now };
+    if (has('callsign')) patch.callsign = cleanText(body.callsign, 80) || cleanText(user.callsign, 80) || 'Пользователь';
+    if (has('rank')) patch.rank = cleanText(body.rank, 80);
+    if (has('unit_name')) patch.unitName = cleanText(body.unit_name, 120);
+    if (unitKey) patch.unitKey = unitKey;
+    if (has('phone')) patch.phone = cleanText(body.phone, 64);
+    if (typeof body.newsletter === 'boolean') patch.subscribedToNewsletter = body.newsletter;
+
+    await db.patch(WEB_USERS, userId, patch);
+    return ctx.ok({ ok: true, user: publicWebUser({ ...user, ...patch }) });
+  },
+
+  async web_auth_logout(ctx) {
+    const { body, db } = ctx;
+    if (!(await ctx.limit('weblogout:' + ctx.ip))) return ctx.fail(429, 'RATE_LIMITED');
+    const token = cleanText(body.token, 128);
+    if (/^[a-f0-9]{64}$/i.test(token)) {
+      await db.remove(WEB_SESSIONS, await sha256Hex(token.toLowerCase())).catch(() => {});
+    }
+    return ctx.ok({ ok: true });
   },
 
   async license_verify(ctx) {
@@ -1687,6 +1966,8 @@ const handlers = {
     if (webClaimToken) metadata.web_claim_hash = await sha256Hex(webClaimToken);
 
     // Price comes only from server configuration, never from the client.
+    // Self-employed (НПД, ФЗ № 422-ФЗ, ИНН 250104230398): operates without 54-ФЗ
+    // online KKT, so YooKassa payload intentionally omits a 54-ФЗ `receipt` block.
     const payment = await requestYooKassa(cfg, 'POST', '/v3/payments', {
       amount: { value: tariff.amountRub.toFixed(2), currency: 'RUB' },
       confirmation: { type: 'redirect', return_url: returnUrl },

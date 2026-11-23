@@ -8,19 +8,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -40,16 +28,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.ui.theme.SageGreenBright
-import com.example.ui.theme.SageGreenPrimary
-import com.example.ui.theme.TacticalBg
-import com.example.ui.theme.TacticalBorderSubtle
-import com.example.ui.theme.TacticalGold
-import com.example.ui.theme.TacticalSurface
-import com.example.ui.theme.TacticalTealText
-import com.example.ui.theme.TacticalTextMuted
+import com.example.ui.theme.*
 
 /** One tab of the bottom bar: outlined icon when idle, filled when selected. */
 data class BottomTab(
@@ -60,11 +42,6 @@ data class BottomTab(
     val badge: Int = 0
 )
 
-/**
- * Floating pill-shaped bottom bar. A gradient "lens" slides under the selected
- * tab with a spring; the selected icon grows a little and switches to its
- * filled variant. Fixed height, no size animation — nothing on screen jumps.
- */
 @Composable
 fun ModernBottomBar(
     tabs: List<BottomTab>,
@@ -76,16 +53,28 @@ fun ModernBottomBar(
             .fillMaxWidth()
             .background(TacticalBg)
             .navigationBarsPadding()
-            .padding(start = 12.dp, end = 12.dp, top = 6.dp, bottom = 8.dp)
+            .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 8.dp)
     ) {
+        val isDark = LocalTacticalColors.current.isDark
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(66.dp)
-                .shadow(14.dp, RoundedCornerShape(24.dp), clip = false)
+                .shadow(
+                    elevation = if (isDark) 18.dp else 12.dp,
+                    shape = RoundedCornerShape(24.dp),
+                    clip = false,
+                    ambientColor = Color.Black.copy(alpha = if (isDark) 0.7f else 0.16f),
+                    spotColor = SageGreenPrimary.copy(alpha = if (isDark) 0.25f else 0.14f)
+                )
                 .clip(RoundedCornerShape(24.dp))
-                .background(TacticalSurface)
-                .border(1.dp, TacticalBorderSubtle, RoundedCornerShape(24.dp))
+                .background(
+                    Brush.verticalGradient(
+                        if (isDark) listOf(Color(0xFF172724), Color(0xFF0E1816))
+                        else listOf(Color(0xFFFFFFFF), Color(0xFFF3FAF7))
+                    )
+                )
+                .border(1.dp, glassRimBrush(), RoundedCornerShape(24.dp))
         ) {
             val tabWidth = maxWidth / tabs.size
             val lensX by animateDpAsState(
@@ -93,7 +82,6 @@ fun ModernBottomBar(
                 animationSpec = spring(dampingRatio = 0.72f, stiffness = Spring.StiffnessMediumLow),
                 label = "lens"
             )
-            // Sliding highlight behind the selected tab.
             Box(
                 modifier = Modifier
                     .offset(x = lensX)
@@ -103,8 +91,21 @@ fun ModernBottomBar(
                     .clip(RoundedCornerShape(18.dp))
                     .background(
                         Brush.verticalGradient(
-                            listOf(SageGreenPrimary.copy(alpha = 0.30f), TacticalTealText.copy(alpha = 0.14f))
+                            listOf(
+                                SageGreenPrimary.copy(alpha = if (isDark) 0.24f else 0.18f),
+                                TacticalTeal.copy(alpha = if (isDark) 0.10f else 0.08f)
+                            )
                         )
+                    )
+                    .border(
+                        width = 0.9.dp,
+                        brush = Brush.verticalGradient(
+                            listOf(
+                                SageGreenBright.copy(alpha = 0.45f),
+                                Color.Transparent
+                            )
+                        ),
+                        shape = RoundedCornerShape(18.dp)
                     )
             )
             Row(modifier = Modifier.fillMaxWidth().fillMaxHeight()) {
@@ -128,10 +129,10 @@ private fun BottomTabItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val tint by animateColorAsState(if (selected) SageGreenBright else TacticalTextMuted, label = "tint")
+    val tint by animateColorAsState(if (selected) SageGreenPrimary else TacticalTextMuted, label = "tint")
     val scale by animateFloatAsState(
-        targetValue = if (selected) 1.12f else 1f,
-        animationSpec = spring(dampingRatio = 0.5f, stiffness = Spring.StiffnessMedium),
+        targetValue = if (selected) 1.1f else 1f,
+        animationSpec = spring(dampingRatio = 0.55f, stiffness = Spring.StiffnessMedium),
         label = "scale"
     )
     Column(
@@ -146,7 +147,7 @@ private fun BottomTabItem(
             )
             .testTag(tab.tag),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
+        verticalArrangement = Arrangement.Center
     ) {
         Box {
             Icon(
@@ -154,7 +155,7 @@ private fun BottomTabItem(
                 contentDescription = tab.title,
                 tint = tint,
                 modifier = Modifier
-                    .size(24.dp)
+                    .size(23.dp)
                     .graphicsLayer { scaleX = scale; scaleY = scale }
             )
             if (tab.badge > 0) {
@@ -164,7 +165,7 @@ private fun BottomTabItem(
                         .offset(x = 9.dp, y = (-5).dp)
                         .size(17.dp)
                         .clip(CircleShape)
-                        .background(TacticalGold),
+                        .background(TacticalRed),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -176,13 +177,15 @@ private fun BottomTabItem(
                 }
             }
         }
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(3.dp))
         Text(
             text = tab.title,
             color = tint,
-            fontSize = 10.5.sp,
+            fontSize = 10.sp,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-            maxLines = 1
+            maxLines = 1,
+            softWrap = false,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }

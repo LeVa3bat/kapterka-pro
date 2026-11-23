@@ -160,4 +160,17 @@ class FreeTierPolicyTest {
         )
         assertTrue(atLimit is FreeTierDecision.RequirePro)
     }
+
+    @Test
+    fun freeMode_secondaryWarehouseItemsDoNotDeadlockPrimaryWarehouse() {
+        val secondaryOnlyStock = makeStock("point_1", 15)
+        val incomeOnPrimary = FreeTierPolicy.checkIncome(
+            isProOrDemo = false,
+            points = points,
+            stockRecords = secondaryOnlyStock,
+            targetPointId = "base_sklad",
+            itemIds = listOf("item_16")
+        )
+        assertEquals(FreeTierDecision.Allowed, incomeOnPrimary)
+    }
 }

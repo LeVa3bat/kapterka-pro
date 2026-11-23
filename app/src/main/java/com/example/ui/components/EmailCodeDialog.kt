@@ -123,11 +123,14 @@ fun EmailCodeDialog(
     }
 
     Dialog(onDismissRequest = onDismiss) {
+        Animated3DDialogContainer(
+            modifier = Modifier.fillMaxWidth(),
+            cornerRadius = 26.dp,
+            accentBorder = SageGreenPrimary
+        ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(24.dp))
-                .background(TacticalSurface)
                 .padding(22.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -241,6 +244,7 @@ fun EmailCodeDialog(
                 )
             }
             Spacer(modifier = Modifier.width(1.dp))
+        }
         }
     }
 }

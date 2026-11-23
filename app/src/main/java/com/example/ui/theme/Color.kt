@@ -37,83 +37,97 @@ data class TacticalColors(
     val demoBannerText: Color,
     val proBanner: Color,
     val proBannerBorder: Color,
-    val proBannerText: Color
+    val proBannerText: Color,
+    val income: Color,
+    val incomeDark: Color,
+    val incomeText: Color,
+    val heroGradientStart: Color,
+    val heroGradientEnd: Color
 )
 
-// LIGHT TACTICAL PALETTE (Светлая дневная тема: мягкий оливковый/шалфейный фон, чёткий текст)
+// LIGHT 3D PORCELAIN-EMERALD PALETTE (Светлая объёмная тема)
 val LightTacticalColors = TacticalColors(
     isDark = false,
-    bg = Color(0xFFF6F8FB),
+    bg = Color(0xFFEEF4F1),
     surface = Color(0xFFFFFFFF),
-    surfaceLight = Color(0xFFF1F4F7),
+    surfaceLight = Color(0xFFE5EFEA),
     surfaceElevated = Color(0xFFFFFFFF),
-    border = Color(0xFFDCE3EA),
-    borderSubtle = Color(0xFFE9EEF3),
-    sageGreenPrimary = Color(0xFF168A68),
-    sageGreenBright = Color(0xFF0B6B51),
-    sageGreenDark = Color(0xFFE4F5EF),
-    sageGreenContainer = Color(0xFFC7EBDD),
-    gold = Color(0xFFD6922E),
-    goldDark = Color(0xFFFFF3D9),
-    goldText = Color(0xFF875A11),
-    red = Color(0xFFD84A4A),
-    redDark = Color(0xFFFFE8E8),
-    redText = Color(0xFF9F2E2E),
-    teal = Color(0xFF287DB8),
-    tealDark = Color(0xFFE8F3FA),
-    tealText = Color(0xFF1E638F),
-    greenBtn = Color(0xFF168A68),
+    border = Color(0xFFCDE0D8),
+    borderSubtle = Color(0xFFDCEBE4),
+    sageGreenPrimary = Color(0xFF0D8B68),
+    sageGreenBright = Color(0xFF0A664D),
+    sageGreenDark = Color(0xFFDEF5EC),
+    sageGreenContainer = Color(0xFFC3ECDC),
+    gold = Color(0xFFD98B1F),
+    goldDark = Color(0xFFFFF3D8),
+    goldText = Color(0xFF8C560B),
+    red = Color(0xFFD64545),
+    redDark = Color(0xFFFFE9E9),
+    redText = Color(0xFF9F2626),
+    teal = Color(0xFF0891B2),
+    tealDark = Color(0xFFE0F5F9),
+    tealText = Color(0xFF0E687E),
+    greenBtn = Color(0xFF0D8B68),
     greenBtnText = Color(0xFFFFFFFF),
-    textPrimary = Color(0xFF172027),
-    textSecondary = Color(0xFF44515B),
-    textMuted = Color(0xFF71808B),
-    textDim = Color(0xFF9AA6AF),
-    demoBanner = Color(0xFFFFF6DD),
-    demoBannerBorder = Color(0xFFE2B24F),
-    demoBannerText = Color(0xFF7A5717),
-    proBanner = Color(0xFFE7F7F1),
-    proBannerBorder = Color(0xFF55B496),
-    proBannerText = Color(0xFF0D694F)
+    textPrimary = Color(0xFF0E1D18),
+    textSecondary = Color(0xFF394D46),
+    textMuted = Color(0xFF60766E),
+    textDim = Color(0xFF8CA29A),
+    demoBanner = Color(0xFFFFF6DE),
+    demoBannerBorder = Color(0xFFE4B44C),
+    demoBannerText = Color(0xFF7D5310),
+    proBanner = Color(0xFFE2F7EE),
+    proBannerBorder = Color(0xFF3FB38D),
+    proBannerText = Color(0xFF0B664D),
+    income = Color(0xFF059669),
+    incomeDark = Color(0xFFDCF6EC),
+    incomeText = Color(0xFF046C4E),
+    heroGradientStart = Color(0xFF0B6A4F),
+    heroGradientEnd = Color(0xFF0B5868)
 )
 
-// DARK TACTICAL PALETTE (Боевая ночная / Тёмная тактическая тема: глубокий матовый фон, фосфорные акценты)
-// DARK MODERN PALETTE
+// DARK 3D OBSIDIAN-EMERALD PALETTE (Глубокий графит #080F0E + объёмный изумруд #10B981 + золото #F59E0B)
 val DarkTacticalColors = TacticalColors(
     isDark = true,
-    bg = Color(0xFF0F1216),
-    surface = Color(0xFF171B20),
-    surfaceLight = Color(0xFF20262D),
-    surfaceElevated = Color(0xFF262D35),
-    border = Color(0xFF343C45),
-    borderSubtle = Color(0xFF292F36),
-    sageGreenPrimary = Color(0xFF49C59D),
-    sageGreenBright = Color(0xFF74D8B7),
-    sageGreenDark = Color(0xFF17392F),
-    sageGreenContainer = Color(0xFF205441),
-    gold = Color(0xFFF0B457),
-    goldDark = Color(0xFF4A3516),
-    goldText = Color(0xFFFFD991),
-    red = Color(0xFFF16C6C),
-    redDark = Color(0xFF482222),
-    redText = Color(0xFFFFB0B0),
-    teal = Color(0xFF61B6E8),
-    tealDark = Color(0xFF173647),
-    tealText = Color(0xFFA9DCF7),
-    greenBtn = Color(0xFF49C59D),
-    greenBtnText = Color(0xFF07261D),
-    textPrimary = Color(0xFFF1F5F7),
-    textSecondary = Color(0xFFC1CBD2),
-    textMuted = Color(0xFF8F9BA5),
-    textDim = Color(0xFF64717C),
-    demoBanner = Color(0xFF413319),
-    demoBannerBorder = Color(0xFFD8A64F),
-    demoBannerText = Color(0xFFFFD891),
-    proBanner = Color(0xFF16382D),
-    proBannerBorder = Color(0xFF49C59D),
-    proBannerText = Color(0xFF9CE6CB)
+    bg = Color(0xFF080F0E),
+    surface = Color(0xFF111C1A),
+    surfaceLight = Color(0xFF182724),
+    surfaceElevated = Color(0xFF1F322E),
+    border = Color(0xFF28413B),
+    borderSubtle = Color(0xFF1D302C),
+    sageGreenPrimary = Color(0xFF10B981),
+    sageGreenBright = Color(0xFF34D399),
+    sageGreenDark = Color(0xFF0F2F26),
+    sageGreenContainer = Color(0xFF144537),
+    gold = Color(0xFFF59E0B),
+    goldDark = Color(0xFF382710),
+    goldText = Color(0xFFFCD34D),
+    red = Color(0xFFF87171),
+    redDark = Color(0xFF3A191F),
+    redText = Color(0xFFFCA5A5),
+    teal = Color(0xFF22D3EE),
+    tealDark = Color(0xFF0E2E35),
+    tealText = Color(0xFF67E8F9),
+    greenBtn = Color(0xFF10B981),
+    greenBtnText = Color(0xFF04160F),
+    textPrimary = Color(0xFFF1F7F5),
+    textSecondary = Color(0xFFB5CBC5),
+    textMuted = Color(0xFF839F97),
+    textDim = Color(0xFF567069),
+    demoBanner = Color(0xFF2D220E),
+    demoBannerBorder = Color(0xFFD99B26),
+    demoBannerText = Color(0xFFFDE68A),
+    proBanner = Color(0xFF0E2D24),
+    proBannerBorder = Color(0xFF34D399),
+    proBannerText = Color(0xFFA7F3D0),
+    income = Color(0xFF10B981),
+    incomeDark = Color(0xFF0F2F26),
+    incomeText = Color(0xFF34D399),
+    heroGradientStart = Color(0xFF0B5A44),
+    heroGradientEnd = Color(0xFF0A4D5C)
 )
 
-val LocalTacticalColors = staticCompositionLocalOf { LightTacticalColors }
+val LocalTacticalColors = staticCompositionLocalOf { DarkTacticalColors }
 
 // Dynamic properties resolving via current LocalTacticalColors
 val TacticalBg: Color @Composable @ReadOnlyComposable get() = LocalTacticalColors.current.bg
@@ -155,3 +169,12 @@ val TacticalDemoBannerText: Color @Composable @ReadOnlyComposable get() = LocalT
 val TacticalProBanner: Color @Composable @ReadOnlyComposable get() = LocalTacticalColors.current.proBanner
 val TacticalProBannerBorder: Color @Composable @ReadOnlyComposable get() = LocalTacticalColors.current.proBannerBorder
 val TacticalProBannerText: Color @Composable @ReadOnlyComposable get() = LocalTacticalColors.current.proBannerText
+
+val TacticalIncome: Color @Composable @ReadOnlyComposable get() = LocalTacticalColors.current.income
+val TacticalIncomeDark: Color @Composable @ReadOnlyComposable get() = LocalTacticalColors.current.incomeDark
+val TacticalIncomeText: Color @Composable @ReadOnlyComposable get() = LocalTacticalColors.current.incomeText
+val TacticalEmerald: Color @Composable @ReadOnlyComposable get() = LocalTacticalColors.current.income
+val TacticalEmeraldDark: Color @Composable @ReadOnlyComposable get() = LocalTacticalColors.current.incomeDark
+val TacticalEmeraldText: Color @Composable @ReadOnlyComposable get() = LocalTacticalColors.current.incomeText
+val HeroGradientStart: Color @Composable @ReadOnlyComposable get() = LocalTacticalColors.current.heroGradientStart
+val HeroGradientEnd: Color @Composable @ReadOnlyComposable get() = LocalTacticalColors.current.heroGradientEnd

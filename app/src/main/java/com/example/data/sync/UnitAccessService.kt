@@ -12,6 +12,7 @@ import org.json.JSONObject
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.Collections
 
 /** Result of registering this device as a member of a unit. */
 sealed class UnitAccessResult {
@@ -36,7 +37,15 @@ class UnitAccessService(
 ) {
     private val tag = "UnitAccess"
 
-    private val joinedUnits = mutableSetOf<String>()
+    private val joinedUnits: MutableSet<String> = Collections.synchronizedSet(mutableSetOf())
+
+    fun invalidateMembership(unitKey: String) {
+        val cleanKey = unitKey.trim()
+        if (cleanKey.isEmpty()) return
+        synchronized(joinedUnits) {
+            joinedUnits.removeAll { it.endsWith("/$cleanKey") }
+        }
+    }
 
     suspend fun ensureMembership(
         unitKey: String,

@@ -7,6 +7,7 @@ import com.example.data.license.LicenseManager
 import com.example.data.local.KapterkaDatabase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.*
@@ -170,5 +171,35 @@ class LicenseManagerTest {
         assertEquals(fourDaysAgo, prefs.getLong("demo_first_launch_time", 0L))
         assertFalse(licenseManager.licenseStatus.value.isDemoActive)
         assertEquals(0, licenseManager.licenseStatus.value.demoDaysLeft)
+    }
+
+    @Test
+    fun testExpiredProLicenseResetsRoomProfileFlag() = runBlocking {
+        val dao = db.kapterkaDao()
+        dao.saveUserProfile(
+            com.example.data.model.UserProfile(
+                callsign = "Алексей",
+                unitName = "Склад",
+                isLoggedIn = true,
+                isProActive = true,
+                proDaysLeft = 5
+            )
+        )
+        // Expired timestamp in prefs
+        val past = System.currentTimeMillis() - 60_000L
+        context.getSharedPreferences("kapterka_fighter_license_prefs", Context.MODE_PRIVATE)
+            .edit()
+            .putString("active_license_key", licenseManager.generateLicenseKey())
+            .putLong("license_expires_at", past)
+            .commit()
+
+        licenseManager.refreshLicenseStatus()
+        // Wait briefly for IO coroutine to sync Room profile
+        kotlinx.coroutines.delay(150)
+        val updated = dao.getUserProfile().first()
+        assertFalse(licenseManager.licenseStatus.value.isProActive)
+        assertNotNull(updated)
+        assertFalse("Expired PRO must reset Room user_profile.isProActive", updated!!.isProActive)
+        assertEquals(0, updated.proDaysLeft)
     }
 }

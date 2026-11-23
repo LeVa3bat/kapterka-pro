@@ -71,7 +71,9 @@ import kotlinx.coroutines.launch
 @Composable
 fun PointActionsSheet(
     point: WarehousePoint,
-    stockUnits: Int,
+    stockSummary: String,
+    hasStock: Boolean,
+    isMilitary: Boolean = true,
     canMoveUp: Boolean,
     canMoveDown: Boolean,
     onMove: (Int) -> Unit,
@@ -121,9 +123,10 @@ fun PointActionsSheet(
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
+                    val baseLabel = if (isMilitary) "Базовый склад" else "Основной склад"
                     Text(point.name, color = TacticalTextPrimary, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
                     Text(
-                        (if (point.isBase) "Базовый склад • " else "") + "на остатке $stockUnits ед.",
+                        (if (point.isBase) "$baseLabel • " else "") + stockSummary,
                         color = if (point.isBase) TacticalGoldText else TacticalTextMuted,
                         fontSize = 12.sp
                     )
@@ -141,10 +144,10 @@ fun PointActionsSheet(
                     icon = Icons.Rounded.DeleteForever,
                     title = if (armedDelete) "Точно удалить?" else "Удалить",
                     subtitle = when {
-                        point.isBase -> "базовый склад не удаляется"
-                        armedDelete && stockUnits > 0 -> "на нём $stockUnits ед. — нажмите ещё раз"
+                        point.isBase -> if (isMilitary) "базовый склад не удаляется" else "основной склад не удаляется"
+                        armedDelete && hasStock -> "есть остатки ($stockSummary) — нажмите ещё раз"
                         armedDelete -> "нажмите ещё раз"
-                        else -> "убрать точку"
+                        else -> if (isMilitary) "убрать точку" else "убрать склад"
                     },
                     tint = TacticalRedText,
                     enabled = !point.isBase,

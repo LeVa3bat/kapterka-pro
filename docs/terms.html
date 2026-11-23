@@ -2,129 +2,114 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Пользовательское соглашение — Каптёрка PRO</title>
-  <meta name="description" content="Условия использования Каптёрка PRO: демо-период, PRO-доступ, установка, синхронизация, оплата и поддержка.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Пользовательское соглашение (Оферта) — Каптёрка PRO</title>
+  <meta name="description" content="Публичная оферта и условия использования Каптёрка PRO: демо-период, базовый режим, тарифы PRO, оплата через ЮKassa (самозанятый НПД), синхронизация и поддержка.">
   <link rel="canonical" href="https://kapterka-pro.ru/terms.html">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="apple-touch-icon" href="app_icon_512.png">
-  <meta name="theme-color" content="#0d140e">
+  <meta name="theme-color" content="#091014">
   <meta name="color-scheme" content="dark">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --bg: #0d140e;
-      --card-bg: #141c16;
-      --card-inner: #19241c;
-      --primary: #8daa59;
-      --primary-bright: #a3c46a;
-      --text: #e8ede6;
-      --text-muted: #8e9b8f;
-      --border: #2c3e2e;
+    @font-face{font-family:"IBM Plex Sans";font-style:normal;font-weight:400;font-display:swap;src:url("fonts/plex-sans-400-cyrillic.woff2") format("woff2");unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+    @font-face{font-family:"IBM Plex Sans";font-style:normal;font-weight:400;font-display:swap;src:url("fonts/plex-sans-400-latin.woff2") format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+    @font-face{font-family:"IBM Plex Sans";font-style:normal;font-weight:600;font-display:swap;src:url("fonts/plex-sans-600-cyrillic.woff2") format("woff2");unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+    @font-face{font-family:"IBM Plex Sans";font-style:normal;font-weight:600;font-display:swap;src:url("fonts/plex-sans-600-latin.woff2") format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+    @font-face{font-family:"IBM Plex Mono";font-style:normal;font-weight:500;font-display:swap;src:url("fonts/plex-mono-500-cyrillic.woff2") format("woff2");unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+    @font-face{font-family:"IBM Plex Mono";font-style:normal;font-weight:500;font-display:swap;src:url("fonts/plex-mono-500-latin.woff2") format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+    :root{
+      --bg:#091014; --card:#0f1920; --card-inner:#13222b;
+      --primary:#10b981; --primary-bright:#34d399; --gold:#fbbf24;
+      --text:#edf4f2; --text-muted:#98aeb8; --border:rgba(148,179,191,.2);
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      background-color: var(--bg);
-      color: var(--text);
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      line-height: 1.6;
-      padding: 24px 16px;
-    }
-    .container {
-      max-width: 800px;
-      margin: 0 auto;
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 32px 28px;
-    }
-    .header {
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 20px;
-      margin-bottom: 24px;
-    }
-    .badge {
-      display: inline-block;
-      font-size: 11px;
-      text-transform: uppercase;
-      font-weight: 700;
-      color: var(--primary-bright);
-      background: rgba(141,170,89,0.15);
-      border: 1px solid var(--primary);
-      padding: 4px 10px;
-      border-radius: 6px;
-      margin-bottom: 10px;
-      letter-spacing: 0.5px;
-    }
-    h1 { font-size: 1.6rem; color: #fff; margin-bottom: 8px; font-weight: 800; }
-    .meta { font-size: 0.85rem; color: var(--text-muted); }
-    h2 { font-size: 1.15rem; color: var(--primary-bright); margin-top: 24px; margin-bottom: 10px; }
-    p, ul { font-size: 0.95rem; color: var(--text); margin-bottom: 12px; }
-    ul { padding-left: 20px; }
-    li { margin-bottom: 6px; }
-    a { color: var(--primary-bright); text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    .btn-back {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: rgba(141,170,89,0.2);
-      color: #fff;
-      border: 1px solid var(--primary);
-      padding: 8px 16px;
-      border-radius: 6px;
-      font-size: 0.85rem;
-      margin-top: 24px;
-      font-weight: 600;
-    }
-    .btn-back:hover { background: var(--primary); color: #000; text-decoration: none; }
-  
-    .skip-link{position:fixed;left:12px;top:10px;z-index:9999;transform:translateY(-160%);padding:9px 12px;border-radius:9px;background:#dff5e8;color:#07100a;font-size:.72rem;font-weight:900;text-decoration:none;box-shadow:0 8px 28px rgba(0,0,0,.35)}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:radial-gradient(ellipse 70% 35% at 50% 0%,rgba(16,185,129,.12),transparent 65%),var(--bg);color:var(--text);font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.65;padding:24px 16px 48px}
+    .container{max-width:840px;margin:0 auto;background:var(--card);border:1px solid var(--border);border-radius:18px;padding:34px 30px;box-shadow:0 20px 50px rgba(0,0,0,.4)}
+    .header{border-bottom:1px solid var(--border);padding-bottom:20px;margin-bottom:24px}
+    .badge{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:11px;text-transform:uppercase;font-weight:600;color:var(--primary-bright);background:rgba(16,185,129,.12);border:1px solid rgba(52,211,153,.32);padding:4px 11px;border-radius:999px;margin-bottom:10px;letter-spacing:.5px}
+    h1{font-size:clamp(1.4rem,4vw,1.8rem);color:#fff;margin-bottom:8px;font-weight:600;line-height:1.2}
+    .meta{font-size:.86rem;color:var(--text-muted)}
+    h2{font-size:1.12rem;color:var(--primary-bright);margin-top:26px;margin-bottom:10px;font-weight:600}
+    p,ul{font-size:.95rem;color:#d6e3e8;margin-bottom:12px}
+    ul{padding-left:20px}
+    li{margin-bottom:6px}
+    code{font-family:"IBM Plex Mono",monospace;font-size:.88em;color:var(--gold);background:rgba(251,191,36,.1);padding:2px 6px;border-radius:5px;white-space:nowrap}
+    .highlight-box{background:var(--card-inner);border:1px solid rgba(52,211,153,.32);border-radius:12px;padding:16px 18px;margin:16px 0;font-size:.92rem;color:#dcebe5}
+    a{color:var(--primary-bright);text-decoration:none}
+    a:hover{text-decoration:underline}
+    .nav-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:28px;padding-top:20px;border-top:1px solid var(--border)}
+    .btn-back{display:inline-flex;align-items:center;gap:6px;background:rgba(16,185,129,.14);color:#fff;border:1px solid rgba(52,211,153,.4);padding:9px 16px;border-radius:10px;font-size:.86rem;font-weight:600}
+    .btn-back:hover{background:var(--primary);color:#04160f;text-decoration:none}
+    .skip-link{position:fixed;left:12px;top:10px;z-index:9999;transform:translateY(-160%);padding:9px 12px;border-radius:9px;background:#dff5e8;color:#07100a;font-size:.75rem;font-weight:700;text-decoration:none}
     .skip-link:focus{transform:translateY(0)}
-    a:focus-visible{outline:2px solid #a3c46a;outline-offset:3px}
+    a:focus-visible{outline:2px solid var(--primary-bright);outline-offset:3px}
+    @media(max-width:600px){.container{padding:22px 18px}}
   </style>
 </head>
 <body>
   <a class="skip-link" href="#main-content">Перейти к содержимому</a>
   <main class="container" id="main-content">
     <div class="header">
-      <span class="badge">Публичная оферта</span>
+      <span class="badge">Публичная оферта • НПД</span>
       <h1>Пользовательское соглашение (Лицензионный договор)</h1>
       <div class="meta">
-        Программное обеспечение «Каптёрка Про» для ОС Android<br>
-        Редакция от 21 ноября 2026 г. • Правообладатель: ИНН 250104230398
+        Программное обеспечение «Каптёрка PRO» для ОС Android и сайт kapterka-pro.ru<br>
+        Редакция от 22 ноября 2026 г. • Правообладатель: самозанятый (плательщик НПД), ИНН 250104230398
       </div>
     </div>
 
-    <h2>1. Предмет соглашения</h2>
-    <p>1.1. Настоящие условия регулируют использование Android-приложения и сайта «Каптёрка PRO».</p>
-    <p>1.2. Пользователь самостоятельно принимает решение об установке приложения, регистрации на сайте и подключении синхронизации.</p>
+    <h2>1. Предмет соглашения и статус правообладателя</h2>
+    <p>1.1. Настоящий документ является публичной офертой в соответствии со ст. 437 ГК РФ и регулирует условия предоставления простой (неисключительной) лицензии на использование Android-приложения «Каптёрка PRO» и личного кабинета на сайте <code>kapterka-pro.ru</code>.</p>
+    <p>1.2. Правообладатель — физическое лицо, применяющее специальный налоговый режим «Налог на профессиональный доход» (самозанятый, Федеральный закон от 27.11.2018 № 422-ФЗ, ИНН 250104230398).</p>
+    <p>1.3. Установка приложения, регистрация по электронной почте (Email) или оплата тарифа PRO означает принятие условий настоящего Соглашения и <a href="privacy.html">Политики конфиденциальности</a>.</p>
 
-    <h2>2. Базовый режим, демо и PRO-доступ</h2>
-    <p>2.1. Для нового пользователя предусмотрен 3-дневный демо-период полного доступа (фиксируется по дате первой регистрации). После окончания демо приложение переходит в бесплатный базовый офлайн-режим: 1 основной склад, до 15 активных позиций на остатках и до 15 пользовательских карточек, приход, выдача на руки и локальное резервное копирование в файл.</p>
-    <p>2.2. Тарифы PRO снимают все ограничения и предоставляются на 30 (490 ₽), 90 (1 190 ₽) или 365 календарных дней (3 490 ₽). Актуальная стоимость отображается на сайте и в приложении перед оплатой.</p>
-    <p>2.3. После подтверждения оплаты пользователь получает лицензионный ключ формата <code>KAPT-XXXX-XXXX-XXXX</code>.</p>
+    <h2>2. Стартовые профили, демо, базовый режим и PRO-лицензия</h2>
+    <p>2.1. Приложение предназначено для универсального складского и материального учёта: склада подразделения и снабжения (с формами № 8 и № 18), мастерской / бригады / гражданского склада или пустого склада с нуля. При обновлении ранее установленной версии существующие локальные данные пользователя сохраняются без изменений.</p>
+    <p>2.2. Новым пользователям предоставляется <strong>3-дневный (72 часа) бесплатный демо-период</strong> полного доступа (отсчёт привязывается к дате первой регистрации на сервере).</p>
+    <p>2.3. По окончании демо-периода приложение продолжает работать в <strong>бесплатном базовом офлайн-режиме</strong>: 1 основной склад, до 15 активных позиций на остатках, до 15 пользовательских карточек в справочнике, приход, выдача на руки, просмотр накопленной истории и локальная резервная копия в файл.</p>
+    <p>2.4. Лицензия <strong>PRO</strong> снимает ограничения (несколько складов, безлимит позиций и заявок, перемещения, списание, экспорт в Excel, облачная синхронизация нескольких устройств) и оформляется на выбранный срок без автоматического списания:</p>
+    <ul>
+      <li><strong>30 календарных дней</strong> — 490 ₽;</li>
+      <li><strong>90 календарных дней</strong> — 1 190 ₽;</li>
+      <li><strong>365 календарных дней</strong> — 3 490 ₽.</li>
+    </ul>
+    <p>Актуальная стоимость всегда указывается на экране оплаты до её подтверждения. При продлении оплаченные дни суммируются с оставшимся сроком активной лицензии.</p>
+    <p>2.5. После подтверждения оплаты сервер автоматически формирует лицензионный ключ формата <code>KAPT-XXXX-XXXX-XXXX</code> и направляет его на указанный пользователем Email. Скрытые автопродления и рекуррентные списания отсутствуют.</p>
 
-    <h2>3. Установка и обновления</h2>
-    <p>3.1. Приложение может распространяться через RuStore и в виде официального APK с сайта.</p>
-    <p>3.2. Перед обновлением рекомендуется сохранять резервную копию важных данных. Разработчик стремится сохранять совместимость обновлений и локальной базы, но пользователь также отвечает за сохранность собственного устройства и резервных копий.</p>
+    <h2>3. Оплата и порядок расчётов (Самозанятый / НПД)</h2>
+    <div class="highlight-box">
+      <strong>Касса и чеки (самозанятый НПД):</strong><br>
+      Оплата принимается через платёжный сервис <strong>ЮKassa</strong> (магазин №1450722): СБП, банковские карты МИР/РФ, SberPay. В соответствии с п. 2.2 ст. 2 Федерального закона № 54-ФЗ и ст. 14 Федерального закона № 422-ФЗ плательщик НПД освобождён от применения онлайн-ККТ. Чек плательщика НПД формируется в официальном сервисе ФНС России «Мой налог». При необходимости получения ссылки/копии чека НПД пользователь может направить запрос в поддержку с указанием Email и даты платежа.
+    </div>
+    <p>3.1. Реквизиты банковской карты и платёжные данные обрабатываются исключительно на стороне ЮKassa и не передаются на сайт или в приложение «Каптёрка PRO».</p>
+    <p>3.2. Моментом исполнения обязательств по предоставлению прав использования PRO считается генерация и активация лицензионного ключа в серверном реестре (с одновременной отправкой ключа на Email).</p>
 
-    <h2>4. Синхронизация</h2>
-    <p>4.1. Синхронизация между устройствами является дополнительной функцией и требует подключения к сети.</p>
-    <p>4.2. Доступ к общему набору синхронизируемых данных определяется ключом подразделения. Пользователь обязан не передавать этот ключ посторонним.</p>
+    <h2>4. Возврат денежных средств</h2>
+    <p>4.1. В случае ошибочной повторной оплаты, сбоя выдачи лицензии либо технической невозможности активации оплаченной лицензии на совместимом устройстве (Android 7.0+) пользователь вправе обратиться в поддержку (<a href="https://t.me/kapterka_help_bot" target="_blank" rel="noopener noreferrer">@kapterka_help_bot</a> или <a href="mailto:alex.666.881@gmail.com">alex.666.881@gmail.com</a>) с указанием Email и идентификатора/даты платежа.</p>
+    <p>4.2. Проверка обращения и решение по возврату или восстановлению доступа выполняются в срок до 3 рабочих дней. Возврат осуществляется на тот же платёжный инструмент, с которого была проведена оплата через ЮKassa.</p>
 
-    <h2>5. Ограничение ответственности</h2>
-    <p>5.1. Приложение предоставляется «как есть». Работа облачных функций зависит в том числе от доступности сети и внешних сервисов.</p>
-    <p>5.2. Приложение является инструментом учёта и само по себе не заменяет обязательные документы, внутренние регламенты организации или требования законодательства.</p>
+    <h2>5. Установка, обновления и синхронизация</h2>
+    <p>5.1. Официальная сборка распространяется через RuStore и сайт <code>kapterka-pro.ru</code> (проверка подписи и SHA-256 доступна на странице <a href="security.html">Безопасность</a>).</p>
+    <p>5.2. Синхронизация между устройствами является дополнительной сетевой функцией и требует подключения к интернету. Доступ к общему контуру данных определяется секретным кодом группы (<code>kapt_...</code>) — пользователь обязуется не передавать его посторонним.</p>
+    <p>5.3. Перед крупными обновлениями и сменой устройства рекомендуется сохранять локальную резервную копию базы данных.</p>
 
-    <h2>6. Оплата и возвраты</h2>
-    <p>6.1. Платёж проводится через ЮKassa. Банковские реквизиты карты не сохраняются сайтом «Каптёрка PRO».</p>
-    <p>6.2. По вопросам ошибочной оплаты, выдачи ключа или доступа пользователь может обратиться в поддержку.</p>
+    <h2>6. Ограничение ответственности</h2>
+    <p>6.1. Программное обеспечение предоставляется по принципу «как есть» (AS IS). Работа облачной синхронизации и доставки писем зависит от доступности сети интернет и внешних провайдеров.</p>
+    <p>6.2. Приложение является вспомогательным инструментом учёта и само по себе не заменяет обязательную бухгалтерскую, ведомственную или иную отчётность, предусмотренную законодательством или регламентами организации.</p>
 
-    <h2>7. Контакты</h2>
-    <p>ИНН: 250104230398<br>Email: <a href="mailto:alex.666.881@gmail.com">alex.666.881@gmail.com</a><br>Telegram: <a href="https://t.me/kapterka_help_bot" target="_blank" rel="noopener noreferrer">@kapterka_help_bot</a></p>
+    <h2>7. Реквизиты и контакты правообладателя</h2>
+    <p>
+      Статус: Самозанятый (плательщик НПД)<br>
+      ИНН: <code>250104230398</code><br>
+      Email: <a href="mailto:alex.666.881@gmail.com">alex.666.881@gmail.com</a><br>
+      Поддержка в Telegram: <a href="https://t.me/kapterka_help_bot" target="_blank" rel="noopener noreferrer">@kapterka_help_bot</a>
+    </p>
 
-    <a href="index.html" class="btn-back">← На главную страницу</a>
+    <div class="nav-row">
+      <a href="index.html" class="btn-back">← На главную страницу</a>
+      <a href="privacy.html" class="btn-back">Политика конфиденциальности</a>
+      <a href="security.html" class="btn-back">Безопасность и APK</a>
+    </div>
   </main>
 </body>
 </html>

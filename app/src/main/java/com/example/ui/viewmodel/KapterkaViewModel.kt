@@ -60,15 +60,76 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
 
     private val prefs = application.getSharedPreferences("kapterka_app_prefs", android.content.Context.MODE_PRIVATE)
 
-    private val _availableCategories = MutableStateFlow<List<String>>(loadCategoriesFromPrefs())
+    // Path A Workspace Profile (MILITARY / CIVILIAN / EMPTY)
+    private val _workspaceProfileMode = MutableStateFlow(
+        com.example.data.model.WorkspaceProfileMode.fromCode(prefs.getString("workspace_profile_mode", null))
+    )
+    val workspaceProfileMode: StateFlow<com.example.data.model.WorkspaceProfileMode> = _workspaceProfileMode.asStateFlow()
+
+    private val _needsProfileSelection = MutableStateFlow(!prefs.getBoolean("workspace_profile_chosen", false))
+    val needsProfileSelection: StateFlow<Boolean> = _needsProfileSelection.asStateFlow()
+
+    private val _showProfilePickerOverlay = MutableStateFlow(false)
+    val showProfilePickerOverlay: StateFlow<Boolean> = _showProfilePickerOverlay.asStateFlow()
+
+    private val _paymentAwaitingConfirmation = MutableStateFlow(false)
+    val paymentAwaitingConfirmation: StateFlow<Boolean> = _paymentAwaitingConfirmation.asStateFlow()
+
+    private val _paymentCreatingInProgress = MutableStateFlow(false)
+    val paymentCreatingInProgress: StateFlow<Boolean> = _paymentCreatingInProgress.asStateFlow()
+
+    fun openProfileSelectionScreen() {
+        _showProfilePickerOverlay.value = true
+    }
+
+    fun closeProfileSelectionScreen() {
+        _showProfilePickerOverlay.value = false
+    }
+
+    private var lastResumeSyncAtMs: Long = 0L
+
+    fun onAppResumed() {
+        licenseManager.refreshLicenseStatus()
+        if (lastPaymentId.isNotBlank() &&
+            prefs.getString("last_activated_yookassa_payment_id", "") != lastPaymentId
+        ) {
+            confirmPaymentAndActivateLicense(showProgress = false)
+        }
+        val prof = userProfile.value
+        val now = System.currentTimeMillis()
+        if (prof?.isLoggedIn == true &&
+            prof.unitKey.isNotBlank() &&
+            !syncState.value.isPaused &&
+            (now - lastResumeSyncAtMs) >= 20_000L
+        ) {
+            lastResumeSyncAtMs = now
+            viewModelScope.launch {
+                runCatching { repository.triggerCloudSync() }
+            }
+        }
+    }
+
+    private val _availableCategories = MutableStateFlow<List<String>>(loadCategoriesFromPrefs(_workspaceProfileMode.value))
     val availableCategories: StateFlow<List<String>> = _availableCategories.asStateFlow()
 
-    private fun loadCategoriesFromPrefs(): List<String> {
-        val saved = prefs.getStringSet("saved_categories", null)
-        val defaultOrder = com.example.data.local.InitialData.getDefaultCategories()
-        return if (saved != null && saved.isNotEmpty()) {
-            val list = defaultOrder.toMutableList() // Always include default categories (to force new ones)
-            saved.filter { it !in defaultOrder }.forEach { list.add(it) }
+    private fun loadCategoriesFromPrefs(mode: com.example.data.model.WorkspaceProfileMode): List<String> {
+        val orderedJson = prefs.getString("saved_categories_ordered", null)
+        if (orderedJson != null) {
+            return runCatching {
+                val arr = org.json.JSONArray(orderedJson)
+                buildList {
+                    for (i in 0 until arr.length()) {
+                        val value = arr.optString(i).trim()
+                        if (value.isNotEmpty() && value !in this) add(value)
+                    }
+                }
+            }.getOrElse { com.example.data.local.InitialData.getCategoriesFor(mode) }
+        }
+        val legacySaved = prefs.getStringSet("saved_categories", null)
+        val defaultOrder = com.example.data.local.InitialData.getCategoriesFor(mode)
+        return if (legacySaved != null && legacySaved.isNotEmpty()) {
+            val list = defaultOrder.toMutableList()
+            legacySaved.filter { it !in defaultOrder }.forEach { list.add(it) }
             list
         } else {
             defaultOrder
@@ -76,8 +137,125 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
     }
 
     private fun saveCategoriesToPrefs(list: List<String>) {
-        prefs.edit().putStringSet("saved_categories", list.toSet()).apply()
-        _availableCategories.value = list
+        val clean = list.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+        val arr = org.json.JSONArray()
+        clean.forEach { arr.put(it) }
+        prefs.edit()
+            .putString("saved_categories_ordered", arr.toString())
+            .putStringSet("saved_categories", clean.toSet())
+            .apply()
+        _availableCategories.value = clean
+    }
+
+    fun selectStarterProfile(mode: com.example.data.model.WorkspaceProfileMode) {
+        viewModelScope.launch {
+            _workspaceProfileMode.value = mode
+            _needsProfileSelection.value = false
+            prefs.edit()
+                .putString("workspace_profile_mode", mode.code)
+                .putBoolean("workspace_profile_chosen", true)
+                .apply()
+
+            val applied = repository.applyStarterProfile(mode)
+            if (applied) {
+                saveCategoriesToPrefs(com.example.data.local.InitialData.getCategoriesFor(mode))
+                _selectedCategory.value = "Все виды"
+                _selectedPointId.value = "base_sklad"
+                val msg = when (mode) {
+                    com.example.data.model.WorkspaceProfileMode.CIVILIAN ->
+                        "Профиль «Мастерская / Склад» готов: загружен справочник и бланки М-11 / МБ-7"
+                    com.example.data.model.WorkspaceProfileMode.MILITARY ->
+                        "Профиль «Воинский учёт» готов: службы, точки и Формы № 8 / № 18"
+                    com.example.data.model.WorkspaceProfileMode.EMPTY ->
+                        "Создан чистый «Основной склад» — добавляйте свои категории и позиции"
+                }
+                _toastEvent.emit(msg)
+            } else {
+                _toastEvent.emit("Режим «${mode.titleRu}» включён без изменения существующих данных")
+            }
+        }
+    }
+
+    fun switchWorkspaceProfileMode(mode: com.example.data.model.WorkspaceProfileMode) {
+        reconfigureWorkspaceProfile(mode, updateWarehousesAndCatalog = false)
+    }
+
+    fun reconfigureWorkspaceProfile(
+        mode: com.example.data.model.WorkspaceProfileMode,
+        updateWarehousesAndCatalog: Boolean
+    ) {
+        viewModelScope.launch {
+            _workspaceProfileMode.value = mode
+            _needsProfileSelection.value = false
+            _showProfilePickerOverlay.value = false
+            prefs.edit()
+                .putString("workspace_profile_mode", mode.code)
+                .putBoolean("workspace_profile_chosen", true)
+                .apply()
+
+            val (reconfigured, hadUserData) = repository.reconfigureProfile(mode, updateWarehousesAndCatalog)
+
+            val profileDefaults = com.example.data.local.InitialData.getCategoriesFor(mode)
+            if (reconfigured) {
+                saveCategoriesToPrefs(profileDefaults)
+                _inventorySearchQuery.value = ""
+                _historyFilterType.value = null
+                _historySearchQuery.value = ""
+
+                val curProf = userProfile.value
+                val defaultUnitNames = setOf("1-е Подразделение", "Основной склад", "Базовый склад", "Базовый склад (КЗ)")
+                if (curProf != null && (curProf.unitName.isBlank() || curProf.unitName in defaultUnitNames)) {
+                    val newUnitName = if (mode.isMilitary) "1-е Подразделение" else "Основной склад"
+                    if (curProf.unitName != newUnitName) {
+                        repository.saveUserProfile(curProf.copy(unitName = newUnitName), syncNow = false)
+                    }
+                }
+            } else {
+                val stockItemIds = repository.allStockRecords.first()
+                    .filter { it.quantity > 0 || it.incomeTotal > 0 || it.expenseTotal > 0 }
+                    .map { it.itemId }
+                    .toSet()
+                val activeItemCategories = repository.allItems.first()
+                    .filter { it.isCustom || it.id in stockItemIds }
+                    .map { it.serviceCategory.trim() }
+                    .filter { it.isNotEmpty() }
+                    .distinct()
+                saveCategoriesToPrefs((profileDefaults + activeItemCategories).distinct())
+            }
+            _selectedCategory.value = "Все виды"
+            val updatedPoints = repository.allPoints.first()
+            _selectedPointId.value = updatedPoints.firstOrNull { it.isBase }?.id
+                ?: updatedPoints.firstOrNull()?.id
+                ?: "base_sklad"
+
+            val msg = when {
+                reconfigured && !hadUserData -> when (mode) {
+                    com.example.data.model.WorkspaceProfileMode.CIVILIAN ->
+                        "Профиль изменён: «Гражданский склад» — загружены 3 склада, 64 позиции и бланки М-11 / МБ-7"
+                    com.example.data.model.WorkspaceProfileMode.MILITARY ->
+                        "Профиль изменён: «Воинский учёт» — службы МТО, точки и Формы № 8 / № 18"
+                    com.example.data.model.WorkspaceProfileMode.EMPTY ->
+                        "Профиль изменён: «Пустой склад» — чистый «Основной склад» без лишних позиций"
+                }
+                reconfigured && hadUserData ->
+                    "Профиль «${mode.titleRu}» применён: склады и справочник заменены, старые операции, остатки и заявки сброшены."
+                else ->
+                    "Профиль учёта и бланков: ${mode.titleRu} (склады и операции сохранены)"
+            }
+            _toastEvent.emit(msg)
+        }
+    }
+
+    fun importTemplateCatalog(mode: com.example.data.model.WorkspaceProfileMode) {
+        viewModelScope.launch {
+            val added = repository.seedTemplateCatalog(mode)
+            val mergedCategories = (_availableCategories.value + com.example.data.local.InitialData.getCategoriesFor(mode)).distinct()
+            saveCategoriesToPrefs(mergedCategories)
+            _toastEvent.emit(
+                if (added > 0) "Добавлено типовых позиций: $added (существующие не затронуты)"
+                else "Все позиции выбранного шаблона уже есть в справочнике"
+            )
+        }
     }
 
     fun addCategory(categoryName: String) {
@@ -88,7 +266,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             current.add(clean)
             saveCategoriesToPrefs(current)
             viewModelScope.launch {
-                _toastEvent.emit("Группа «$clean» добавлена")
+                _toastEvent.emit("Категория «$clean» добавлена")
             }
         }
     }
@@ -102,19 +280,23 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         }
         viewModelScope.launch {
             repository.deleteCategory(categoryName, deleteItems)
-            _toastEvent.emit("Группа «$categoryName» удалена")
+            _toastEvent.emit("Категория «$categoryName» удалена")
         }
     }
 
     fun resetCategoriesToDefault() {
-        saveCategoriesToPrefs(com.example.data.local.InitialData.getDefaultCategories())
+        val defaults = com.example.data.local.InitialData.getCategoriesFor(_workspaceProfileMode.value)
+        saveCategoriesToPrefs(defaults)
         viewModelScope.launch {
-            _toastEvent.emit("Штатные группы восстановлены по умолчанию")
+            _toastEvent.emit(
+                if (defaults.isEmpty()) "Список категорий очищен для свободного склада"
+                else "Базовые категории профиля восстановлены"
+            )
         }
     }
 
     // Theme Mode (Light / Dark)
-    private val _isDarkTheme = MutableStateFlow(prefs.getBoolean("is_dark_theme", false))
+    private val _isDarkTheme = MutableStateFlow(prefs.getBoolean("is_dark_theme", true))
     val isDarkTheme: StateFlow<Boolean> = _isDarkTheme.asStateFlow()
 
     fun toggleTheme() {
@@ -199,6 +381,23 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         allCatalogItems = repository.allItems
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+        // Keep local category list in sync when custom items arrive from another phone via cloud sync.
+        viewModelScope.launch {
+            repository.allItems.collect { items ->
+                val syncedCustomCats = items
+                    .filter { it.isCustom && it.serviceCategory.isNotBlank() && it.serviceCategory != "Все виды" }
+                    .map { it.serviceCategory.trim() }
+                    .distinct()
+                if (syncedCustomCats.isNotEmpty()) {
+                    val current = _availableCategories.value
+                    val missing = syncedCustomCats.filter { it !in current }
+                    if (missing.isNotEmpty()) {
+                        saveCategoriesToPrefs(current + missing)
+                    }
+                }
+            }
+        }
+
         allStockRecords = repository.allStockRecords
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -245,7 +444,27 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             val hasAccess = (savedProf?.isProActive == true) ||
                 licenseManager.licenseStatus.value.let { it.isProActive || it.isDemoActive }
             repository.setCloudSyncEntitlementAllowed(hasAccess)
-            repository.ensureInitialized()
+
+            val profileAlreadyChosen = prefs.getBoolean("workspace_profile_chosen", false)
+            if (!profileAlreadyChosen) {
+                val isExistingInstall = repository.hasExistingInstallData()
+                if (isExistingInstall) {
+                    // Existing v3.x installation upgrading in place: preserve data untouched.
+                    _workspaceProfileMode.value = com.example.data.model.WorkspaceProfileMode.MILITARY
+                    _needsProfileSelection.value = false
+                    prefs.edit()
+                        .putString("workspace_profile_mode", com.example.data.model.WorkspaceProfileMode.MILITARY.code)
+                        .putBoolean("workspace_profile_chosen", true)
+                        .apply()
+                    repository.ensureInitialized(com.example.data.model.WorkspaceProfileMode.MILITARY)
+                } else {
+                    // Brand-new install: initialize base empty profile without forcing military catalog yet.
+                    repository.ensureInitialized(com.example.data.model.WorkspaceProfileMode.EMPTY)
+                }
+            } else {
+                repository.ensureInitialized(_workspaceProfileMode.value)
+            }
+
             backupManager.autoBackupIfDue()
             if (hasAccess) {
                 backupManager.cloudBackupIfDue()
@@ -300,10 +519,11 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         comment: String
     ) {
         viewModelScope.launch {
-            val actor = userProfile.value?.callsign ?: "Ответственный"
-            repository.recordIncome(toPointId, toPointName, supplier, items, comment, actor)
+            val isMil = _workspaceProfileMode.value.isMilitary
+            val actor = userProfile.value?.callsign?.ifBlank { null } ?: if (isMil) "Старшина подразделения" else "Кладовщик"
+            repository.recordIncome(toPointId, toPointName, supplier, items, comment, actor, isMilitary = isMil)
             val summary = items.joinToString(", ") { "${it.itemName} (${it.quantity} ${it.unit})" }
-            val src = supplier.ifBlank { "Служба снабжения / Тыл" }
+            val src = supplier.ifBlank { if (isMil) "Служба снабжения / Тыл" else "Поставщик" }
             TacticalNotificationHelper.notifyIncome(
                 context = getApplication(),
                 toPoint = toPointName,
@@ -311,7 +531,27 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                 itemsSummary = summary,
                 baseWarehouseStockSummary = getBaseStockSummary()
             )
-            _toastEvent.emit("📥 ПРИВЕЗЛИ на $toPointName\nОткуда: $src\nПринято: $summary")
+            if (isMil) {
+                _toastEvent.emit("📥 ПРИВЕЗЛИ на $toPointName\nОткуда: $src\nПринято: $summary")
+            } else {
+                _toastEvent.emit("📥 ПРИХОД на «$toPointName»\nПоставщик: $src\nПринято: $summary")
+            }
+        }
+    }
+
+    fun recordReturn(
+        toPointId: String,
+        toPointName: String,
+        returnedBy: String,
+        items: List<OperationItemEntry>,
+        comment: String
+    ) {
+        viewModelScope.launch {
+            val actor = userProfile.value?.callsign?.ifBlank { null } ?: "Кладовщик"
+            val sender = returnedBy.trim().ifBlank { "Сотрудник / объект" }
+            repository.recordReturn(toPointId, toPointName, sender, items, comment, actor)
+            val summary = items.joinToString(", ") { "${it.itemName} (${it.quantity} ${it.unit})" }
+            _toastEvent.emit("↩️ ВОЗВРАТ на «$toPointName»\nОт кого: $sender\nПринято обратно: $summary")
         }
     }
 
@@ -324,7 +564,8 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         comment: String
     ) {
         viewModelScope.launch {
-            val actor = userProfile.value?.callsign ?: "Ответственный"
+            val isMil = _workspaceProfileMode.value.isMilitary
+            val actor = userProfile.value?.callsign?.ifBlank { null } ?: if (isMil) "Старшина подразделения" else "Кладовщик"
             repository.recordTransfer(fromPointId, fromPointName, toPointId, toPointName, items, comment, actor)
             val summary = items.joinToString(", ") { "${it.itemName} (${it.quantity} ${it.unit})" }
             TacticalNotificationHelper.notifyTransfer(
@@ -347,7 +588,8 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         comment: String
     ) {
         viewModelScope.launch {
-            val actor = userProfile.value?.callsign ?: "Старшина подразделения"
+            val isMil = _workspaceProfileMode.value.isMilitary
+            val actor = userProfile.value?.callsign?.ifBlank { null } ?: if (isMil) "Старшина подразделения" else "Кладовщик"
             val summary = items.joinToString(", ") { "${it.itemName} (${it.quantity} ${it.unit})" }
             if (toPointId.isBlank()) {
                 val recipient = toPointName.ifBlank { "Выдано на руки" }
@@ -369,7 +611,11 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                     itemsSummary = summary,
                     baseWarehouseStockSummary = getBaseStockSummary()
                 )
-                _toastEvent.emit("⬆️ ПОДНЯЛИ (ВЫДАНО):\nМаршрут: $fromPointName ➔ $toPointName\nВыдано: $summary")
+                if (isMil) {
+                    _toastEvent.emit("⬆️ ПОДНЯЛИ (ВЫДАНО):\nМаршрут: $fromPointName ➔ $toPointName\nВыдано: $summary")
+                } else {
+                    _toastEvent.emit("⬆️ ВЫДАНО на участок / склад:\nМаршрут: $fromPointName ➔ $toPointName\nВыдано: $summary")
+                }
             }
         }
     }
@@ -383,7 +629,8 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         comment: String
     ) {
         viewModelScope.launch {
-            repository.recordExpenditure(fromPointId, pointName, docNumber, responsiblePerson, items, comment)
+            val isMil = _workspaceProfileMode.value.isMilitary
+            repository.recordExpenditure(fromPointId, pointName, docNumber, responsiblePerson, items, comment, isMilitary = isMil)
             val summary = items.joinToString(", ") { "${it.itemName} (${it.quantity} ${it.unit})" }
             TacticalNotificationHelper.notifyExpenditure(
                 context = getApplication(),
@@ -393,7 +640,11 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                 reason = comment
             )
             val docLabel = if (docNumber.isNotBlank()) " (Акт № $docNumber)" else ""
-            _toastEvent.emit("💥 РАСХОД (Ф. 8)$docLabel:\nТочка: $pointName\nСписано: $summary")
+            if (isMil) {
+                _toastEvent.emit("💥 РАСХОД (Ф. 8)$docLabel:\nТочка: $pointName\nСписано: $summary")
+            } else {
+                _toastEvent.emit("🗑️ СПИСАНИЕ (МБ-8)$docLabel:\nСклад: $pointName\nСписано: $summary")
+            }
         }
     }
 
@@ -428,9 +679,14 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
 
     // Custom Nomenclature Item
     fun addCustomItem(name: String, serviceCategory: String, subType: String, unit: String) {
+        val cleanCategory = serviceCategory.trim().ifBlank { "Основное" }
+        val currentCats = _availableCategories.value
+        if (cleanCategory !in currentCats) {
+            saveCategoriesToPrefs(currentCats + cleanCategory)
+        }
         viewModelScope.launch {
-            repository.addCustomInventoryItem(name, serviceCategory, subType, unit)
-            _toastEvent.emit("Позиция «$name» внесена в номенклатуру")
+            repository.addCustomInventoryItem(name.trim(), cleanCategory, subType.trim(), unit.trim().ifBlank { "шт." })
+            _toastEvent.emit("Позиция «${name.trim()}» внесена в номенклатуру")
         }
     }
 
@@ -442,22 +698,17 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         comment: String
     ) {
         viewModelScope.launch {
-            repository.createRequisition(pointName, applicantName, items, comment)
-            val summary = items.joinToString(", ") { "${it.itemName} (${it.quantity} ${it.unit})" }
-            val req = RequisitionRequest(
-                id = UUID.randomUUID().toString(),
-                pointName = pointName,
-                applicantName = applicantName,
-                status = RequestStatus.PENDING,
-                comment = comment,
-                itemsSummary = summary
-            )
+            val req = repository.createRequisition(pointName, applicantName, items, comment)
             TacticalNotificationHelper.notifyRequisitionStatus(
                 context = getApplication(),
                 req = req,
                 status = RequestStatus.PENDING
             )
-            _toastEvent.emit("Заявка успешно отправлена на комплектацию")
+            val hasCloudKey = !userProfile.value?.unitKey.isNullOrBlank() && !syncState.value.isPaused
+            _toastEvent.emit(
+                if (hasCloudKey) "Заявка создана и отправлена на все подключённые телефоны"
+                else "Заявка успешно отправлена на комплектацию"
+            )
         }
     }
 
@@ -487,21 +738,29 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                 _toastEvent.emit("Не удалось выдать: склад «${req.pointName}» не найден")
                 return@launch
             }
+            val isMil = _workspaceProfileMode.value.isMilitary
             val catalog = allCatalogItems.value
             val wanted = parseRequisitionItems(req.itemsJson).ifEmpty {
-                // Old requests store only a summary line.
                 emptyList()
             }
             val matched = wanted.mapNotNull { w ->
-                val item = catalog.firstOrNull { it.name.equals(w.itemName, ignoreCase = true) } ?: return@mapNotNull null
-                OperationItemEntry(item.id, item.name, item.unit.ifBlank { w.unit }, w.quantity, item.categoryClass.ifBlank { "Кат. 1" })
+                if (w.itemName.isBlank()) return@mapNotNull null
+                val item = catalog.firstOrNull { it.name.equals(w.itemName, ignoreCase = true) }
+                    ?: repository.ensureCatalogItemByName(w.itemName, w.unit, isMil)
+                OperationItemEntry(
+                    item.id,
+                    item.name,
+                    item.unit.ifBlank { w.unit.ifBlank { "шт." } },
+                    w.quantity.coerceAtLeast(1),
+                    item.categoryClass.ifBlank { "Кат. 1" }
+                )
             }
-            val skipped = wanted.size - matched.size
             if (matched.isEmpty()) {
-                _toastEvent.emit("Не удалось выдать: позиции заявки не найдены в каталоге. Статус не изменён.")
+                _toastEvent.emit("Не удалось выдать: в заявке не указаны позиции для списания.")
                 return@launch
             }
-            val actor = userProfile.value?.callsign ?: "Старшина подразделения"
+            val actor = userProfile.value?.callsign?.ifBlank { null }
+                ?: if (isMil) "Старшина подразделения" else "Кладовщик"
             val comment = "По заявке от ${req.applicantName}" + if (req.comment.isNotBlank()) " • ${req.comment}" else ""
             val target = points.firstOrNull { it.name == req.applicantName && it.id != source.id }
             if (target != null) {
@@ -512,8 +771,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             repository.updateRequisitionStatus(req.id, RequestStatus.ISSUED)
             TacticalNotificationHelper.notifyRequisitionStatus(getApplication(), req, RequestStatus.ISSUED)
             _toastEvent.emit(
-                "Заявка выдана: ${matched.size} поз. со склада «${source.name}» → ${req.applicantName}" +
-                    if (skipped > 0) ". Не найдено в каталоге: $skipped поз. — выдайте их вручную" else ""
+                "Заявка выдана: ${matched.size} поз. со склада «${source.name}» → ${req.applicantName}"
             )
         }
     }
@@ -550,7 +808,8 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         comment: String
     ) {
         viewModelScope.launch {
-            val actor = userProfile.value?.callsign ?: "Старшина подразделения"
+            val actor = userProfile.value?.callsign?.ifBlank { null }
+                ?: if (_workspaceProfileMode.value.isMilitary) "Старшина подразделения" else "Кладовщик"
             val delta = repository.setStockAbsoluteQuantity(
                 pointId, pointName, itemId, itemName, unit, newQuantity, comment, actor
             )
@@ -607,7 +866,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             }
 
             if (resolvedUnitName.isBlank()) {
-                resolvedUnitName = "1-е Подразделение"
+                resolvedUnitName = if (_workspaceProfileMode.value.isMilitary) "1-е Подразделение" else "Основной склад"
             }
 
             val current = userProfile.value ?: UserProfile()
@@ -618,8 +877,11 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
 
             if (isUnitSwitch && repository.hasLocalUnitData()) {
                 _toastEvent.emit(
-                    "Ключ подразделения не изменён: на телефоне есть рабочие данные. " +
-                        "Автоматическая очистка запрещена для защиты остатков и истории."
+                    if (_workspaceProfileMode.value.isMilitary) {
+                        "Ключ подразделения не изменён: на телефоне есть рабочие данные. Автоматическая очистка запрещена для защиты остатков и истории."
+                    } else {
+                        "Код общего склада не изменён: на телефоне есть рабочие данные. Автоматическая очистка запрещена для защиты остатков и истории."
+                    }
                 )
                 return@launch
             }
@@ -632,7 +894,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                 unitName = resolvedUnitName,
                 isLoggedIn = true
             )
-            repository.saveUserProfile(updatedProfile)
+            repository.saveUserProfile(updatedProfile, syncNow = false)
 
             // 2. Пытаемся автоматически подтянуть ранее оплаченную лицензию из облака
             val (restored, restoreMsg) = licenseManager.restoreLicenseFromCloud(
@@ -658,7 +920,10 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             if (restored) {
                 _toastEvent.emit("Вход выполнен! Ключ: $resolvedKey. $restoreMsg")
             } else {
-                _toastEvent.emit("Вход выполнен! Подразделение: $resolvedUnitName")
+                _toastEvent.emit(
+                    if (_workspaceProfileMode.value.isMilitary) "Вход выполнен! Подразделение: $resolvedUnitName"
+                    else "Вход выполнен! Склад: $resolvedUnitName"
+                )
             }
             repository.triggerCloudSync()
             
@@ -679,7 +944,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             val current = userProfile.value ?: UserProfile()
             val oldKey = current.unitKey.trim()
             if (oldKey.equals(clean, ignoreCase = true)) {
-                _toastEvent.emit("Ключ подразделения уже используется")
+                _toastEvent.emit(if (_workspaceProfileMode.value.isMilitary) "Ключ подразделения уже используется" else "Код общего склада уже используется")
                 return@launch
             }
             if (oldKey.isNotBlank() && repository.hasLocalUnitData()) {
@@ -692,7 +957,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
 
             licenseManager.saveUnitKeyToVault(clean)
             val updated = current.copy(unitKey = clean)
-            repository.saveUserProfile(updated)
+            repository.saveUserProfile(updated, syncNow = false)
             
             val curLicense = licenseManager.licenseStatus.value
             fighterRegistryManager.registerOrUpdateFighter(
@@ -723,7 +988,11 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
 
             val safeProfile = if (wantsUnitSwitch && repository.hasLocalUnitData()) {
                 _toastEvent.emit(
-                    "Профиль сохранён без смены ключа подразделения: локальные складские данные защищены."
+                    if (_workspaceProfileMode.value.isMilitary) {
+                        "Профиль сохранён без смены ключа подразделения: локальные складские данные защищены."
+                    } else {
+                        "Профиль сохранён без смены кода склада: локальные складские данные защищены."
+                    }
                 )
                 profile.copy(unitKey = current.unitKey)
             } else {
@@ -765,7 +1034,8 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                         isProActive = true,
                         proDaysLeft = daysLeft,
                         demoDaysLeft = 0
-                    )
+                    ),
+                    syncNow = false
                 )
             }
             _toastEvent.emit(msg)
@@ -814,15 +1084,17 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         val newKey = com.example.data.sync.SyncIdentityGenerator.newUnitKey()
         viewModelScope.launch {
             val current = userProfile.value ?: UserProfile()
+            val isMil = _workspaceProfileMode.value.isMilitary
             if (current.unitKey.isNotBlank() && repository.hasLocalUnitData()) {
                 _toastEvent.emit(
-                    "Новый ключ не создан: на телефоне есть данные текущего подразделения. Ничего не удалено."
+                    if (isMil) "Новый ключ не создан: на телефоне есть данные текущего подразделения. Ничего не удалено."
+                    else "Новый ключ не создан: на телефоне есть данные текущего склада. Ничего не удалено."
                 )
                 return@launch
             }
             licenseManager.saveUnitKeyToVault(newKey)
             repository.saveUserProfile(current.copy(unitKey = newKey))
-            _toastEvent.emit("Новый ключ подразделения: $newKey")
+            _toastEvent.emit(if (isMil) "Новый ключ подразделения: $newKey" else "Новый ключ общего склада: $newKey")
         }
     }
 
@@ -838,7 +1110,10 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
     /** This phone is overwritten with the data stored in the cloud. */
     fun loadEverythingFromCloud() {
         viewModelScope.launch {
-            _toastEvent.emit("Загружаю данные подразделения из облака...")
+            _toastEvent.emit(
+                if (_workspaceProfileMode.value.isMilitary) "Загружаю данные подразделения из облака..."
+                else "Загружаю данные склада из облака..."
+            )
             val (_, msg) = repository.replaceLocalWithCloud()
             _toastEvent.emit(msg)
         }
@@ -900,7 +1175,12 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             _toastEvent.emit("Отправляем копию в облако...")
             backupManager.uploadToCloud()
-                .onSuccess { _toastEvent.emit("Копия сохранена в облаке подразделения") }
+                .onSuccess {
+                    _toastEvent.emit(
+                        if (_workspaceProfileMode.value.isMilitary) "Копия сохранена в облаке подразделения"
+                        else "Копия сохранена в облаке"
+                    )
+                }
                 .onFailure { _toastEvent.emit("Не удалось сохранить в облаке: ${it.message ?: "проверьте интернет"}") }
         }
     }
@@ -976,49 +1256,78 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
 
     fun clearIssuedPaymentKey() {
         _issuedPaymentKey.value = null
+        _paymentAwaitingConfirmation.value = false
+        _paymentCreatingInProgress.value = false
     }
 
-    fun startYooKassaPayment(planDays: Int = 30) {
+    fun startYooKassaPayment(planDays: Int = 30, customEmail: String? = null) {
+        if (_paymentCreatingInProgress.value) return
+        _paymentCreatingInProgress.value = true
         viewModelScope.launch {
-            val profile = userProfile.value
-            val callsign = profile?.callsign?.ifBlank { "Боец" } ?: "Боец"
-            val email = profile?.email?.trim()?.lowercase().orEmpty()
+            try {
+                val profile = userProfile.value
+                val isMil = _workspaceProfileMode.value.isMilitary
+                val callsign = profile?.callsign?.ifBlank { if (isMil) "Боец" else "Пользователь" } ?: if (isMil) "Боец" else "Пользователь"
+                val candidateEmail = customEmail?.trim()?.lowercase()?.takeIf { it.isNotEmpty() }
+                    ?: profile?.email?.trim()?.lowercase().orEmpty()
 
-            if (email.isBlank() || !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-                _toastEvent.emit("Для оплаты укажите корректный Email в профиле. На него придёт информация о лицензии.")
-                return@launch
-            }
-
-            val plan = com.example.data.payment.ProPlanOption.fromDays(planDays)
-            _toastEvent.emit("Формирование счета ЮKassa на ${plan.title}...")
-            val fighterId = licenseManager.getFighterPersonalId()
-            val result = yooKassaService.createPayment(
-                fighterCallsign = callsign,
-                fighterEmail = email,
-                fighterId = fighterId,
-                planDays = plan.days
-            )
-            if (result.success && result.confirmationUrl.isNotEmpty()) {
-                lastPaymentId = result.paymentId
-                prefs.edit().putString("last_yookassa_payment_id", result.paymentId).apply()
-                paymentPollingJob?.cancel()
-                startPaymentPolling()
-                yooKassaService.openPaymentUrl(result.confirmationUrl)
-                _toastEvent.emit("Переход к оплате ЮKassa (СБП/Карта)...")
-
-                // Уведомление в Telegram
-                val amount = if (plan == com.example.data.payment.ProPlanOption.DAYS_30) {
-                    yooKassaService.getConfig().priceRubles
-                } else {
-                    plan.priceRubles
+                if (candidateEmail.isBlank() || !android.util.Patterns.EMAIL_ADDRESS.matcher(candidateEmail).matches()) {
+                    _paymentAwaitingConfirmation.value = false
+                    _toastEvent.emit("Для оплаты укажите корректный Email (например: user@mail.ru) — туда придёт ключ лицензии.")
+                    return@launch
                 }
-                com.example.data.notification.TelegramNotifier.notifyPaymentStarted(
-                    callsign = callsign,
-                    email = email,
-                    amountRub = amount
+
+                // Persist newly provided email directly into profile so user doesn't have to leave the payment dialog
+                if (profile != null && !profile.email.trim().equals(candidateEmail, ignoreCase = true)) {
+                    repository.saveUserProfile(profile.copy(email = candidateEmail), syncNow = false)
+                }
+                val email = candidateEmail
+
+                val plan = com.example.data.payment.ProPlanOption.fromDays(planDays)
+                _toastEvent.emit("Формирование счета ЮKassa на ${plan.title}...")
+                val fighterId = licenseManager.getFighterPersonalId()
+                val result = yooKassaService.createPayment(
+                    fighterCallsign = callsign,
+                    fighterEmail = email,
+                    fighterId = fighterId,
+                    planDays = plan.days
                 )
-            } else {
-                _toastEvent.emit(result.errorMessage ?: "Не удалось создать счет ЮKassa")
+                if (result.success && result.confirmationUrl.isNotEmpty()) {
+                    lastPaymentId = result.paymentId
+                    prefs.edit().putString("last_yookassa_payment_id", result.paymentId).apply()
+                    _paymentAwaitingConfirmation.value = true
+                    paymentPollingJob?.cancel()
+                    startPaymentPolling()
+                    val opened = yooKassaService.openPaymentUrl(result.confirmationUrl)
+                    if (opened) {
+                        _toastEvent.emit("Переход к оплате ЮKassa (СБП/Карта)...")
+                    } else {
+                        _toastEvent.emit("Не удалось открыть браузер для оплаты. Проверьте наличие браузера на телефоне.")
+                    }
+
+                    // Уведомление в Telegram
+                    val amount = if (plan == com.example.data.payment.ProPlanOption.DAYS_30) {
+                        yooKassaService.getConfig().priceRubles
+                    } else {
+                        plan.priceRubles
+                    }
+                    com.example.data.notification.TelegramNotifier.notifyPaymentStarted(
+                        callsign = callsign,
+                        email = email,
+                        amountRub = amount
+                    )
+                } else {
+                    _paymentAwaitingConfirmation.value = false
+                    _toastEvent.emit(result.errorMessage ?: "Не удалось создать счет ЮKassa")
+                }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (t: Throwable) {
+                android.util.Log.e("KapterkaViewModel", "startYooKassaPayment failed", t)
+                _paymentAwaitingConfirmation.value = false
+                _toastEvent.emit("Не удалось открыть оплату. Проверьте интернет и попробуйте снова.")
+            } finally {
+                _paymentCreatingInProgress.value = false
             }
         }
     }
@@ -1035,9 +1344,10 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             var keepPolling = true
             try {
                 val profile = userProfile.filterNotNull().first()
-                val callsign = profile.callsign.ifBlank { "Боец" }
+                val isMil = _workspaceProfileMode.value.isMilitary
+                val callsign = profile.callsign.ifBlank { if (isMil) "Боец" else "Пользователь" }
                 val email = profile.email.trim()
-                val unitName = profile.unitName.ifBlank { "Подразделение" }
+                val unitName = profile.unitName.ifBlank { if (isMil) "Подразделение" else "Основной склад" }
                 val unitKey = profile.unitKey.trim()
 
                 val paymentIdToVerify = if (lastPaymentId.isNotBlank()) {
@@ -1071,6 +1381,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                 if (!verification.isReadyForActivation()) {
                     if (verification.success && verification.status in setOf("canceled", "expired")) {
                         keepPolling = false
+                        _paymentAwaitingConfirmation.value = false
                         paymentPollingJob?.cancel()
                     }
                     val msg = verification.errorMessage ?: "Платёж ещё не подтверждён сервером."
@@ -1089,6 +1400,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                     return@launch
                 }
                 keepPolling = false
+                _paymentAwaitingConfirmation.value = false
                 if (lastPaymentId == paymentIdToVerify) paymentPollingJob?.cancel()
 
                 val daysLeft = ((verification.expiresAt - System.currentTimeMillis()) / 86400000L)
@@ -1102,7 +1414,8 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
 
                 // Локальный профиль отражает только уже подтверждённую сервером лицензию.
                 repository.saveUserProfile(
-                    profile.copy(isProActive = true, proDaysLeft = daysLeft, demoDaysLeft = 0)
+                    profile.copy(isProActive = true, proDaysLeft = daysLeft, demoDaysLeft = 0),
+                    syncNow = false
                 )
 
                 // Заносим пользователя в реестр без фиктивного unit key.
@@ -1143,7 +1456,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             val profile = userProfile.value
             val email = customEmail?.ifBlank { null } ?: profile?.email ?: ""
             val key = _issuedPaymentKey.value ?: licenseStatus.value.licenseKey.ifEmpty { licenseStatus.value.lastSavedKey }
-            val callsign = profile?.callsign ?: "Боец"
+            val callsign = profile?.callsign?.ifBlank { null } ?: if (_workspaceProfileMode.value.isMilitary) "Боец" else "Пользователь"
             if (email.isNotBlank() && key.isNotBlank()) {
                 val daysLeft = licenseStatus.value.daysRemaining.coerceAtLeast(1)
                 val sent = com.example.data.notification.EmailDeliveryService.sendLicenseKeyEmail(
@@ -1166,7 +1479,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
     fun activateLicenseKey(enteredKey: String) {
         viewModelScope.launch {
             val profile = userProfile.value
-            val callsign = profile?.callsign ?: "Боец"
+            val callsign = profile?.callsign?.ifBlank { null } ?: if (_workspaceProfileMode.value.isMilitary) "Боец" else "Пользователь"
             val (success, message) = licenseManager.activateKeyManually(enteredKey, callsign)
             if (success) {
                 val curProfile = userProfile.value ?: UserProfile()
@@ -1179,7 +1492,8 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                         isProActive = true,
                         proDaysLeft = daysLeft,
                         demoDaysLeft = 0
-                    )
+                    ),
+                    syncNow = false
                 )
                 fighterRegistryManager.registerOrUpdateFighter(
                     fighterId = licenseManager.getFighterPersonalId(),
@@ -1217,7 +1531,8 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
                         isProActive = true,
                         proDaysLeft = daysLeft,
                         demoDaysLeft = 0
-                    )
+                    ),
+                    syncNow = false
                 )
             }
             _toastEvent.emit(msg)
@@ -1235,7 +1550,7 @@ class KapterkaViewModel(application: Application) : AndroidViewModel(application
             prefs.edit().remove("last_yookassa_payment_id").apply()
             licenseManager.resetLicense()
             val curProfile = userProfile.value ?: UserProfile()
-            repository.saveUserProfile(curProfile.copy(isProActive = false, proDaysLeft = 0))
+            repository.saveUserProfile(curProfile.copy(isProActive = false, proDaysLeft = 0), syncNow = false)
             licenseManager.refreshLicenseStatus()
             val demoLeft = licenseManager.licenseStatus.value.demoDaysLeft
             _toastEvent.emit(

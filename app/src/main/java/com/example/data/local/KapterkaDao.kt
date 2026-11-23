@@ -145,6 +145,25 @@ interface KapterkaDao {
     @Query("DELETE FROM inventory_items")
     suspend fun clearAllItems()
 
+    /** Atomically resets warehouses, catalog, stock balances, operations, and requisitions when switching profile warehouses. */
+    @Transaction
+    suspend fun resetWorkspaceProfileData(
+        points: List<WarehousePoint>,
+        items: List<InventoryItem>
+    ) {
+        clearAllStockRecords()
+        clearAllOperations()
+        clearAllRequisitions()
+        clearAllPoints()
+        clearAllItems()
+        if (points.isNotEmpty()) {
+            insertPoints(points)
+        }
+        if (items.isNotEmpty()) {
+            insertItems(items)
+        }
+    }
+
     /** Restore from a backup file: all data tables are replaced atomically or not at all. */
     @Transaction
     suspend fun replaceAllData(
@@ -154,6 +173,7 @@ interface KapterkaDao {
         operations: List<OperationRecord>,
         requisitions: List<RequisitionRequest>
     ) {
+        clearAllSyncTombstones()
         clearAllStockRecords()
         clearAllOperations()
         clearAllRequisitions()
@@ -169,6 +189,9 @@ interface KapterkaDao {
     // Explicit sync deletion markers
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertSyncTombstone(tombstone: SyncTombstone)
+
+    @Query("DELETE FROM sync_tombstones")
+    suspend fun clearAllSyncTombstones()
 
     @Query("SELECT * FROM sync_tombstones WHERE unitKey = :unitKey")
     suspend fun getSyncTombstonesForUnit(unitKey: String): List<SyncTombstone>

@@ -119,18 +119,138 @@ data class GuideStep(
 @Composable
 fun UserManualDialog(
     onDismiss: () -> Unit,
-    onOpenSyncDialog: (() -> Unit)? = null
+    onOpenSyncDialog: (() -> Unit)? = null,
+    profileMode: com.example.data.model.WorkspaceProfileMode = com.example.data.model.WorkspaceProfileMode.MILITARY
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategoryIndex by remember { mutableIntStateOf(0) }
     val listState = rememberLazyListState()
+    val isMil = profileMode.isMilitary
 
     val sageBright = SageGreenBright
     val tealText = TacticalTealText
     val goldText = TacticalGoldText
 
-    val guideSections = remember(sageBright, tealText, goldText) {
-        listOf(
+    val guideSections = remember(sageBright, tealText, goldText, isMil) {
+        if (!isMil) {
+            listOf(
+                GuideSection(
+                    id = "quick_start",
+                    title = "1. Первый запуск",
+                    shortSubtitle = "Регистрация, почта, код общего склада",
+                    icon = Icons.Default.Key,
+                    badgeColor = sageBright,
+                    forWho = "Все пользователи",
+                    steps = listOf(
+                        GuideStep("Шаг 1", "Регистрация", "Введите имя (или ФИО), название склада или мастерской и почту. Почта нужна для кода подключения и восстановления лицензии PRO.", "Нажмите «Создать учёт»"),
+                        GuideStep("Шаг 2", "Код из письма", "На почту придёт 6-значный код подтверждения. Введите его в поля на экране. Если письма нет 2 минуты — проверьте папку «Спам».", "Код действует 10 минут"),
+                        GuideStep("Шаг 3", "Код общего склада", "После регистрации создаётся код вида kapt_xxxx — он виден вверху главного экрана. По нему можно подключить второй телефон.", "Храните код в надёжном месте")
+                    ),
+                    proTip = "Если письма нет сразу, можно продолжить работу офлайн и подтвердить почту позже."
+                ),
+                GuideSection(
+                    id = "warehouses_stock",
+                    title = "2. Главный экран: склады и остатки",
+                    shortSubtitle = "Позиции по единицам, поиск, категории",
+                    icon = Icons.Default.Warehouse,
+                    badgeColor = tealText,
+                    forWho = "Кладовщики, мастера, руководители",
+                    steps = listOf(
+                        GuideStep("1", "Живая сводка сверху", "Показывает количество активных позиций в наличии и точный баланс раздельно по единицам измерения (шт., л., кг., компл.) без смешивания разных единиц.", null),
+                        GuideStep("2", "Склады списком", "Нажмите на карточку склада — откроется таблица: наименование, приход, расход и остаток. Повторное нажатие свернёт список.", "Долгое нажатие — изменить порядок или удалить"),
+                        GuideStep("3", "Поиск и категории", "Строка поиска ищет по названию и артикулу сразу по всем складам. Кнопки категорий быстро фильтруют список.", null),
+                        GuideStep("4", "Инвентаризация", "Нажмите на строку в таблице остатков, чтобы скорректировать фактическое количество — правка зафиксируется в журнале.", null)
+                    ),
+                    proTip = "Базовый склад отмечен золотым значком — на него удобнее принимать новые поставки."
+                ),
+                GuideSection(
+                    id = "operations",
+                    title = "3. Операции",
+                    shortSubtitle = "Приход, выдача, возврат, списание",
+                    icon = Icons.Default.TrendingUp,
+                    badgeColor = goldText,
+                    forWho = "Все, кто ведёт склад",
+                    steps = listOf(
+                        GuideStep("Приход", "Принять товар / инструмент", "Кнопка «Приход» → выберите склад, поставщика и позиции, укажите количество кнопками − / +.", "Остаток обновится мгновенно"),
+                        GuideStep("Выдача", "Выдать сотруднику или в цех", "Кнопка «Выдача» → укажите получателя и позиции. Приложение контролирует наличие и предупреждает о нехватке.", null),
+                        GuideStep("Возврат", "Вернуть инструмент на склад", "Кнопка «Возврат» → выберите, кто сдаёт инструмент и на какой склад. Возврат отразится в журнале и ведомости МБ-7.", null),
+                        GuideStep("Списание", "Расход, износ или поломка", "Кнопка «Списание» → укажите причину. Запись попадёт в Акт списания ТМЦ (МБ-8 / ТОРГ-16).", "Доступно в демо и PRO"),
+                        GuideStep("Журнал", "Вкладка «Операции»", "Вся история движения по дням с поиском и фильтром по типам и категориям.", null)
+                    ),
+                    proTip = "Если ошиблись в количестве прихода — откройте остаток на складе и скорректируйте инвентаризацией."
+                ),
+                GuideSection(
+                    id = "requests",
+                    title = "4. Заявки",
+                    shortSubtitle = "Запросы на комплектацию и выдачу",
+                    icon = Icons.Default.Assignment,
+                    badgeColor = sageBright,
+                    forWho = "Мастера, прорабы, снабженцы",
+                    steps = listOf(
+                        GuideStep("1", "Создать заявку", "Вкладка «Заявки» → кнопка «+ Заявка» сверху: выберите склад, получателя и позиции. Если позиции нет в наличии, программа сразу предупредит.", null),
+                        GuideStep("2", "Этапы работы", "Новые → Собираются → Собраны → Выданы. При финальной выдаче остаток автоматически списывается со склада.", null)
+                    ),
+                    proTip = "Заявки синхронизируются между всеми подключёнными телефонами команды."
+                ),
+                GuideSection(
+                    id = "sync",
+                    title = "5. Второй телефон и синхронизация",
+                    shortSubtitle = "Общий склад на нескольких устройствах",
+                    icon = Icons.Default.Sync,
+                    badgeColor = tealText,
+                    forWho = "Команды и сменная работа",
+                    steps = listOf(
+                        GuideStep("Шаг 1", "Подключить 2-й телефон", "Откройте «QR-код» на главном экране или в разделе «Ещё → Общий склад». На втором телефоне выберите «Подключиться» и отсканируйте QR.", null),
+                        GuideStep("Шаг 2", "Работа офлайн", "Все операции работают без интернета в локальной базе. Как только появится сеть, изменения синхронизируются.", null),
+                        GuideStep("Шаг 3", "Сверка при расхождении", "В окне «Общий склад» можно сделать один телефон эталоном или загрузить актуальное состояние из облака.", null)
+                    ),
+                    proTip = "Обязательно сохраняйте резервную копию в файл перед крупной инвентаризацией."
+                ),
+                GuideSection(
+                    id = "reports_excel",
+                    title = "6. Отчёты и бланки Excel",
+                    shortSubtitle = "Оборотная ТМЦ, М-11, МБ-7, МБ-8",
+                    icon = Icons.Default.TableChart,
+                    badgeColor = goldText,
+                    forWho = "Бухгалтерия, склад, руководитель",
+                    steps = listOf(
+                        GuideStep("1", "Оборотная ТМЦ и остатки", "Полный отчёт по всем складам и отдельно по каждому складу с приходом, расходом и остатком.", null),
+                        GuideStep("2", "Накладная М-11 / ТОРГ-13", "Оформленные перемещения ТМЦ между складами и участками.", null),
+                        GuideStep("3", "Ведомость МБ-7", "Выдача инструмента и спецодежды на руки сотрудникам с автоматическим учётом возвратов.", null),
+                        GuideStep("4", "Акт списания МБ-8", "Акт на списание пришедшего в негодность инструмента и расходников.", "Выгрузка в .xlsx и CSV")
+                    ),
+                    proTip = "Файлы .xlsx готовы к печати на листе А4 в Excel, LibreOffice и Google Таблицах."
+                ),
+                GuideSection(
+                    id = "license",
+                    title = "7. Базовый режим, демо и PRO",
+                    shortSubtitle = "3 дня безлимита, далее базовый режим или PRO",
+                    icon = Icons.Default.Star,
+                    badgeColor = sageBright,
+                    forWho = "Все пользователи",
+                    steps = listOf(
+                        GuideStep("Демо", "3 дня полного доступа", "После регистрации все функции открыты на 72 часа. Далее доступен бесплатный локальный режим: 1 основной склад и до 15 позиций.", null),
+                        GuideStep("Тарифы PRO", "30, 90 или 365 дней", "Откройте «Лицензия PRO» → выберите срок (490 ₽ / 1 190 ₽ / 3 490 ₽). Оплата через ЮKassa (СБП / МИР), ключ также придёт на Email.", null),
+                        GuideStep("Восстановить", "При смене телефона", "«Ещё» → «Восстановить оплаченную лицензию по Email» — сервер автоматически найдёт вашу активную подписку.", null)
+                    ),
+                    proTip = "Лицензия хранится на сервере и не пропадает при переустановке приложения."
+                ),
+                GuideSection(
+                    id = "faq",
+                    title = "8. Частые вопросы",
+                    shortSubtitle = "Письма, синхронизация, обновление",
+                    icon = Icons.Default.HelpOutline,
+                    badgeColor = tealText,
+                    forWho = "Все пользователи",
+                    steps = listOf(
+                        GuideStep("?", "Не приходит письмо с кодом", "Проверьте «Спам» и «Промоакции» или нажмите «Отправить код снова». При трудностях напишите в бот поддержки @kapterka_help_bot.", null),
+                        GuideStep("?", "Пропадут ли данные при обновлении?", "Нет. Все склады, остатки, журнал и лицензия сохраняются.", null),
+                        GuideStep("?", "Где задать вопрос?", "Telegram-бот поддержки @kapterka_help_bot, новости — @kapterka_pro, сайт kapterka-pro.ru.", null)
+                    ),
+                    proTip = "Быстрые ссылки на сайт и поддержку доступны внизу этой инструкции и в разделе «Ещё»."
+                )
+            )
+        } else listOf(
             GuideSection(
                 id = "quick_start",
                 title = "1. Первый запуск",
@@ -276,25 +396,23 @@ fun UserManualDialog(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(TacticalBg.copy(alpha = 0.95f))
+                .background(TacticalBg.copy(alpha = 0.86f))
                 .padding(horizontal = 12.dp, vertical = 18.dp),
             contentAlignment = Alignment.Center
         ) {
-            Card(
+            Animated3DDialogContainer(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .fillMaxHeight(0.95f)
-                    .clip(RoundedCornerShape(16.dp)),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = TacticalSurface),
-                border = androidx.compose.foundation.BorderStroke(1.5.dp, SageGreenPrimary.copy(alpha = 0.6f))
+                    .fillMaxHeight(0.95f),
+                cornerRadius = 24.dp,
+                accentBorder = SageGreenPrimary
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(16.dp)
                 ) {
-                    // DIALOG TOP HEADER WITH SLEEK GRADIENT & CLOSE BUTTON
+                    // DIALOG TOP HEADER WITH 3D BADGE & CLOSE ORB
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -306,20 +424,20 @@ fun UserManualDialog(
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(38.dp)
-                                    .clip(RoundedCornerShape(10.dp))
+                                    .size(40.dp)
+                                    .clip(RoundedCornerShape(12.dp))
                                     .background(
                                         Brush.linearGradient(
-                                            listOf(SageGreenDark, Color(0xFF2C4A34))
+                                            listOf(SageGreenPrimary, TacticalTeal)
                                         )
                                     )
-                                    .border(1.dp, SageGreenBright, RoundedCornerShape(10.dp)),
+                                    .border(0.9.dp, Color.White.copy(alpha = 0.35f), RoundedCornerShape(12.dp)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.HelpOutline,
                                     contentDescription = "Руководство",
-                                    tint = SageGreenBright,
+                                    tint = Color.White,
                                     modifier = Modifier.size(22.dp)
                                 )
                             }
@@ -331,32 +449,25 @@ fun UserManualDialog(
                                     text = "РУКОВОДСТВО ПОЛЬЗОВАТЕЛЯ",
                                     color = SageGreenBright,
                                     fontSize = 15.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    letterSpacing = 0.5.sp
+                                    fontWeight = FontWeight.ExtraBold,
+                                    letterSpacing = 0.4.sp
                                 )
                                 Text(
-                                    text = "Инструкция для военных и гражданского персонала",
+                                    text = if (isMil) "Пошаговая инструкция по воинскому учёту" else "Пошаговая инструкция по учёту склада",
                                     color = TacticalTextMuted,
                                     fontSize = 11.sp
                                 )
                             }
                         }
 
-                        IconButton(
+                        IconOrb3DButton(
+                            icon = Icons.Default.Close,
+                            contentDescription = "Закрыть",
+                            tint = TacticalTextPrimary,
                             onClick = onDismiss,
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(CircleShape)
-                                .background(TacticalSurfaceLight)
-                                .testTag("close_guide_button")
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Закрыть",
-                                tint = TacticalTextPrimary,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
+                            size = 36.dp,
+                            modifier = Modifier.testTag("close_guide_button")
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
@@ -542,7 +653,7 @@ fun UserManualDialog(
                         item {
                             Spacer(modifier = Modifier.height(10.dp))
                             Text(
-                                text = "Разработчик: Васев Алексей Евгеньевич • АСУ «Каптёрка» v2.9.4 PRO",
+                                text = "Разработчик: Васев Алексей Евгеньевич • Каптёрка PRO v${com.example.BuildConfig.VERSION_NAME}",
                                 color = TacticalTextMuted,
                                 fontSize = 10.sp,
                                 fontFamily = FontFamily.Monospace,
